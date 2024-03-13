@@ -54,6 +54,7 @@ from pygeoapi.api import API, APIRequest, apply_gzip
 import pygeoapi.api.environmental_data_retrieval as edr_api
 import pygeoapi.api.maps as maps_api
 import pygeoapi.api.processes as processes_api
+import pygeoapi.api.stac as stac_api
 from pygeoapi.openapi import load_openapi_document
 from pygeoapi.config import get_config
 from pygeoapi.util import get_api_rules
@@ -546,7 +547,7 @@ async def stac_catalog_root(request: Request):
 
     :returns: Starlette HTTP response
     """
-    return await get_response(api_.get_stac_root, request)
+    return await execute_from_starlette(stac_api.get_stac_root, request)
 
 
 async def stac_catalog_path(request: Request):
@@ -558,7 +559,7 @@ async def stac_catalog_path(request: Request):
     :returns: Starlette HTTP response
     """
     path = request.path_params["path"]
-    return await get_response(api_.get_stac_path, request, path)
+    return await execute_from_starlette(stac_api.get_stac_path, request, path)
 
 
 async def admin_config(request: Request):

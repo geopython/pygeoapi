@@ -44,6 +44,7 @@ from pygeoapi.api import API, APIRequest, apply_gzip
 import pygeoapi.api.environmental_data_retrieval as edr_api
 import pygeoapi.api.maps as maps_api
 import pygeoapi.api.processes as processes_api
+import pygeoapi.api.stac as stac_api
 
 
 def landing_page(request: HttpRequest) -> HttpResponse:
@@ -462,10 +463,7 @@ def stac_catalog_root(request: HttpRequest) -> HttpResponse:
     :returns: Django HTTP response
     """
 
-    response_ = _feed_response(request, 'get_stac_root')
-    response = _to_django_response(*response_)
-
-    return response
+    return execute_from_django(stac_api.get_stac_root, request)
 
 
 def stac_catalog_path(request: HttpRequest, path: str) -> HttpResponse:
@@ -478,10 +476,7 @@ def stac_catalog_path(request: HttpRequest, path: str) -> HttpResponse:
     :returns: Django HTTP response
     """
 
-    response_ = _feed_response(request, 'get_stac_path', path)
-    response = _to_django_response(*response_)
-
-    return response
+    return execute_from_django(stac_api.get_stac_path, request, path)
 
 
 def admin_config(request: HttpRequest) -> HttpResponse:

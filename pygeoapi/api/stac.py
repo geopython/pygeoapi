@@ -43,25 +43,27 @@ import logging
 from http import HTTPStatus
 from typing import Tuple
 
+from pygeoapi import __version__, l10n
 from pygeoapi.openapi import get_oas_30_parameters
 from pygeoapi.plugin import load_plugin
-from pygeoapi.provider.base import ProviderGenericError
+
+from pygeoapi.provider.base import (
+    ProviderGenericError, ProviderConnectionError, ProviderNotFoundError,
+)
 from pygeoapi.util import (
     get_provider_by_type, to_json, filter_providers_by_type,
-    filter_dict_by_key_value,
+    filter_dict_by_key_value, render_j2_template,
 )
 
-from . import APIRequest, API, validate_datetime
+from . import APIRequest, API, validate_datetime, FORMAT_TYPES, F_JSON, F_HTML
 
 
 LOGGER = logging.getLogger(__name__)
 
 
-@gzip
-@pre_process
-@jsonldify
+# TODO: no tests for this?
 def get_stac_root(
-        self, request: Union[APIRequest, Any]) -> Tuple[dict, int, str]:
+        self, request: APIRequest) -> Tuple[dict, int, str]:
     """
     Provide STAC root page
 
@@ -69,9 +71,6 @@ def get_stac_root(
 
     :returns: tuple of headers, status code, content
     """
-
-    if not request.is_valid():
-        return self.get_format_exception(request)
     headers = request.get_response_headers(**self.api_headers)
 
     id_ = 'pygeoapi-stac'
@@ -114,10 +113,9 @@ def get_stac_root(
 
     return headers, HTTPStatus.OK, to_json(content, self.pretty_print)
 
-@gzip
-@pre_process
-@jsonldify
-def get_stac_path(self, request: Union[APIRequest, Any],
+
+# TODO: no tests for this?
+def get_stac_path(self, request: APIRequest,
                   path) -> Tuple[dict, int, str]:
     """
     Provide STAC resource path
@@ -126,9 +124,6 @@ def get_stac_path(self, request: Union[APIRequest, Any],
 
     :returns: tuple of headers, status code, content
     """
-
-    if not request.is_valid():
-        return self.get_format_exception(request)
     headers = request.get_response_headers(**self.api_headers)
 
     dataset = None
@@ -227,6 +222,3 @@ def get_stac_path(self, request: Union[APIRequest, Any],
     else:  # send back file
         headers.pop('Content-Type', None)
         return headers, HTTPStatus.OK, stac_data
-
-
-

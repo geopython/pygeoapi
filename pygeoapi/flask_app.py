@@ -41,6 +41,7 @@ from pygeoapi.api import API, APIRequest, apply_gzip
 import pygeoapi.api.environmental_data_retrieval as edr_api
 import pygeoapi.api.maps as maps_api
 import pygeoapi.api.processes as processes_api
+import pygeoapi.api.stac as stac_api
 from pygeoapi.openapi import load_openapi_document
 from pygeoapi.config import get_config
 from pygeoapi.util import get_mimetype, get_api_rules
@@ -482,7 +483,8 @@ def stac_catalog_root():
 
     :returns: HTTP response
     """
-    return get_response(api_.get_stac_root(request))
+
+    return execute_from_flask(stac_api.get_stac_root, request)
 
 
 @BLUEPRINT.route('/stac/<path:path>')
@@ -494,7 +496,7 @@ def stac_catalog_path(path):
 
     :returns: HTTP response
     """
-    return get_response(api_.get_stac_path(request, path))
+    return execute_from_flask(stac_api.get_stac_path, request, path)
 
 
 @ADMIN_BLUEPRINT.route('/admin/config', methods=['GET', 'PUT', 'PATCH'])
