@@ -271,11 +271,6 @@ def get_oas_30(cfg):
                 'url': cfg['metadata']['identification']['url']}
         }
     )
-    oas['tags'].append({
-            'name': 'stac',
-            'description': 'SpatioTemporal Asset Catalog'
-        }
-    )
 
     oas['components'] = {
         'responses': {
@@ -832,24 +827,6 @@ def get_oas_30(cfg):
                     }
                 }
             }
-
-    LOGGER.debug('setting up STAC')
-    stac_collections = filter_dict_by_key_value(cfg['resources'],
-                                                'type', 'stac-collection')
-    if stac_collections:
-        paths['/stac'] = {
-            'get': {
-                'summary': 'SpatioTemporal Asset Catalog',
-                'description': 'SpatioTemporal Asset Catalog',
-                'tags': ['stac'],
-                'operationId': 'getStacCatalog',
-                'parameters': [],
-                'responses': {
-                    '200': {'$ref': '#/components/responses/200'},
-                    'default': {'$ref': '#/components/responses/default'}
-                }
-            }
-        }
 
     oas['paths'] = paths
 

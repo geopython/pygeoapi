@@ -38,32 +38,29 @@
 # =================================================================
 
 
-from copy import deepcopy
 import logging
 from http import HTTPStatus
 from typing import Tuple
 
-from pygeoapi import __version__, l10n
-from pygeoapi.openapi import get_oas_30_parameters
+from pygeoapi import l10n
 from pygeoapi.plugin import load_plugin
 
 from pygeoapi.provider.base import (
-    ProviderGenericError, ProviderConnectionError, ProviderNotFoundError,
+    ProviderConnectionError, ProviderNotFoundError,
 )
 from pygeoapi.util import (
-    get_provider_by_type, to_json, filter_providers_by_type,
-    filter_dict_by_key_value, render_j2_template,
+    get_provider_by_type, to_json, filter_dict_by_key_value,
+    render_j2_template,
 )
 
-from . import APIRequest, API, validate_datetime, FORMAT_TYPES, F_JSON, F_HTML
+from . import APIRequest, API, FORMAT_TYPES, F_JSON, F_HTML
 
 
 LOGGER = logging.getLogger(__name__)
 
 
 # TODO: no tests for this?
-def get_stac_root(
-        self, request: APIRequest) -> Tuple[dict, int, str]:
+def get_stac_root(api: API, request: APIRequest) -> Tuple[dict, int, str]:
     """
     Provide STAC root page
 
@@ -71,26 +68,26 @@ def get_stac_root(
 
     :returns: tuple of headers, status code, content
     """
-    headers = request.get_response_headers(**self.api_headers)
+    headers = request.get_response_headers(**api.api_headers)
 
     id_ = 'pygeoapi-stac'
     stac_version = '1.0.0-rc.2'
-    stac_url = f'{self.base_url}/stac'
+    stac_url = f'{api.base_url}/stac'
 
     content = {
         'id': id_,
         'type': 'Catalog',
         'stac_version': stac_version,
         'title': l10n.translate(
-            self.config['metadata']['identification']['title'],
+            api.config['metadata']['identification']['title'],
             request.locale),
         'description': l10n.translate(
-            self.config['metadata']['identification']['description'],
+            api.config['metadata']['identification']['description'],
             request.locale),
         'links': []
     }
 
-    stac_collections = filter_dict_by_key_value(self.config['resources'],
+    stac_collections = filter_dict_by_key_value(api.config['resources'],
                                                 'type', 'stac-collection')
 
     for key, value in stac_collections.items():
@@ -106,16 +103,16 @@ def get_stac_root(
         })
 
     if request.format == F_HTML:  # render
-        content = render_j2_template(self.tpl_config,
+        content = render_j2_template(api.tpl_config,
                                      'stac/collection.html',
                                      content, request.locale)
         return headers, HTTPStatus.OK, content
 
-    return headers, HTTPStatus.OK, to_json(content, self.pretty_print)
+    return headers, HTTPStatus.OK, to_json(content, api.pretty_print)
 
 
 # TODO: no tests for this?
-def get_stac_path(self, request: APIRequest,
+def get_stac_path(api: API, request: APIRequest,
                   path) -> Tuple[dict, int, str]:
     """
     Provide STAC resource path
@@ -124,7 +121,7 @@ def get_stac_path(self, request: APIRequest,
 
     :returns: tuple of headers, status code, content
     """
-    headers = request.get_response_headers(**self.api_headers)
+    headers = request.get_response_headers(**api.api_headers)
 
     dataset = None
     LOGGER.debug(f'Path: {path}')
@@ -132,13 +129,13 @@ def get_stac_path(self, request: APIRequest,
     if dir_tokens:
         dataset = dir_tokens[0]
 
-    stac_collections = filter_dict_by_key_value(self.config['resources'],
+    stac_collections = filter_dict_by_key_value(api.config['resources'],
                                                 'type', 'stac-collection')
 
     if dataset not in stac_collections:
         msg = 'Collection not found'
-        return self.get_exception(HTTPStatus.NOT_FOUND, headers,
-                                  request.format, 'NotFound', msg)
+        return api.get_exception(HTTPStatus.NOT_FOUND, headers,
+                                 request.format, 'NotFound', msg)
 
     LOGGER.debug('Loading provider')
     try:
@@ -147,7 +144,7 @@ def get_stac_path(self, request: APIRequest,
     except ProviderConnectionError as err:
         LOGGER.error(err)
         msg = 'connection error (check logs)'
-        return self.get_exception(
+        return api.get_exception(
             HTTPStatus.INTERNAL_SERVER_ERROR, headers,
             request.format, 'NoApplicableCode', msg)
 
@@ -164,19 +161,19 @@ def get_stac_path(self, request: APIRequest,
     }
     try:
         stac_data = p.get_data_path(
-            f'{self.base_url}/stac',
+            f'{api.base_url}/stac',
             path,
             path.replace(dataset, '', 1)
         )
     except ProviderNotFoundError as err:
         LOGGER.error(err)
         msg = 'resource not found'
-        return self.get_exception(HTTPStatus.NOT_FOUND, headers,
-                                  request.format, 'NotFound', msg)
+        return api.get_exception(HTTPStatus.NOT_FOUND, headers,
+                                 request.format, 'NotFound', msg)
     except Exception as err:
         LOGGER.error(err)
         msg = 'data query error'
-        return self.get_exception(
+        return api.get_exception(
             HTTPStatus.INTERNAL_SERVER_ERROR, headers,
             request.format, 'NoApplicableCode', msg)
 
@@ -189,14 +186,14 @@ def get_stac_path(self, request: APIRequest,
             if 'assets' in content:  # item view
                 if content['type'] == 'Collection':
                     content = render_j2_template(
-                        self.tpl_config,
+                        api.tpl_config,
                         'stac/collection_base.html',
                         content,
                         request.locale
                     )
                 elif content['type'] == 'Feature':
                     content = render_j2_template(
-                        self.tpl_config,
+                        api.tpl_config,
                         'stac/item.html',
                         content,
                         request.locale
@@ -204,21 +201,50 @@ def get_stac_path(self, request: APIRequest,
                 else:
                     msg = f'Unknown STAC type {content.type}'
                     LOGGER.error(msg)
-                    return self.get_exception(
+                    return api.get_exception(
                         HTTPStatus.INTERNAL_SERVER_ERROR,
                         headers,
                         request.format,
                         'NoApplicableCode',
                         msg)
             else:
-                content = render_j2_template(self.tpl_config,
+                content = render_j2_template(api.tpl_config,
                                              'stac/catalog.html',
                                              content, request.locale)
 
             return headers, HTTPStatus.OK, content
 
-        return headers, HTTPStatus.OK, to_json(content, self.pretty_print)
+        return headers, HTTPStatus.OK, to_json(content, api.pretty_print)
 
     else:  # send back file
         headers.pop('Content-Type', None)
         return headers, HTTPStatus.OK, stac_data
+
+
+def get_oas_30(cfg: dict, locale: str) -> dict:
+    LOGGER.debug('setting up STAC')
+    stac_collections = filter_dict_by_key_value(cfg['resources'],
+                                                'type', 'stac-collection')
+    paths = {}
+    if stac_collections:
+        paths['/stac'] = {
+            'get': {
+                'summary': 'SpatioTemporal Asset Catalog',
+                'description': 'SpatioTemporal Asset Catalog',
+                'tags': ['stac'],
+                'operationId': 'getStacCatalog',
+                'parameters': [],
+                'responses': {
+                    '200': {'$ref': '#/components/responses/200'},
+                    'default': {'$ref': '#/components/responses/default'}
+                }
+            }
+        }
+    return {
+        'tags': [{
+            'name': 'stac',
+            'description': 'SpatioTemporal Asset Catalog'
+        }],
+        'paths': paths,
+
+    }

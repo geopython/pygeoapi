@@ -64,8 +64,7 @@ from pygeoapi.log import setup_logger
 from pygeoapi.process.manager.base import get_manager
 from pygeoapi.plugin import load_plugin, PLUGINS
 from pygeoapi.provider.base import (
-    ProviderGenericError, ProviderConnectionError, ProviderNotFoundError,
-    ProviderTypeError)
+    ProviderGenericError, ProviderConnectionError, ProviderTypeError)
 from pygeoapi.models.provider.base import (TilesMetadataFormat,
                                            TileMatrixSetEnum)
 
@@ -185,9 +184,9 @@ DEFAULT_STORAGE_CRS = DEFAULT_CRS
 
 def all_apis():
     # NOTE: this is a function and not a constant to avoid import loops
-    from . import environmental_data_retrieval, maps, processes
+    from . import environmental_data_retrieval, maps, processes, stac
 
-    return [environmental_data_retrieval, maps, processes]
+    return [environmental_data_retrieval, maps, processes, stac]
 
 
 def pre_process(func):
