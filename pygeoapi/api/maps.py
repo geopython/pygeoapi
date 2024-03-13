@@ -38,14 +38,18 @@
 # =================================================================
 
 
+from copy import deepcopy
 import logging
 from http import HTTPStatus
 from typing import Tuple
 
-
+from pygeoapi.openapi import get_oas_30_parameters
 from pygeoapi.plugin import load_plugin
 from pygeoapi.provider.base import ProviderGenericError
-from pygeoapi.util import get_provider_by_type, to_json
+from pygeoapi.util import (
+    get_provider_by_type, to_json, filter_providers_by_type,
+    filter_dict_by_key_value,
+)
 
 from . import APIRequest, API, validate_datetime
 
@@ -174,3 +178,91 @@ def get_collection_map(api: API, request: APIRequest,
         LOGGER.error(exception)
         return headers, HTTPStatus.BAD_REQUEST, to_json(
             data, api.pretty_print)
+
+
+def get_oas_30(cfg: dict, locale: str) -> dict:
+    from pygeoapi.openapi import OPENAPI_YAML
+
+    paths = {}
+
+    collections = filter_dict_by_key_value(cfg['resources'],
+                                           'type', 'collection')
+
+    parameters = get_oas_30_parameters(cfg, locale)
+    for k, v in collections.items():
+
+        LOGGER.debug('setting up maps endpoints')
+        map_extension = filter_providers_by_type(
+            collections[k]['providers'], 'map')
+
+        if map_extension:
+            mp = load_plugin('provider', map_extension)
+
+            map_f = deepcopy(parameters['f'])
+            map_f['schema']['enum'] = [map_extension['format']['name']]
+            map_f['schema']['default'] = map_extension['format']['name']
+
+            pth = f'/collections/{k}/map'
+            paths[pth] = {
+                'get': {
+                    'summary': 'Get map',
+                    'description': f"{v['description']} map",
+                    'tags': [k],
+                    'operationId': 'getMap',
+                    'parameters': [
+                        {'$ref': '#/components/parameters/bbox'},
+                        {'$ref': f"{OPENAPI_YAML['oapif-1']}#/components/parameters/datetime"},  # noqa
+                        {
+                            'name': 'width',
+                            'in': 'query',
+                            'description': 'Response image width',
+                            'required': False,
+                            'schema': {
+                                'type': 'integer',
+                            },
+                            'style': 'form',
+                            'explode': False
+                        },
+                        {
+                            'name': 'height',
+                            'in': 'query',
+                            'description': 'Response image height',
+                            'required': False,
+                            'schema': {
+                                'type': 'integer',
+                            },
+                            'style': 'form',
+                            'explode': False
+                        },
+                        {
+                            'name': 'transparent',
+                            'in': 'query',
+                            'description': 'Background transparency of map (default=true).',  # noqa
+                            'required': False,
+                            'schema': {
+                                'type': 'boolean',
+                                'default': True,
+                            },
+                            'style': 'form',
+                            'explode': False
+                        },
+                        {'$ref': '#/components/parameters/bbox-crs-epsg'},
+                        map_f
+                    ],
+                    'responses': {
+                        '200': {
+                            'description': 'Response',
+                            'content': {
+                                'application/json': {}
+                            }
+                        },
+                        '400': {'$ref': f"{OPENAPI_YAML['oapif-1']}#/components/responses/InvalidParameter"},  # noqa
+                        '500': {'$ref': f"{OPENAPI_YAML['oapif-1']}#/components/responses/ServerError"},  # noqa
+                    }
+                }
+            }
+            if mp.time_field is not None:
+                paths[pth]['get']['parameters'].append(
+                    {'$ref': f"{OPENAPI_YAML['oapif-1']}#/components/parameters/datetime"})  # noqa
+
+    return {'tags': [], 'paths': paths}
