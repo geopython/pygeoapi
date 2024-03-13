@@ -318,3 +318,122 @@ def get_collection_tiles_metadata(
         return headers, HTTPStatus.OK, content
     else:
         return headers, HTTPStatus.OK, tiles_metadata
+
+# TODO: also move to tiles
+@gzip
+@pre_process
+def tilematrixsets(self,
+                   request: Union[APIRequest, Any]) -> Tuple[dict, int,
+                                                             str]:
+    """
+    Provide tileMatrixSets definition
+
+    :param request: A request object
+
+    :returns: tuple of headers, status code, content
+    """
+
+    if not request.is_valid():
+        return self.get_format_exception(request)
+
+    headers = request.get_response_headers(**self.api_headers)
+
+    # Retrieve available TileMatrixSets
+    enums = [e.value for e in TileMatrixSetEnum]
+
+    tms = {"tileMatrixSets": []}
+
+    for e in enums:
+        tms['tileMatrixSets'].append({
+            "title": e.title,
+            "id": e.tileMatrixSet,
+            "uri": e.tileMatrixSetURI,
+            "links": [
+                {
+                   "rel": "self",
+                   "type": "text/html",
+                   "title": f"The HTML representation of the {e.tileMatrixSet} tile matrix set", # noqa
+                   "href": f"{self.base_url}/TileMatrixSets/{e.tileMatrixSet}?f=html" # noqa
+                },
+                {
+                   "rel": "self",
+                   "type": "application/json",
+                   "title": f"The JSON representation of the {e.tileMatrixSet} tile matrix set", # noqa
+                   "href": f"{self.base_url}/TileMatrixSets/{e.tileMatrixSet}?f=json" # noqa
+                }
+            ]
+        })
+
+    tms['links'] = [{
+        "rel": "alternate",
+        "type": "text/html",
+        "title": "This document as HTML",
+        "href": f"{self.base_url}/tileMatrixSets?f=html"
+    }, {
+        "rel": "self",
+        "type": "application/json",
+        "title": "This document",
+        "href": f"{self.base_url}/tileMatrixSets?f=json"
+    }]
+
+    if request.format == F_HTML:  # render
+        content = render_j2_template(self.tpl_config,
+                                     'tilematrixsets/index.html',
+                                     tms, request.locale)
+        return headers, HTTPStatus.OK, content
+
+    return headers, HTTPStatus.OK, to_json(tms, self.pretty_print)
+
+@gzip
+@pre_process
+def tilematrixset(self,
+                  request: Union[APIRequest, Any],
+                  tileMatrixSetId) -> Tuple[dict,
+                                            int, str]:
+    """
+    Provide tile matrix definition
+
+    :param request: A request object
+
+    :returns: tuple of headers, status code, content
+    """
+
+    if not request.is_valid():
+        return self.get_format_exception(request)
+
+    headers = request.get_response_headers(**self.api_headers)
+
+    # Retrieve relevant TileMatrixSet
+    enums = [e.value for e in TileMatrixSetEnum]
+    enum = None
+
+    try:
+        for e in enums:
+            if tileMatrixSetId == e.tileMatrixSet:
+                enum = e
+        if not enum:
+            raise ValueError('could not find this tilematrixset')
+    except ValueError as err:
+        return self.get_exception(
+            HTTPStatus.BAD_REQUEST, headers, request.format,
+            'InvalidParameterValue', str(err))
+
+    tms = {
+        "title": enum.tileMatrixSet,
+        "crs": enum.crs,
+        "id": enum.tileMatrixSet,
+        "uri": enum.tileMatrixSetURI,
+        "orderedAxes": enum.orderedAxes,
+        "wellKnownScaleSet": enum.wellKnownScaleSet,
+        "tileMatrices": enum.tileMatrices
+    }
+
+    if request.format == F_HTML:  # render
+        content = render_j2_template(self.tpl_config,
+                                     'tilematrixsets/tilematrixset.html',
+                                     tms, request.locale)
+        return headers, HTTPStatus.OK, content
+
+    return headers, HTTPStatus.OK, to_json(tms, self.pretty_print)
+
+
