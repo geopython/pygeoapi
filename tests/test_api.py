@@ -51,7 +51,9 @@ from pygeoapi.api.maps import get_collection_map
 from pygeoapi.api.processes import (
     describe_processes, execute_process, delete_job, get_job_result,
 )
-from pygeoapi.api.tiles import get_collection_tiles
+from pygeoapi.api.tiles import (
+    get_collection_tiles, tilematrixset, tilematrixsets,
+)
 from pygeoapi.util import (yaml_load, get_crs_from_uri,
                            get_api_rules, get_base_url)
 
@@ -631,8 +633,8 @@ def test_conformance(config, api_):
 
 
 def test_tilematrixsets(config, api_):
-    req = mock_request()
-    rsp_headers, code, response = api_.tilematrixsets(req)
+    req = mock_api_request()
+    rsp_headers, code, response = tilematrixsets(api_, req)
     root = json.loads(response)
 
     assert isinstance(root, dict)
@@ -643,26 +645,22 @@ def test_tilematrixsets(config, api_):
     assert 'http://www.opengis.net/def/tilematrixset/OGC/1.0/WebMercatorQuad' \
            in root['tileMatrixSets'][1]['uri']
 
-    req = mock_request({'f': 'foo'})
-    rsp_headers, code, response = api_.tilematrixsets(req)
-    assert code == HTTPStatus.BAD_REQUEST
-
-    req = mock_request({'f': 'html'})
-    rsp_headers, code, response = api_.tilematrixsets(req)
+    req = mock_api_request({'f': 'html'})
+    rsp_headers, code, response = tilematrixsets(api_, req)
     assert rsp_headers['Content-Type'] == FORMAT_TYPES[F_HTML]
     # No language requested: should be set to default from YAML
     assert rsp_headers['Content-Language'] == 'en-US'
 
 
 def test_tilematrixset(config, api_):
-    req = mock_request()
+    req = mock_api_request()
 
     enums = [e.value for e in TileMatrixSetEnum]
     enum = None
 
     for e in enums:
         enum = e.tileMatrixSet
-        rsp_headers, code, response = api_.tilematrixset(req, enum)
+        rsp_headers, code, response = tilematrixset(api_, req, enum)
         root = json.loads(response)
 
         assert isinstance(root, dict)
@@ -671,11 +669,11 @@ def test_tilematrixset(config, api_):
         assert 'tileMatrices' in root
         assert len(root['tileMatrices']) == 30
 
-    rsp_headers, code, response = api_.tilematrixset(req, 'foo')
+    rsp_headers, code, response = tilematrixset(api_, req, 'foo')
     assert code == HTTPStatus.BAD_REQUEST
 
-    req = mock_request({'f': 'html'})
-    rsp_headers, code, response = api_.tilematrixset(req, enum)
+    req = mock_api_request({'f': 'html'})
+    rsp_headers, code, response = tilematrixset(api_, req, enum)
     assert rsp_headers['Content-Type'] == FORMAT_TYPES[F_HTML]
     # No language requested: should be set to default from YAML
     assert rsp_headers['Content-Language'] == 'en-US'

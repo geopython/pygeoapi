@@ -55,6 +55,7 @@ import pygeoapi.api.environmental_data_retrieval as edr_api
 import pygeoapi.api.maps as maps_api
 import pygeoapi.api.processes as processes_api
 import pygeoapi.api.stac as stac_api
+import pygeoapi.api.tiles as tiles_api
 from pygeoapi.openapi import load_openapi_document
 from pygeoapi.config import get_config
 from pygeoapi.util import get_api_rules
@@ -200,8 +201,9 @@ async def get_tilematrix_set(request: Request, tileMatrixSetId=None):
     if 'tileMatrixSetId' in request.path_params:
         tileMatrixSetId = request.path_params['tileMatrixSetId']
 
-    return await get_response(
-        api_.tilematrixset, request, tileMatrixSetId)
+    return await execute_from_starlette(
+        tiles_api.tilematrixset, request, tileMatrixSetId,
+    )
 
 
 async def get_tilematrix_sets(request: Request):
@@ -210,7 +212,7 @@ async def get_tilematrix_sets(request: Request):
 
     :returns: HTTP response
     """
-    return await get_response(api_.tilematrixsets, request)
+    return await execute_from_starlette(tiles_api.tilematrixsets, request)
 
 
 async def collection_schema(request: Request, collection_id=None):
@@ -256,8 +258,9 @@ async def get_collection_tiles(request: Request, collection_id=None):
     """
     if 'collection_id' in request.path_params:
         collection_id = request.path_params['collection_id']
-    return await get_response(
-        api_.get_collection_tiles, request, collection_id)
+
+    return await execute_from_starlette(
+        tiles_api.get_collection_tiles, request, collection_id)
 
 
 async def get_collection_tiles_metadata(request: Request, collection_id=None,
@@ -274,8 +277,9 @@ async def get_collection_tiles_metadata(request: Request, collection_id=None,
         collection_id = request.path_params['collection_id']
     if 'tileMatrixSetId' in request.path_params:
         tileMatrixSetId = request.path_params['tileMatrixSetId']
-    return await get_response(
-        api_.get_collection_tiles_metadata, request,
+
+    return await execute_from_starlette(
+        tiles_api.get_collection_tiles_metadata, request,
         collection_id, tileMatrixSetId
     )
 
@@ -305,8 +309,8 @@ async def get_collection_items_tiles(request: Request, collection_id=None,
         tileRow = request.path_params['tileRow']
     if 'tileCol' in request.path_params:
         tileCol = request.path_params['tileCol']
-    return await get_response(
-        api_.get_collection_tiles_data, request, collection_id,
+    return await execute_from_starlette(
+        tiles_api.get_collection_tiles_data, request, collection_id,
         tileMatrixSetId, tile_matrix, tileRow, tileCol
     )
 

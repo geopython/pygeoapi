@@ -45,6 +45,7 @@ import pygeoapi.api.environmental_data_retrieval as edr_api
 import pygeoapi.api.maps as maps_api
 import pygeoapi.api.processes as processes_api
 import pygeoapi.api.stac as stac_api
+import pygeoapi.api.tiles as tiles_api
 
 
 def landing_page(request: HttpRequest) -> HttpResponse:
@@ -299,10 +300,8 @@ def collection_tiles(request: HttpRequest, collection_id: str) -> HttpResponse:
     :returns: Django HTTP response
     """
 
-    response_ = _feed_response(request, 'get_collection_tiles', collection_id)
-    response = _to_django_response(*response_)
-
-    return response
+    return execute_from_django(tiles_api.get_collection_tiles, request,
+                               collection_id)
 
 
 def collection_tiles_metadata(request: HttpRequest, collection_id: str,
@@ -317,15 +316,10 @@ def collection_tiles_metadata(request: HttpRequest, collection_id: str,
     :returns: Django HTTP response
     """
 
-    response_ = _feed_response(
-        request,
-        'get_collection_tiles_metadata',
-        collection_id,
-        tileMatrixSetId,
+    return execute_from_django(
+        tiles_api.get_collection_tiles_metadata,
+        request, collection_id, tileMatrixSetId,
     )
-    response = _to_django_response(*response_)
-
-    return response
 
 
 def collection_item_tiles(request: HttpRequest, collection_id: str,
@@ -344,18 +338,15 @@ def collection_item_tiles(request: HttpRequest, collection_id: str,
     :returns: Django HTTP response
     """
 
-    response_ = _feed_response(
+    return execute_from_django(
+        tiles_api.get_collection_tiles_data,
         request,
-        'get_collection_tiles_metadata',
         collection_id,
         tileMatrixSetId,
         tileMatrix,
         tileRow,
         tileCol,
     )
-    response = _to_django_response(*response_)
-
-    return response
 
 
 def processes(request: HttpRequest,

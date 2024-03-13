@@ -319,12 +319,9 @@ def get_collection_tiles_metadata(
     else:
         return headers, HTTPStatus.OK, tiles_metadata
 
-# TODO: also move to tiles
-@gzip
-@pre_process
-def tilematrixsets(self,
-                   request: Union[APIRequest, Any]) -> Tuple[dict, int,
-                                                             str]:
+
+def tilematrixsets(api: API,
+                   request: APIRequest) -> Tuple[dict, int, str]:
     """
     Provide tileMatrixSets definition
 
@@ -333,10 +330,7 @@ def tilematrixsets(self,
     :returns: tuple of headers, status code, content
     """
 
-    if not request.is_valid():
-        return self.get_format_exception(request)
-
-    headers = request.get_response_headers(**self.api_headers)
+    headers = request.get_response_headers(**api.api_headers)
 
     # Retrieve available TileMatrixSets
     enums = [e.value for e in TileMatrixSetEnum]
@@ -353,13 +347,13 @@ def tilematrixsets(self,
                    "rel": "self",
                    "type": "text/html",
                    "title": f"The HTML representation of the {e.tileMatrixSet} tile matrix set", # noqa
-                   "href": f"{self.base_url}/TileMatrixSets/{e.tileMatrixSet}?f=html" # noqa
+                   "href": f"{api.base_url}/TileMatrixSets/{e.tileMatrixSet}?f=html" # noqa
                 },
                 {
                    "rel": "self",
                    "type": "application/json",
                    "title": f"The JSON representation of the {e.tileMatrixSet} tile matrix set", # noqa
-                   "href": f"{self.base_url}/TileMatrixSets/{e.tileMatrixSet}?f=json" # noqa
+                   "href": f"{api.base_url}/TileMatrixSets/{e.tileMatrixSet}?f=json" # noqa
                 }
             ]
         })
@@ -368,26 +362,25 @@ def tilematrixsets(self,
         "rel": "alternate",
         "type": "text/html",
         "title": "This document as HTML",
-        "href": f"{self.base_url}/tileMatrixSets?f=html"
+        "href": f"{api.base_url}/tileMatrixSets?f=html"
     }, {
         "rel": "self",
         "type": "application/json",
         "title": "This document",
-        "href": f"{self.base_url}/tileMatrixSets?f=json"
+        "href": f"{api.base_url}/tileMatrixSets?f=json"
     }]
 
     if request.format == F_HTML:  # render
-        content = render_j2_template(self.tpl_config,
+        content = render_j2_template(api.tpl_config,
                                      'tilematrixsets/index.html',
                                      tms, request.locale)
         return headers, HTTPStatus.OK, content
 
-    return headers, HTTPStatus.OK, to_json(tms, self.pretty_print)
+    return headers, HTTPStatus.OK, to_json(tms, api.pretty_print)
 
-@gzip
-@pre_process
-def tilematrixset(self,
-                  request: Union[APIRequest, Any],
+
+def tilematrixset(api: API,
+                  request: APIRequest,
                   tileMatrixSetId) -> Tuple[dict,
                                             int, str]:
     """
@@ -398,10 +391,7 @@ def tilematrixset(self,
     :returns: tuple of headers, status code, content
     """
 
-    if not request.is_valid():
-        return self.get_format_exception(request)
-
-    headers = request.get_response_headers(**self.api_headers)
+    headers = request.get_response_headers(**api.api_headers)
 
     # Retrieve relevant TileMatrixSet
     enums = [e.value for e in TileMatrixSetEnum]
@@ -414,7 +404,7 @@ def tilematrixset(self,
         if not enum:
             raise ValueError('could not find this tilematrixset')
     except ValueError as err:
-        return self.get_exception(
+        return api.get_exception(
             HTTPStatus.BAD_REQUEST, headers, request.format,
             'InvalidParameterValue', str(err))
 
@@ -429,11 +419,12 @@ def tilematrixset(self,
     }
 
     if request.format == F_HTML:  # render
-        content = render_j2_template(self.tpl_config,
+        content = render_j2_template(api.tpl_config,
                                      'tilematrixsets/tilematrixset.html',
                                      tms, request.locale)
         return headers, HTTPStatus.OK, content
 
-    return headers, HTTPStatus.OK, to_json(tms, self.pretty_print)
+    return headers, HTTPStatus.OK, to_json(tms, api.pretty_print)
 
 
+# TODO: openapi

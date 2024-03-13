@@ -42,6 +42,7 @@ import pygeoapi.api.environmental_data_retrieval as edr_api
 import pygeoapi.api.maps as maps_api
 import pygeoapi.api.processes as processes_api
 import pygeoapi.api.stac as stac_api
+import pygeoapi.api.tiles as tiles_api
 from pygeoapi.openapi import load_openapi_document
 from pygeoapi.config import get_config
 from pygeoapi.util import get_mimetype, get_api_rules
@@ -184,7 +185,8 @@ def get_tilematrix_set(tileMatrixSetId=None):
     :param tileMatrixSetId: identifier of tile matrix set
     :returns: HTTP response
     """
-    return get_response(api_.tilematrixset(request, tileMatrixSetId))
+    return execute_from_flask(tiles_api.tilematrixset, request,
+                              tileMatrixSetId)
 
 
 @BLUEPRINT.route('/TileMatrixSets')
@@ -194,7 +196,7 @@ def get_tilematrix_sets():
 
     :returns: HTTP response
     """
-    return get_response(api_.tilematrixsets(request))
+    return execute_from_flask(tiles_api.tilematrixsets, request)
 
 
 @BLUEPRINT.route('/collections')
@@ -305,8 +307,8 @@ def get_collection_tiles(collection_id=None):
 
     :returns: HTTP response
     """
-    return get_response(api_.get_collection_tiles(
-        request, collection_id))
+    return execute_from_flask(tiles_api.get_collection_tiles, request,
+                              collection_id)
 
 
 @BLUEPRINT.route('/collections/<path:collection_id>/tiles/<tileMatrixSetId>')
@@ -320,8 +322,8 @@ def get_collection_tiles_metadata(collection_id=None, tileMatrixSetId=None):
 
     :returns: HTTP response
     """
-    return get_response(api_.get_collection_tiles_metadata(
-        request, collection_id, tileMatrixSetId))
+    return execute_from_flask(tiles_api.get_collection_tiles_metadata,
+                              request, collection_id, tileMatrixSetId)
 
 
 @BLUEPRINT.route('/collections/<path:collection_id>/tiles/\
@@ -339,8 +341,9 @@ def get_collection_tiles_data(collection_id=None, tileMatrixSetId=None,
 
     :returns: HTTP response
     """
-    return get_response(api_.get_collection_tiles_data(
-        request, collection_id, tileMatrixSetId, tileMatrix, tileRow, tileCol))
+    return execute_from_flask(
+        tiles_api.get_collection_tiles_data,
+        request, collection_id, tileMatrixSetId, tileMatrix, tileRow, tileCol)
 
 
 @BLUEPRINT.route('/collections/<collection_id>/map')
