@@ -2270,7 +2270,7 @@ class API:
         else:
             LOGGER.debug('processing Elasticsearch CQL_JSON data')
             try:
-                filter_ = CQLModel.model_validate_json(data)
+                filter_ = CQLModel.parse_raw(data)
             except Exception as err:
                 LOGGER.error(err)
                 msg = f'Bad CQL string : {data}'
