@@ -13,7 +13,7 @@ The official OpenAPI specification can be found `on GitHub <https://github.com/O
 pygeoapi supports OpenAPI version 3.0.2.
 
 As described in :ref:`administration`, the pygeoapi OpenAPI document is automatically generated based on the
-configuration file:
+configuration file.
 
 The API is accessible at the ``/openapi`` endpoint, providing a Swagger-based webpage of the API description..
 

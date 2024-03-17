@@ -1685,4 +1685,4 @@ def get_oas_30(cfg: dict, locale: str) -> dict:
         except ProviderTypeError:
             LOGGER.debug('collection is not feature/item based')
 
-    return {'tags': [], 'paths': {}}
+    return {'tags': [], 'paths': paths}
