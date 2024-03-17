@@ -8,7 +8,7 @@
 #          Ricardo Garcia Silva <ricardo.garcia.silva@geobeyond.it>
 #          Bernhard Mallinger <bernhard.mallinger@eox.at>
 #
-# Copyright (c) 2023 Tom Kralidis
+# Copyright (c) 2024 Tom Kralidis
 # Copyright (c) 2022 Francesco Bartoli
 # Copyright (c) 2022 John A Stevenson and Colin Blackburn
 # Copyright (c) 2023 Ricardo Garcia Silva
@@ -38,19 +38,19 @@
 # =================================================================
 
 
-import logging
 from http import HTTPStatus
+import logging
 from typing import Tuple
 
 from pygeoapi import l10n
 from pygeoapi.plugin import load_plugin
 
 from pygeoapi.provider.base import (
-    ProviderConnectionError, ProviderNotFoundError,
+    ProviderConnectionError, ProviderNotFoundError
 )
 from pygeoapi.util import (
     get_provider_by_type, to_json, filter_dict_by_key_value,
-    render_j2_template,
+    render_j2_template
 )
 
 from . import APIRequest, API, FORMAT_TYPES, F_JSON, F_HTML

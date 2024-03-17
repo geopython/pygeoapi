@@ -8,7 +8,7 @@
 #          Ricardo Garcia Silva <ricardo.garcia.silva@geobeyond.it>
 #          Bernhard Mallinger <bernhard.mallinger@eox.at>
 #
-# Copyright (c) 2023 Tom Kralidis
+# Copyright (c) 2024 Tom Kralidis
 # Copyright (c) 2022 Francesco Bartoli
 # Copyright (c) 2022 John A Stevenson and Colin Blackburn
 # Copyright (c) 2023 Ricardo Garcia Silva
@@ -47,19 +47,28 @@ from pygeoapi.plugin import load_plugin
 from pygeoapi.models.provider.base import (TilesMetadataFormat,
                                            TileMatrixSetEnum)
 from pygeoapi.provider.base import (
-    ProviderGenericError, ProviderTypeError,
+    ProviderGenericError, ProviderTypeError
 )
+
 from pygeoapi.util import (
     get_provider_by_type, to_json, filter_dict_by_key_value,
-    render_j2_template,
+    filter_providers_by_type, render_j2_template
 )
 
 from . import (
     APIRequest, API, FORMAT_TYPES, F_JSON, F_HTML, SYSTEM_LOCALE, F_JSONLD
 )
 
-
 LOGGER = logging.getLogger(__name__)
+
+CONFORMANCE_CLASSES = [
+    'http://www.opengis.net/spec/ogcapi-tiles-1/1.0/conf/core',
+    'http://www.opengis.net/spec/ogcapi-tiles-1/1.0/conf/mvt',
+    'http://www.opengis.net/spec/ogcapi-tiles-1/1.0/conf/tileset',
+    'http://www.opengis.net/spec/ogcapi-tiles-1/1.0/conf/tilesets-list',
+    'http://www.opengis.net/spec/ogcapi-tiles-1/1.0/conf/oas30',
+    'http://www.opengis.net/spec/ogcapi-tiles-1/1.0/conf/geodata-tilesets'
+]
 
 
 def get_collection_tiles(api: API, request: APIRequest,
@@ -114,7 +123,7 @@ def get_collection_tiles(api: API, request: APIRequest,
         'type': FORMAT_TYPES[F_JSONLD],
         'rel': request.get_linkrel(F_JSONLD),
         'title': 'This document as RDF (JSON-LD)',
-        'href': f'{api.get_collections_url()}/{dataset}/tiles?f={F_JSONLD}'  # noqa
+        'href': f'{api.get_collections_url()}/{dataset}/tiles?f={F_JSONLD}'
     })
     tiles['links'].append({
         'type': FORMAT_TYPES[F_HTML],
@@ -427,4 +436,90 @@ def tilematrixset(api: API,
     return headers, HTTPStatus.OK, to_json(tms, api.pretty_print)
 
 
-# TODO: openapi
+def get_oas_30(cfg: dict, locale: str) -> dict:
+    from pygeoapi.openapi import OPENAPI_YAML
+
+    paths = {}
+
+    LOGGER.debug('setting up tiles endpoints')
+    collections = filter_dict_by_key_value(cfg['resources'],
+                                           'type', 'collection')
+
+    for k, v in collections.items():
+        tile_extension = filter_providers_by_type(
+            collections[k]['providers'], 'tile')
+
+        if tile_extension:
+            tp = load_plugin('provider', tile_extension)
+
+            tiles_path = f'/collections/{k}/tiles'
+            title = l10n.translate(v['title'], locale)
+            description = l10n.translate(v['description'], locale)
+
+            paths[tiles_path] = {
+                'get': {
+                    'summary': f'Fetch a {title} tiles description',
+                    'description': description,
+                    'tags': [k],
+                    'operationId': f'describe{k.capitalize()}Tiles',
+                    'parameters': [
+                        {'$ref': '#/components/parameters/f'},
+                        {'$ref': '#/components/parameters/lang'}
+                    ],
+                    'responses': {
+                        '200': {'$ref': '#/components/responses/Tiles'},
+                        '400': {'$ref': f"{OPENAPI_YAML['oapif-1']}#/components/responses/InvalidParameter"},  # noqa
+                        '404': {'$ref': f"{OPENAPI_YAML['oapif-1']}#/components/responses/NotFound"},  # noqa
+                        '500': {'$ref': f"{OPENAPI_YAML['oapif-1']}#/components/responses/ServerError"}  # noqa
+                    }
+                }
+            }
+
+            tiles_data_path = f'{tiles_path}/{{tileMatrixSetId}}/{{tileMatrix}}/{{tileRow}}/{{tileCol}}'  # noqa
+
+            paths[tiles_data_path] = {
+                'get': {
+                    'summary': f'Get a {title} tile',
+                    'description': description,
+                    'tags': [k],
+                    'operationId': f'get{k.capitalize()}Tiles',
+                    'parameters': [
+                        {'$ref': f"{OPENAPI_YAML['oapit']}#/components/parameters/tileMatrixSetId"}, # noqa
+                        {'$ref': f"{OPENAPI_YAML['oapit']}#/components/parameters/tileMatrix"},  # noqa
+                        {'$ref': f"{OPENAPI_YAML['oapit']}#/components/parameters/tileRow"},  # noqa
+                        {'$ref': f"{OPENAPI_YAML['oapit']}#/components/parameters/tileCol"},  # noqa
+                        {
+                            'name': 'f',
+                            'in': 'query',
+                            'description': 'The optional f parameter indicates the output format which the server shall provide as part of the response document.',  # noqa
+                            'required': False,
+                            'schema': {
+                                'type': 'string',
+                                'enum': [tp.format_type],
+                                'default': tp.format_type
+                            },
+                            'style': 'form',
+                            'explode': False
+                        }
+                    ],
+                    'responses': {
+                        '400': {'$ref': f"{OPENAPI_YAML['oapif-1']}#/components/responses/InvalidParameter"},  # noqa
+                        '404': {'$ref': f"{OPENAPI_YAML['oapif-1']}#/components/responses/NotFound"},  # noqa
+                        '500': {'$ref': f"{OPENAPI_YAML['oapif-1']}#/components/responses/ServerError"}  # noqa
+                    }
+                }
+            }
+            mimetype = tile_extension['format']['mimetype']
+            paths[tiles_data_path]['get']['responses']['200'] = {
+                'description': 'successful operation',
+                'content': {
+                    mimetype: {
+                        'schema': {
+                            'type': 'string',
+                            'format': 'binary'
+                        }
+                    }
+                }
+            }
+
+    return {'tags': [], 'paths': paths}

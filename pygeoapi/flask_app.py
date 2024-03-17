@@ -38,7 +38,9 @@ from flask import (Flask, Blueprint, make_response, request,
                    send_from_directory, Response, Request)
 
 from pygeoapi.api import API, APIRequest, apply_gzip
+import pygeoapi.api.coverages as coverages_api
 import pygeoapi.api.environmental_data_retrieval as edr_api
+import pygeoapi.api.itemtypes as itemtypes_api
 import pygeoapi.api.maps as maps_api
 import pygeoapi.api.processes as processes_api
 import pygeoapi.api.stac as stac_api
@@ -121,7 +123,7 @@ def get_response(result: tuple):
     :param result: The result of the API call.
                    This should be a tuple of (headers, status, content).
 
-    :returns: A Response instance.
+    :returns: A Response instance
     """
 
     headers, status, content = result
@@ -132,14 +134,24 @@ def get_response(result: tuple):
     return response
 
 
-def execute_from_flask(api_function, request: Request, *args
-                       ) -> Response:
+def execute_from_flask(api_function, request: Request, *args) -> Response:
+    """
+    Executes API function from Flask
+
+    :param api_function: API function
+    :param request: request object
+    :param *args: variable length additional arguments
+
+    :returns: A Response instance
+    """
+
     api_request = APIRequest.from_flask(request, api_.locales)
+
     content: str | bytes
+
     if not api_request.is_valid():
         headers, status, content = api_.get_format_exception(api_request)
     else:
-
         headers, status, content = api_function(api_, api_request, *args)
         content = apply_gzip(headers, content)
         # handle jsonld too?
@@ -164,6 +176,7 @@ def openapi():
 
     :returns: HTTP response
     """
+
     return get_response(api_.openapi_(request))
 
 
@@ -174,6 +187,7 @@ def conformance():
 
     :returns: HTTP response
     """
+
     return get_response(api_.conformance(request))
 
 
@@ -183,8 +197,10 @@ def get_tilematrix_set(tileMatrixSetId=None):
     OGC API TileMatrixSet endpoint
 
     :param tileMatrixSetId: identifier of tile matrix set
+
     :returns: HTTP response
     """
+
     return execute_from_flask(tiles_api.tilematrixset, request,
                               tileMatrixSetId)
 
@@ -196,6 +212,7 @@ def get_tilematrix_sets():
 
     :returns: HTTP response
     """
+
     return execute_from_flask(tiles_api.tilematrixsets, request)
 
 
@@ -209,6 +226,7 @@ def collections(collection_id=None):
 
     :returns: HTTP response
     """
+
     return get_response(api_.describe_collections(request, collection_id))
 
 
@@ -221,7 +239,9 @@ def collection_schema(collection_id):
 
     :returns: HTTP response
     """
-    return get_response(api_.get_collection_schema(request, collection_id))
+
+    return execute_from_flask(itemtypes_api.get_collection_schema, request,
+                              collection_id)
 
 
 @BLUEPRINT.route('/collections/<path:collection_id>/queryables')
@@ -233,7 +253,9 @@ def collection_queryables(collection_id=None):
 
     :returns: HTTP response
     """
-    return get_response(api_.get_collection_queryables(request, collection_id))
+
+    return execute_from_flask(itemtypes_api.get_collection_queryables, request,
+                              collection_id)
 
 
 @BLUEPRINT.route('/collections/<path:collection_id>/items',
@@ -254,36 +276,35 @@ def collection_items(collection_id, item_id=None):
 
     if item_id is None:
         if request.method == 'GET':  # list items
-            return get_response(
-                api_.get_collection_items(request, collection_id))
+            return execute_from_flask(itemtypes_api.get_collection_items,
+                                      request, collection_id)
         elif request.method == 'POST':  # filter or manage items
             if request.content_type is not None:
                 if request.content_type == 'application/geo+json':
-                    return get_response(
-                        api_.manage_collection_item(request, 'create',
-                                                    collection_id))
+                    return execute_from_flask(
+                            itemtypes_api.manage_collection_item,
+                            request, 'create', collection_id)
                 else:
-                    return get_response(
-                        api_.post_collection_items(request, collection_id))
+                    return execute_from_flask(
+                            itemtypes_api.post_collection_items, request,
+                            collection_id)
         elif request.method == 'OPTIONS':
-            return get_response(
-                api_.manage_collection_item(request, 'options', collection_id))
+            return execute_from_flask(
+                    itemtypes_api.manage_collection_item, request, 'options',
+                    collection_id)
 
     elif request.method == 'DELETE':
-        return get_response(
-            api_.manage_collection_item(request, 'delete',
-                                        collection_id, item_id))
+        return execute_from_flask(itemtypes_api.manage_collection_item,
+                                  request, 'delete', collection_id, item_id)
     elif request.method == 'PUT':
-        return get_response(
-            api_.manage_collection_item(request, 'update',
-                                        collection_id, item_id))
+        return execute_from_flask(itemtypes_api.manage_collection_item,
+                                  request, 'update', collection_id, item_id)
     elif request.method == 'OPTIONS':
-        return get_response(
-            api_.manage_collection_item(request, 'options',
-                                        collection_id, item_id))
+        return execute_from_flask(itemtypes_api.manage_collection_item,
+                                  request, 'options', collection_id, item_id)
     else:
-        return get_response(
-            api_.get_collection_item(request, collection_id, item_id))
+        return execute_from_flask(itemtypes_api.get_collection_item, request,
+                                  collection_id, item_id)
 
 
 @BLUEPRINT.route('/collections/<path:collection_id>/coverage')
@@ -295,7 +316,9 @@ def collection_coverage(collection_id):
 
     :returns: HTTP response
     """
-    return get_response(api_.get_collection_coverage(request, collection_id))
+
+    return execute_from_flask(coverages_api.get_collection_coverage, request,
+                              collection_id)
 
 
 @BLUEPRINT.route('/collections/<path:collection_id>/tiles')
@@ -307,6 +330,7 @@ def get_collection_tiles(collection_id=None):
 
     :returns: HTTP response
     """
+
     return execute_from_flask(tiles_api.get_collection_tiles, request,
                               collection_id)
 
@@ -322,6 +346,7 @@ def get_collection_tiles_metadata(collection_id=None, tileMatrixSetId=None):
 
     :returns: HTTP response
     """
+
     return execute_from_flask(tiles_api.get_collection_tiles_metadata,
                               request, collection_id, tileMatrixSetId)
 
@@ -341,6 +366,7 @@ def get_collection_tiles_data(collection_id=None, tileMatrixSetId=None,
 
     :returns: HTTP response
     """
+
     return execute_from_flask(
         tiles_api.get_collection_tiles_data,
         request, collection_id, tileMatrixSetId, tileMatrix, tileRow, tileCol)
@@ -373,6 +399,7 @@ def get_processes(process_id=None):
 
     :returns: HTTP response
     """
+
     return execute_from_flask(processes_api.describe_processes, request,
                               process_id)
 
@@ -422,6 +449,7 @@ def get_job_result(job_id=None):
 
     :returns: HTTP response
     """
+
     return execute_from_flask(processes_api.get_job_result, request, job_id)
 
 
@@ -436,6 +464,7 @@ def get_job_result_resource(job_id, resource):
 
     :returns: HTTP response
     """
+
     # TODO: this does not seem to exist?
     return get_response(api_.get_job_result_resource(
         request, job_id, resource))
@@ -468,6 +497,7 @@ def get_collection_edr_query(collection_id, instance_id=None,
 
     :returns: HTTP response
     """
+
     if location_id:
         query_type = 'locations'
     else:
@@ -499,6 +529,7 @@ def stac_catalog_path(path):
 
     :returns: HTTP response
     """
+
     return execute_from_flask(stac_api.get_stac_path, request, path)
 
 

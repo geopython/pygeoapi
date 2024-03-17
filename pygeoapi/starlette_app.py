@@ -51,7 +51,9 @@ from starlette.responses import (
 import uvicorn
 
 from pygeoapi.api import API, APIRequest, apply_gzip
+import pygeoapi.api.coverages as coverages_api
 import pygeoapi.api.environmental_data_retrieval as edr_api
+import pygeoapi.api.itemtypes as itemtypes_api
 import pygeoapi.api.maps as maps_api
 import pygeoapi.api.processes as processes_api
 import pygeoapi.api.stac as stac_api
@@ -332,45 +334,45 @@ async def collection_items(request: Request, collection_id=None, item_id=None):
         item_id = request.path_params['item_id']
     if item_id is None:
         if request.method == 'GET':  # list items
-            return await get_response(
-                api_.get_collection_items, request, collection_id)
+            return await execute_from_starlette(
+                itemtypes_api.get_collection_items, request, collection_id)
         elif request.method == 'POST':  # filter or manage items
             content_type = request.headers.get('content-type')
             if content_type is not None:
                 if content_type == 'application/geo+json':
-                    return await get_response(
-                        api_.manage_collection_item, request,
+                    return await execute_from_starlette(
+                        itemtypes_api.manage_collection_item, request,
                         'create', collection_id)
                 else:
-                    return await get_response(
-                        api_.post_collection_items,
+                    return await execute_from_starlette(
+                        itemtypes_api.post_collection_items,
                         request,
                         collection_id
                     )
         elif request.method == 'OPTIONS':
-            return await get_response(
-                api_.manage_collection_item, request,
+            return await execute_from_starlette(
+                itemtypes_api.manage_collection_item, request,
                 'options', collection_id
             )
 
     elif request.method == 'DELETE':
-        return await get_response(
-            api_.manage_collection_item, request, 'delete',
+        return await execute_from_starlette(
+            itemtypes_api.manage_collection_item, request, 'delete',
             collection_id, item_id
         )
     elif request.method == 'PUT':
-        return await get_response(
-            api_.manage_collection_item, request, 'update',
+        return await execute_from_starlette(
+            itemtypes_api.manage_collection_item, request, 'update',
             collection_id, item_id
         )
     elif request.method == 'OPTIONS':
-        return await get_response(
-            api_.manage_collection_item, request, 'options',
+        return await execute_from_starlette(
+            itemtypes_api.manage_collection_item, request, 'options',
             collection_id, item_id
         )
     else:
-        return await get_response(
-            api_.get_collection_item, request, collection_id, item_id)
+        return await execute_from_starlette(
+            itemtypes_api.get_collection_item, request, collection_id, item_id)
 
 
 async def collection_coverage(request: Request, collection_id=None):
@@ -385,8 +387,8 @@ async def collection_coverage(request: Request, collection_id=None):
     if 'collection_id' in request.path_params:
         collection_id = request.path_params['collection_id']
 
-    return await get_response(
-        api_.get_collection_coverage, request, collection_id)
+    return await execute_from_starlette(
+        coverages_api.get_collection_coverage, request, collection_id)
 
 
 async def collection_map(request: Request, collection_id, style_id=None):
@@ -405,7 +407,7 @@ async def collection_map(request: Request, collection_id, style_id=None):
         style_id = request.path_params['style_id']
 
     return await execute_from_starlette(
-        maps_api.get_collection_map, request, collection_id, style_id,
+        maps_api.get_collection_map, request, collection_id, style_id
     )
 
 

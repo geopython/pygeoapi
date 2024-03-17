@@ -4,7 +4,7 @@
 #          John A Stevenson <jostev@bgs.ac.uk>
 #          Colin Blackburn <colb@bgs.ac.uk>
 #
-# Copyright (c) 2023 Tom Kralidis
+# Copyright (c) 2024 Tom Kralidis
 # Copyright (c) 2022 John A Stevenson and Colin Blackburn
 #
 # Permission is hereby granted, free of charge, to any person
@@ -46,7 +46,11 @@ from pygeoapi.api import (
     API, APIRequest, FORMAT_TYPES, validate_bbox, validate_datetime,
     validate_subset, F_HTML, F_JSON, F_JSONLD, F_GZIP, __version__
 )
+from pygeoapi.api.coverages import get_collection_coverage
 from pygeoapi.api.environmental_data_retrieval import get_collection_edr_query
+from pygeoapi.api.itemtypes import (
+    get_collection_schema, get_collection_queryables, get_collection_item,
+    get_collection_items, manage_collection_item)
 from pygeoapi.api.maps import get_collection_map
 from pygeoapi.api.processes import (
     describe_processes, execute_process, delete_job, get_job_result,
@@ -526,13 +530,13 @@ def test_gzip(config, api_):
 
 
 def test_gzip_csv(config, api_):
-    req_csv = mock_request({'f': 'csv'})
-    rsp_csv_headers, _, rsp_csv = api_.get_collection_items(req_csv, 'obs')
+    req_csv = mock_api_request({'f': 'csv'})
+    rsp_csv_headers, _, rsp_csv = get_collection_items(api_, req_csv, 'obs')
     assert rsp_csv_headers['Content-Type'] == 'text/csv; charset=utf-8'
     rsp_csv = rsp_csv.decode('utf-8')
 
-    req_csv = mock_request({'f': 'csv'}, HTTP_ACCEPT_ENCODING=F_GZIP)
-    rsp_csv_headers, _, rsp_csv_gzip = api_.get_collection_items(req_csv, 'obs') # noqa
+    req_csv = mock_api_request({'f': 'csv'}, HTTP_ACCEPT_ENCODING=F_GZIP)
+    rsp_csv_headers, _, rsp_csv_gzip = get_collection_items(api_, req_csv, 'obs') # noqa
     assert rsp_csv_headers['Content-Type'] == 'text/csv; charset=utf-8'
     rsp_csv_ = gzip.decompress(rsp_csv_gzip).decode('utf-8')
     assert rsp_csv == rsp_csv_
@@ -541,8 +545,8 @@ def test_gzip_csv(config, api_):
     config['server']['encoding'] = 'utf-16'
     api_ = API(config, openapi)
 
-    req_csv = mock_request({'f': 'csv'}, HTTP_ACCEPT_ENCODING=F_GZIP)
-    rsp_csv_headers, _, rsp_csv_gzip = api_.get_collection_items(req_csv, 'obs') # noqa
+    req_csv = mock_api_request({'f': 'csv'}, HTTP_ACCEPT_ENCODING=F_GZIP)
+    rsp_csv_headers, _, rsp_csv_gzip = get_collection_items(api_, req_csv, 'obs') # noqa
     assert rsp_csv_headers['Content-Type'] == 'text/csv; charset=utf-8'
     rsp_csv_ = gzip.decompress(rsp_csv_gzip).decode('utf-8')
     assert rsp_csv == rsp_csv_
@@ -796,26 +800,25 @@ def test_describe_collections_hidden_resources(
 
 
 def test_get_collection_schema(config, api_):
-    req = mock_request()
-    rsp_headers, code, response = api_.get_collection_schema(req,
-                                                             'notfound')
+    req = mock_api_request()
+    rsp_headers, code, response = get_collection_schema(api_, req, 'notfound')
     assert code == HTTPStatus.NOT_FOUND
 
-    req = mock_request({'f': 'html'})
-    rsp_headers, code, response = api_.get_collection_schema(req, 'obs')
+    req = mock_api_request({'f': 'html'})
+    rsp_headers, code, response = get_collection_schema(api_, req, 'obs')
     assert rsp_headers['Content-Type'] == FORMAT_TYPES[F_HTML]
 
-    req = mock_request({'f': 'json'})
-    rsp_headers, code, response = api_.get_collection_schema(req, 'obs')
+    req = mock_api_request({'f': 'json'})
+    rsp_headers, code, response = get_collection_schema(api_, req, 'obs')
     assert rsp_headers['Content-Type'] == 'application/schema+json'
     schema = json.loads(response)
 
     assert 'properties' in schema
     assert len(schema['properties']) == 5
 
-    req = mock_request({'f': 'json'})
-    rsp_headers, code, response = api_.get_collection_schema(
-        req, 'gdps-temperature')
+    req = mock_api_request({'f': 'json'})
+    rsp_headers, code, response = get_collection_schema(
+        api_, req, 'gdps-temperature')
     assert rsp_headers['Content-Type'] == 'application/schema+json'
     schema = json.loads(response)
 
@@ -825,17 +828,17 @@ def test_get_collection_schema(config, api_):
 
 
 def test_get_collection_queryables(config, api_):
-    req = mock_request()
-    rsp_headers, code, response = api_.get_collection_queryables(req,
-                                                                 'notfound')
+    req = mock_api_request()
+    rsp_headers, code, response = get_collection_queryables(
+        api_, req, 'notfound')
     assert code == HTTPStatus.NOT_FOUND
 
-    req = mock_request({'f': 'html'})
-    rsp_headers, code, response = api_.get_collection_queryables(req, 'obs')
+    req = mock_api_request({'f': 'html'})
+    rsp_headers, code, response = get_collection_queryables(api_, req, 'obs')
     assert rsp_headers['Content-Type'] == FORMAT_TYPES[F_HTML]
 
-    req = mock_request({'f': 'json'})
-    rsp_headers, code, response = api_.get_collection_queryables(req, 'obs')
+    req = mock_api_request({'f': 'json'})
+    rsp_headers, code, response = get_collection_queryables(api_, req, 'obs')
     assert rsp_headers['Content-Type'] == 'application/schema+json'
     queryables = json.loads(response)
 
@@ -845,7 +848,7 @@ def test_get_collection_queryables(config, api_):
     # test with provider filtered properties
     api_.config['resources']['obs']['providers'][0]['properties'] = ['stn_id']
 
-    rsp_headers, code, response = api_.get_collection_queryables(req, 'obs')
+    rsp_headers, code, response = get_collection_queryables(api_, req, 'obs')
     queryables = json.loads(response)
 
     assert 'properties' in queryables
@@ -893,104 +896,104 @@ def test_describe_collections_json_ld(config, api_):
 
 
 def test_get_collection_items(config, api_):
-    req = mock_request()
-    rsp_headers, code, response = api_.get_collection_items(req, 'foo')
+    req = mock_api_request()
+    rsp_headers, code, response = get_collection_items(api_, req, 'foo')
     features = json.loads(response)
     assert code == HTTPStatus.NOT_FOUND
 
-    req = mock_request({'f': 'foo'})
-    rsp_headers, code, response = api_.get_collection_items(req, 'obs')
+    req = mock_api_request({'f': 'foo'})
+    rsp_headers, code, response = get_collection_items(api_, req, 'obs')
     features = json.loads(response)
 
     assert code == HTTPStatus.BAD_REQUEST
 
-    req = mock_request({'bbox': '1,2,3'})
-    rsp_headers, code, response = api_.get_collection_items(req, 'obs')
+    req = mock_api_request({'bbox': '1,2,3'})
+    rsp_headers, code, response = get_collection_items(api_, req, 'obs')
     features = json.loads(response)
 
     assert code == HTTPStatus.BAD_REQUEST
 
-    req = mock_request({'bbox': '1,2,3,4c'})
-    rsp_headers, code, response = api_.get_collection_items(req, 'obs')
+    req = mock_api_request({'bbox': '1,2,3,4c'})
+    rsp_headers, code, response = get_collection_items(api_, req, 'obs')
 
     assert code == HTTPStatus.BAD_REQUEST
 
-    req = mock_request({'bbox': '1,2,3,4', 'bbox-crs': 'bad_value'})
-    rsp_headers, code, response = api_.get_collection_items(req, 'obs')
+    req = mock_api_request({'bbox': '1,2,3,4', 'bbox-crs': 'bad_value'})
+    rsp_headers, code, response = get_collection_items(api_, req, 'obs')
 
     assert code == HTTPStatus.BAD_REQUEST
 
-    req = mock_request({'bbox-crs': 'bad_value'})
-    rsp_headers, code, response = api_.get_collection_items(req, 'obs')
+    req = mock_api_request({'bbox-crs': 'bad_value'})
+    rsp_headers, code, response = get_collection_items(api_, req, 'obs')
 
     assert code == HTTPStatus.BAD_REQUEST
 
     # bbox-crs must be in configured values for Collection
-    req = mock_request({'bbox': '1,2,3,4', 'bbox-crs': 'http://www.opengis.net/def/crs/EPSG/0/4258'}) # noqa
-    rsp_headers, code, response = api_.get_collection_items(req, 'obs')
+    req = mock_api_request({'bbox': '1,2,3,4', 'bbox-crs': 'http://www.opengis.net/def/crs/EPSG/0/4258'}) # noqa
+    rsp_headers, code, response = get_collection_items(api_, req, 'obs')
 
     assert code == HTTPStatus.BAD_REQUEST
 
     # bbox-crs must be in configured values for Collection (CSV will ignore)
-    req = mock_request({'bbox': '52,4,53,5', 'bbox-crs': 'http://www.opengis.net/def/crs/EPSG/0/4326'}) # noqa
-    rsp_headers, code, response = api_.get_collection_items(req, 'obs')
+    req = mock_api_request({'bbox': '52,4,53,5', 'bbox-crs': 'http://www.opengis.net/def/crs/EPSG/0/4326'}) # noqa
+    rsp_headers, code, response = get_collection_items(api_, req, 'obs')
 
     assert code == HTTPStatus.OK
 
     # bbox-crs can be a default even if not configured
-    req = mock_request({'bbox': '4,52,5,53', 'bbox-crs': 'http://www.opengis.net/def/crs/OGC/1.3/CRS84'}) # noqa
-    rsp_headers, code, response = api_.get_collection_items(req, 'obs')
+    req = mock_api_request({'bbox': '4,52,5,53', 'bbox-crs': 'http://www.opengis.net/def/crs/OGC/1.3/CRS84'}) # noqa
+    rsp_headers, code, response = get_collection_items(api_, req, 'obs')
 
     assert code == HTTPStatus.OK
 
     # bbox-crs can be a default even if not configured
-    req = mock_request({'bbox': '4,52,5,53'}) # noqa
-    rsp_headers, code, response = api_.get_collection_items(req, 'obs')
+    req = mock_api_request({'bbox': '4,52,5,53'}) # noqa
+    rsp_headers, code, response = get_collection_items(api_, req, 'obs')
 
     assert code == HTTPStatus.OK
 
-    req = mock_request({'f': 'html', 'lang': 'fr'})
-    rsp_headers, code, response = api_.get_collection_items(req, 'obs')
+    req = mock_api_request({'f': 'html', 'lang': 'fr'})
+    rsp_headers, code, response = get_collection_items(api_, req, 'obs')
     assert rsp_headers['Content-Type'] == FORMAT_TYPES[F_HTML]
     assert rsp_headers['Content-Language'] == 'fr-CA'
 
-    req = mock_request()
-    rsp_headers, code, response = api_.get_collection_items(req, 'obs')
+    req = mock_api_request()
+    rsp_headers, code, response = get_collection_items(api_, req, 'obs')
     features = json.loads(response)
     # No language requested: should be set to default from YAML
     assert rsp_headers['Content-Language'] == 'en-US'
 
     assert len(features['features']) == 5
 
-    req = mock_request({'resulttype': 'hits'})
-    rsp_headers, code, response = api_.get_collection_items(req, 'obs')
+    req = mock_api_request({'resulttype': 'hits'})
+    rsp_headers, code, response = get_collection_items(api_, req, 'obs')
     features = json.loads(response)
 
     assert len(features['features']) == 0
 
     # Invalid limit
-    req = mock_request({'limit': 0})
-    rsp_headers, code, response = api_.get_collection_items(req, 'obs')
+    req = mock_api_request({'limit': 0})
+    rsp_headers, code, response = get_collection_items(api_, req, 'obs')
     features = json.loads(response)
 
     assert code == HTTPStatus.BAD_REQUEST
 
-    req = mock_request({'stn_id': '35'})
-    rsp_headers, code, response = api_.get_collection_items(req, 'obs')
+    req = mock_api_request({'stn_id': '35'})
+    rsp_headers, code, response = get_collection_items(api_, req, 'obs')
     features = json.loads(response)
 
     assert len(features['features']) == 2
     assert features['numberMatched'] == 2
 
-    req = mock_request({'stn_id': '35', 'value': '93.9'})
-    rsp_headers, code, response = api_.get_collection_items(req, 'obs')
+    req = mock_api_request({'stn_id': '35', 'value': '93.9'})
+    rsp_headers, code, response = get_collection_items(api_, req, 'obs')
     features = json.loads(response)
 
     assert len(features['features']) == 1
     assert features['numberMatched'] == 1
 
-    req = mock_request({'limit': 2})
-    rsp_headers, code, response = api_.get_collection_items(req, 'obs')
+    req = mock_api_request({'limit': 2})
+    rsp_headers, code, response = get_collection_items(api_, req, 'obs')
     features = json.loads(response)
 
     assert len(features['features']) == 2
@@ -1008,14 +1011,14 @@ def test_get_collection_items(config, api_):
     assert links[3]['rel'] == 'collection'
 
     # Invalid offset
-    req = mock_request({'offset': -1})
-    rsp_headers, code, response = api_.get_collection_items(req, 'obs')
+    req = mock_api_request({'offset': -1})
+    rsp_headers, code, response = get_collection_items(api_, req, 'obs')
     features = json.loads(response)
 
     assert code == HTTPStatus.BAD_REQUEST
 
-    req = mock_request({'offset': 2})
-    rsp_headers, code, response = api_.get_collection_items(req, 'obs')
+    req = mock_api_request({'offset': 2})
+    rsp_headers, code, response = get_collection_items(api_, req, 'obs')
     features = json.loads(response)
 
     assert len(features['features']) == 3
@@ -1034,12 +1037,12 @@ def test_get_collection_items(config, api_):
     assert '/collections/obs' in links[4]['href']
     assert links[4]['rel'] == 'collection'
 
-    req = mock_request({
+    req = mock_api_request({
         'offset': 1,
         'limit': 1,
         'bbox': '-180,90,180,90'
     })
-    rsp_headers, code, response = api_.get_collection_items(req, 'obs')
+    rsp_headers, code, response = get_collection_items(api_, req, 'obs')
     features = json.loads(response)
 
     assert len(features['features']) == 1
@@ -1061,103 +1064,103 @@ def test_get_collection_items(config, api_):
     assert '/collections/obs' in links[4]['href']
     assert links[4]['rel'] == 'collection'
 
-    req = mock_request({
+    req = mock_api_request({
         'sortby': 'bad-property',
         'stn_id': '35'
     })
-    rsp_headers, code, response = api_.get_collection_items(req, 'obs')
+    rsp_headers, code, response = get_collection_items(api_, req, 'obs')
 
     assert code == HTTPStatus.BAD_REQUEST
 
-    req = mock_request({'sortby': 'stn_id'})
-    rsp_headers, code, response = api_.get_collection_items(req, 'obs')
+    req = mock_api_request({'sortby': 'stn_id'})
+    rsp_headers, code, response = get_collection_items(api_, req, 'obs')
     features = json.loads(response)
     assert code == HTTPStatus.OK
 
-    req = mock_request({'sortby': '+stn_id'})
-    rsp_headers, code, response = api_.get_collection_items(req, 'obs')
+    req = mock_api_request({'sortby': '+stn_id'})
+    rsp_headers, code, response = get_collection_items(api_, req, 'obs')
     features = json.loads(response)
     assert code == HTTPStatus.OK
 
-    req = mock_request({'sortby': '-stn_id'})
-    rsp_headers, code, response = api_.get_collection_items(req, 'obs')
+    req = mock_api_request({'sortby': '-stn_id'})
+    rsp_headers, code, response = get_collection_items(api_, req, 'obs')
     features = json.loads(response)
     assert code == HTTPStatus.OK
 
-    req = mock_request({'f': 'csv'})
-    rsp_headers, code, response = api_.get_collection_items(req, 'obs')
+    req = mock_api_request({'f': 'csv'})
+    rsp_headers, code, response = get_collection_items(api_, req, 'obs')
 
     assert rsp_headers['Content-Type'] == 'text/csv; charset=utf-8'
 
-    req = mock_request({'datetime': '2003'})
-    rsp_headers, code, response = api_.get_collection_items(req, 'obs')
+    req = mock_api_request({'datetime': '2003'})
+    rsp_headers, code, response = get_collection_items(api_, req, 'obs')
 
     assert code == HTTPStatus.OK
 
-    req = mock_request({'datetime': '1999'})
-    rsp_headers, code, response = api_.get_collection_items(req, 'obs')
+    req = mock_api_request({'datetime': '1999'})
+    rsp_headers, code, response = get_collection_items(api_, req, 'obs')
 
     assert code == HTTPStatus.BAD_REQUEST
 
-    req = mock_request({'datetime': '2010-04-22'})
-    rsp_headers, code, response = api_.get_collection_items(req, 'obs')
+    req = mock_api_request({'datetime': '2010-04-22'})
+    rsp_headers, code, response = get_collection_items(api_, req, 'obs')
 
     assert code == HTTPStatus.BAD_REQUEST
 
-    req = mock_request({'datetime': '2001-11-11/2003-12-18'})
-    rsp_headers, code, response = api_.get_collection_items(req, 'obs')
+    req = mock_api_request({'datetime': '2001-11-11/2003-12-18'})
+    rsp_headers, code, response = get_collection_items(api_, req, 'obs')
 
     assert code == HTTPStatus.OK
 
-    req = mock_request({'datetime': '../2003-12-18'})
-    rsp_headers, code, response = api_.get_collection_items(req, 'obs')
+    req = mock_api_request({'datetime': '../2003-12-18'})
+    rsp_headers, code, response = get_collection_items(api_, req, 'obs')
 
     assert code == HTTPStatus.OK
 
-    req = mock_request({'datetime': '2001-11-11/..'})
-    rsp_headers, code, response = api_.get_collection_items(req, 'obs')
+    req = mock_api_request({'datetime': '2001-11-11/..'})
+    rsp_headers, code, response = get_collection_items(api_, req, 'obs')
 
     assert code == HTTPStatus.OK
 
-    req = mock_request({'datetime': '1999/2005-04-22'})
-    rsp_headers, code, response = api_.get_collection_items(req, 'obs')
+    req = mock_api_request({'datetime': '1999/2005-04-22'})
+    rsp_headers, code, response = get_collection_items(api_, req, 'obs')
 
     assert code == HTTPStatus.OK
 
-    req = mock_request({'datetime': '1999/2000-04-22'})
-    rsp_headers, code, response = api_.get_collection_items(req, 'obs')
+    req = mock_api_request({'datetime': '1999/2000-04-22'})
+    rsp_headers, code, response = get_collection_items(api_, req, 'obs')
 
     assert code == HTTPStatus.BAD_REQUEST
 
     api_.config['resources']['obs']['extents'].pop('temporal')
 
-    req = mock_request({'datetime': '2002/2014-04-22'})
-    rsp_headers, code, response = api_.get_collection_items(req, 'obs')
+    req = mock_api_request({'datetime': '2002/2014-04-22'})
+    rsp_headers, code, response = get_collection_items(api_, req, 'obs')
 
     assert code == HTTPStatus.OK
 
-    req = mock_request({'scalerank': 1})
-    rsp_headers, code, response = api_.get_collection_items(
-        req, 'naturalearth/lakes')
+    req = mock_api_request({'scalerank': 1})
+    rsp_headers, code, response = get_collection_items(
+        api_, req, 'naturalearth/lakes')
     features = json.loads(response)
 
     assert len(features['features']) == 10
     assert features['numberMatched'] == 11
     assert features['numberReturned'] == 10
 
-    req = mock_request({'datetime': '2005-04-22'})
-    rsp_headers, code, response = api_.get_collection_items(
-        req, 'naturalearth/lakes')
+    req = mock_api_request({'datetime': '2005-04-22'})
+    rsp_headers, code, response = get_collection_items(
+        api_, req, 'naturalearth/lakes')
 
     assert code == HTTPStatus.BAD_REQUEST
 
-    req = mock_request({'skipGeometry': 'true'})
-    rsp_headers, code, response = api_.get_collection_items(req, 'obs')
+    req = mock_api_request({'skipGeometry': 'true'})
+    rsp_headers, code, response = get_collection_items(api_, req, 'obs')
 
     assert json.loads(response)['features'][0]['geometry'] is None
 
-    req = mock_request({'properties': 'foo,bar'})
-    rsp_headers, code, response = api_.get_collection_items(req, 'obs')
+    req = mock_api_request({'properties': 'foo,bar'})
+    rsp_headers, code, response = get_collection_items(api_, req, 'obs')
 
     assert code == HTTPStatus.BAD_REQUEST
 
@@ -1165,14 +1168,15 @@ def test_get_collection_items(config, api_):
 def test_get_collection_items_crs(config, api_):
 
     # Invalid CRS query parameter
-    req = mock_request({'crs': '4326'})
-    rsp_headers, code, response = api_.get_collection_items(req, 'norway_pop')
+    req = mock_api_request({'crs': '4326'})
+    rsp_headers, code, response = get_collection_items(api_, req, 'norway_pop')
 
     assert code == HTTPStatus.BAD_REQUEST
 
     # Unsupported CRS
-    req = mock_request({'crs': 'http://www.opengis.net/def/crs/EPSG/0/32633'})
-    rsp_headers, code, response = api_.get_collection_items(req, 'norway_pop')
+    req = mock_api_request(
+        {'crs': 'http://www.opengis.net/def/crs/EPSG/0/32633'})
+    rsp_headers, code, response = get_collection_items(api_, req, 'norway_pop')
 
     assert code == HTTPStatus.BAD_REQUEST
 
@@ -1183,17 +1187,17 @@ def test_get_collection_items_crs(config, api_):
     supported_crs_list = [default_crs, storage_crs, crs_4258]
 
     for crs in supported_crs_list:
-        req = mock_request({'crs': crs})
-        rsp_headers, code, response = api_.get_collection_items(
-            req, 'norway_pop',
-        )
+        req = mock_api_request({'crs': crs})
+        rsp_headers, code, response = get_collection_items(
+            api_, req, 'norway_pop')
 
         assert code == HTTPStatus.OK
         assert rsp_headers['Content-Crs'] == f'<{crs}>'
 
     # With CRS query parameter, using storageCRS
-    req = mock_request({'crs': storage_crs})
-    rsp_headers, code, response = api_.get_collection_items(req, 'norway_pop')
+    req = mock_api_request({'crs': storage_crs})
+    rsp_headers, code, response = get_collection_items(
+        api_, req, 'norway_pop')
 
     assert code == HTTPStatus.OK
     assert rsp_headers['Content-Crs'] == f'<{storage_crs}>'
@@ -1201,8 +1205,9 @@ def test_get_collection_items_crs(config, api_):
     features_25833 = json.loads(response)
 
     # With CRS query parameter resulting in coordinates transformation
-    req = mock_request({'crs': crs_4258})
-    rsp_headers, code, response = api_.get_collection_items(req, 'norway_pop')
+    req = mock_api_request({'crs': crs_4258})
+    rsp_headers, code, response = get_collection_items(
+        api_, req, 'norway_pop')
 
     assert code == HTTPStatus.OK
     assert rsp_headers['Content-Crs'] == f'<{crs_4258}>'
@@ -1225,8 +1230,9 @@ def test_get_collection_items_crs(config, api_):
                 break
 
     # Without CRS query parameter: assume Transform to default WGS84 lon,lat
-    req = mock_request({})
-    rsp_headers, code, response = api_.get_collection_items(req, 'norway_pop')
+    req = mock_api_request({})
+    rsp_headers, code, response = get_collection_items(
+        api_, req, 'norway_pop')
 
     assert code == HTTPStatus.OK
     assert rsp_headers['Content-Crs'] == f'<{default_crs}>'
@@ -1253,18 +1259,18 @@ def test_get_collection_items_crs(config, api_):
 
 def test_manage_collection_item_read_only_options_req(config, api_):
     """Test OPTIONS request on a read-only items endpoint"""
-    req = mock_request()
-    _, code, _ = api_.manage_collection_item(req, 'options', 'foo')
+    req = mock_api_request()
+    _, code, _ = manage_collection_item(api_, req, 'options', 'foo')
     assert code == HTTPStatus.NOT_FOUND
 
-    req = mock_request()
-    rsp_headers, code, _ = api_.manage_collection_item(req, 'options', 'obs')
+    req = mock_api_request()
+    rsp_headers, code, _ = manage_collection_item(api_, req, 'options', 'obs')
     assert code == HTTPStatus.OK
     assert rsp_headers['Allow'] == 'HEAD, GET'
 
-    req = mock_request()
-    rsp_headers, code, _ = api_.manage_collection_item(
-        req, 'options', 'obs', 'ressource_id')
+    req = mock_api_request()
+    rsp_headers, code, _ = manage_collection_item(
+        api_, req, 'options', 'obs', 'ressource_id')
     assert code == HTTPStatus.OK
     assert rsp_headers['Allow'] == 'HEAD, GET'
 
@@ -1275,14 +1281,14 @@ def test_manage_collection_item_editable_options_req(config):
     config['resources']['obs']['providers'][0]['editable'] = True
     api_ = API(config, openapi)
 
-    req = mock_request()
-    rsp_headers, code, _ = api_.manage_collection_item(req, 'options', 'obs')
+    req = mock_api_request()
+    rsp_headers, code, _ = manage_collection_item(api_, req, 'options', 'obs')
     assert code == HTTPStatus.OK
     assert rsp_headers['Allow'] == 'HEAD, GET, POST'
 
-    req = mock_request()
-    rsp_headers, code, _ = api_.manage_collection_item(
-        req, 'options', 'obs', 'ressource_id')
+    req = mock_api_request()
+    rsp_headers, code, _ = manage_collection_item(
+        api_, req, 'options', 'obs', 'ressource_id')
     assert code == HTTPStatus.OK
     assert rsp_headers['Allow'] == 'HEAD, GET, PUT, DELETE'
 
@@ -1319,11 +1325,11 @@ def test_describe_collections_enclosures(config_enclosure, enclosure_api):
 
 
 def test_get_collection_items_json_ld(config, api_):
-    req = mock_request({
+    req = mock_api_request({
         'f': 'jsonld',
         'limit': 2
     })
-    rsp_headers, code, response = api_.get_collection_items(req, 'obs')
+    rsp_headers, code, response = get_collection_items(api_, req, 'obs')
 
     assert rsp_headers['Content-Type'] == FORMAT_TYPES[F_JSONLD]
     # No language requested: return default from YAML
@@ -1341,35 +1347,35 @@ def test_get_collection_items_json_ld(config, api_):
 
 
 def test_get_collection_item(config, api_):
-    req = mock_request({'f': 'foo'})
-    rsp_headers, code, response = api_.get_collection_item(req, 'obs', '371')
+    req = mock_api_request({'f': 'foo'})
+    rsp_headers, code, response = get_collection_item(api_, req, 'obs', '371')
 
     assert code == HTTPStatus.BAD_REQUEST
 
-    req = mock_request({'f': 'json'})
-    rsp_headers, code, response = api_.get_collection_item(
-        req, 'gdps-temperature', '371')
+    req = mock_api_request({'f': 'json'})
+    rsp_headers, code, response = get_collection_item(
+        api_, req, 'gdps-temperature', '371')
 
     assert code == HTTPStatus.BAD_REQUEST
 
-    req = mock_request()
-    rsp_headers, code, response = api_.get_collection_item(req, 'foo', '371')
+    req = mock_api_request()
+    rsp_headers, code, response = get_collection_item(api_, req, 'foo', '371')
 
     assert code == HTTPStatus.NOT_FOUND
 
-    rsp_headers, code, response = api_.get_collection_item(
-        req, 'obs', 'notfound')
+    rsp_headers, code, response = get_collection_item(
+        api_, req, 'obs', 'notfound')
 
     assert code == HTTPStatus.NOT_FOUND
 
-    req = mock_request({'f': 'html'})
-    rsp_headers, code, response = api_.get_collection_item(req, 'obs', '371')
+    req = mock_api_request({'f': 'html'})
+    rsp_headers, code, response = get_collection_item(api_, req, 'obs', '371')
 
     assert rsp_headers['Content-Type'] == FORMAT_TYPES[F_HTML]
     assert rsp_headers['Content-Language'] == 'en-US'
 
-    req = mock_request()
-    rsp_headers, code, response = api_.get_collection_item(req, 'obs', '371')
+    req = mock_api_request()
+    rsp_headers, code, response = get_collection_item(api_, req, 'obs', '371')
     feature = json.loads(response)
 
     assert feature['properties']['stn_id'] == 35
@@ -1378,8 +1384,8 @@ def test_get_collection_item(config, api_):
 
 
 def test_get_collection_item_json_ld(config, api_):
-    req = mock_request({'f': 'jsonld'})
-    rsp_headers, _, response = api_.get_collection_item(req, 'objects', '3')
+    req = mock_api_request({'f': 'jsonld'})
+    rsp_headers, _, response = get_collection_item(api_, req, 'objects', '3')
     assert rsp_headers['Content-Type'] == FORMAT_TYPES[F_JSONLD]
     assert rsp_headers['Content-Language'] == 'en-US'
     feature = json.loads(response)
@@ -1404,7 +1410,7 @@ def test_get_collection_item_json_ld(config, api_):
             'https://schema.org/longitude'][0][
             '@value'] == -85
 
-    _, _, response = api_.get_collection_item(req, 'objects', '2')
+    _, _, response = get_collection_item(api_, req, 'objects', '2')
     feature = json.loads(response)
     assert feature['geometry']['type'] == 'MultiPoint'
     expanded = jsonld.expand(feature)[0]
@@ -1415,7 +1421,7 @@ def test_get_collection_item_json_ld(config, api_):
             'https://schema.org/polygon'][0][
             '@value'] == "10.0,40.0 40.0,30.0 20.0,20.0 30.0,10.0 10.0,40.0"
 
-    _, _, response = api_.get_collection_item(req, 'objects', '1')
+    _, _, response = get_collection_item(api_, req, 'objects', '1')
     feature = json.loads(response)
     expanded = jsonld.expand(feature)[0]
     assert expanded['http://www.opengis.net/ont/geosparql#hasGeometry'][0][
@@ -1425,7 +1431,7 @@ def test_get_collection_item_json_ld(config, api_):
             'https://schema.org/line'][0][
             '@value'] == '30.0,10.0 10.0,30.0 40.0,40.0'
 
-    _, _, response = api_.get_collection_item(req, 'objects', '4')
+    _, _, response = get_collection_item(api_, req, 'objects', '4')
     feature = json.loads(response)
     expanded = jsonld.expand(feature)[0]
     assert expanded['http://www.opengis.net/ont/geosparql#hasGeometry'][0][
@@ -1437,7 +1443,7 @@ def test_get_collection_item_json_ld(config, api_):
             '@value'] == '10.0,10.0 20.0,20.0 10.0,40.0 40.0,40.0 ' \
         '30.0,30.0 40.0,20.0 30.0,10.0'
 
-    _, _, response = api_.get_collection_item(req, 'objects', '5')
+    _, _, response = get_collection_item(api_, req, 'objects', '5')
     feature = json.loads(response)
     expanded = jsonld.expand(feature)[0]
     assert expanded['http://www.opengis.net/ont/geosparql#hasGeometry'][0][
@@ -1447,7 +1453,7 @@ def test_get_collection_item_json_ld(config, api_):
             'https://schema.org/polygon'][0][
             '@value'] == '30.0,10.0 40.0,40.0 20.0,40.0 10.0,20.0 30.0,10.0'
 
-    _, _, response = api_.get_collection_item(req, 'objects', '7')
+    _, _, response = get_collection_item(api_, req, 'objects', '7')
     feature = json.loads(response)
     expanded = jsonld.expand(feature)[0]
     assert expanded['http://www.opengis.net/ont/geosparql#hasGeometry'][0][
@@ -1459,47 +1465,47 @@ def test_get_collection_item_json_ld(config, api_):
             '@value'] == '15.0,5.0 5.0,10.0 10.0,40.0 '\
         '45.0,40.0 40.0,10.0 15.0,5.0'
 
-    req = mock_request({'f': 'jsonld', 'lang': 'fr'})
-    rsp_headers, code, response = api_.get_collection_item(req, 'obs', '371')
+    req = mock_api_request({'f': 'jsonld', 'lang': 'fr'})
+    rsp_headers, code, response = get_collection_item(api_, req, 'obs', '371')
     assert rsp_headers['Content-Type'] == FORMAT_TYPES[F_JSONLD]
     assert rsp_headers['Content-Language'] == 'fr-CA'
 
 
 def test_get_collection_coverage(config, api_):
-    req = mock_request()
-    rsp_headers, code, response = api_.get_collection_coverage(
-        req, 'obs')
+    req = mock_api_request()
+    rsp_headers, code, response = get_collection_coverage(
+        api_, req, 'obs')
 
     assert code == HTTPStatus.BAD_REQUEST
 
-    req = mock_request({'properties': '12'})
-    rsp_headers, code, response = api_.get_collection_coverage(
-        req, 'gdps-temperature')
+    req = mock_api_request({'properties': '12'})
+    rsp_headers, code, response = get_collection_coverage(
+        api_, req, 'gdps-temperature')
 
     assert code == HTTPStatus.BAD_REQUEST
 
-    req = mock_request({'subset': 'bad_axis(10:20)'})
-    rsp_headers, code, response = api_.get_collection_coverage(
-        req, 'gdps-temperature')
+    req = mock_api_request({'subset': 'bad_axis(10:20)'})
+    rsp_headers, code, response = get_collection_coverage(
+        api_, req, 'gdps-temperature')
 
     assert code == HTTPStatus.BAD_REQUEST
 
-    req = mock_request({'f': 'blah'})
-    rsp_headers, code, response = api_.get_collection_coverage(
-        req, 'gdps-temperature')
+    req = mock_api_request({'f': 'blah'})
+    rsp_headers, code, response = get_collection_coverage(
+        api_, req, 'gdps-temperature')
 
     assert code == HTTPStatus.BAD_REQUEST
 
-    req = mock_request({'f': 'html'})
-    rsp_headers, code, response = api_.get_collection_coverage(
-        req, 'gdps-temperature')
+    req = mock_api_request({'f': 'html'})
+    rsp_headers, code, response = get_collection_coverage(
+        api_, req, 'gdps-temperature')
 
     assert code == HTTPStatus.BAD_REQUEST
     assert rsp_headers['Content-Type'] == 'text/html'
 
-    req = mock_request(HTTP_ACCEPT='text/html')
-    rsp_headers, code, response = api_.get_collection_coverage(
-        req, 'gdps-temperature')
+    req = mock_api_request(HTTP_ACCEPT='text/html')
+    rsp_headers, code, response = get_collection_coverage(
+        api_, req, 'gdps-temperature')
 
     # NOTE: This test used to assert the code to be 200 OK,
     #       but it requested HTML, which is not available,
@@ -1507,9 +1513,9 @@ def test_get_collection_coverage(config, api_):
     assert code == HTTPStatus.BAD_REQUEST
     assert rsp_headers['Content-Type'] == 'text/html'
 
-    req = mock_request({'subset': 'Lat(5:10),Long(5:10)'})
-    rsp_headers, code, response = api_.get_collection_coverage(
-        req, 'gdps-temperature')
+    req = mock_api_request({'subset': 'Lat(5:10),Long(5:10)'})
+    rsp_headers, code, response = get_collection_coverage(
+        api_, req, 'gdps-temperature')
 
     assert code == HTTPStatus.OK
     content = json.loads(response)
@@ -1520,9 +1526,9 @@ def test_get_collection_coverage(config, api_):
     assert 'TMP' in content['ranges']
     assert content['ranges']['TMP']['axisNames'] == ['y', 'x']
 
-    req = mock_request({'bbox': '-79,45,-75,49'})
-    rsp_headers, code, response = api_.get_collection_coverage(
-        req, 'gdps-temperature')
+    req = mock_api_request({'bbox': '-79,45,-75,49'})
+    rsp_headers, code, response = get_collection_coverage(
+        api_, req, 'gdps-temperature')
 
     assert code == HTTPStatus.OK
     content = json.loads(response)
@@ -1532,38 +1538,38 @@ def test_get_collection_coverage(config, api_):
     assert content['domain']['axes']['y']['start'] == 49.0
     assert content['domain']['axes']['y']['stop'] == 45.0
 
-    req = mock_request({
+    req = mock_api_request({
         'subset': 'Lat(5:10),Long(5:10)',
         'f': 'GRIB'
     })
-    rsp_headers, code, response = api_.get_collection_coverage(
-        req, 'gdps-temperature')
+    rsp_headers, code, response = get_collection_coverage(
+        api_, req, 'gdps-temperature')
 
     assert code == HTTPStatus.OK
     assert isinstance(response, bytes)
 
-    req = mock_request(HTTP_ACCEPT='application/x-netcdf')
-    rsp_headers, code, response = api_.get_collection_coverage(
-        req, 'cmip5')
+    req = mock_api_request(HTTP_ACCEPT='application/x-netcdf')
+    rsp_headers, code, response = get_collection_coverage(
+        api_, req, 'cmip5')
 
     assert code == HTTPStatus.OK
     assert rsp_headers['Content-Type'] == 'application/x-netcdf'
 
-    # req = mock_request({
+    # req = mock_api_request({
     #     'subset': 'time("2006-07-01T06:00:00":"2007-07-01T06:00:00")'
     # })
-    # rsp_headers, code, response = api_.get_collection_coverage(req, 'cmip5')
+    # rsp_headers, code, response = get_collection_coverage(api_, req, 'cmip5')
     #
     # assert code == HTTPStatus.OK
     # assert isinstance(json.loads(response), dict)
 
-    # req = mock_request({'subset': 'lat(1:2'})
-    # rsp_headers, code, response = api_.get_collection_coverage(req, 'cmip5')
+    # req = mock_api_request({'subset': 'lat(1:2'})
+    # rsp_headers, code, response = get_collection_coverage(api_, req, 'cmip5')
     #
     # assert code == HTTPStatus.BAD_REQUEST
     #
-    # req = mock_request({'subset': 'lat(1:2)'})
-    # rsp_headers, code, response = api_.get_collection_coverage(req, 'cmip5')
+    # req = mock_api_request({'subset': 'lat(1:2)'})
+    # rsp_headers, code, response = get_collection_coverage(api_ req, 'cmip5')
     #
     # assert code == HTTPStatus.NO_CONTENT
 

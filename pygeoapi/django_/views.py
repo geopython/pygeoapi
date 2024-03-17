@@ -8,7 +8,7 @@
 # Copyright (c) 2022 Francesco Bartoli
 # Copyright (c) 2022 Luca Delucchi
 # Copyright (c) 2022 Krishna Lodha
-# Copyright (c) 2022 Tom Kralidis
+# Copyright (c) 2024 Tom Kralidis
 #
 # Permission is hereby granted, free of charge, to any person
 # obtaining a copy of this software and associated documentation
@@ -41,7 +41,9 @@ from django.conf import settings
 from django.http import HttpRequest, HttpResponse
 
 from pygeoapi.api import API, APIRequest, apply_gzip
+import pygeoapi.api.coverages_api as coverages_api
 import pygeoapi.api.environmental_data_retrieval as edr_api
+import pygeoapi.api.itemtypes_api as itemtypes_api
 import pygeoapi.api.maps as maps_api
 import pygeoapi.api.processes as processes_api
 import pygeoapi.api.stac as stac_api
@@ -143,8 +145,8 @@ def collection_schema(request: HttpRequest,
     :returns: Django HTTP Response
     """
 
-    response_ = _feed_response(
-        request, 'get_collection_schema', collection_id
+    response_ = execute_from_django(
+        itemtypes_api.get_collection_schema, request, collection_id
     )
     response = _to_django_response(*response_)
 
@@ -162,8 +164,8 @@ def collection_queryables(request: HttpRequest,
     :returns: Django HTTP Response
     """
 
-    response_ = _feed_response(
-        request, 'get_collection_queryables', collection_id
+    response_ = execute_from_django(
+        itemtypes_api.get_collection_queryables, request, collection_id
     )
     response = _to_django_response(*response_)
 
@@ -181,22 +183,24 @@ def collection_items(request: HttpRequest, collection_id: str) -> HttpResponse:
     """
 
     if request.method == 'GET':
-        response_ = _feed_response(
+        response_ = execute_from_django(
+            itemtypes_api.get_collection_items,
             request,
-            'get_collection_items',
             collection_id,
         )
     elif request.method == 'POST':
         if request.content_type is not None:
             if request.content_type == 'application/geo+json':
-                response_ = _feed_response(request, 'manage_collection_item',
-                                           request, 'create', collection_id)
+                response_ = execute_from_django(
+                    itemtypes_api.manage_collection_item, request,
+                    'create', collection_id)
             else:
-                response_ = _feed_response(request, 'post_collection_items',
-                                           request, collection_id)
+                response_ = execute_from_django(
+                    itemtypes_api.post_collection_items,
+                    request, collection_id)
     elif request.method == 'OPTIONS':
-        response_ = _feed_response(request, 'manage_collection_item',
-                                   request, 'options', collection_id)
+        response_ = execute_from_django(itemtypes_api.manage_collection_item,
+                                        request, 'options', collection_id)
 
     response = _to_django_response(*response_)
 
@@ -282,8 +286,8 @@ def collection_coverage(request: HttpRequest,
     :returns: Django HTTP response
     """
 
-    response_ = _feed_response(
-        request, 'get_collection_coverage', collection_id
+    response_ = execute_from_django(
+        coverages_api.get_collection_coverage, request, collection_id
     )
     response = _to_django_response(*response_)
 

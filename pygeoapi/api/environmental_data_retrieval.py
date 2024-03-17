@@ -8,7 +8,7 @@
 #          Ricardo Garcia Silva <ricardo.garcia.silva@geobeyond.it>
 #          Bernhard Mallinger <bernhard.mallinger@eox.at>
 #
-# Copyright (c) 2023 Tom Kralidis
+# Copyright (c) 2024 Tom Kralidis
 # Copyright (c) 2022 Francesco Bartoli
 # Copyright (c) 2022 John A Stevenson and Colin Blackburn
 # Copyright (c) 2023 Ricardo Garcia Silva
@@ -38,8 +38,8 @@
 # =================================================================
 
 
-import logging
 from http import HTTPStatus
+import logging
 from typing import Tuple
 
 from shapely.errors import WKTReadingError
@@ -49,21 +49,21 @@ from pygeoapi.plugin import load_plugin, PLUGINS
 from pygeoapi.provider.base import ProviderGenericError
 from pygeoapi.util import (
     filter_providers_by_type, get_provider_by_type, render_j2_template,
-    to_json, filter_dict_by_key_value,
+    to_json, filter_dict_by_key_value
 )
 
-from . import (
-    APIRequest, API, F_HTML, validate_datetime, validate_bbox
-)
-
+from . import APIRequest, API, F_HTML, validate_datetime, validate_bbox
 
 LOGGER = logging.getLogger(__name__)
 
+CONFORMANCE_CLASSES = [
+    'http://www.opengis.net/spec/ogcapi-edr-1/1.0/conf/core'
+]
 
-def get_collection_edr_query(
-    api: API, request: APIRequest, dataset, instance, query_type,
-    location_id=None
-) -> Tuple[dict, int, str]:
+
+def get_collection_edr_query(api: API, request: APIRequest,
+                             dataset, instance, query_type,
+                             location_id=None) -> Tuple[dict, int, str]:
     """
     Queries collection EDR
 
@@ -209,19 +209,20 @@ def get_collection_edr_query(
 def get_oas_30(cfg: dict, locale: str) -> dict:
     from pygeoapi.openapi import OPENAPI_YAML
 
+    LOGGER.debug('setting up edr endpoints')
+
     paths = {}
 
     collections = filter_dict_by_key_value(cfg['resources'],
                                            'type', 'collection')
 
     for k, v in collections.items():
-        LOGGER.debug('setting up edr endpoints')
         edr_extension = filter_providers_by_type(
             collections[k]['providers'], 'edr')
 
-        collection_name_path = f'/collections/{k}'
-
         if edr_extension:
+            collection_name_path = f'/collections/{k}'
+
             ep = load_plugin('provider', edr_extension)
 
             edr_query_endpoints = []
@@ -246,7 +247,7 @@ def get_oas_30(cfg: dict, locale: str) -> dict:
                     spatial_parameter = f"{eqe['qt']}Coords"
                 paths[eqe['path']] = {
                     'get': {
-                        'summary': f"query {v['description']} by {eqe['qt']}",  # noqa
+                        'summary': f"query {v['description']} by {eqe['qt']}",
                         'description': v['description'],
                         'tags': [k],
                         'operationId': eqe['op_id'],
@@ -292,7 +293,7 @@ def get_oas_30(cfg: dict, locale: str) -> dict:
                 }
                 paths[f'{collection_name_path}/locations/{{locId}}'] = {
                     'get': {
-                        'summary': f"query {v['description']} by location",  # noqa
+                        'summary': f"query {v['description']} by location",
                         'description': v['description'],
                         'tags': [k],
                         'operationId': f'queryLOCATIONSBYID{k.capitalize()}',

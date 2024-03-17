@@ -8,7 +8,7 @@
 #          Ricardo Garcia Silva <ricardo.garcia.silva@geobeyond.it>
 #          Bernhard Mallinger <bernhard.mallinger@eox.at>
 #
-# Copyright (c) 2023 Tom Kralidis
+# Copyright (c) 2024 Tom Kralidis
 # Copyright (c) 2022 Francesco Bartoli
 # Copyright (c) 2022 John A Stevenson and Colin Blackburn
 # Copyright (c) 2023 Ricardo Garcia Silva
@@ -40,9 +40,9 @@
 
 from copy import deepcopy
 from datetime import datetime, timezone
-import logging
 from http import HTTPStatus
 import json
+import logging
 from typing import Tuple
 
 from pygeoapi import l10n
@@ -50,9 +50,7 @@ from pygeoapi.util import (
     json_serial, render_j2_template, JobStatus, RequestedProcessExecutionMode,
     to_json, DATETIME_FORMAT)
 from pygeoapi.process.base import (
-    JobNotFoundError,
-    JobResultNotFoundError,
-    ProcessorExecuteError,
+    JobNotFoundError, JobResultNotFoundError, ProcessorExecuteError
 )
 from pygeoapi.process.manager.base import get_manager
 
@@ -60,8 +58,14 @@ from . import (
     APIRequest, API, SYSTEM_LOCALE, F_JSON, FORMAT_TYPES, F_HTML, F_JSONLD,
 )
 
-
 LOGGER = logging.getLogger(__name__)
+
+CONFORMANCE_CLASSES = [
+    'http://www.opengis.net/spec/ogcapi-processes-1/1.0/conf/ogc-process-description', # noqa
+    'http://www.opengis.net/spec/ogcapi-processes-1/1.0/conf/core',
+    'http://www.opengis.net/spec/ogcapi-processes-1/1.0/conf/json',
+    'http://www.opengis.net/spec/ogcapi-processes-1/1.0/conf/oas30'
+]
 
 
 def describe_processes(api: API, request: APIRequest,
@@ -534,6 +538,8 @@ def delete_job(
 def get_oas_30(cfg: dict, locale_: str):
     from pygeoapi.openapi import OPENAPI_YAML
 
+    LOGGER.debug('setting up processes endpoints')
+
     oas = {'tags': []}
 
     paths = {}
@@ -569,7 +575,7 @@ def get_oas_30(cfg: dict, locale_: str):
         process_name_path = f'/processes/{name}'
         tag = {
             'name': name,
-            'description': md_desc,  # noqa
+            'description': md_desc,
             'externalDocs': {}
         }
         for link in p.metadata.get('links', []):
@@ -666,7 +672,7 @@ def get_oas_30(cfg: dict, locale_: str):
             'responses': {
                 '200': {'$ref': '#/components/responses/200'},
                 '404': {'$ref': f"{OPENAPI_YAML['oapip']}/responses/NotFound.yaml"},  # noqa
-                'default': {'$ref': '#/components/responses/default'}  # noqa
+                'default': {'$ref': '#/components/responses/default'}
             }
         },
         'delete': {
@@ -680,7 +686,7 @@ def get_oas_30(cfg: dict, locale_: str):
             'responses': {
                 '204': {'$ref': '#/components/responses/204'},
                 '404': {'$ref': f"{OPENAPI_YAML['oapip']}/responses/NotFound.yaml"},  # noqa
-                'default': {'$ref': '#/components/responses/default'}  # noqa
+                'default': {'$ref': '#/components/responses/default'}
             }
         },
     }
@@ -698,7 +704,7 @@ def get_oas_30(cfg: dict, locale_: str):
             'responses': {
                 '200': {'$ref': '#/components/responses/200'},
                 '404': {'$ref': f"{OPENAPI_YAML['oapip']}/responses/NotFound.yaml"},  # noqa
-                'default': {'$ref': '#/components/responses/default'}  # noqa
+                'default': {'$ref': '#/components/responses/default'}
             }
         }
     }

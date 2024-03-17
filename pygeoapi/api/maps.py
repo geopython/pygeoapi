@@ -8,7 +8,7 @@
 #          Ricardo Garcia Silva <ricardo.garcia.silva@geobeyond.it>
 #          Bernhard Mallinger <bernhard.mallinger@eox.at>
 #
-# Copyright (c) 2023 Tom Kralidis
+# Copyright (c) 2024 Tom Kralidis
 # Copyright (c) 2022 Francesco Bartoli
 # Copyright (c) 2022 John A Stevenson and Colin Blackburn
 # Copyright (c) 2023 Ricardo Garcia Silva
@@ -39,8 +39,8 @@
 
 
 from copy import deepcopy
-import logging
 from http import HTTPStatus
+import logging
 from typing import Tuple
 
 from pygeoapi.openapi import get_oas_30_parameters
@@ -48,13 +48,16 @@ from pygeoapi.plugin import load_plugin
 from pygeoapi.provider.base import ProviderGenericError
 from pygeoapi.util import (
     get_provider_by_type, to_json, filter_providers_by_type,
-    filter_dict_by_key_value,
+    filter_dict_by_key_value
 )
 
 from . import APIRequest, API, validate_datetime
 
-
 LOGGER = logging.getLogger(__name__)
+
+CONFORMANCE_CLASSES = [
+    'http://www.opengis.net/spec/ogcapi-maps-1/1.0/conf/core'
+]
 
 
 def get_collection_map(api: API, request: APIRequest,
@@ -180,8 +183,70 @@ def get_collection_map(api: API, request: APIRequest,
             data, api.pretty_print)
 
 
+def get_collection_map_legend(api: API, request: APIRequest,
+                              dataset, style=None) -> Tuple[dict, int, str]:
+    """
+    Returns a subset of a collection map legend
+
+    :param request: A request object
+    :param dataset: dataset name
+    :param style: style name
+
+    :returns: tuple of headers, status code, content
+    """
+
+    format_ = 'png'
+    headers = request.get_response_headers(**api.api_headers)
+    LOGGER.debug('Processing query parameters')
+
+    LOGGER.debug('Loading provider')
+    try:
+        collection_def = get_provider_by_type(
+            api.config['resources'][dataset]['providers'], 'map')
+
+        p = load_plugin('provider', collection_def)
+    except KeyError:
+        exception = {
+            'code': 'InvalidParameterValue',
+            'description': 'collection does not exist'
+        }
+        LOGGER.error(exception)
+        return headers, HTTPStatus.NOT_FOUND, to_json(
+            exception, api.pretty_print)
+    except ProviderGenericError as err:
+        LOGGER.error(err)
+        return api.get_exception(
+            err.http_status_code, headers, request.format,
+            err.ogc_exception_code, err.message)
+
+    LOGGER.debug('Generating legend')
+    try:
+        data = p.get_legend(style, request.params.get('f', 'png'))
+    except ProviderGenericError as err:
+        LOGGER.error(err)
+        return api.get_exception(
+            err.http_status_code, headers, request.format,
+            err.ogc_exception_code, err.message)
+
+    mt = collection_def['format']['name']
+
+    if format_ == mt:
+        headers['Content-Type'] = collection_def['format']['mimetype']
+        return headers, HTTPStatus.OK, data
+    else:
+        exception = {
+            'code': 'InvalidParameterValue',
+            'description': 'invalid format parameter'
+        }
+        LOGGER.error(exception)
+        return headers, HTTPStatus.BAD_REQUEST, to_json(
+            data, api.pretty_print)
+
+
 def get_oas_30(cfg: dict, locale: str) -> dict:
     from pygeoapi.openapi import OPENAPI_YAML
+
+    LOGGER.debug('setting up maps endpoints')
 
     paths = {}
 
@@ -190,8 +255,6 @@ def get_oas_30(cfg: dict, locale: str) -> dict:
 
     parameters = get_oas_30_parameters(cfg, locale)
     for k, v in collections.items():
-
-        LOGGER.debug('setting up maps endpoints')
         map_extension = filter_providers_by_type(
             collections[k]['providers'], 'map')
 
