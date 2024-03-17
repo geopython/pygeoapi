@@ -591,6 +591,16 @@ class JobStatus(Enum):
     dismissed = 'dismissed'
 
 
+@dataclass(frozen=True)
+class Subscriber:
+    """Store subscriber urls as defined in:
+    https://schemas.opengis.net/ogcapi/processes/part1/1.0/openapi/schemas/subscriber.yaml  # noqa
+    """
+    success_uri: str
+    in_progress_uri: Optional[str]
+    failed_uri: Optional[str]
+
+
 def read_data(path: Union[Path, str]) -> Union[bytes, str]:
     """
     helper function to read data (file or network)
