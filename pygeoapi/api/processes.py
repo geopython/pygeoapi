@@ -381,7 +381,7 @@ def execute_process(api: API, request: APIRequest,
         try:
             success_uri = subscriber_dict['successUri']
         except KeyError:
-            return api_.get_exception(
+            return api.get_exception(
                 HTTPStatus.BAD_REQUEST, headers, request.format,
                 'MissingParameterValue', 'Missing successUri')
         else:
