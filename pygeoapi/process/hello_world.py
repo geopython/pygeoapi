@@ -119,7 +119,7 @@ class HelloWorldProcessor(BaseProcessor):
         super().__init__(processor_def, PROCESS_METADATA)
         self.supports_outputs = True
 
-    def execute(self, data, outputs = None):
+    def execute(self, data, outputs=None):
         mimetype = 'application/json'
         name = data.get('name')
 

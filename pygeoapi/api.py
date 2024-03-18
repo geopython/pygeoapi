@@ -3497,7 +3497,7 @@ class API:
 
         out_dict = data.get('outputs', None)
         LOGGER.debug(f'outputs: {out_dict}')
-        
+
         subscriber = None
         subscriber_dict = data.get('subscriber')
         if subscriber_dict:

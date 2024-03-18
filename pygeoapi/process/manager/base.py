@@ -183,10 +183,11 @@ class BaseManager:
 
         raise JobNotFoundError()
 
-    def _execute_handler_async(self, p: BaseProcessor, job_id: str,
-                               data_dict: dict,
-                               requested_output: Optional[dict] = None,
-                               subscriber: Optional[Subscriber] = None,
+    def _execute_handler_async(
+            self, p: BaseProcessor, job_id: str,
+            data_dict: dict,
+            requested_output: Optional[dict] = None,
+            subscriber: Optional[Subscriber] = None,
     ) -> Tuple[str, None, JobStatus]:
         """
         This private execution handler executes a process in a background
@@ -212,11 +213,12 @@ class BaseManager:
         _process.start()
         return 'application/json', None, JobStatus.accepted
 
-    def _execute_handler_sync(self, p: BaseProcessor, job_id: str,
-                              data_dict: dict,
-                              requested_output: Optional[dict] = None,
-                              subscriber: Optional[Subscriber] = None,
-    ) -> Tuple[str, Any, JobStatus]:    
+    def _execute_handler_sync(
+            self, p: BaseProcessor, job_id: str,
+            data_dict: dict,
+            requested_output: Optional[dict] = None,
+            subscriber: Optional[Subscriber] = None,
+    ) -> Tuple[str, Any, JobStatus]:
         """
         Synchronous execution handler
 
@@ -232,7 +234,7 @@ class BaseManager:
             The value of any key may be an object and include the property
             `transmissionMode` - defauts to `value`.
             Note: 'optional' is for backward compatibility.
-     
+
         :returns: tuple of MIME type, response payload and status
         """
 
@@ -361,7 +363,7 @@ class BaseManager:
             The value of any key may be an object and include the property
             `transmissionMode` - defauts to `value`.
             Note: 'optional' is for backward compatibility.
-     
+
         :raises UnknownProcessError: if the input process_id does not
                                      correspond to a known process
         :returns: tuple of job_id, MIME type, response payload, status and

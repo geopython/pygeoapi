@@ -30,7 +30,6 @@
 # =================================================================
 
 import logging
-from typing import Any, Tuple
 from typing import Any, Tuple, Optional
 
 from pygeoapi.error import GenericError
@@ -54,7 +53,8 @@ class BaseProcessor:
         self.metadata = process_metadata
         self.supports_outputs = False
 
-    def execute(self, data: dict, outputs: Optional[dict] = None
+    def execute(
+            self, data: dict, outputs: Optional[dict] = None
     ) -> Tuple[str, Any]:
         """
         execute the process
