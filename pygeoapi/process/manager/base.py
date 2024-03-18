@@ -183,12 +183,11 @@ class BaseManager:
 
         raise JobNotFoundError()
 
-    def _execute_handler_async(
-            self, p: BaseProcessor, job_id: str,
-            data_dict: dict,
-            requested_output: Optional[dict] = None,
-            subscriber: Optional[Subscriber] = None,
-    ) -> Tuple[str, None, JobStatus]:
+    def _execute_handler_async(self, p: BaseProcessor, job_id: str,
+                               data_dict: dict,
+                               requested_output: Optional[dict] = None,
+                               subscriber: Optional[Subscriber] = None,
+                               ) -> Tuple[str, None, JobStatus]:
         """
         This private execution handler executes a process in a background
         thread using `multiprocessing.dummy`
@@ -213,12 +212,11 @@ class BaseManager:
         _process.start()
         return 'application/json', None, JobStatus.accepted
 
-    def _execute_handler_sync(
-            self, p: BaseProcessor, job_id: str,
-            data_dict: dict,
-            requested_output: Optional[dict] = None,
-            subscriber: Optional[Subscriber] = None,
-    ) -> Tuple[str, Any, JobStatus]:
+    def _execute_handler_sync(self, p: BaseProcessor, job_id: str,
+                              data_dict: dict,
+                              requested_output: Optional[dict] = None,
+                              subscriber: Optional[Subscriber] = None,
+                              ) -> Tuple[str, Any, JobStatus]:
         """
         Synchronous execution handler
 
