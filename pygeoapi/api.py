@@ -6,11 +6,13 @@
 #          John A Stevenson <jostev@bgs.ac.uk>
 #          Colin Blackburn <colb@bgs.ac.uk>
 #          Ricardo Garcia Silva <ricardo.garcia.silva@geobeyond.it>
+#          Francesco Martinelli <francesco.martinelli@ingv.it>
 #
 # Copyright (c) 2024 Tom Kralidis
 # Copyright (c) 2022 Francesco Bartoli
 # Copyright (c) 2022 John A Stevenson and Colin Blackburn
 # Copyright (c) 2023 Ricardo Garcia Silva
+# Copyright (c) 2024 Francesco Martinelli
 #
 # Permission is hereby granted, free of charge, to any person
 # obtaining a copy of this software and associated documentation
@@ -3493,6 +3495,9 @@ class API:
         data_dict = data.get('inputs', {})
         LOGGER.debug(data_dict)
 
+        out_dict = data.get('outputs', None)
+        LOGGER.debug(f'outputs: {out_dict}')
+        
         subscriber = None
         subscriber_dict = data.get('subscriber')
         if subscriber_dict:
