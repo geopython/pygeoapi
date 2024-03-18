@@ -187,20 +187,22 @@ def collection_items(request: HttpRequest, collection_id: str) -> HttpResponse:
             itemtypes_api.get_collection_items,
             request,
             collection_id,
+            skip_valid_check=True,
         )
     elif request.method == 'POST':
         if request.content_type is not None:
             if request.content_type == 'application/geo+json':
                 response_ = execute_from_django(
                     itemtypes_api.manage_collection_item, request,
-                    'create', collection_id)
+                    'create', collection_id, skip_valid_check=True)
             else:
                 response_ = execute_from_django(
                     itemtypes_api.post_collection_items,
-                    request, collection_id)
+                    request, collection_id, skip_valid_check=True,)
     elif request.method == 'OPTIONS':
         response_ = execute_from_django(itemtypes_api.manage_collection_item,
-                                        request, 'options', collection_id)
+                                        request, 'options', collection_id,
+                                        skip_valid_check=True)
 
     response = _to_django_response(*response_)
 
@@ -258,17 +260,17 @@ def collection_item(request: HttpRequest,
     elif request.method == 'PUT':
         response_ = _feed_response(
             request, 'manage_collection_item', request, 'update',
-            collection_id, item_id
+            collection_id, item_id, skip_valid_check=True,
         )
     elif request.method == 'DELETE':
         response_ = _feed_response(
             request, 'manage_collection_item', request, 'delete',
-            collection_id, item_id
+            collection_id, item_id, skip_valid_check=True,
         )
     elif request.method == 'OPTIONS':
         response_ = _feed_response(
             request, 'manage_collection_item', request, 'options',
-            collection_id, item_id)
+            collection_id, item_id, skip_valid_check=True)
 
     response = _to_django_response(*response_)
 
@@ -323,6 +325,7 @@ def collection_tiles_metadata(request: HttpRequest, collection_id: str,
     return execute_from_django(
         tiles_api.get_collection_tiles_metadata,
         request, collection_id, tileMatrixSetId,
+        skip_valid_check=True,
     )
 
 
@@ -350,6 +353,7 @@ def collection_item_tiles(request: HttpRequest, collection_id: str,
         tileMatrix,
         tileRow,
         tileCol,
+        skip_valid_check=True,
     )
 
 
@@ -445,7 +449,8 @@ def get_collection_edr_query(
         collection_id,
         instance_id,
         query_type,
-        location_id
+        location_id,
+        skip_valid_check=True,
     )
 
 
@@ -546,8 +551,8 @@ def _feed_response(request: HttpRequest, api_definition: str,
     return api(request, *args, **kwargs)
 
 
-def execute_from_django(api_function, request: HttpRequest, *args
-                        ) -> HttpResponse:
+def execute_from_django(api_function, request: HttpRequest, *args,
+                        skip_valid_check=False) -> HttpResponse:
 
     api_: API | "Admin"
     if settings.PYGEOAPI_CONFIG['server'].get('admin'):  # noqa
@@ -558,7 +563,7 @@ def execute_from_django(api_function, request: HttpRequest, *args
 
     api_request = APIRequest.from_django(request, api_.locales)
     content: str | bytes
-    if not api_request.is_valid():
+    if not skip_valid_check and not api_request.is_valid():
         headers, status, content = api_.get_format_exception(api_request)
     else:
 

@@ -111,8 +111,6 @@ def get_collection_schema(
     :returns: tuple of headers, status code, content
     """
 
-    if not request.is_valid():
-        return api.get_format_exception(request)
     headers = request.get_response_headers(**api.api_headers)
 
     if any([dataset is None,
@@ -193,8 +191,6 @@ def get_collection_queryables(api: API, request: Union[APIRequest, Any],
     :returns: tuple of headers, status code, content
     """
 
-    if not request.is_valid():
-        return api.get_format_exception(request)
     headers = request.get_response_headers(**api.api_headers)
 
     if any([dataset is None,
@@ -1123,9 +1119,6 @@ def get_collection_item(api: API, request: APIRequest,
 
     :returns: tuple of headers, status code, content
     """
-
-    if not request.is_valid():
-        return api.get_format_exception(request)
 
     # Set Content-Language to system locale until provider locale
     # has been determined

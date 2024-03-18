@@ -137,13 +137,15 @@ def get_response(result: tuple):
     return response
 
 
-def execute_from_flask(api_function, request: Request, *args) -> Response:
+def execute_from_flask(api_function, request: Request, *args,
+                       skip_valid_check=False) -> Response:
     """
     Executes API function from Flask
 
     :param api_function: API function
     :param request: request object
     :param *args: variable length additional arguments
+    :param skip_validity_check: bool
 
     :returns: A Response instance
     """
@@ -152,7 +154,7 @@ def execute_from_flask(api_function, request: Request, *args) -> Response:
 
     content: str | bytes
 
-    if not api_request.is_valid():
+    if not skip_valid_check and not api_request.is_valid():
         headers, status, content = api_.get_format_exception(api_request)
     else:
         headers, status, content = api_function(api_, api_request, *args)
@@ -280,31 +282,36 @@ def collection_items(collection_id, item_id=None):
     if item_id is None:
         if request.method == 'GET':  # list items
             return execute_from_flask(itemtypes_api.get_collection_items,
-                                      request, collection_id)
+                                      request, collection_id,
+                                      skip_valid_check=True)
         elif request.method == 'POST':  # filter or manage items
             if request.content_type is not None:
                 if request.content_type == 'application/geo+json':
                     return execute_from_flask(
                             itemtypes_api.manage_collection_item,
-                            request, 'create', collection_id)
+                            request, 'create', collection_id,
+                            skip_valid_check=True)
                 else:
                     return execute_from_flask(
                             itemtypes_api.post_collection_items, request,
-                            collection_id)
+                            collection_id, skip_valid_check=True)
         elif request.method == 'OPTIONS':
             return execute_from_flask(
                     itemtypes_api.manage_collection_item, request, 'options',
-                    collection_id)
+                    collection_id, skip_valid_check=True)
 
     elif request.method == 'DELETE':
         return execute_from_flask(itemtypes_api.manage_collection_item,
-                                  request, 'delete', collection_id, item_id)
+                                  request, 'delete', collection_id, item_id,
+                                  skip_valid_check=True)
     elif request.method == 'PUT':
         return execute_from_flask(itemtypes_api.manage_collection_item,
-                                  request, 'update', collection_id, item_id)
+                                  request, 'update', collection_id, item_id,
+                                  skip_valid_check=True)
     elif request.method == 'OPTIONS':
         return execute_from_flask(itemtypes_api.manage_collection_item,
-                                  request, 'options', collection_id, item_id)
+                                  request, 'options', collection_id, item_id,
+                                  skip_valid_check=True)
     else:
         return execute_from_flask(itemtypes_api.get_collection_item, request,
                                   collection_id, item_id)
@@ -351,7 +358,8 @@ def get_collection_tiles_metadata(collection_id=None, tileMatrixSetId=None):
     """
 
     return execute_from_flask(tiles_api.get_collection_tiles_metadata,
-                              request, collection_id, tileMatrixSetId)
+                              request, collection_id, tileMatrixSetId,
+                              skip_valid_check=True)
 
 
 @BLUEPRINT.route('/collections/<path:collection_id>/tiles/\
@@ -372,7 +380,9 @@ def get_collection_tiles_data(collection_id=None, tileMatrixSetId=None,
 
     return execute_from_flask(
         tiles_api.get_collection_tiles_data,
-        request, collection_id, tileMatrixSetId, tileMatrix, tileRow, tileCol)
+        request, collection_id, tileMatrixSetId, tileMatrix, tileRow, tileCol,
+        skip_valid_check=True,
+    )
 
 
 @BLUEPRINT.route('/collections/<collection_id>/map')
@@ -509,6 +519,7 @@ def get_collection_edr_query(collection_id, instance_id=None,
     return execute_from_flask(
         edr_api.get_collection_edr_query, request, collection_id, instance_id,
         query_type, location_id,
+        skip_valid_check=True,
     )
 
 

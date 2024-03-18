@@ -139,11 +139,11 @@ def _to_response(headers, status, content):
     return response
 
 
-async def execute_from_starlette(api_function, request: Request, *args
-                                 ) -> Response:
+async def execute_from_starlette(api_function, request: Request, *args,
+                                 skip_valid_check=False) -> Response:
     api_request = await APIRequest.from_starlette(request, api_.locales)
     content: str | bytes
-    if not api_request.is_valid():
+    if not skip_valid_check and not api_request.is_valid():
         headers, status, content = api_.get_format_exception(api_request)
     else:
 
@@ -284,7 +284,7 @@ async def get_collection_tiles_metadata(request: Request, collection_id=None,
 
     return await execute_from_starlette(
         tiles_api.get_collection_tiles_metadata, request,
-        collection_id, tileMatrixSetId
+        collection_id, tileMatrixSetId, skip_valid_check=True,
     )
 
 
@@ -315,7 +315,8 @@ async def get_collection_items_tiles(request: Request, collection_id=None,
         tileCol = request.path_params['tileCol']
     return await execute_from_starlette(
         tiles_api.get_collection_tiles_data, request, collection_id,
-        tileMatrixSetId, tile_matrix, tileRow, tileCol
+        tileMatrixSetId, tile_matrix, tileRow, tileCol,
+        skip_valid_check=True,
     )
 
 
@@ -337,40 +338,42 @@ async def collection_items(request: Request, collection_id=None, item_id=None):
     if item_id is None:
         if request.method == 'GET':  # list items
             return await execute_from_starlette(
-                itemtypes_api.get_collection_items, request, collection_id)
+                itemtypes_api.get_collection_items, request, collection_id,
+                skip_valid_check=True)
         elif request.method == 'POST':  # filter or manage items
             content_type = request.headers.get('content-type')
             if content_type is not None:
                 if content_type == 'application/geo+json':
                     return await execute_from_starlette(
                         itemtypes_api.manage_collection_item, request,
-                        'create', collection_id)
+                        'create', collection_id, skip_valid_check=True)
                 else:
                     return await execute_from_starlette(
                         itemtypes_api.post_collection_items,
                         request,
-                        collection_id
+                        collection_id,
+                        skip_valid_check=True,
                     )
         elif request.method == 'OPTIONS':
             return await execute_from_starlette(
                 itemtypes_api.manage_collection_item, request,
-                'options', collection_id
+                'options', collection_id, skip_valid_check=True,
             )
 
     elif request.method == 'DELETE':
         return await execute_from_starlette(
             itemtypes_api.manage_collection_item, request, 'delete',
-            collection_id, item_id
+            collection_id, item_id, skip_valid_check=True,
         )
     elif request.method == 'PUT':
         return await execute_from_starlette(
             itemtypes_api.manage_collection_item, request, 'update',
-            collection_id, item_id
+            collection_id, item_id, skip_valid_check=True,
         )
     elif request.method == 'OPTIONS':
         return await execute_from_starlette(
             itemtypes_api.manage_collection_item, request, 'options',
-            collection_id, item_id
+            collection_id, item_id, skip_valid_check=True,
         )
     else:
         return await execute_from_starlette(
@@ -528,7 +531,8 @@ async def get_collection_edr_query(request: Request, collection_id=None, instanc
     query_type = request["path"].split('/')[-1]  # noqa
     return await execute_from_starlette(
         edr_api.get_collection_edr_query, request, collection_id,
-        instance_id, query_type
+        instance_id, query_type,
+        skip_valid_check=True,
     )
 
 
