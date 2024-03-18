@@ -41,9 +41,9 @@ from django.conf import settings
 from django.http import HttpRequest, HttpResponse
 
 from pygeoapi.api import API, APIRequest, apply_gzip
-import pygeoapi.api.coverages_api as coverages_api
+import pygeoapi.api.coverages as coverages_api
 import pygeoapi.api.environmental_data_retrieval as edr_api
-import pygeoapi.api.itemtypes_api as itemtypes_api
+import pygeoapi.api.itemtypes as itemtypes_api
 import pygeoapi.api.maps as maps_api
 import pygeoapi.api.processes as processes_api
 import pygeoapi.api.stac as stac_api
