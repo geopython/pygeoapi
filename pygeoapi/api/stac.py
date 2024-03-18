@@ -59,6 +59,9 @@ from . import APIRequest, API, FORMAT_TYPES, F_JSON, F_HTML
 LOGGER = logging.getLogger(__name__)
 
 
+CONFORMANCE_CLASSES = []
+
+
 # TODO: no tests for this?
 def get_stac_root(api: API, request: APIRequest) -> Tuple[dict, int, str]:
     """
