@@ -45,7 +45,7 @@ from shapely.geometry import Point
 
 from pygeoapi.api import (
     API, APIRequest, FORMAT_TYPES, validate_bbox, validate_datetime,
-    validate_subset, F_HTML, F_JSON, F_JSONLD, F_GZIP, __version__
+    validate_subset, F_HTML, F_JSON, F_JSONLD, F_GZIP, __version__, apply_gzip,
 )
 from pygeoapi.api.coverages import get_collection_coverage
 from pygeoapi.api.environmental_data_retrieval import get_collection_edr_query
@@ -531,13 +531,19 @@ def test_gzip(config, api_):
 
 
 def test_gzip_csv(config, api_):
+    # Add gzip to server
+    config['server']['gzip'] = True
+    api_ = API(config, openapi)
+
     req_csv = mock_api_request({'f': 'csv'})
     rsp_csv_headers, _, rsp_csv = get_collection_items(api_, req_csv, 'obs')
+    rsp_csv = apply_gzip(rsp_csv_headers, rsp_csv)
     assert rsp_csv_headers['Content-Type'] == 'text/csv; charset=utf-8'
     rsp_csv = rsp_csv.decode('utf-8')
 
     req_csv = mock_api_request({'f': 'csv'}, HTTP_ACCEPT_ENCODING=F_GZIP)
     rsp_csv_headers, _, rsp_csv_gzip = get_collection_items(api_, req_csv, 'obs') # noqa
+    rsp_csv_gzip = apply_gzip(rsp_csv_headers, rsp_csv_gzip)
     assert rsp_csv_headers['Content-Type'] == 'text/csv; charset=utf-8'
     rsp_csv_ = gzip.decompress(rsp_csv_gzip).decode('utf-8')
     assert rsp_csv == rsp_csv_
@@ -548,6 +554,7 @@ def test_gzip_csv(config, api_):
 
     req_csv = mock_api_request({'f': 'csv'}, HTTP_ACCEPT_ENCODING=F_GZIP)
     rsp_csv_headers, _, rsp_csv_gzip = get_collection_items(api_, req_csv, 'obs') # noqa
+    rsp_csv_gzip = apply_gzip(rsp_csv_headers, rsp_csv_gzip)
     assert rsp_csv_headers['Content-Type'] == 'text/csv; charset=utf-8'
     rsp_csv_ = gzip.decompress(rsp_csv_gzip).decode('utf-8')
     assert rsp_csv == rsp_csv_
