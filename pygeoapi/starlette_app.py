@@ -229,8 +229,9 @@ async def collection_schema(request: Request, collection_id=None):
     if 'collection_id' in request.path_params:
         collection_id = request.path_params['collection_id']
 
-    return await get_response(
-        api_.get_collection_schema, request, collection_id)
+    return await execute_from_starlette(
+        itemtypes_api.get_collection_schema, request, collection_id
+    )
 
 
 async def collection_queryables(request: Request, collection_id=None):
