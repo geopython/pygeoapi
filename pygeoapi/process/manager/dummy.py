@@ -35,6 +35,7 @@ from pygeoapi.process.manager.base import BaseManager
 from pygeoapi.util import (
     RequestedProcessExecutionMode,
     JobStatus,
+    Subscriber
 )
 
 LOGGER = logging.getLogger(__name__)
@@ -70,7 +71,8 @@ class DummyManager(BaseManager):
             self,
             process_id: str,
             data_dict: dict,
-            execution_mode: Optional[RequestedProcessExecutionMode] = None
+            execution_mode: Optional[RequestedProcessExecutionMode] = None,
+            subscriber: Optional[Subscriber] = None
     ) -> Tuple[str, str, Any, JobStatus, Optional[Dict[str, str]]]:
         """
         Default process execution handler
@@ -94,10 +96,12 @@ class DummyManager(BaseManager):
                 LOGGER.debug('Dummy manager does not support asynchronous')
                 LOGGER.debug('Forcing synchronous execution')
 
+        self._send_in_progress_notification(subscriber)
         processor = self.get_processor(process_id)
         try:
             jfmt, outputs = processor.execute(data_dict)
             current_status = JobStatus.successful
+            self._send_success_notification(subscriber, outputs)
         except Exception:
             outputs = {
                 'code': 'InvalidParameterValue',
@@ -105,6 +109,7 @@ class DummyManager(BaseManager):
             }
             current_status = JobStatus.failed
             LOGGER.exception('Process failed')
+            self._send_failed_notification(subscriber)
         job_id = str(uuid.uuid1())
         return job_id, jfmt, outputs, current_status, response_headers
 
