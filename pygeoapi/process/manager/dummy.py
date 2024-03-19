@@ -35,7 +35,7 @@ from pygeoapi.process.manager.base import BaseManager
 from pygeoapi.util import (
     RequestedProcessExecutionMode,
     JobStatus,
-    Subscriber,
+    Subscriber
 )
 
 LOGGER = logging.getLogger(__name__)
