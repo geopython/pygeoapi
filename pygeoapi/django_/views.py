@@ -345,7 +345,7 @@ def collection_item_tiles(request: HttpRequest, collection_id: str,
 
     response_ = _feed_response(
         request,
-        'get_collection_tiles_metadata',
+        'get_collection_tiles_data',
         collection_id,
         tileMatrixSetId,
         tileMatrix,
