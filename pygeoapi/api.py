@@ -6,11 +6,13 @@
 #          John A Stevenson <jostev@bgs.ac.uk>
 #          Colin Blackburn <colb@bgs.ac.uk>
 #          Ricardo Garcia Silva <ricardo.garcia.silva@geobeyond.it>
+#          Francesco Martinelli <francesco.martinelli@ingv.it>
 #
-# Copyright (c) 2023 Tom Kralidis
+# Copyright (c) 2024 Tom Kralidis
 # Copyright (c) 2022 Francesco Bartoli
 # Copyright (c) 2022 John A Stevenson and Colin Blackburn
 # Copyright (c) 2023 Ricardo Garcia Silva
+# Copyright (c) 2024 Francesco Martinelli
 #
 # Permission is hereby granted, free of charge, to any person
 # obtaining a copy of this software and associated documentation
@@ -73,13 +75,10 @@ from pygeoapi.process.manager.base import get_manager
 from pygeoapi.plugin import load_plugin, PLUGINS
 from pygeoapi.provider.base import (
     ProviderGenericError, ProviderConnectionError, ProviderNotFoundError,
-    ProviderInvalidDataError, ProviderInvalidQueryError, ProviderNoDataError,
-    ProviderQueryError, ProviderItemNotFoundError, ProviderTypeError,
-    ProviderRequestEntityTooLargeError)
+    ProviderTypeError)
+from pygeoapi.models.provider.base import (TilesMetadataFormat,
+                                           TileMatrixSetEnum)
 
-from pygeoapi.provider.tile import (ProviderTileNotFoundError,
-                                    ProviderTileQueryError,
-                                    ProviderTilesetIdNotFoundError)
 from pygeoapi.models.cql import CQLModel
 from pygeoapi.util import (dategetter, RequestedProcessExecutionMode,
                            DATETIME_FORMAT, UrlPrefetcher,
@@ -88,9 +87,8 @@ from pygeoapi.util import (dategetter, RequestedProcessExecutionMode,
                            json_serial, render_j2_template, str2bool,
                            TEMPLATES, to_json, get_api_rules, get_base_url,
                            get_crs_from_uri, get_supported_crs_list,
-                           CrsTransformSpec, transform_bbox)
-
-from pygeoapi.models.provider.base import TilesMetadataFormat
+                           modify_pygeofilter, CrsTransformSpec,
+                           transform_bbox, Subscriber)
 
 LOGGER = logging.getLogger(__name__)
 
@@ -106,6 +104,7 @@ F_HTML = 'html'
 F_JSONLD = 'jsonld'
 F_GZIP = 'gzip'
 F_PNG = 'png'
+F_JPEG = 'jpeg'
 F_MVT = 'mvt'
 F_NETCDF = 'NetCDF'
 
@@ -115,6 +114,7 @@ FORMAT_TYPES = OrderedDict((
     (F_JSONLD, 'application/ld+json'),
     (F_JSON, 'application/json'),
     (F_PNG, 'image/png'),
+    (F_JPEG, 'image/jpeg'),
     (F_MVT, 'application/vnd.mapbox-vector-tile'),
     (F_NETCDF, 'application/x-netcdf'),
 ))
@@ -139,7 +139,9 @@ CONFORMANCE = {
         'http://www.opengis.net/spec/ogcapi-features-2/1.0/conf/crs',
         'http://www.opengis.net/spec/ogcapi-features-3/1.0/conf/queryables',
         'http://www.opengis.net/spec/ogcapi-features-3/1.0/conf/queryables-query-parameters',  # noqa
-        'http://www.opengis.net/spec/ogcapi-features-4/1.0/conf/create-replace-delete'  # noqa
+        'http://www.opengis.net/spec/ogcapi-features-4/1.0/conf/create-replace-delete',  # noqa
+        'http://www.opengis.net/spec/ogcapi-features-5/1.0/conf/schemas',
+        'http://www.opengis.net/spec/ogcapi-features-5/1.0/req/core-roles-features' # noqa
     ],
     'coverage': [
         'http://www.opengis.net/spec/ogcapi-coverages-1/1.0/conf/core',
@@ -156,7 +158,11 @@ CONFORMANCE = {
     ],
     'tile': [
         'http://www.opengis.net/spec/ogcapi-tiles-1/1.0/conf/core',
-        'http://www.opengis.net/spec/ogcapi-tiles-1/1.0/conf/mvt'
+        'http://www.opengis.net/spec/ogcapi-tiles-1/1.0/conf/mvt',
+        'http://www.opengis.net/spec/ogcapi-tiles-1/1.0/conf/tileset',
+        'http://www.opengis.net/spec/ogcapi-tiles-1/1.0/conf/tilesets-list',
+        'http://www.opengis.net/spec/ogcapi-tiles-1/1.0/conf/oas30',
+        'http://www.opengis.net/spec/ogcapi-tiles-1/1.0/conf/geodata-tilesets'
     ],
     'record': [
         'http://www.opengis.net/spec/ogcapi-records-1/1.0/conf/core',
@@ -170,6 +176,7 @@ CONFORMANCE = {
         'http://www.opengis.net/spec/ogcapi-processes-1/1.0/conf/core',
         'http://www.opengis.net/spec/ogcapi-processes-1/1.0/conf/json',
         'http://www.opengis.net/spec/ogcapi-processes-1/1.0/conf/oas30'
+        'http://www.opengis.net/spec/ogcapi-processes-1/1.0/conf/callback',
     ],
     'edr': [
         'http://www.opengis.net/spec/ogcapi-edr-1/1.0/conf/core'
@@ -363,18 +370,14 @@ class APIRequest:
                 # Set data from Django request
                 api_req._data = request.body
             else:
-                try:
-                    import nest_asyncio
-                    nest_asyncio.apply()
-                    # Set data from Starlette request after async
-                    # coroutine completion
-                    # TODO:
-                    # this now blocks, but once Flask v2 with async support
-                    # has been implemented, with_data() can become async too
-                    loop = asyncio.get_event_loop()
-                    api_req._data = loop.run_until_complete(request.body())
-                except ModuleNotFoundError:
-                    LOGGER.error('Module nest-asyncio not found')
+                # Set data from Starlette request after async
+                # coroutine completion
+                # TODO:
+                # this now blocks, but once Flask v2 with async support
+                # has been implemented, with_data() can become async too
+                loop = asyncio.get_event_loop()
+                api_req._data = asyncio.run_coroutine_threadsafe(
+                    request.body(), loop).result(1)
         return api_req
 
     @staticmethod
@@ -761,6 +764,16 @@ class API:
             'type': FORMAT_TYPES[F_JSON],
             'title': 'Jobs',
             'href': f"{self.base_url}/jobs"
+        }, {
+            'rel': 'http://www.opengis.net/def/rel/ogc/1.0/tiling-schemes',
+            'type': FORMAT_TYPES[F_JSON],
+            'title': 'The list of supported tiling schemes (as JSON)',
+            'href': f"{self.base_url}/TileMatrixSets?f=json"
+        }, {
+            'rel': 'http://www.opengis.net/def/rel/ogc/1.0/tiling-schemes',
+            'type': FORMAT_TYPES[F_HTML],
+            'title': 'The list of supported tiling schemes (as HTML)',
+            'href': f"{self.base_url}/TileMatrixSets?f=html"
         }]
 
         headers = request.get_response_headers(**self.api_headers)
@@ -870,6 +883,122 @@ class API:
 
     @gzip
     @pre_process
+    def tilematrixsets(self,
+                       request: Union[APIRequest, Any]) -> Tuple[dict, int,
+                                                                 str]:
+        """
+        Provide tileMatrixSets definition
+
+        :param request: A request object
+
+        :returns: tuple of headers, status code, content
+        """
+
+        if not request.is_valid():
+            return self.get_format_exception(request)
+
+        headers = request.get_response_headers(**self.api_headers)
+
+        # Retrieve available TileMatrixSets
+        enums = [e.value for e in TileMatrixSetEnum]
+
+        tms = {"tileMatrixSets": []}
+
+        for e in enums:
+            tms['tileMatrixSets'].append({
+                "title": e.title,
+                "id": e.tileMatrixSet,
+                "uri": e.tileMatrixSetURI,
+                "links": [
+                    {
+                       "rel": "self",
+                       "type": "text/html",
+                       "title": f"The HTML representation of the {e.tileMatrixSet} tile matrix set", # noqa
+                       "href": f"{self.base_url}/TileMatrixSets/{e.tileMatrixSet}?f=html" # noqa
+                    },
+                    {
+                       "rel": "self",
+                       "type": "application/json",
+                       "title": f"The JSON representation of the {e.tileMatrixSet} tile matrix set", # noqa
+                       "href": f"{self.base_url}/TileMatrixSets/{e.tileMatrixSet}?f=json" # noqa
+                    }
+                ]
+            })
+
+        tms['links'] = [{
+            "rel": "alternate",
+            "type": "text/html",
+            "title": "This document as HTML",
+            "href": f"{self.base_url}/tileMatrixSets?f=html"
+        }, {
+            "rel": "self",
+            "type": "application/json",
+            "title": "This document",
+            "href": f"{self.base_url}/tileMatrixSets?f=json"
+        }]
+
+        if request.format == F_HTML:  # render
+            content = render_j2_template(self.tpl_config,
+                                         'tilematrixsets/index.html',
+                                         tms, request.locale)
+            return headers, HTTPStatus.OK, content
+
+        return headers, HTTPStatus.OK, to_json(tms, self.pretty_print)
+
+    @gzip
+    @pre_process
+    def tilematrixset(self,
+                      request: Union[APIRequest, Any],
+                      tileMatrixSetId) -> Tuple[dict,
+                                                int, str]:
+        """
+        Provide tile matrix definition
+
+        :param request: A request object
+
+        :returns: tuple of headers, status code, content
+        """
+
+        if not request.is_valid():
+            return self.get_format_exception(request)
+
+        headers = request.get_response_headers(**self.api_headers)
+
+        # Retrieve relevant TileMatrixSet
+        enums = [e.value for e in TileMatrixSetEnum]
+        enum = None
+
+        try:
+            for e in enums:
+                if tileMatrixSetId == e.tileMatrixSet:
+                    enum = e
+            if not enum:
+                raise ValueError('could not find this tilematrixset')
+        except ValueError as err:
+            return self.get_exception(
+                HTTPStatus.BAD_REQUEST, headers, request.format,
+                'InvalidParameterValue', str(err))
+
+        tms = {
+            "title": enum.tileMatrixSet,
+            "crs": enum.crs,
+            "id": enum.tileMatrixSet,
+            "uri": enum.tileMatrixSetURI,
+            "orderedAxes": enum.orderedAxes,
+            "wellKnownScaleSet": enum.wellKnownScaleSet,
+            "tileMatrices": enum.tileMatrices
+        }
+
+        if request.format == F_HTML:  # render
+            content = render_j2_template(self.tpl_config,
+                                         'tilematrixsets/tilematrixset.html',
+                                         tms, request.locale)
+            return headers, HTTPStatus.OK, content
+
+        return headers, HTTPStatus.OK, to_json(tms, self.pretty_print)
+
+    @gzip
+    @pre_process
     @jsonldify
     def describe_collections(self, request: Union[APIRequest, Any],
                              dataset=None) -> Tuple[dict, int, str]:
@@ -918,6 +1047,10 @@ class API:
 
             if 'format' in collection_data:
                 collection_data_format = collection_data['format']
+
+            is_vector_tile = (collection_data_type == 'tile' and
+                              collection_data_format['name'] not
+                              in [F_PNG, F_JPEG])
 
             collection = {
                 'id': k,
@@ -1017,7 +1150,21 @@ class API:
                 'href': f'{self.get_collections_url()}/{k}?f={F_HTML}'
             })
 
-            if collection_data_type in ['feature', 'record', 'tile']:
+            if collection_data_type in ['feature', 'coverage', 'record']:
+                collection['links'].append({
+                    'type': FORMAT_TYPES[F_JSON],
+                    'rel': f'{OGC_RELTYPES_BASE}/schema',
+                    'title': 'Schema of collection in JSON',
+                    'href': f'{self.get_collections_url()}/{k}/schema?f={F_JSON}'  # noqa
+                })
+                collection['links'].append({
+                    'type': FORMAT_TYPES[F_HTML],
+                    'rel': f'{OGC_RELTYPES_BASE}/schema',
+                    'title': 'Schema of collection in HTML',
+                    'href': f'{self.get_collections_url()}/{k}/schema?f={F_HTML}'  # noqa
+                })
+
+            if is_vector_tile or collection_data_type in ['feature', 'record']:
                 # TODO: translate
                 collection['itemType'] = collection_data_type
                 LOGGER.debug('Adding feature/record based links')
@@ -1063,44 +1210,6 @@ class API:
                 # TODO: translate
                 LOGGER.debug('Adding coverage based links')
                 collection['links'].append({
-                    'type': FORMAT_TYPES[F_JSON],
-                    'rel': 'collection',
-                    'title': 'Detailed Coverage metadata in JSON',
-                    'href': f'{self.get_collections_url()}/{k}?f={F_JSON}'
-                })
-                collection['links'].append({
-                    'type': FORMAT_TYPES[F_HTML],
-                    'rel': 'collection',
-                    'title': 'Detailed Coverage metadata in HTML',
-                    'href': f'{self.get_collections_url()}/{k}?f={F_HTML}'
-                })
-                coverage_url = f'{self.get_collections_url()}/{k}/coverage'
-
-                collection['links'].append({
-                    'type': FORMAT_TYPES[F_JSON],
-                    'rel': f'{OGC_RELTYPES_BASE}/coverage-domainset',
-                    'title': 'Coverage domain set of collection in JSON',
-                    'href': f'{coverage_url}/domainset?f={F_JSON}'
-                })
-                collection['links'].append({
-                    'type': FORMAT_TYPES[F_HTML],
-                    'rel': f'{OGC_RELTYPES_BASE}/coverage-domainset',
-                    'title': 'Coverage domain set of collection in HTML',
-                    'href': f'{coverage_url}/domainset?f={F_HTML}'
-                })
-                collection['links'].append({
-                    'type': FORMAT_TYPES[F_JSON],
-                    'rel': f'{OGC_RELTYPES_BASE}/coverage-rangetype',
-                    'title': 'Coverage range type of collection in JSON',
-                    'href': f'{coverage_url}/rangetype?f={F_JSON}'
-                })
-                collection['links'].append({
-                    'type': FORMAT_TYPES[F_HTML],
-                    'rel': f'{OGC_RELTYPES_BASE}/coverage-rangetype',
-                    'title': 'Coverage range type of collection in HTML',
-                    'href': f'{coverage_url}/rangetype?f={F_HTML}'
-                })
-                collection['links'].append({
                     'type': 'application/prs.coverage+json',
                     'rel': f'{OGC_RELTYPES_BASE}/coverage',
                     'title': 'Coverage data',
@@ -1129,9 +1238,13 @@ class API:
                     except ProviderTypeError:
                         pass
                     else:
-                        collection['crs'] = [p.crs]
-                        collection['domainset'] = p.get_coverage_domainset()
-                        collection['rangetype'] = p.get_coverage_rangetype()
+                        collection['extent']['spatial']['grid'] = [{
+                            'cellsCount': p._coverage_properties['width'],
+                            'resolution': p._coverage_properties['resx']
+                            }, {
+                            'cellsCount': p._coverage_properties['height'],
+                            'resolution': p._coverage_properties['resy']
+                        }]
 
             try:
                 tile = get_provider_by_type(v['providers'], 'tile')
@@ -1197,8 +1310,21 @@ class API:
                 parameters = p.get_fields()
                 if parameters:
                     collection['parameter_names'] = {}
-                    for f in parameters['field']:
-                        collection['parameter_names'][f['id']] = f
+                    for key, value in parameters.items():
+                        collection['parameter_names'][key] = {
+                            'id': key,
+                            'type': 'Parameter',
+                            'name': value['title'],
+                            'unit': {
+                                'label': {
+                                    'en': value['title']
+                                },
+                                'symbol': {
+                                    'value': value['x-ogc-unit'],
+                                    'type': 'http://www.opengis.net/def/uom/UCUM/'  # noqa
+                                }
+                            }
+                        }
 
                 for qt in p.get_query_types():
                     collection['links'].append({
@@ -1271,6 +1397,91 @@ class API:
     @gzip
     @pre_process
     @jsonldify
+    def get_collection_schema(
+            self, request: Union[APIRequest, Any],
+            dataset) -> Tuple[dict, int, str]:
+        """
+        Returns a collection schema
+
+        :param request: A request object
+        :param dataset: dataset name
+
+        :returns: tuple of headers, status code, content
+        """
+
+        if not request.is_valid():
+            return self.get_format_exception(request)
+        headers = request.get_response_headers(**self.api_headers)
+
+        if any([dataset is None,
+                dataset not in self.config['resources'].keys()]):
+
+            msg = 'Collection not found'
+            return self.get_exception(
+                HTTPStatus.NOT_FOUND, headers, request.format, 'NotFound', msg)
+
+        LOGGER.debug('Creating collection schema')
+        try:
+            LOGGER.debug('Loading feature provider')
+            p = load_plugin('provider', get_provider_by_type(
+                self.config['resources'][dataset]['providers'], 'feature'))
+        except ProviderTypeError:
+            try:
+                LOGGER.debug('Loading coverage provider')
+                p = load_plugin('provider', get_provider_by_type(
+                    self.config['resources'][dataset]['providers'], 'coverage'))  # noqa
+            except ProviderTypeError:
+                LOGGER.debug('Loading record provider')
+                p = load_plugin('provider', get_provider_by_type(
+                    self.config['resources'][dataset]['providers'], 'record'))
+        except ProviderGenericError as err:
+            LOGGER.error(err)
+            return self.get_exception(
+                err.http_status_code, headers, request.format,
+                err.ogc_exception_code, err.message)
+
+        schema = {
+            'type': 'object',
+            'title': l10n.translate(
+                self.config['resources'][dataset]['title'], request.locale),
+            'properties': {},
+            '$schema': 'http://json-schema.org/draft/2019-09/schema',
+            '$id': f'{self.get_collections_url()}/{dataset}/schema'
+        }
+
+        if p.type != 'coverage':
+            schema['properties']['geometry'] = {
+                '$ref': 'https://geojson.org/schema/Geometry.json',
+                'x-ogc-role': 'primary-geometry'
+            }
+
+        for k, v in p.fields.items():
+            schema['properties'][k] = v
+
+            if k == p.id_field:
+                schema['properties'][k]['x-ogc-role'] = 'id'
+            if k == p.time_field:
+                schema['properties'][k]['x-ogc-role'] = 'primary-instant'
+
+        if request.format == F_HTML:  # render
+            schema['title'] = l10n.translate(
+                self.config['resources'][dataset]['title'], request.locale)
+
+            schema['collections_path'] = self.get_collections_url()
+
+            content = render_j2_template(self.tpl_config,
+                                         'collections/schema.html',
+                                         schema, request.locale)
+
+            return headers, HTTPStatus.OK, content
+
+        headers['Content-Type'] = 'application/schema+json'
+
+        return headers, HTTPStatus.OK, to_json(schema, self.pretty_print)
+
+    @gzip
+    @pre_process
+    @jsonldify
     def get_collection_queryables(self, request: Union[APIRequest, Any],
                                   dataset=None) -> Tuple[dict, int, str]:
         """
@@ -1299,19 +1510,19 @@ class API:
             p = load_plugin('provider', get_provider_by_type(
                 self.config['resources'][dataset]['providers'], 'feature'))
         except ProviderTypeError:
-            LOGGER.debug('Loading record provider')
-            p = load_plugin('provider', get_provider_by_type(
-                self.config['resources'][dataset]['providers'], 'record'))
-        except ProviderConnectionError:
-            msg = 'connection error (check logs)'
+            try:
+                LOGGER.debug('Loading coverage provider')
+                p = load_plugin('provider', get_provider_by_type(
+                    self.config['resources'][dataset]['providers'], 'coverage'))  # noqa
+            except ProviderTypeError:
+                LOGGER.debug('Loading record provider')
+                p = load_plugin('provider', get_provider_by_type(
+                    self.config['resources'][dataset]['providers'], 'record'))
+        except ProviderGenericError as err:
+            LOGGER.error(err)
             return self.get_exception(
-                HTTPStatus.INTERNAL_SERVER_ERROR, headers, request.format,
-                'NoApplicableCode', msg)
-        except ProviderQueryError:
-            msg = 'query error (check logs)'
-            return self.get_exception(
-                HTTPStatus.INTERNAL_SERVER_ERROR, headers, request.format,
-                'NoApplicableCode', msg)
+                err.http_status_code, headers, request.format,
+                err.ogc_exception_code, err.message)
 
         queryables = {
             'type': 'object',
@@ -1324,7 +1535,8 @@ class API:
 
         if p.fields:
             queryables['properties']['geometry'] = {
-                '$ref': 'https://geojson.org/schema/Geometry.json'
+                '$ref': 'https://geojson.org/schema/Geometry.json',
+                'x-ogc-role': 'primary-geometry'
             }
 
         for k, v in p.fields.items():
@@ -1342,6 +1554,11 @@ class API:
                 }
                 if 'values' in v:
                     queryables['properties'][k]['enum'] = v['values']
+
+                if k == p.id_field:
+                    queryables['properties'][k]['x-ogc-role'] = 'id'
+                if k == p.time_field:
+                    queryables['properties'][k]['x-ogc-role'] = 'primary-instant'  # noqa
 
         if request.format == F_HTML:  # render
             queryables['title'] = l10n.translate(
@@ -1385,7 +1602,7 @@ class API:
         reserved_fieldnames = ['bbox', 'bbox-crs', 'crs', 'f', 'lang', 'limit',
                                'offset', 'resulttype', 'datetime', 'sortby',
                                'properties', 'skipGeometry', 'q',
-                               'filter', 'filter-lang']
+                               'filter', 'filter-lang', 'filter-crs']
 
         collections = filter_dict_by_key_value(self.config['resources'],
                                                'type', 'collection')
@@ -1483,16 +1700,11 @@ class API:
                 return self.get_exception(
                     HTTPStatus.BAD_REQUEST, headers, request.format,
                     'NoApplicableCode', msg)
-        except ProviderConnectionError:
-            msg = 'connection error (check logs)'
+        except ProviderGenericError as err:
+            LOGGER.error(err)
             return self.get_exception(
-                HTTPStatus.INTERNAL_SERVER_ERROR, headers, request.format,
-                'NoApplicableCode', msg)
-        except ProviderQueryError:
-            msg = 'query error (check logs)'
-            return self.get_exception(
-                HTTPStatus.INTERNAL_SERVER_ERROR, headers, request.format,
-                'NoApplicableCode', msg)
+                err.http_status_code, headers, request.format,
+                err.ogc_exception_code, err.message)
 
         crs_transform_spec = None
         if provider_type == 'feature':
@@ -1603,11 +1815,19 @@ class API:
         else:
             skip_geometry = False
 
+        LOGGER.debug('Processing filter-crs parameter')
+        filter_crs_uri = request.params.get('filter-crs', DEFAULT_CRS)
         LOGGER.debug('processing filter parameter')
         cql_text = request.params.get('filter')
         if cql_text is not None:
             try:
                 filter_ = parse_ecql_text(cql_text)
+                filter_ = modify_pygeofilter(
+                    filter_,
+                    filter_crs_uri=filter_crs_uri,
+                    storage_crs_uri=provider_def.get('storage_crs'),
+                    geometry_column_name=provider_def.get('geom_field'),
+                )
             except Exception as err:
                 LOGGER.error(err)
                 msg = f'Bad CQL string : {cql_text}'
@@ -1625,7 +1845,6 @@ class API:
             return self.get_exception(
                 HTTPStatus.BAD_REQUEST, headers, request.format,
                 'InvalidParameterValue', msg)
-
         # Get provider locale (if any)
         prv_locale = l10n.get_plugin_locale(provider_def, request.raw_locale)
 
@@ -1644,7 +1863,9 @@ class API:
         LOGGER.debug(f'language: {prv_locale}')
         LOGGER.debug(f'q: {q}')
         LOGGER.debug(f'cql_text: {cql_text}')
+        LOGGER.debug(f'filter_: {filter_}')
         LOGGER.debug(f'filter-lang: {filter_lang}')
+        LOGGER.debug(f'filter-crs: {filter_crs_uri}')
 
         try:
             content = p.query(offset=offset, limit=limit,
@@ -1654,30 +1875,11 @@ class API:
                               select_properties=select_properties,
                               crs_transform_spec=crs_transform_spec,
                               q=q, language=prv_locale, filterq=filter_)
-        except ProviderInvalidQueryError as err:
-            LOGGER.error(err)
-            msg = f'query error: {err}'
-            return self.get_exception(
-                HTTPStatus.BAD_REQUEST, headers, request.format,
-                'InvalidQuery', msg)
-        except ProviderConnectionError as err:
-            LOGGER.error(err)
-            msg = 'connection error (check logs)'
-            return self.get_exception(
-                HTTPStatus.INTERNAL_SERVER_ERROR, headers, request.format,
-                'NoApplicableCode', msg)
-        except ProviderQueryError as err:
-            LOGGER.error(err)
-            msg = 'query error (check logs)'
-            return self.get_exception(
-                HTTPStatus.INTERNAL_SERVER_ERROR, headers, request.format,
-                'NoApplicableCode', msg)
         except ProviderGenericError as err:
             LOGGER.error(err)
-            msg = 'generic error (check logs)'
             return self.get_exception(
-                HTTPStatus.INTERNAL_SERVER_ERROR, headers, request.format,
-                'NoApplicableCode', msg)
+                err.http_status_code, headers, request.format,
+                err.ogc_exception_code, err.message)
 
         serialized_query_params = ''
         for k, v in request.params.items():
@@ -1833,7 +2035,7 @@ class API:
         reserved_fieldnames = ['bbox', 'f', 'limit', 'offset',
                                'resulttype', 'datetime', 'sortby',
                                'properties', 'skipGeometry', 'q',
-                               'filter-lang']
+                               'filter-lang', 'filter-crs']
 
         collections = filter_dict_by_key_value(self.config['resources'],
                                                'type', 'collection')
@@ -1920,27 +2122,24 @@ class API:
         LOGGER.debug('Loading provider')
 
         try:
-            p = load_plugin('provider', get_provider_by_type(
-                collections[dataset]['providers'], 'feature'))
+            provider_def = get_provider_by_type(
+                collections[dataset]['providers'], 'feature')
         except ProviderTypeError:
             try:
-                p = load_plugin('provider', get_provider_by_type(
-                    collections[dataset]['providers'], 'record'))
+                provider_def = get_provider_by_type(
+                    collections[dataset]['providers'], 'record')
             except ProviderTypeError:
                 msg = 'Invalid provider type'
                 return self.get_exception(
                     HTTPStatus.BAD_REQUEST, headers, request.format,
                     'NoApplicableCode', msg)
-        except ProviderConnectionError:
-            msg = 'connection error (check logs)'
+
+        try:
+            p = load_plugin('provider', provider_def)
+        except ProviderGenericError as err:
             return self.get_exception(
-                HTTPStatus.INTERNAL_SERVER_ERROR, headers, request.format,
-                'NoApplicableCode', msg)
-        except ProviderQueryError:
-            msg = 'query error (check logs)'
-            return self.get_exception(
-                HTTPStatus.INTERNAL_SERVER_ERROR, headers, request.format,
-                'NoApplicableCode', msg)
+                err.http_status_code, headers, request.format,
+                err.ogc_exception_code, err.message)
 
         LOGGER.debug('processing property parameters')
         for k, v in request.params.items():
@@ -1999,6 +2198,8 @@ class API:
         else:
             skip_geometry = False
 
+        LOGGER.debug('Processing filter-crs parameter')
+        filter_crs = request.params.get('filter-crs', DEFAULT_CRS)
         LOGGER.debug('Processing filter-lang parameter')
         filter_lang = request.params.get('filter-lang')
         if filter_lang != 'cql-json':  # @TODO add check from the configuration
@@ -2018,6 +2219,7 @@ class API:
         LOGGER.debug(f'skipGeometry: {skip_geometry}')
         LOGGER.debug(f'q: {q}')
         LOGGER.debug(f'filter-lang: {filter_lang}')
+        LOGGER.debug(f'filter-crs: {filter_crs}')
 
         LOGGER.debug('Processing headers')
 
@@ -2055,6 +2257,12 @@ class API:
             LOGGER.debug('processing PostgreSQL CQL_JSON data')
             try:
                 filter_ = parse_cql_json(data)
+                filter_ = modify_pygeofilter(
+                    filter_,
+                    filter_crs_uri=filter_crs,
+                    storage_crs_uri=provider_def.get('storage_crs'),
+                    geometry_column_name=provider_def.get('geom_field')
+                )
             except Exception as err:
                 LOGGER.error(err)
                 msg = f'Bad CQL string : {data}'
@@ -2064,7 +2272,7 @@ class API:
         else:
             LOGGER.debug('processing Elasticsearch CQL_JSON data')
             try:
-                filter_ = CQLModel.model_validate_json(data)
+                filter_ = CQLModel.parse_raw(data)
             except Exception as err:
                 LOGGER.error(err)
                 msg = f'Bad CQL string : {data}'
@@ -2081,30 +2289,11 @@ class API:
                               skip_geometry=skip_geometry,
                               q=q,
                               filterq=filter_)
-        except ProviderInvalidQueryError as err:
-            LOGGER.error(err)
-            msg = f'query error: {err}'
-            return self.get_exception(
-                HTTPStatus.BAD_REQUEST, headers, request.format,
-                'InvalidQuery', msg)
-        except ProviderConnectionError as err:
-            LOGGER.error(err)
-            msg = 'connection error (check logs)'
-            return self.get_exception(
-                HTTPStatus.INTERNAL_SERVER_ERROR, headers, request.format,
-                'NoApplicableCode', msg)
-        except ProviderQueryError as err:
-            LOGGER.error(err)
-            msg = 'query error (check logs)'
-            return self.get_exception(
-                HTTPStatus.INTERNAL_SERVER_ERROR, headers, request.format,
-                'NoApplicableCode', msg)
         except ProviderGenericError as err:
             LOGGER.error(err)
-            msg = 'generic error (check logs)'
             return self.get_exception(
-                HTTPStatus.INTERNAL_SERVER_ERROR, headers, request.format,
-                'NoApplicableCode', msg)
+                err.http_status_code, headers, request.format,
+                err.ogc_exception_code, err.message)
 
         return headers, HTTPStatus.OK, to_json(content, self.pretty_print)
 
@@ -2184,11 +2373,16 @@ class API:
             LOGGER.debug('Creating item')
             try:
                 identifier = p.create(request.data)
-            except (ProviderInvalidDataError, TypeError) as err:
+            except TypeError as err:
                 msg = str(err)
                 return self.get_exception(
                     HTTPStatus.BAD_REQUEST, headers, request.format,
                     'InvalidParameterValue', msg)
+            except ProviderGenericError as err:
+                LOGGER.error(err)
+                return self.get_exception(
+                    err.http_status_code, headers, request.format,
+                    err.ogc_exception_code, err.message)
 
             headers['Location'] = f'{self.get_collections_url()}/{dataset}/items/{identifier}'  # noqa
 
@@ -2198,11 +2392,16 @@ class API:
             LOGGER.debug('Updating item')
             try:
                 _ = p.update(identifier, request.data)
-            except (ProviderInvalidDataError, TypeError) as err:
+            except TypeError as err:
                 msg = str(err)
                 return self.get_exception(
                     HTTPStatus.BAD_REQUEST, headers, request.format,
                     'InvalidParameterValue', msg)
+            except ProviderGenericError as err:
+                LOGGER.error(err)
+                return self.get_exception(
+                    err.http_status_code, headers, request.format,
+                    err.ogc_exception_code, err.message)
 
             return headers, HTTPStatus.NO_CONTENT, ''
 
@@ -2211,10 +2410,10 @@ class API:
             try:
                 _ = p.delete(identifier)
             except ProviderGenericError as err:
-                msg = str(err)
+                LOGGER.error(err)
                 return self.get_exception(
-                    HTTPStatus.BAD_REQUEST, headers, request.format,
-                    'InvalidParameterValue', msg)
+                    err.http_status_code, headers, request.format,
+                    err.ogc_exception_code, err.message)
 
             return headers, HTTPStatus.OK, ''
 
@@ -2268,16 +2467,11 @@ class API:
                 return self.get_exception(
                     HTTPStatus.BAD_REQUEST, headers, request.format,
                     'InvalidParameterValue', msg)
-        except ProviderConnectionError:
-            msg = 'connection error (check logs)'
+        except ProviderGenericError as err:
+            LOGGER.error(err)
             return self.get_exception(
-                HTTPStatus.INTERNAL_SERVER_ERROR, headers, request.format,
-                'NoApplicableCode', msg)
-        except ProviderQueryError:
-            msg = 'query error (check logs)'
-            return self.get_exception(
-                HTTPStatus.INTERNAL_SERVER_ERROR, headers, request.format,
-                'NoApplicableCode', msg)
+                err.http_status_code, headers, request.format,
+                err.ogc_exception_code, err.message)
 
         crs_transform_spec = None
         if provider_type == 'feature':
@@ -2306,28 +2500,11 @@ class API:
                 language=prv_locale,
                 crs_transform_spec=crs_transform_spec,
             )
-        except ProviderConnectionError as err:
-            LOGGER.error(err)
-            msg = 'connection error (check logs)'
-            return self.get_exception(
-                HTTPStatus.INTERNAL_SERVER_ERROR, headers, request.format,
-                'NoApplicableCode', msg)
-        except ProviderItemNotFoundError:
-            msg = 'identifier not found'
-            return self.get_exception(HTTPStatus.NOT_FOUND, headers,
-                                      request.format, 'NotFound', msg)
-        except ProviderQueryError as err:
-            LOGGER.error(err)
-            msg = 'query error (check logs)'
-            return self.get_exception(
-                HTTPStatus.INTERNAL_SERVER_ERROR, headers, request.format,
-                'NoApplicableCode', msg)
         except ProviderGenericError as err:
             LOGGER.error(err)
-            msg = 'generic error (check logs)'
             return self.get_exception(
-                HTTPStatus.INTERNAL_SERVER_ERROR, headers, request.format,
-                'NoApplicableCode', msg)
+                err.http_status_code, headers, request.format,
+                err.ogc_exception_code, err.message)
 
         if content is None:
             msg = 'identifier not found'
@@ -2448,16 +2625,11 @@ class API:
             return self.get_exception(
                 HTTPStatus.NOT_FOUND, headers, format_,
                 'InvalidParameterValue', msg)
-        except ProviderTypeError:
-            msg = 'invalid provider type'
+        except ProviderGenericError as err:
+            LOGGER.error(err)
             return self.get_exception(
-                HTTPStatus.BAD_REQUEST, headers, format_,
-                'NoApplicableCode', msg)
-        except ProviderConnectionError:
-            msg = 'connection error (check logs)'
-            return self.get_exception(
-                HTTPStatus.INTERNAL_SERVER_ERROR, headers, format_,
-                'NoApplicableCode', msg)
+                err.http_status_code, headers, request.format,
+                err.ogc_exception_code, err.message)
 
         LOGGER.debug('Processing bbox parameter')
 
@@ -2536,21 +2708,11 @@ class API:
         LOGGER.debug('Querying coverage')
         try:
             data = p.query(**query_args)
-        except ProviderInvalidQueryError as err:
-            msg = f'query error: {err}'
+        except ProviderGenericError as err:
+            LOGGER.error(err)
             return self.get_exception(
-                HTTPStatus.BAD_REQUEST, headers, format_,
-                'InvalidParameterValue', msg)
-        except ProviderNoDataError:
-            msg = 'No data found'
-            return self.get_exception(
-                HTTPStatus.NO_CONTENT, headers, format_,
-                'InvalidParameterValue', msg)
-        except ProviderQueryError:
-            msg = 'query error (check logs)'
-            return self.get_exception(
-                HTTPStatus.INTERNAL_SERVER_ERROR, headers, format_,
-                'NoApplicableCode', msg)
+                err.http_status_code, headers, request.format,
+                err.ogc_exception_code, err.message)
 
         mt = collection_def['format']['name']
         if format_ == mt:  # native format
@@ -2563,121 +2725,6 @@ class API:
         elif format_ == F_JSON:
             headers['Content-Type'] = 'application/prs.coverage+json'
             return headers, HTTPStatus.OK, to_json(data, self.pretty_print)
-        else:
-            return self.get_format_exception(request)
-
-    @gzip
-    @pre_process
-    @jsonldify
-    def get_collection_coverage_domainset(
-            self, request: Union[APIRequest, Any],
-            dataset) -> Tuple[dict, int, str]:
-        """
-        Returns a collection coverage domainset
-
-        :param request: A request object
-        :param dataset: dataset name
-
-        :returns: tuple of headers, status code, content
-        """
-
-        format_ = request.format or F_JSON
-        headers = request.get_response_headers(**self.api_headers)
-
-        LOGGER.debug('Loading provider')
-        try:
-            collection_def = get_provider_by_type(
-                self.config['resources'][dataset]['providers'], 'coverage')
-
-            p = load_plugin('provider', collection_def)
-
-            data = p.get_coverage_domainset()
-        except KeyError:
-            msg = 'collection does not exist'
-            return self.get_exception(
-                HTTPStatus.NOT_FOUND, headers, format_,
-                'InvalidParameterValue', msg)
-        except ProviderTypeError:
-            msg = 'invalid provider type'
-            return self.get_exception(
-                HTTPStatus.INTERNAL_SERVER_ERROR, headers, format_,
-                'NoApplicableCode', msg)
-        except ProviderConnectionError:
-            msg = 'connection error (check logs)'
-            return self.get_exception(
-                HTTPStatus.INTERNAL_SERVER_ERROR, headers, format_,
-                'NoApplicableCode', msg)
-
-        if format_ == F_JSON:
-            return headers, HTTPStatus.OK, to_json(data, self.pretty_print)
-
-        elif format_ == F_HTML:
-            data['id'] = dataset
-            data['title'] = l10n.translate(
-                self.config['resources'][dataset]['title'],
-                self.default_locale)
-            data['collections_path'] = self.get_collections_url()
-            content = render_j2_template(self.tpl_config,
-                                         'collections/coverage/domainset.html',
-                                         data, self.default_locale)
-            return headers, HTTPStatus.OK, content
-        else:
-            return self.get_format_exception(request)
-
-    @gzip
-    @pre_process
-    @jsonldify
-    def get_collection_coverage_rangetype(
-            self, request: Union[APIRequest, Any],
-            dataset) -> Tuple[dict, int, str]:
-        """
-        Returns a collection coverage rangetype
-
-        :param request: A request object
-        :param dataset: dataset name
-
-        :returns: tuple of headers, status code, content
-        """
-        format_ = request.format or F_JSON
-        headers = request.get_response_headers(self.default_locale,
-                                               **self.api_headers)
-        LOGGER.debug('Loading provider')
-        try:
-            collection_def = get_provider_by_type(
-                self.config['resources'][dataset]['providers'], 'coverage')
-
-            p = load_plugin('provider', collection_def)
-
-            data = p.get_coverage_rangetype()
-        except KeyError:
-            msg = 'collection does not exist'
-            return self.get_exception(
-                HTTPStatus.NOT_FOUND, headers, format_,
-                'InvalidParameterValue', msg)
-        except ProviderTypeError:
-            msg = 'invalid provider type'
-            return self.get_exception(
-                HTTPStatus.INTERNAL_SERVER_ERROR, headers, format_,
-                'NoApplicableCode', msg)
-        except ProviderConnectionError:
-            msg = 'connection error (check logs)'
-            return self.get_exception(
-                HTTPStatus.INTERNAL_SERVER_ERROR, headers, format_,
-                'NoApplicableCode', msg)
-
-        if format_ == F_JSON:
-            return headers, HTTPStatus.OK, to_json(data, self.pretty_print)
-
-        elif format_ == F_HTML:
-            data['id'] = dataset
-            data['title'] = l10n.translate(
-                self.config['resources'][dataset]['title'],
-                self.default_locale)
-            data['collections_path'] = self.get_collections_url()
-            content = render_j2_template(self.tpl_config,
-                                         'collections/coverage/rangetype.html',
-                                         data, self.default_locale)
-            return headers, HTTPStatus.OK, content
         else:
             return self.get_format_exception(request)
 
@@ -2717,16 +2764,11 @@ class API:
             return self.get_exception(
                 HTTPStatus.BAD_REQUEST, headers, request.format,
                 'InvalidParameterValue', msg)
-        except ProviderConnectionError:
-            msg = 'connection error (check logs)'
+        except ProviderGenericError as err:
+            LOGGER.error(err)
             return self.get_exception(
-                HTTPStatus.INTERNAL_SERVER_ERROR, headers, request.format,
-                'NoApplicableCode', msg)
-        except ProviderQueryError:
-            msg = 'query error (check logs)'
-            return self.get_exception(
-                HTTPStatus.INTERNAL_SERVER_ERROR, headers, request.format,
-                'NoApplicableCode', msg)
+                err.http_status_code, headers, request.format,
+                err.ogc_exception_code, err.message)
 
         tiles = {
             'links': [],
@@ -2754,7 +2796,7 @@ class API:
 
         tile_services = p.get_tiles_service(
             baseurl=self.base_url,
-            servicepath=f'{self.get_collections_url()}/{dataset}/tiles/{{tileMatrixSetId}}/{{tileMatrix}}/{{tileRow}}/{{tileCol}}?f=mvt'  # noqa
+            servicepath=f'{self.get_collections_url()}/{dataset}/tiles/{{tileMatrixSetId}}/{{tileMatrix}}/{{tileRow}}/{{tileCol}}?f={p.format_type}'  # noqa
         )
 
         for service in tile_services['links']:
@@ -2770,7 +2812,12 @@ class API:
                 'dataType': 'vector',
                 'links': []
             }
-            tile_matrix['links'].append(matrix.tileMatrixSetDefinition)
+            tile_matrix['links'].append({
+                'type': FORMAT_TYPES[F_JSON],
+                'rel': 'http://www.opengis.net/def/rel/ogc/1.0/tiling-scheme',
+                'title': f'{matrix.tileMatrixSet} TileMatrixSet definition (as {F_JSON})', # noqa
+                'href': f'{self.base_url}/TileMatrixSets/{matrix.tileMatrixSet}?f={F_JSON}'  # noqa
+            })
             tile_matrix['links'].append({
                 'type': FORMAT_TYPES[F_JSON],
                 'rel': request.get_linkrel(F_JSON),
@@ -2786,20 +2833,18 @@ class API:
 
             tiles['tilesets'].append(tile_matrix)
 
-        metadata_format = p.options['metadata_format']
-
         if request.format == F_HTML:  # render
             tiles['id'] = dataset
             tiles['title'] = l10n.translate(
                 self.config['resources'][dataset]['title'], SYSTEM_LOCALE)
             tiles['tilesets'] = [
                 scheme.tileMatrixSet for scheme in p.get_tiling_schemes()]
-            tiles['format'] = metadata_format
             tiles['bounds'] = \
                 self.config['resources'][dataset]['extents']['spatial']['bbox']
             tiles['minzoom'] = p.options['zoom']['min']
             tiles['maxzoom'] = p.options['zoom']['max']
             tiles['collections_path'] = self.get_collections_url()
+            tiles['tile_type'] = p.tile_type
 
             content = render_j2_template(self.tpl_config,
                                          'collections/tiles/index.html', tiles,
@@ -2859,7 +2904,7 @@ class API:
                 return self.get_exception(
                     HTTPStatus.NOT_FOUND, headers, format_, 'NotFound', msg)
             else:
-                return headers, HTTPStatus.ACCEPTED, content
+                return headers, HTTPStatus.OK, content
 
         # @TODO: figure out if the spec requires to return json errors
         except KeyError:
@@ -2867,33 +2912,11 @@ class API:
             return self.get_exception(
                 HTTPStatus.BAD_REQUEST, headers, format_,
                 'InvalidParameterValue', msg)
-        except ProviderConnectionError as err:
-            LOGGER.error(err)
-            msg = 'connection error (check logs)'
-            return self.get_exception(
-                HTTPStatus.INTERNAL_SERVER_ERROR, headers, format_,
-                'NoApplicableCode', msg)
-        except ProviderTilesetIdNotFoundError:
-            msg = 'Tileset id not found'
-            return self.get_exception(
-                HTTPStatus.NOT_FOUND, headers, format_, 'NotFound', msg)
-        except ProviderTileQueryError as err:
-            LOGGER.error(err)
-            msg = 'Tile not found'
-            return self.get_exception(
-                HTTPStatus.INTERNAL_SERVER_ERROR, headers, format_,
-                'NoApplicableCode', msg)
-        except ProviderTileNotFoundError as err:
-            LOGGER.error(err)
-            msg = 'Tile not found (check logs)'
-            return self.get_exception(
-                HTTPStatus.NOT_FOUND, headers, format_, 'NoMatch', msg)
         except ProviderGenericError as err:
             LOGGER.error(err)
-            msg = 'Generic error (check logs)'
             return self.get_exception(
-                HTTPStatus.INTERNAL_SERVER_ERROR, headers, format_,
-                'NoApplicableCode', msg)
+                err.http_status_code, headers, request.format,
+                err.ogc_exception_code, err.message)
 
     @gzip
     @pre_process
@@ -2911,7 +2934,7 @@ class API:
         :returns: tuple of headers, status code, content
         """
 
-        if not request.is_valid():
+        if not request.is_valid([TilesMetadataFormat.TILEJSON]):
             return self.get_format_exception(request)
         headers = request.get_response_headers(**self.api_headers)
 
@@ -2933,66 +2956,39 @@ class API:
             return self.get_exception(
                 HTTPStatus.BAD_REQUEST, headers, request.format,
                 'InvalidParameterValue', msg)
-        except ProviderConnectionError:
-            msg = 'connection error (check logs)'
+        except ProviderGenericError as err:
+            LOGGER.error(err)
             return self.get_exception(
-                HTTPStatus.INTERNAL_SERVER_ERROR, headers, request.format,
-                'InvalidParameterValue', msg)
-        except ProviderQueryError:
-            msg = 'query error (check logs)'
-            return self.get_exception(
-                HTTPStatus.INTERNAL_SERVER_ERROR, headers, request.format,
-                'InvalidParameterValue', msg)
+                err.http_status_code, headers, request.format,
+                err.ogc_exception_code, err.message)
 
         # Get provider language (if any)
         prv_locale = l10n.get_plugin_locale(t, request.raw_locale)
-
-        if matrix_id not in p.options['schemes']:
-            msg = 'tileset not found'
-            return self.get_exception(HTTPStatus.NOT_FOUND, headers,
-                                      request.format, 'NotFound', msg)
-
-        metadata_format = TilesMetadataFormat[
-            str(p.options['metadata_format']).upper()]
 
         # Set response language to requested provider locale
         # (if it supports language) and/or otherwise the requested pygeoapi
         # locale (or fallback default locale)
         l10n.set_response_language(headers, prv_locale, request.locale)
 
-        if request.format == F_HTML:  # render
-            tiles_metadata = p.get_metadata(
-                dataset=dataset, server_url=self.base_url,
-                layer=p.get_layer(), tileset=matrix_id,
-                metadata_format=TilesMetadataFormat.TILEJSON,
-                language=prv_locale)
-            metadata = dict()
-            metadata['metadata'] = tiles_metadata
-            metadata['id'] = dataset
-            metadata['title'] = l10n.translate(
-                self.config['resources'][dataset]['title'], request.locale)
-            metadata['tileset'] = matrix_id
-            metadata['format'] = metadata_format.value
-            metadata['collections_path'] = self.get_collections_url()
+        tiles_metadata = p.get_metadata(
+            dataset=dataset, server_url=self.base_url,
+            layer=p.get_layer(), tileset=matrix_id,
+            metadata_format=request._format, title=l10n.translate(
+                self.config['resources'][dataset]['title'],
+                request.locale),
+            description=l10n.translate(
+                self.config['resources'][dataset]['description'],
+                request.locale),
+            language=prv_locale)
 
+        if request.format == F_HTML:  # render
             content = render_j2_template(self.tpl_config,
                                          'collections/tiles/metadata.html',
-                                         metadata, request.locale)
+                                         tiles_metadata, request.locale)
 
             return headers, HTTPStatus.OK, content
         else:
-            tiles_metadata = p.get_metadata(
-                dataset=dataset, server_url=self.base_url,
-                layer=p.get_layer(), tileset=matrix_id,
-                metadata_format=metadata_format, title=l10n.translate(
-                    self.config['resources'][dataset]['title'],
-                    request.locale),
-                description=l10n.translate(
-                    self.config['resources'][dataset]['description'],
-                    request.locale),
-                language=prv_locale)
-
-        return headers, HTTPStatus.OK, tiles_metadata
+            return headers, HTTPStatus.OK, tiles_metadata
 
     @gzip
     @pre_process
@@ -3034,24 +3030,11 @@ class API:
             LOGGER.error(exception)
             return headers, HTTPStatus.NOT_FOUND, to_json(
                 exception, self.pretty_print)
-        except ProviderTypeError:
-            exception = {
-                'code': 'NoApplicableCode',
-                'description': 'invalid provider type'
-            }
-            headers['Content-type'] = 'application/json'
-            LOGGER.error(exception)
-            return headers, HTTPStatus.BAD_REQUEST, to_json(
-                exception, self.pretty_print)
-        except ProviderConnectionError:
-            exception = {
-                'code': 'NoApplicableCode',
-                'description': 'connection error (check logs)'
-            }
-            headers['Content-type'] = 'application/json'
-            LOGGER.error(exception)
-            return headers, HTTPStatus.INTERNAL_SERVER_ERROR, to_json(
-                exception, self.pretty_print)
+        except ProviderGenericError as err:
+            LOGGER.error(err)
+            return self.get_exception(
+                err.http_status_code, headers, request.format,
+                err.ogc_exception_code, err.message)
 
         query_args['format_'] = request.params.get('f', 'png')
         query_args['style'] = style
@@ -3111,33 +3094,11 @@ class API:
         LOGGER.debug('Generating map')
         try:
             data = p.query(**query_args)
-        except ProviderInvalidQueryError as err:
-            exception = {
-                'code': 'NoApplicableCode',
-                'description': f'query error: {err}'
-            }
-            LOGGER.error(exception)
-            headers['Content-type'] = 'application/json'
-            return headers, HTTPStatus.BAD_REQUEST, to_json(
-                exception, self.pretty_print)
-        except ProviderNoDataError:
-            exception = {
-                'code': 'NoApplicableCode',
-                'description': 'No data found'
-            }
-            LOGGER.debug(exception)
-            headers['Content-type'] = 'application/json'
-            return headers, HTTPStatus.NO_CONTENT, to_json(
-                exception, self.pretty_print)
-        except ProviderQueryError:
-            exception = {
-                'code': 'NoApplicableCode',
-                'description': 'query error (check logs)'
-            }
-            LOGGER.error(exception)
-            headers['Content-type'] = 'application/json'
-            return headers, HTTPStatus.INTERNAL_SERVER_ERROR, to_json(
-                exception, self.pretty_print)
+        except ProviderGenericError as err:
+            LOGGER.error(err)
+            return self.get_exception(
+                err.http_status_code, headers, request.format,
+                err.ogc_exception_code, err.message)
 
         mt = collection_def['format']['name']
 
@@ -3188,50 +3149,20 @@ class API:
             LOGGER.error(exception)
             return headers, HTTPStatus.NOT_FOUND, to_json(
                 exception, self.pretty_print)
-        except ProviderTypeError:
-            exception = {
-                'code': 'NoApplicableCode',
-                'description': 'invalid provider type'
-            }
-            LOGGER.error(exception)
-            return headers, HTTPStatus.BAD_REQUEST, to_json(
-                exception, self.pretty_print)
-        except ProviderConnectionError:
-            exception = {
-                'code': 'NoApplicableCode',
-                'description': 'connection error (check logs)'
-            }
-            LOGGER.error(exception)
-            return headers, HTTPStatus.INTERNAL_SERVER_ERROR, to_json(
-                exception, self.pretty_print)
+        except ProviderGenericError as err:
+            LOGGER.error(err)
+            return self.get_exception(
+                err.http_status_code, headers, request.format,
+                err.ogc_exception_code, err.message)
 
         LOGGER.debug('Generating legend')
         try:
             data = p.get_legend(style, request.params.get('f', 'png'))
-        except ProviderInvalidQueryError as err:
-            exception = {
-                'code': 'NoApplicableCode',
-                'description': f'query error: {err}'
-            }
-            LOGGER.error(exception)
-            return headers, HTTPStatus.BAD_REQUEST, to_json(
-                exception, self.pretty_print)
-        except ProviderNoDataError:
-            exception = {
-                'code': 'NoApplicableCode',
-                'description': 'No data found'
-            }
-            LOGGER.debug(exception)
-            return headers, HTTPStatus.NO_CONTENT, to_json(
-                exception, self.pretty_print)
-        except ProviderQueryError:
-            exception = {
-                'code': 'NoApplicableCode',
-                'description': 'query error (check logs)'
-            }
-            LOGGER.error(exception)
-            return headers, HTTPStatus.INTERNAL_SERVER_ERROR, to_json(
-                exception, self.pretty_print)
+        except ProviderGenericError as err:
+            LOGGER.error(err)
+            return self.get_exception(
+                err.http_status_code, headers, request.format,
+                err.ogc_exception_code, err.message)
 
         mt = collection_def['format']['name']
 
@@ -3451,6 +3382,7 @@ class API:
         }
         for job_ in jobs:
             job2 = {
+                'type': 'process',
                 'processID': job_['process_id'],
                 'jobID': job_['identifier'],
                 'status': job_['status'],
@@ -3469,21 +3401,22 @@ class API:
 
                 job2['links'] = [{
                     'href': f'{job_result_url}?f={F_HTML}',
-                    'rel': 'about',
+                    'rel': 'http://www.opengis.net/def/rel/ogc/1.0/results',
                     'type': FORMAT_TYPES[F_HTML],
                     'title': f'results of job {job_id} as HTML'
                 }, {
                     'href': f'{job_result_url}?f={F_JSON}',
-                    'rel': 'about',
+                    'rel': 'http://www.opengis.net/def/rel/ogc/1.0/results',
                     'type': FORMAT_TYPES[F_JSON],
                     'title': f'results of job {job_id} as JSON'
                 }]
 
                 if job_['mimetype'] not in (FORMAT_TYPES[F_JSON],
                                             FORMAT_TYPES[F_HTML]):
+
                     job2['links'].append({
                         'href': job_result_url,
-                        'rel': 'about',
+                        'rel': 'http://www.opengis.net/def/rel/ogc/1.0/results',  # noqa
                         'type': job_['mimetype'],
                         'title': f"results of job {job_id} as {job_['mimetype']}"  # noqa
                     })
@@ -3565,6 +3498,23 @@ class API:
         out_dict = data.get('outputs', None)
         LOGGER.debug(f'outputs: {out_dict}')
 
+        subscriber = None
+        subscriber_dict = data.get('subscriber')
+        if subscriber_dict:
+            try:
+                success_uri = subscriber_dict['successUri']
+            except KeyError:
+                return self.get_exception(
+                    HTTPStatus.BAD_REQUEST, headers, request.format,
+                    'MissingParameterValue', 'Missing successUri')
+            else:
+                subscriber = Subscriber(
+                    # NOTE: successUri is mandatory according to the standard
+                    success_uri=success_uri,
+                    in_progress_uri=subscriber_dict.get('inProgressUri'),
+                    failed_uri=subscriber_dict.get('failedUri'),
+                )
+
         try:
             execution_mode = RequestedProcessExecutionMode(
                 request.headers.get('Prefer', request.headers.get('prefer'))
@@ -3574,16 +3524,20 @@ class API:
         try:
             LOGGER.debug('Executing process')
             result = self.manager.execute_process(
-                process_id, data_dict, execution_mode=execution_mode)
+                process_id,
+                data_dict,
+                execution_mode=execution_mode,
+                requested_output=out_dict,
+                subscriber=subscriber,
+            )
             job_id, mime_type, outputs, status, additional_headers = result
             headers.update(additional_headers or {})
             headers['Location'] = f'{self.base_url}/jobs/{job_id}'
         except ProcessorExecuteError as err:
             LOGGER.error(err)
-            msg = 'Processing error'
             return self.get_exception(
-                HTTPStatus.INTERNAL_SERVER_ERROR, headers,
-                request.format, 'NoApplicableCode', msg)
+                err.http_status_code, headers,
+                request.format, err.ogc_exception_code, err.message)
 
         response = {}
         if status == JobStatus.failed:
@@ -3597,6 +3551,8 @@ class API:
 
         if status == JobStatus.accepted:
             http_status = HTTPStatus.CREATED
+        elif status == JobStatus.failed:
+            http_status = HTTPStatus.BAD_REQUEST
         else:
             http_status = HTTPStatus.OK
 
@@ -3670,6 +3626,7 @@ class API:
                                      default=json_serial)
             else:
                 # HTML
+                headers['Content-Type'] = "text/html"
                 data = {
                     'job': {'id': job_id},
                     'result': job_output
@@ -3730,7 +3687,8 @@ class API:
     @pre_process
     def get_collection_edr_query(
             self, request: Union[APIRequest, Any],
-            dataset, instance, query_type) -> Tuple[dict, int, str]:
+            dataset, instance, query_type,
+            location_id=None) -> Tuple[dict, int, str]:
         """
         Queries collection EDR
 
@@ -3738,6 +3696,7 @@ class API:
         :param dataset: dataset name
         :param instance: instance name
         :param query_type: EDR query type
+        :param location_id: location id of a /location/<location_id> query
 
         :returns: tuple of headers, status code, content
         """
@@ -3773,11 +3732,11 @@ class API:
             parameternames = parameternames.split(',')
 
         bbox = None
-        if query_type == 'cube':
+        if query_type in ['cube', 'locations']:
             LOGGER.debug('Processing cube bbox')
             try:
                 bbox = validate_bbox(request.params.get('bbox'))
-                if not bbox:
+                if not bbox and query_type == 'cube':
                     raise ValueError('bbox parameter required by cube queries')
             except ValueError as err:
                 return self.get_exception(
@@ -3795,7 +3754,7 @@ class API:
                 return self.get_exception(
                     HTTPStatus.BAD_REQUEST, headers, request.format,
                     'InvalidParameterValue', msg)
-        elif query_type != 'cube':
+        elif query_type not in ['cube', 'locations']:
             msg = 'missing coords parameter'
             return self.get_exception(
                 HTTPStatus.BAD_REQUEST, headers, request.format,
@@ -3814,21 +3773,11 @@ class API:
         try:
             p = load_plugin('provider', get_provider_by_type(
                 collections[dataset]['providers'], 'edr'))
-        except ProviderTypeError:
-            msg = 'invalid provider type'
+        except ProviderGenericError as err:
+            LOGGER.error(err)
             return self.get_exception(
-                HTTPStatus.INTERNAL_SERVER_ERROR, headers,
-                request.format, 'NoApplicableCode', msg)
-        except ProviderConnectionError:
-            msg = 'connection error (check logs)'
-            return self.get_exception(
-                HTTPStatus.INTERNAL_SERVER_ERROR, headers,
-                request.format, 'NoApplicableCode', msg)
-        except ProviderQueryError:
-            msg = 'query error (check logs)'
-            return self.get_exception(
-                HTTPStatus.INTERNAL_SERVER_ERROR, headers,
-                request.format, 'NoApplicableCode', msg)
+                err.http_status_code, headers, request.format,
+                err.ogc_exception_code, err.message)
 
         if instance is not None and not p.get_instance(instance):
             msg = 'Invalid instance identifier'
@@ -3842,8 +3791,8 @@ class API:
                 HTTPStatus.BAD_REQUEST, headers, request.format,
                 'InvalidParameterValue', msg)
 
-        if parameternames and not any((fld['id'] in parameternames)
-                                      for fld in p.get_fields()['field']):
+        if parameternames and not any((fld in parameternames)
+                                      for fld in p.get_fields().keys()):
             msg = 'Invalid parameter_names'
             return self.get_exception(
                 HTTPStatus.BAD_REQUEST, headers, request.format,
@@ -3860,29 +3809,17 @@ class API:
             bbox=bbox,
             within=within,
             within_units=within_units,
-            limit=int(self.config['server']['limit'])
+            limit=int(self.config['server']['limit']),
+            location_id=location_id,
         )
 
         try:
             data = p.query(**query_args)
-        except ProviderInvalidQueryError as err:
-            msg = f'query error: {err}'
+        except ProviderGenericError as err:
+            LOGGER.error(err)
             return self.get_exception(
-                HTTPStatus.BAD_REQUEST, headers, request.format,
-                'InvalidQuery', msg)
-        except ProviderNoDataError:
-            msg = 'No data found'
-            return self.get_exception(
-                HTTPStatus.NO_CONTENT, headers, request.format, 'NoMatch', msg)
-        except ProviderQueryError:
-            msg = 'query error (check logs)'
-            return self.get_exception(
-                HTTPStatus.INTERNAL_SERVER_ERROR, headers, request.format,
-                'NoApplicableCode', msg)
-        except ProviderRequestEntityTooLargeError as err:
-            return self.get_exception(
-                HTTPStatus.REQUEST_ENTITY_TOO_LARGE, headers, request.format,
-                'NoApplicableCode', str(err))
+                err.http_status_code, headers, request.format,
+                err.ogc_exception_code, err.message)
 
         if request.format == F_HTML:  # render
             content = render_j2_template(self.tpl_config,
@@ -4028,9 +3965,29 @@ class API:
             if request.format == F_HTML:  # render
                 content['path'] = path
                 if 'assets' in content:  # item view
-                    content = render_j2_template(self.tpl_config,
-                                                 'stac/item.html',
-                                                 content, request.locale)
+                    if content['type'] == 'Collection':
+                        content = render_j2_template(
+                            self.tpl_config,
+                            'stac/collection_base.html',
+                            content,
+                            request.locale
+                        )
+                    elif content['type'] == 'Feature':
+                        content = render_j2_template(
+                            self.tpl_config,
+                            'stac/item.html',
+                            content,
+                            request.locale
+                        )
+                    else:
+                        msg = f'Unknown STAC type {content.type}'
+                        LOGGER.error(msg)
+                        return self.get_exception(
+                            HTTPStatus.INTERNAL_SERVER_ERROR,
+                            headers,
+                            request.format,
+                            'NoApplicableCode',
+                            msg)
                 else:
                     content = render_j2_template(self.tpl_config,
                                                  'stac/catalog.html',
@@ -4061,6 +4018,7 @@ class API:
         LOGGER.error(description)
         exception = {
             'code': code,
+            'type': code,
             'description': description
         }
 

@@ -144,7 +144,7 @@ class CSWFacadeProvider(BaseProvider):
             if p[0] not in list(self.record_mappings.keys()):
                 msg = f'Invalid property: {p[0]}'
                 LOGGER.error(msg)
-                raise ProviderInvalidQueryError(msg)
+                raise ProviderInvalidQueryError(user_msg=msg)
 
             prop = self.record_mappings[p[0]][0]
             constraints.append(fes.PropertyIsEqualTo(prop, p[1]))

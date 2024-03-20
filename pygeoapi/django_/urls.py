@@ -8,7 +8,7 @@
 # Copyright (c) 2022 Francesco Bartoli
 # Copyright (c) 2022 Luca Delucchi
 # Copyright (c) 2022 Krishna Lodha
-# Copyright (c) 2022 Tom Kralidis
+# Copyright (c) 2024 Tom Kralidis
 #
 # Permission is hereby granted, free of charge, to any person
 # obtaining a copy of this software and associated documentation
@@ -77,6 +77,16 @@ urlpatterns = [
         name='conformance'
     ),
     path(
+        apply_slash_rule('TileMatrixSets/'),
+        views.tilematrixsets,
+        name='tilematrixsets'
+    ),
+    path(
+        apply_slash_rule('TileMatrixSets/<str:tilematrixset_id>'),
+        views.tilematrixsets,
+        name='tilematrixset'
+    ),
+    path(
         apply_slash_rule('collections/'),
         views.collections,
         name='collections'
@@ -85,6 +95,11 @@ urlpatterns = [
         'collections/<str:collection_id>',
         views.collections,
         name='collection-detail',
+    ),
+    path(
+        apply_slash_rule('collections/<str:collection_id>/schema/'),
+        views.collection_schema,
+        name='collection-schema',
     ),
     path(
         apply_slash_rule('collections/<str:collection_id>/queryables/'),
@@ -105,16 +120,6 @@ urlpatterns = [
         apply_slash_rule('collections/<str:collection_id>/coverage/'),
         views.collection_coverage,
         name='collection-coverage',
-    ),
-    path(
-        apply_slash_rule('collections/<str:collection_id>/coverage/domainset/'),  # noqa
-        views.collection_coverage_domainset,
-        name='collection-coverage-domainset',
-    ),
-    path(
-        apply_slash_rule('collections/<str:collection_id>/coverage/rangetype/'),  # noqa
-        views.collection_coverage_rangetype,
-        name='collection-coverage-rangetype',
     ),
     path(
         'collections/<str:collection_id>/map',
@@ -142,8 +147,8 @@ urlpatterns = [
         name='collection-tiles-metadata',
     ),
     path(
-        'collections/<str:collection_id>/tiles/\
-        <str:tileMatrixSetId>/<str:tile_matrix>/<str:tileRow>/<str:tileCol>',
+        'collections/<str:collection_id>/tiles/' +
+        '<str:tileMatrixSetId>/<str:tileMatrix>/<str:tileRow>/<str:tileCol>',
         views.collection_item_tiles,
         name='collection-item-tiles',
     ),
@@ -178,6 +183,16 @@ urlpatterns = [
         name='collection-edr-corridor',
     ),
     path(
+        'collections/<str:collection_id>/locations/<str:location_id>',
+        views.get_collection_edr_query,
+        name='collection-edr-corridor',
+    ),
+    path(
+        'collections/<str:collection_id>/locations',
+        views.get_collection_edr_query,
+        name='collection-edr-corridor',
+    ),
+    path(
         'collections/<str:collection_id>/instances/<str:instance_id>/position',
         views.get_collection_edr_query,
         name='collection-edr-instance-position',
@@ -207,6 +222,16 @@ urlpatterns = [
         views.get_collection_edr_query,
         name='collection-edr-instance-corridor',
     ),
+    path(
+        'collections/<str:collection_id>/instances/locations/<str:location_id>',  # noqa
+        views.get_collection_edr_query,
+        name='collection-edr-corridor',
+    ),
+    path(
+        'collections/<str:collection_id>/instances/locations',
+        views.get_collection_edr_query,
+        name='collection-edr-corridor',
+    ),
     path(apply_slash_rule('processes/'), views.processes, name='processes'),
     path('processes/<str:process_id>', views.processes, name='process-detail'),
     path(apply_slash_rule('jobs/'), views.jobs, name='jobs'),
@@ -225,13 +250,7 @@ urlpatterns = [
         apply_slash_rule('stac/'),
         views.stac_catalog_root,
         name='stac-catalog-root'
-    ),
-    path('stac/<str:path>', views.stac_catalog_path, name='stac-catalog-path'),
-    path(
-        apply_slash_rule('stac/search/'),
-        views.stac_catalog_search,
-        name='stac-catalog-search'
-    ),
+    )
 ]
 
 url_route_prefix = settings.API_RULES.get_url_prefix('django')
@@ -240,6 +259,28 @@ if url_route_prefix:
     urlpatterns = [
         path(url_route_prefix, include(urlpatterns))
     ]
+
+if settings.PYGEOAPI_CONFIG['server'].get('admin', False):
+    admin_urlpatterns = [
+        path(
+            apply_slash_rule('admin/config'),
+            views.admin_config,
+            name='admin-config'
+        ),
+        path(
+            apply_slash_rule('admin/config/resources'),
+            views.admin_config_resources,
+            name='admin-config-resources'
+        ),
+        path(
+            apply_slash_rule('admin/config/resources/<str:resource_id>'),
+            views.admin_config_resource,
+            name='admin-config-resource'
+        ),
+    ]
+
+    urlpatterns.extend(admin_urlpatterns)
+
 
 # Add static URL and optionally add prefix (note: do NOT use django style here)
 url_static_prefix = settings.API_RULES.get_url_prefix()

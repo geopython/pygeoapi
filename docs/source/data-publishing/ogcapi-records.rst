@@ -18,9 +18,9 @@ parameters.
    :header: Provider, properties (filters), resulttype, q, bbox, datetime, sortby, properties (display), CQL, transactions
    :align: left
 
-   `ElasticsearchCatalogue`_,✅,results/hits,✅,✅,✅,✅,✅,✅
-   `TinyDBCatalogue`_,✅,results/hits,✅,✅,✅,✅,❌,✅
-   `CSWFacade`_,✅,results/hits,✅,✅,✅,❌,❌,❌
+   `ElasticsearchCatalogue`_,✅,results/hits,✅,✅,✅,✅,✅,✅,✅
+   `TinyDBCatalogue`_,✅,results/hits,✅,✅,✅,✅,❌,✅,✅
+   `CSWFacade`_,✅,results/hits,✅,✅,✅,❌,❌,❌,❌
 
 
 Below are specific connection examples based on supported providers.

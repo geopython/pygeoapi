@@ -237,8 +237,7 @@ class PostgreSQLProvider(BaseProvider):
         # Execute query within self-closing database Session context
         with Session(self._engine) as session:
             # Retrieve data from database as feature
-            query = session.query(self.table_model)
-            item = query.get(identifier)
+            item = session.get(self.table_model, identifier)
             if item is None:
                 msg = f"No such item: {self.id_field}={identifier}."
                 raise ProviderItemNotFoundError(msg)
@@ -329,12 +328,13 @@ class PostgreSQLProvider(BaseProvider):
         to target table.  This requires a database query and is expensive to
         perform.
         """
-        metadata = MetaData(engine)
+        metadata = MetaData()
 
         # Look for table in the first schema in the search path
         try:
             schema = self.db_search_path[0]
-            metadata.reflect(schema=schema, only=[self.table], views=True)
+            metadata.reflect(
+                bind=engine, schema=schema, only=[self.table], views=True)
         except OperationalError:
             msg = (f"Could not connect to {repr(engine.url)} "
                    "(password hidden).")

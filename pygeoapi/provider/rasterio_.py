@@ -2,7 +2,7 @@
 #
 # Authors: Tom Kralidis <tomkralidis@gmail.com>
 #
-# Copyright (c) 2022 Tom Kralidis
+# Copyright (c) 2024 Tom Kralidis
 #
 # Permission is hereby granted, free of charge, to any person
 # obtaining a copy of this software and associated documentation
@@ -59,107 +59,38 @@ class RasterioProvider(BaseProvider):
             self.axes = self._coverage_properties['axes']
             self.crs = self._coverage_properties['bbox_crs']
             self.num_bands = self._coverage_properties['num_bands']
-            self.fields = [str(num) for num in range(1, self.num_bands+1)]
+            self.fields = self.get_fields()
             self.native_format = provider_def['format']['name']
         except Exception as err:
             LOGGER.warning(err)
             raise ProviderConnectionError(err)
 
-    def get_coverage_domainset(self, *args, **kwargs):
-        """
-        Provide coverage domainset
-        :returns: CIS JSON object of domainset metadata
-        """
+    def get_fields(self):
+        fields = {}
 
-        domainset = {
-            'type': 'DomainSet',
-            'generalGrid': {
-                'type': 'GeneralGridCoverage',
-                'srsName': self._coverage_properties['bbox_crs'],
-                'axisLabels': [
-                    self._coverage_properties['x_axis_label'],
-                    self._coverage_properties['y_axis_label']
-                ],
-                'axis': [{
-                    'type': 'RegularAxis',
-                    'axisLabel': self._coverage_properties['x_axis_label'],
-                    'lowerBound': self._coverage_properties['bbox'][0],
-                    'upperBound': self._coverage_properties['bbox'][2],
-                    'uomLabel': self._coverage_properties['bbox_units'],
-                    'resolution': self._coverage_properties['resx']
-                }, {
-                    'type': 'RegularAxis',
-                    'axisLabel': self._coverage_properties['y_axis_label'],
-                    'lowerBound': self._coverage_properties['bbox'][1],
-                    'upperBound': self._coverage_properties['bbox'][3],
-                    'uomLabel': self._coverage_properties['bbox_units'],
-                    'resolution': self._coverage_properties['resy']
-                }],
-                'gridLimits': {
-                    'type': 'GridLimits',
-                    'srsName': 'http://www.opengis.net/def/crs/OGC/0/Index2D',
-                    'axisLabels': ['i', 'j'],
-                    'axis': [{
-                        'type': 'IndexAxis',
-                        'axisLabel': 'i',
-                        'lowerBound': 0,
-                        'upperBound': self._coverage_properties['width']
-                    }, {
-                        'type': 'IndexAxis',
-                        'axisLabel': 'j',
-                        'lowerBound': 0,
-                        'upperBound': self._coverage_properties['height']
-                    }]
-                }
-            },
-            '_meta': {
-                'tags': self._coverage_properties['tags']
+        for i, dtype in zip(self._data.indexes, self._data.dtypes):
+            LOGGER.debug(f'Adding field for band {i}')
+            i2 = str(i)
+
+            parameter = _get_parameter_metadata(
+                self._data.profile['driver'], self._data.tags(i))
+
+            name = parameter['description']
+            units = parameter.get('unit_label')
+
+            dtype2 = dtype
+            if dtype.startswith('float'):
+                dtype2 = 'number'
+
+            fields[i2] = {
+                'title': name,
+                'type': dtype2,
+                '_meta': self._data.tags(i)
             }
-        }
+            if units is not None:
+                fields[i2]['x-ogc-unit'] = units
 
-        return domainset
-
-    def get_coverage_rangetype(self, *args, **kwargs):
-        """
-        Provide coverage rangetype
-        :returns: CIS JSON object of rangetype metadata
-        """
-
-        rangetype = {
-            'type': 'DataRecord',
-            'field': []
-        }
-
-        for i, dtype, nodataval in zip(self._data.indexes, self._data.dtypes,
-                                       self._data.nodatavals):
-            LOGGER.debug(f'Determing rangetype for band {i}')
-
-            name, units = None, None
-            if self._data.units[i-1] is None:
-                parameter = _get_parameter_metadata(
-                    self._data.profile['driver'], self._data.tags(i))
-                name = parameter['description']
-                units = parameter['unit_label']
-
-            rangetype['field'].append({
-                'id': i,
-                'type': 'Quantity',
-                'name': name,
-                'encodingInfo': {
-                    'dataType': f'http://www.opengis.net/def/dataType/OGC/0/{dtype}'  # noqa
-                },
-                'nodata': nodataval,
-                'uom': {
-                    'id': f'http://www.opengis.net/def/uom/UCUM/{units}',
-                    'type': 'UnitReference',
-                    'code': units
-                },
-                '_meta': {
-                    'tags': self._data.tags(i)
-                }
-            })
-
-        return rangetype
+        return fields
 
     def query(self, properties=[], subsets={}, bbox=None, bbox_crs=4326,
               datetime_=None, format_='json', **kwargs):

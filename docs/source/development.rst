@@ -82,7 +82,7 @@ Install Python with the option to enable SQLite extensions:
 
 .. code-block:: bash
 
-   LDFLAGS="-L/usr/local/opt/sqlite/lib -L/usr/local/opt/zlib/lib" CPPFLAGS="-I/usr/local/opt/sqlite/include -I/usr/local/opt/zlib/include" PYTHON_CONFIGURE_OPTS="--enable-loadable-sqlite-extensions" pyenv install 3.7.6
+   LDFLAGS="-L/usr/local/opt/sqlite/lib -L/usr/local/opt/zlib/lib" CPPFLAGS="-I/usr/local/opt/sqlite/include -I/usr/local/opt/zlib/include" PYTHON_CONFIGURE_OPTS="--enable-loadable-sqlite-extensions" pyenv install 3.10.12
 
 Configure SQLite from Homebrew over that one shipped with the OS:
 
@@ -106,3 +106,22 @@ Set the variable for the Spatialite library under OSX:
 
 
 .. _`GitHub Actions setup`: https://github.com/geopython/pygeoapi/blob/master/.github/workflows/main.yml
+
+
+Using pre-commit
+----------------
+
+You may optionally use `pre-commit`_ in order to check for linting and other static issues
+before committing changes. Pygeoapi's repo includes a ``.pre-commit.yml``
+file, check the pre-commit docs on how to set it up - in a nutshell:
+
+- pre-commit is mentioned in pygeoapi's ``requirements-dev.txt`` file, so it will be included
+  when you pip install those
+- run ``pre-commit install`` once in order to install its git commit hooks.
+- optionally, run ``pre-commit run --all-files``, which will run all pre-commit hooks for all files in the repo.
+  This also prepares the pre-commit environment.
+- from now on, whenever you do a ``git commit``, the pre-commit hooks will run and the commit
+  will only be done if all checks pass
+
+
+.. _pre-commit:

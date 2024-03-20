@@ -1,4 +1,4 @@
-# Howto set up language files
+# How to set up language files
 
 Inspired by https://phrase.com/blog/posts/i18n-advantages-babel-python/#Integration_with_Jinja2_templates
 
@@ -21,6 +21,21 @@ Then extract the base messages from templates:
 > pybabel extract -F babel-mapping.ini -o locale/messages.pot ./
 
 This file is not persisted on github.
+
+If the above command gives this ouput:
+```
+AttributeError: module 'jinja2.ext' has no attribute 'autoescape'
+```
+
+Just comment out the extensions line in the `babel-mapping.ini` file:
+```
+[python: **.py]
+[jinja2: **/templates/**.html]
+;extensions=jinja2.ext.i18n,jinja2.ext.autoescape,jinja2.ext.with_
+```
+
+Then rerun the command for extracting base messages.
+
 
 Now setup a new language (french) using the init command:
 > pybabel init -d locale -l fr -i locale/messages.pot

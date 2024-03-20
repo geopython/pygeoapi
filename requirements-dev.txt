@@ -13,6 +13,9 @@ starlette
 uvicorn[standard]
 httpx
 
+# Pydantic/Dataclasses models
+polyfactory
+
 # PEP8
 flake8
 
@@ -25,3 +28,5 @@ wheel
 pyOpenSSL
 ndg-httpsclient
 pyasn1
+
+pre-commit

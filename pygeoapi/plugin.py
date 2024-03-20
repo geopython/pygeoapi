@@ -50,7 +50,9 @@ PLUGINS = {
         'Hateoas': 'pygeoapi.provider.hateoas.HateoasProvider',
         'MapScript': 'pygeoapi.provider.mapscript_.MapScriptProvider',
         'MongoDB': 'pygeoapi.provider.mongo.MongoProvider',
-        'MVT': 'pygeoapi.provider.mvt.MVTProvider',
+        'MVT-tippecanoe': 'pygeoapi.provider.mvt_tippecanoe.MVTTippecanoeProvider',  # noqa: E501
+        'MVT-elastic': 'pygeoapi.provider.mvt_elastic.MVTElasticProvider',  # noqa: E501
+        'MVT-proxy': 'pygeoapi.provider.mvt_proxy.MVTProxyProvider',  # noqa: E501
         'OracleDB': 'pygeoapi.provider.oracle.OracleProvider',
         'OGR': 'pygeoapi.provider.ogr.OGRProvider',
         'PostgreSQL': 'pygeoapi.provider.postgresql.PostgreSQLProvider',
@@ -60,6 +62,7 @@ PLUGINS = {
         'Socrata': 'pygeoapi.provider.socrata.SODAServiceProvider',
         'TinyDBCatalogue': 'pygeoapi.provider.tinydb_.TinyDBCatalogueProvider',
         'WMSFacade': 'pygeoapi.provider.wms_facade.WMSFacadeProvider',
+        'WMTSFacade': 'pygeoapi.provider.wmts_facade.WMTSFacadeProvider',
         'xarray': 'pygeoapi.provider.xarray_.XarrayProvider',
         'xarray-edr': 'pygeoapi.provider.xarray_edr.XarrayEDRProvider'
     },
@@ -67,7 +70,8 @@ PLUGINS = {
         'CSV': 'pygeoapi.formatter.csv_.CSVFormatter'
     },
     'process': {
-        'HelloWorld': 'pygeoapi.process.hello_world.HelloWorldProcessor'
+        'HelloWorld': 'pygeoapi.process.hello_world.HelloWorldProcessor',
+        'Echo': 'pygeoapi.process.echo.EchoProcessor'
     },
     'process_manager': {
         'Dummy': 'pygeoapi.process.manager.dummy.DummyManager',

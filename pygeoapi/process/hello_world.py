@@ -1,8 +1,10 @@
 # =================================================================
 #
 # Authors: Tom Kralidis <tomkralidis@gmail.com>
+#          Francesco Martinelli <francesco.martinelli@ingv.it>
 #
 # Copyright (c) 2022 Tom Kralidis
+# Copyright (c) 2024 Francesco Martinelli
 #
 # Permission is hereby granted, free of charge, to any person
 # obtaining a copy of this software and associated documentation
@@ -69,7 +71,6 @@ PROCESS_METADATA = {
             },
             'minOccurs': 1,
             'maxOccurs': 1,
-            'metadata': None,  # TODO how to use?
             'keywords': ['full name', 'personal']
         },
         'message': {
@@ -80,7 +81,6 @@ PROCESS_METADATA = {
             },
             'minOccurs': 0,
             'maxOccurs': 1,
-            'metadata': None,
             'keywords': ['message']
         }
     },
@@ -117,9 +117,9 @@ class HelloWorldProcessor(BaseProcessor):
         """
 
         super().__init__(processor_def, PROCESS_METADATA)
+        self.supports_outputs = True
 
-    def execute(self, data, requested_outputs = None):
-
+    def execute(self, data, outputs=None):
         mimetype = 'application/json'
         name = data.get('name')
 
@@ -130,13 +130,13 @@ class HelloWorldProcessor(BaseProcessor):
         value = f'Hello {name}! {message}'.strip()
 
         produced_outputs = {}
-        if requested_outputs is None or 'echo' in requested_outputs:
+        if outputs is None or 'echo' in outputs:
             produced_outputs = {
                 'id': 'echo',
                 'value': value
             }
 
         return mimetype, produced_outputs
-    
+
     def __repr__(self):
         return f'<HelloWorldProcessor> {self.name}'

@@ -1,0 +1,536 @@
+# Bosnian translations for PROJECT.
+# Copyright (C) 2024 ORGANIZATION
+# This file is distributed under the same license as the PROJECT project.
+# FIRST AUTHOR <EMAIL@ADDRESS>, 2024.
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: PROJECT VERSION\n"
+"Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
+"POT-Creation-Date: 2024-02-27 14:39+0100\n"
+"PO-Revision-Date: 2024-02-27 14:40+0100\n"
+"Last-Translator: Bojan Kuzmanović <bojan.kuzmanovic@student.etf.unibl.org>\n"
+"Language: bs\n"
+"Language-Team: bs <LL@li.org>\n"
+"Plural-Forms: nplurals=3; plural=(n%10==1 && n%100!=11 ? 0 : n%10>=2 && "
+"n%10<=4 && (n%100<10 || n%100>=20) ? 1 : 2);\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=utf-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Generated-By: Babel 2.14.0\n"
+
+#: pygeoapi/templates/_base.html:51
+msgid "Admin"
+msgstr "Admin"
+
+#: pygeoapi/templates/_base.html:67 pygeoapi/templates/landing_page.html:2
+msgid "Home"
+msgstr "Početna"
+
+#: pygeoapi/templates/_base.html:75 pygeoapi/templates/_base.html:83
+msgid "json"
+msgstr "json"
+
+#: pygeoapi/templates/_base.html:78 pygeoapi/templates/_base.html:86
+msgid "jsonld"
+msgstr "jsonld"
+
+#: pygeoapi/templates/_base.html:105
+msgid "Powered by "
+msgstr "Pokreće ga"
+
+#: pygeoapi/templates/conformance.html:2 pygeoapi/templates/conformance.html:4
+#: pygeoapi/templates/conformance.html:8
+#: pygeoapi/templates/landing_page.html:86
+msgid "Conformance"
+msgstr "Usklađenost"
+
+#: pygeoapi/templates/exception.html:2 pygeoapi/templates/exception.html:5
+msgid "Exception"
+msgstr "Izuzetak"
+
+#: pygeoapi/templates/landing_page.html:25
+msgid "Terms of service"
+msgstr "Uslovi korišćenja"
+
+#: pygeoapi/templates/collections/collection.html:38
+#: pygeoapi/templates/landing_page.html:35
+msgid "License"
+msgstr "Licensa"
+
+#: pygeoapi/templates/collections/collection.html:6
+#: pygeoapi/templates/collections/coverage/domainset.html:4
+#: pygeoapi/templates/collections/coverage/rangetype.html:4
+#: pygeoapi/templates/collections/edr/query.html:4
+#: pygeoapi/templates/collections/index.html:2
+#: pygeoapi/templates/collections/index.html:4
+#: pygeoapi/templates/collections/items/index.html:4
+#: pygeoapi/templates/collections/items/item.html:27
+#: pygeoapi/templates/collections/queryables.html:4
+#: pygeoapi/templates/collections/tiles/index.html:4
+#: pygeoapi/templates/collections/tiles/metadata.html:4
+#: pygeoapi/templates/landing_page.html:48
+#: pygeoapi/templates/stac/collection_base.html:19
+msgid "Collections"
+msgstr "Kolekcije"
+
+#: pygeoapi/templates/landing_page.html:50
+msgid "View the collections in this service"
+msgstr "Pogledajte kolekcije u ovoj usluzi"
+
+#: pygeoapi/templates/landing_page.html:56
+msgid "SpatioTemporal Assets"
+msgstr "Prostorno-vremenski resursi"
+
+#: pygeoapi/templates/landing_page.html:58
+msgid "View the SpatioTemporal Assets in this service"
+msgstr "Pretražite prostorno-vremenske resurse u ovoj usluzi"
+
+#: pygeoapi/templates/landing_page.html:64
+#: pygeoapi/templates/processes/index.html:2
+#: pygeoapi/templates/processes/index.html:4
+#: pygeoapi/templates/processes/process.html:4
+msgid "Processes"
+msgstr "Procesi"
+
+#: pygeoapi/templates/landing_page.html:66
+msgid "View the processes in this service"
+msgstr "Pogledajte procese u ovoj usluzi"
+
+#: pygeoapi/templates/jobs/index.html:2 pygeoapi/templates/jobs/index.html:4
+#: pygeoapi/templates/jobs/index.html:11 pygeoapi/templates/jobs/job.html:4
+#: pygeoapi/templates/jobs/results/index.html:4
+#: pygeoapi/templates/landing_page.html:70
+#: pygeoapi/templates/processes/process.html:76
+msgid "Jobs"
+msgstr "Zadaci"
+
+#: pygeoapi/templates/landing_page.html:72
+#: pygeoapi/templates/processes/process.html:77
+msgid "Browse jobs"
+msgstr "Pregledajte zadatke"
+
+#: pygeoapi/templates/landing_page.html:77
+msgid "API Definition"
+msgstr "API definicija"
+
+#: pygeoapi/templates/landing_page.html:79
+msgid "Documentation"
+msgstr "Dokumentacija"
+
+#: pygeoapi/templates/landing_page.html:79
+msgid "Swagger UI"
+msgstr "Swagger UI"
+
+#: pygeoapi/templates/landing_page.html:79
+msgid "ReDoc"
+msgstr "ReDoc"
+
+#: pygeoapi/templates/landing_page.html:82
+msgid "OpenAPI Document"
+msgstr "OpenAPI dokument"
+
+#: pygeoapi/templates/landing_page.html:88
+msgid "View the conformance classes of this service"
+msgstr "Poglejte klase usklađenosti ove usluge"
+
+#: pygeoapi/templates/landing_page.html:92
+msgid "Tile Matrix Sets"
+msgstr "Matrica tile-ova"
+
+#: pygeoapi/templates/landing_page.html:94
+msgid "View the Tile Matrix Sets available on this service"
+msgstr "Pogledajte matrice tile-ova dostupne u ovoj usluzi"
+
+#: pygeoapi/templates/landing_page.html:101
+msgid "Provider"
+msgstr "Provajder"
+
+#: pygeoapi/templates/landing_page.html:110
+msgid "Contact point"
+msgstr "Kontakt tačka"
+
+#: pygeoapi/templates/landing_page.html:113
+msgid "Address"
+msgstr "Adresa"
+
+#: pygeoapi/templates/landing_page.html:122
+msgid "Email"
+msgstr "Email"
+
+#: pygeoapi/templates/landing_page.html:125
+msgid "Telephone"
+msgstr "Telefon"
+
+#: pygeoapi/templates/landing_page.html:129
+msgid "Fax"
+msgstr "Fax"
+
+#: pygeoapi/templates/landing_page.html:133
+msgid "Contact URL"
+msgstr "Konktakt URL"
+
+#: pygeoapi/templates/landing_page.html:137
+msgid "Hours"
+msgstr "Sati"
+
+#: pygeoapi/templates/landing_page.html:141
+msgid "Contact instructions"
+msgstr "Konktakt instrukcije"
+
+#: pygeoapi/templates/collections/collection.html:51
+msgid "Browse"
+msgstr "Pretražite"
+
+#: pygeoapi/templates/collections/collection.html:55
+msgid "Browse Items"
+msgstr "Pretražite stavke"
+
+#: pygeoapi/templates/collections/collection.html:56
+msgid "Browse through the items of"
+msgstr "Pretražite kroz stavke od"
+
+#: pygeoapi/templates/collections/collection.html:59
+#: pygeoapi/templates/collections/queryables.html:6
+#: pygeoapi/templates/collections/queryables.html:17
+msgid "Queryables"
+msgstr "Upitni"
+
+#: pygeoapi/templates/collections/collection.html:63
+msgid "Display Queryables"
+msgstr "Prikaži upitne"
+
+#: pygeoapi/templates/collections/collection.html:64
+msgid "Display Queryables of"
+msgstr "Prikaži upitne od"
+
+#: pygeoapi/templates/collections/collection.html:69
+#: pygeoapi/templates/collections/tiles/index.html:6
+#: pygeoapi/templates/collections/tiles/metadata.html:6
+msgid "Tiles"
+msgstr "Tile-ovi"
+
+#: pygeoapi/templates/collections/collection.html:73
+msgid "Display Tiles"
+msgstr "Prikaži tile-ove"
+
+#: pygeoapi/templates/collections/collection.html:73
+msgid "Display Tiles of"
+msgstr "Prikaži tile-ove od"
+
+#: pygeoapi/templates/collections/collection.html:80
+#: pygeoapi/templates/jobs/job.html:50
+#: pygeoapi/templates/processes/process.html:78
+msgid "Links"
+msgstr "Linkovi"
+
+#: pygeoapi/templates/collections/collection.html:90
+msgid "Reference Systems"
+msgstr "Referentni sistemi"
+
+#: pygeoapi/templates/collections/collection.html:98
+msgid "Storage CRS"
+msgstr "Skladišni CRS"
+
+#: pygeoapi/templates/collections/index.html:12
+#: pygeoapi/templates/processes/index.html:14
+#: pygeoapi/templates/stac/catalog.html:17
+#: pygeoapi/templates/stac/collection.html:17
+msgid "Name"
+msgstr "Naziv"
+
+#: pygeoapi/templates/collections/index.html:13
+#: pygeoapi/templates/stac/catalog.html:18
+msgid "Type"
+msgstr "Tip"
+
+#: pygeoapi/templates/collections/index.html:14
+#: pygeoapi/templates/processes/index.html:15
+#: pygeoapi/templates/processes/process.html:26
+#: pygeoapi/templates/processes/process.html:56
+#: pygeoapi/templates/stac/collection.html:18
+#: pygeoapi/templates/tilematrixsets/index.html:16
+msgid "Description"
+msgstr "Opis"
+
+#: pygeoapi/templates/collections/coverage/domainset.html:11
+msgid "Coverage domain set"
+msgstr "Pokrivenost domenskog skupa"
+
+#: pygeoapi/templates/collections/coverage/domainset.html:12
+msgid "Axis labels"
+msgstr "Labele osa"
+
+#: pygeoapi/templates/collections/coverage/domainset.html:18
+msgid "Extent"
+msgstr "Extent"
+
+#: pygeoapi/templates/collections/coverage/domainset.html:24
+msgid "Coordinate reference system"
+msgstr "Koordinate referentnog sistema"
+
+#: pygeoapi/templates/collections/coverage/domainset.html:26
+#: pygeoapi/templates/stac/catalog.html:20
+#: pygeoapi/templates/stac/collection_base.html:34
+#: pygeoapi/templates/stac/item.html:34
+msgid "Size"
+msgstr "Veličina"
+
+#: pygeoapi/templates/collections/coverage/domainset.html:28
+msgid "width"
+msgstr "širina"
+
+#: pygeoapi/templates/collections/coverage/domainset.html:29
+msgid "height"
+msgstr "visina"
+
+#: pygeoapi/templates/collections/coverage/domainset.html:31
+msgid "Resolution"
+msgstr "Rezolucija"
+
+#: pygeoapi/templates/collections/coverage/domainset.html:33
+msgid "x"
+msgstr "x"
+
+#: pygeoapi/templates/collections/coverage/domainset.html:34
+msgid "y"
+msgstr "y"
+
+#: pygeoapi/templates/collections/coverage/rangetype.html:11
+msgid "Coverage range type"
+msgstr "Pokrivenost tipa opsega"
+
+#: pygeoapi/templates/collections/coverage/rangetype.html:12
+msgid "Fields"
+msgstr "Polja"
+
+#: pygeoapi/templates/collections/edr/query.html:11
+#: pygeoapi/templates/collections/items/index.html:11
+#: pygeoapi/templates/collections/items/item.html:33
+msgid "Items"
+msgstr "Stavke"
+
+#: pygeoapi/templates/collections/items/index.html:25
+msgid "Items in this collection"
+msgstr "Stavke u ovoj kolekciji"
+
+#: pygeoapi/templates/collections/items/index.html:38
+msgid "Warning: Higher limits not recommended!"
+msgstr "Upozorenje: Veće granice nisu preporučljivi!"
+
+#: pygeoapi/templates/collections/items/index.html:43
+msgid "Limit"
+msgstr "Granica"
+
+#: pygeoapi/templates/collections/items/index.html:45
+msgid "default"
+msgstr "podrazumijevano"
+
+#: pygeoapi/templates/collections/items/index.html:66
+#: pygeoapi/templates/collections/items/item.html:62
+msgid "Prev"
+msgstr "Prethodno"
+
+#: pygeoapi/templates/collections/items/index.html:68
+#: pygeoapi/templates/collections/items/item.html:64
+msgid "Next"
+msgstr "Sljedeće"
+
+#: pygeoapi/templates/collections/items/index.html:139
+msgid "No items"
+msgstr "Nema stavki"
+
+#: pygeoapi/templates/collections/items/item.html:77
+#: pygeoapi/templates/stac/collection_base.html:58
+#: pygeoapi/templates/stac/item.html:58
+msgid "Property"
+msgstr "Svojstvo"
+
+#: pygeoapi/templates/collections/items/item.html:78
+#: pygeoapi/templates/stac/collection_base.html:59
+#: pygeoapi/templates/stac/item.html:59
+msgid "Value"
+msgstr "Vrijednost"
+
+#: pygeoapi/templates/collections/tiles/index.html:31
+msgid "Tile Matrix Set"
+msgstr "Matrica tile-ova"
+
+#: pygeoapi/templates/collections/tiles/index.html:42
+msgid "Metadata"
+msgstr "Meta podaci"
+
+#: pygeoapi/templates/collections/tiles/metadata.html:15
+msgid "TileJSON"
+msgstr "TileJSON"
+
+#: pygeoapi/templates/collections/tiles/metadata.html:17
+msgid "JSON"
+msgstr "JSON"
+
+#: pygeoapi/templates/jobs/index.html:14
+msgid "Job ID"
+msgstr "ID zadatka"
+
+#: pygeoapi/templates/jobs/index.html:15
+msgid "Process ID"
+msgstr "ID procesa"
+
+#: pygeoapi/templates/jobs/index.html:16
+msgid "Start"
+msgstr "Početak"
+
+#: pygeoapi/templates/jobs/index.html:17 pygeoapi/templates/jobs/job.html:37
+msgid "Duration"
+msgstr "Trajanje"
+
+#: pygeoapi/templates/jobs/index.html:18 pygeoapi/templates/jobs/job.html:17
+#: pygeoapi/templates/jobs/job.html:35
+msgid "Progress"
+msgstr "Napredak"
+
+#: pygeoapi/templates/jobs/index.html:19 pygeoapi/templates/jobs/job.html:16
+msgid "Status"
+msgstr "Status"
+
+#: pygeoapi/templates/jobs/index.html:20 pygeoapi/templates/jobs/job.html:21
+msgid "Message"
+msgstr "Poruka"
+
+#: pygeoapi/templates/jobs/job.html:2 pygeoapi/templates/jobs/job.html:10
+msgid "Job status"
+msgstr "Status zadatka"
+
+#: pygeoapi/templates/jobs/job.html:26
+msgid "Parameters"
+msgstr "Parametri"
+
+#: pygeoapi/templates/jobs/job.html:45
+msgid "Started processing"
+msgstr "Započeto procesiranje"
+
+#: pygeoapi/templates/jobs/job.html:47
+msgid "Finished processing"
+msgstr "Završeno procesiranje"
+
+#: pygeoapi/templates/jobs/results/index.html:2
+msgid "Job result"
+msgstr "Rezuultat zadatka"
+
+#: pygeoapi/templates/jobs/results/index.html:6
+msgid "Results"
+msgstr "Rezuultati"
+
+#: pygeoapi/templates/jobs/results/index.html:10
+msgid "Results of job"
+msgstr "Rezultati zadatka"
+
+#: pygeoapi/templates/processes/index.html:8
+msgid "Processes in this service"
+msgstr "Procesi u ovoj usluzi"
+
+#: pygeoapi/templates/processes/process.html:20
+msgid "Inputs"
+msgstr "Ulazi"
+
+#: pygeoapi/templates/processes/process.html:23
+#: pygeoapi/templates/processes/process.html:54
+msgid "Id"
+msgstr "Id"
+
+#: pygeoapi/templates/processes/process.html:24
+#: pygeoapi/templates/processes/process.html:55
+#: pygeoapi/templates/tilematrixsets/index.html:15
+msgid "Title"
+msgstr "Naslov"
+
+#: pygeoapi/templates/processes/process.html:25
+msgid "Data Type"
+msgstr "Vrst podataka"
+
+#: pygeoapi/templates/processes/process.html:51
+msgid "Outputs"
+msgstr "Izlazi"
+
+#: pygeoapi/templates/processes/process.html:71
+msgid "Execution modes"
+msgstr "Modovi izvršavanja"
+
+#: pygeoapi/templates/processes/process.html:73
+msgid "Synchronous"
+msgstr "Sinhroni"
+
+#: pygeoapi/templates/processes/process.html:74
+msgid "Asynchronous"
+msgstr "Asinhroni"
+
+#: pygeoapi/templates/stac/catalog.html:4
+#: pygeoapi/templates/stac/collection.html:2
+#: pygeoapi/templates/stac/collection.html:4
+#: pygeoapi/templates/stac/collection_base.html:4
+#: pygeoapi/templates/stac/item.html:4
+msgid "SpatioTemporal Asset Catalog"
+msgstr "Prostorno-vremenski katalog resursa"
+
+#: pygeoapi/templates/stac/catalog.html:19
+msgid "Last modified"
+msgstr "Zadnji put izmijenjeno"
+
+#: pygeoapi/templates/stac/collection.html:9
+msgid "STAC Version"
+msgstr "STAC verzija"
+
+#: pygeoapi/templates/stac/collection_base.html:28
+#: pygeoapi/templates/stac/item.html:28
+msgid "Assets"
+msgstr "Resursi"
+
+#: pygeoapi/templates/stac/collection_base.html:32
+#: pygeoapi/templates/stac/item.html:32
+msgid "URL"
+msgstr "URL"
+
+#: pygeoapi/templates/stac/collection_base.html:33
+#: pygeoapi/templates/stac/item.html:33
+msgid "Last Modified"
+msgstr "Zadnji put izmijenjeno"
+
+#: pygeoapi/templates/stac/collection_base.html:64
+#: pygeoapi/templates/stac/item.html:64
+msgid "id"
+msgstr "id"
+
+#: pygeoapi/templates/stac/collection_base.html:68
+msgid "description"
+msgstr "opis"
+
+#: pygeoapi/templates/stac/collection_base.html:72
+msgid "extent"
+msgstr "extent"
+
+#: pygeoapi/templates/stac/collection_base.html:77
+msgid "cube:dimensions"
+msgstr "kocka:dimenzije"
+
+#: pygeoapi/templates/stac/collection_base.html:83
+msgid "cube:variables"
+msgstr "kocka:varijable"
+
+#: pygeoapi/templates/stac/item.html:19
+msgid "Item"
+msgstr "Stavka"
+
+#: pygeoapi/templates/tilematrixsets/index.html:2
+#: pygeoapi/templates/tilematrixsets/index.html:4
+msgid "TileMatrixSets"
+msgstr ""
+
+#: pygeoapi/templates/tilematrixsets/index.html:9
+msgid "Tile matrix sets available in this service"
+msgstr "Matrica tile-ova dostupna u ovoj usluzi"
+
+#: pygeoapi/templates/tilematrixsets/tilematrixset.html:2
+#: pygeoapi/templates/tilematrixsets/tilematrixset.html:4
+msgid "TileMatrixSet"
+msgstr "Matrica tile-ova"
+

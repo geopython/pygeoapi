@@ -83,9 +83,9 @@ the following contents:
    # module: myplugin.cli
    import click
 
-   @click.command(name="super-command")
+   @click.command(name='super-command')
    def my_cli_command():
-       print("Hello, this is my custom pygeoapi CLI command!")
+       print('Hello, this is my custom pygeoapi CLI command!')
 
 
 Then, in your plugin's ``setup.py`` file, specify the entrypoints section:
@@ -104,7 +104,7 @@ Alternatively, if using a ``pyproject.toml`` file instead:
    # file: pyproject.toml
    # Noter that this example uses poetry, other Python projects may differ in
    # how they expect entry_points to be specified
-   [tool.poetry.plugins."pygeoapi"]
+   [tool.poetry.plugins.'pygeoapi']
    my-plugin = 'myplugin.cli:my_cli_command'
 
 
@@ -147,7 +147,7 @@ option 2 above).
 Example: custom pygeoapi vector data provider
 ---------------------------------------------
 
-Lets consider the steps for a vector data provider plugin (source code is located here: :ref:`data Provider`).
+Lets consider the steps for a vector data provider plugin:
 
 Python code
 ^^^^^^^^^^^
@@ -180,7 +180,7 @@ The below template provides a minimal example (let's call the file ``mycoolvecto
 
            # optionally specify the output filename pygeoapi can use as part
            # of the response (HTTP Content-Disposition header)
-           self.filename = "my-cool-filename.dat"
+           self.filename = 'my-cool-filename.dat'
 
            # open data file (self.data) and process, return
            return {
@@ -220,7 +220,7 @@ Each base class documents the functions, arguments and return types required for
 Example: custom pygeoapi raster data provider
 ---------------------------------------------
 
-Lets consider the steps for a raster data provider plugin (source code is located here: :ref:`data Provider`).
+Lets consider the steps for a raster data provider plugin:
 
 Python code
 ^^^^^^^^^^^
@@ -240,12 +240,15 @@ The below template provides a minimal example (let's call the file ``mycoolraste
            super().__init__(provider_def)
            self.num_bands = 4
            self.axes = ['Lat', 'Long']
+           self.fields = self.get_fields()
 
-       def get_coverage_domainset(self):
-           # return a CIS JSON DomainSet
-
-       def get_coverage_rangetype(self):
-           # return a CIS JSON RangeType
+       def get_fields(self):
+           # generate a JSON Schema of coverage band metadata
+           return {
+               'b1': {
+                   'type': 'number'
+               }
+           }
 
        def query(self, bands=[], subsets={}, format_='json', **kwargs):
            # process bands and subsets parameters
@@ -253,7 +256,7 @@ The below template provides a minimal example (let's call the file ``mycoolraste
 
            # optionally specify the output filename pygeoapi can use as part
            of the response (HTTP Content-Disposition header)
-           self.filename = "my-cool-filename.dat"
+           self.filename = 'my-cool-filename.dat'
 
            if format_ == 'json':
                # return a CoverageJSON representation
@@ -262,13 +265,78 @@ The below template provides a minimal example (let's call the file ``mycoolraste
                # return default (likely binary) representation
                return bytes(112)
 
-For brevity, the above code will always JSON for metadata and binary or CoverageJSON for the data.  In reality, the plugin
+For brevity, the above code will always return JSON for metadata and binary or CoverageJSON for the data.  In reality, the plugin
 developer would connect to a data source with capabilities to run queries and return a relevant result set,
 As long as the plugin implements the API contract of its base provider, all other functionality is left to the provider
 implementation.
 
 Each base class documents the functions, arguments and return types required for implementation.
 
+Example: custom pygeoapi processing plugin
+------------------------------------------
+
+Let's consider a simple process plugin to calculate a square root from a number:
+
+Python code
+^^^^^^^^^^^
+
+The below template provides a minimal example (let's call the file ``mycoolsqrtprocess.py``:
+
+.. code-block:: python
+
+   import math
+
+   from pygeoapi.process.base import BaseProcessor, ProcessorExecuteError
+
+   PROCESS_METADATA = {
+       # reduced for brevity (see examples of PROCESS_METADATA in pygeoapi/process/hello_world.py)
+   }
+
+   class MyCoolSqrtProcessor(BaseProcessor)
+       """My cool sqrt process plugin"""
+
+       def __init__(self, processor_def):
+           """
+           Initialize object
+
+           :param processor_def: provider definition
+
+           :returns: pygeoapi.process.mycoolsqrtprocess.MyCoolSqrtProcessor
+           """
+
+           super().__init__(processor_def, PROCESS_METADATA)
+
+       def execute(self, data):
+
+           mimetype = 'application/json'
+           number = data.get('number')
+
+           if number is None:
+               raise ProcessorExecuteError('Cannot process without a number')
+
+           try:
+               number = float(data.get('number'))
+           except TypeError:
+               raise ProcessorExecuteError('Number required')
+
+           value = math.sqrt(number)
+
+           outputs = {
+               'id': 'sqrt',
+               'value': value
+           }
+
+           return mimetype, outputs
+
+       def __repr__(self):
+           return f'<MyCoolSqrtProcessor> {self.name}'
+
+
+The example above handles a dictionary of the JSON payload passed from the client, calculates the square root of a float or integer, and returns the result in an output JSON payload.  The plugin is responsible for defining the expected inputs and outputs in ``PROCESS_METADATA`` and to return the output in any format along with the corresponding media type.
+
+.. note::
+
+   Additional processing plugins can also be found in ``pygeoapi/process``.
 
 Example: custom pygeoapi formatter
 ----------------------------------
@@ -295,47 +363,20 @@ The below template provides a minimal example (let's call the file ``mycooljsonf
        def write(self, options={}, data=None):
            """custom writer"""
 
-           out_data {'rows': []}
+           out_data = {'rows': []}
 
            for feature in data['features']:
-               out_data.append(feature['properties'])
+               out_data['rows'].append(feature['properties'])
 
            return out_data
-
-
-Processing plugins
-------------------
-
-Processing plugins are following the OGC API - Processes development.  Given that the specification is
-under development, the implementation in ``pygeoapi/process/hello_world.py`` provides a suitable example
-for the time being.
 
 
 Featured plugins
 ----------------
 
-The following plugins provide useful examples of pygeoapi plugins implemented
-by downstream applications.
-
-.. csv-table::
-   :header: "Plugin(s)", "Organization/Project","Description"
-   :align: left
-
-   `msc-pygeoapi`_,Meteorological Service of Canada,processes for weather/climate/water data workflows
-   `pygeoapi-kubernetes-papermill`_,Euro Data Cube,processes for executing Jupyter notebooks via Kubernetes
-   `local-outlier-factor-plugin`_,Manaaki Whenua – Landcare Research,processes for local outlier detection
-   `ogc-edc`_,Euro Data Cube,coverage provider atop the EDC API
-   `nldi_xstool`_,United States Geological Survey,Water data processing
-   `pygeometa-plugin`_,pygeometa project,pygeometa as a service
-   `cgs-plugins`_,Center for Geospatial Solutions,feature and processes plugins
+Community based plugins can be found on the `pygeoapi Community Plugins wiki page`_.
 
 
-.. _`cgs-plugins`: https://github.com/cgs-earth/pygeoapi-plugins
+.. _`pygeoapi Community Plugins wiki page`: https://github.com/geopython/pygeoapi/wiki/CommunityPlugins
 .. _`Cookiecutter`: https://github.com/audreyfeldroy/cookiecutter-pypackage
-.. _`msc-pygeoapi`: https://github.com/ECCC-MSC/msc-pygeoapi
-.. _`pygeoapi-kubernetes-papermill`: https://github.com/eurodatacube/pygeoapi-kubernetes-papermill
-.. _`local-outlier-factor-plugin`: https://github.com/manaakiwhenua/local-outlier-factor-plugin
-.. _`ogc-edc`: https://github.com/eurodatacube/ogc-edc/tree/oapi/edc_ogc/pygeoapi
-.. _`nldi_xstool`: https://code.usgs.gov/wma/nhgf/toolsteam/nldi-xstool
 .. _`pygeoapi-plugin-cookiecutter`: https://code.usgs.gov/wma/nhgf/pygeoapi-plugin-cookiecutter
-.. _`pygeometa-plugin`: https://geopython.github.io/pygeometa/pygeoapi-plugin

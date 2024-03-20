@@ -14,36 +14,24 @@ on:
       - released
 
 jobs:
-  flake8_py3:
-    runs-on: ubuntu-22.04
-    steps:
-      - name: Setup Python
-        uses: actions/setup-python@v1
-        with:
-          python-version: 3.8
-          architecture: x64
-      - name: Checkout pygeoapi
-        uses: actions/checkout@master
-      - name: Install flake8
-        run: pip install flake8
-      - name: Run flake8
-        uses: suo/flake8-github-action@releases/v1
-        with:
-          checkName: 'flake8_py3'   # NOTE: this needs to be the same as the job name
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
   main:
-    needs: [flake8_py3]
     runs-on: ubuntu-22.04
     strategy:
       matrix:
         include:
-          - python-version: 3.8
+          - python-version: '3.10'
     env:
       PYGEOAPI_CONFIG: "$(pwd)/pygeoapi-config.yml"
     
     steps:
+    - name: Clear up GitHub runner diskspace
+      run: |
+        echo "Space before"
+        df -h /
+        sudo rm -rf /usr/local/lib/android
+        sudo rm -rf /usr/share/dotnet
+        echo "Space after"
+        df -h /
     - name: Chown user
       run: |
         sudo chown -R $USER:$USER $GITHUB_WORKSPACE
@@ -83,31 +71,35 @@ jobs:
       with:
         packages: libsqlite3-mod-spatialite
         version: 4.3.0a-6build1
+    - name: Use ubuntuGIS unstable ppa
+      run: sudo add-apt-repository ppa:ubuntugis/ubuntugis-unstable && sudo apt update
+      shell: bash
     - name: Install GDAL with Python bindings
       uses: awalsh128/cache-apt-pkgs-action@latest
       with:
         packages: gdal-bin libgdal-dev
-        version: 3.0.4
+        version: 3.8.4
     - name: Install and run Oracle
       run: |
         docker run -d --name oracledb -e ORACLE_PWD=oracle -v ${{ github.workspace }}/tests/data/oracle/init-db:/opt/oracle/scripts/startup -p 1521:1521 container-registry.oracle.com/database/express:21.3.0-xe
     - name: Install requirements 📦
       run: |
         pip3 install -r requirements.txt
+        pip3 install -r requirements-admin.txt
         pip3 install -r requirements-starlette.txt
         pip3 install -r requirements-dev.txt
         pip3 install -r requirements-provider.txt
+        pip3 install -r requirements-django.txt
         pip3 install -r docs/requirements.txt
         python3 setup.py install
         pip3 install --upgrade numpy elasticsearch
         pip3 install --upgrade numpy "sqlalchemy<2"
-        pip3 install --upgrade flake8
         pip3 install --global-option=build_ext --global-option="-I/usr/include/gdal" GDAL==`gdal-config --version`
         #pip3 install --upgrade rasterio==1.1.8
     - name: setup test data ⚙️
       run: |
         python3 tests/load_es_data.py tests/data/ne_110m_populated_places_simple.geojson geonameid
-        python3 tests/load_es_data.py tests/cite/ogcapi-features/canada-hydat-daily-mean-02HC003.geojson IDENTIFIER
+        python3 tests/load_es_data.py tests/cite/canada-hydat-daily-mean-02HC003.geojson IDENTIFIER
         python3 tests/load_mongo_data.py tests/data/ne_110m_populated_places_simple.geojson
         gunzip < tests/data/hotosm_bdi_waterways.sql.gz | psql postgresql://postgres:${{ secrets.DatabasePassword || 'postgres' }}@localhost:5432/test
         psql postgresql://postgres:${{ secrets.DatabasePassword || 'postgres' }}@localhost:5432/test -f tests/data/dummy_data.sql
@@ -122,6 +114,7 @@ jobs:
         pytest tests/test_config.py
         pytest tests/test_csv__formatter.py
         pytest tests/test_csv__provider.py
+        pytest tests/test_django.py
         pytest tests/test_elasticsearch__provider.py
         pytest tests/test_esri_provider.py
         pytest tests/test_filesystem_provider.py
@@ -133,6 +126,7 @@ jobs:
         pytest tests/test_ogr_shapefile_provider.py
         pytest tests/test_ogr_sqlite_provider.py
         pytest tests/test_ogr_wfs_provider.py
+        # pytest tests/test_ogr_wfs_provider_live.py  # NOTE: these are skipped in the file but listed here for completeness
         pytest tests/test_openapi.py
         pytest tests/test_oracle_provider.py
         pytest tests/test_postgresql_provider.py
@@ -147,6 +141,46 @@ jobs:
         pytest tests/test_xarray_zarr_provider.py
     - name: build docs 🏗️
       run: cd docs && make html
+    - name: failed tests 🚩
+      if: ${{ failure() }}
+      run: |
+        pip3 list -v
+
+  admin:
+    runs-on: ubuntu-22.04
+    strategy:
+      matrix:
+        include:
+          - python-version: '3.10'
+    env:
+      PYGEOAPI_CONFIG: "tests/pygeoapi-test-config-admin.yml"
+      PYGEOAPI_OPENAPI: "tests/pygeoapi-test-openapi-admin.yml"
+    steps:
+    - uses: actions/checkout@v2
+    - uses: actions/setup-python@v2
+      name: Setup Python ${{ matrix.python-version }}
+      with:
+        python-version: ${{ matrix.python-version }}
+    - uses: awalsh128/cache-apt-pkgs-action@latest
+      with:
+        packages: gunicorn python3-gevent
+        version: 1.0
+    - name: Install requirements 📦
+      run: |
+        pip3 install -r requirements.txt
+        pip3 install -r requirements-dev.txt
+        pip3 install -r requirements-admin.txt
+        python3 setup.py install
+    - name: Run pygeoapi with admin API ⚙️
+      run: |
+        pygeoapi openapi generate ${PYGEOAPI_CONFIG} --output-file ${PYGEOAPI_OPENAPI}
+        gunicorn --bind 0.0.0.0:5000 \
+                 --reload \
+                 --reload-extra-file ${PYGEOAPI_CONFIG} \
+                 pygeoapi.flask_app:APP &
+    - name: run integration tests ⚙️
+      run: |
+        pytest tests/test_admin_api.py
     - name: failed tests 🚩
       if: ${{ failure() }}
       run: |

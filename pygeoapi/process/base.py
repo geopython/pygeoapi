@@ -1,8 +1,10 @@
 # =================================================================
 #
 # Authors: Tom Kralidis <tomkralidis@gmail.com>
+#          Francesco Martinelli <francesco.martinelli@ingv.it>
 #
 # Copyright (c) 2022 Tom Kralidis
+# Copyright (c) 2024 Francesco Martinelli
 #
 # Permission is hereby granted, free of charge, to any person
 # obtaining a copy of this software and associated documentation
@@ -30,6 +32,8 @@
 import logging
 from typing import Any, Tuple, Optional
 
+from pygeoapi.error import GenericError
+
 LOGGER = logging.getLogger(__name__)
 
 
@@ -47,22 +51,21 @@ class BaseProcessor:
         """
         self.name = processor_def['name']
         self.metadata = process_metadata
+        self.supports_outputs = False
 
-    def execute(
-            self,
-            data: dict,
-            outputs: Optional[dict] = None
-    ) -> Tuple[str, Any]:
+    def execute(self, data: dict, outputs: Optional[dict] = None
+                ) -> Tuple[str, Any]:
         """
         execute the process
 
         :param data: Dict with the input data that the process needs in order
                      to execute
-        :param out_dict: `dict` optionally specify the subset of required
+        :param outputs: `dict` optionally specify the subset of required
             outputs - defaults to all outputs.
             The value of any key may be an object and include the property
             `transmissionMode` - defauts to `value`.
         :returns: tuple of MIME type and process response
+                  (string or bytes, or dict)
         """
 
         raise NotImplementedError()
@@ -71,14 +74,14 @@ class BaseProcessor:
         return f'<BaseProcessor> {self.name}'
 
 
-class ProcessorGenericError(Exception):
+class ProcessorGenericError(GenericError):
     """processor generic error"""
     pass
 
 
 class ProcessorExecuteError(ProcessorGenericError):
     """query / backend error"""
-    pass
+    default_msg = "generic error (check logs)"
 
 
 class JobError(Exception):

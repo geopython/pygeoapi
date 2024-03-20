@@ -17,7 +17,7 @@ The basics
 
 The official pygeoapi Docker image will start a pygeoapi Docker container using Gunicorn on internal port 80.
 
-Either ``IMAGE`` can be called with the ``docker`` command, ``geopython/pygeoapi`` from DockerHub or ``ghcr.io/geophython/pygeoapi`` from the GitHub Container Registry. Examples below use ``geopython/pygeoapi``. 
+Either ``IMAGE`` can be called with the ``docker`` command, ``geopython/pygeoapi`` from DockerHub or ``ghcr.io/geopython/pygeoapi`` from the GitHub Container Registry. Examples below use ``geopython/pygeoapi``. 
 
 To run with the default built-in configuration and data:
 

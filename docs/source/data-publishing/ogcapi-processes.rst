@@ -108,7 +108,12 @@ Processing examples
        -H "Prefer: respond-async"
        -d "{\"inputs\":{\"name\": \"hi there2\"}}"
 
-.. todo:: add more examples once OAProc implementation is complete
+   # execute a job for the ``hello-world`` process with a success subscriber
+   curl -X POST http://localhost:5000/processes/hello-world/execution \
+       -H "Content-Type: application/json" \
+       -d "{\"inputs\":{\"name\": \"hi there2\"}, \
+            \"subscriber\": {\"successUri\": \"https://www.example.com/success\"}}"
+
 
 .. _`OGC API - Processes`: https://ogcapi.ogc.org/processes
 .. _`sample`: https://github.com/geopython/pygeoapi/blob/master/pygeoapi/process/hello_world.py

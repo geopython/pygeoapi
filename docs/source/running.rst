@@ -172,7 +172,7 @@ By hot-reloading we mean to be able to directly see changes reflected in the app
 This is useful for development, as the changes made by developers are easily and rapidly reflected and they can take advantage 
 of the hot-reloading capabilities that offer each of the web servers available.
 
-For enabling hot-reloading, install the pygeoapi package using pip (instead of the setup.py script) with the following command: 
+To enable hot-reloading, install the pygeoapi package using pip (instead of `setup.py`) with the following command:
 
 .. code-block:: bash
 
@@ -181,8 +181,7 @@ For enabling hot-reloading, install the pygeoapi package using pip (instead of t
 .. note::
    This command must be run from the root directory of pygeoapi. 
 
-After the local package is built, you can use the ``pygeoapi serve`` 
-again and the changes on the codebase will be directly reflected on the running instance.
+After the local package is built, run ``pygeoapi serve`` again and the changes to the codebase will be reflected live on the running instance.
 
 
 Running in production
@@ -270,7 +269,7 @@ It is simple to run using the following command:
 
 .. code-block:: bash
 
-   gunicorn pygeoapi.starlette_app:app -w 4 -k uvicorn.workers.UvicornWorker
+   gunicorn pygeoapi.starlette_app:APP -w 4 -k uvicorn.workers.UvicornH11Worker
 
 .. note::
    Uvicorn is as easy to install as ``pip3 install uvicorn``

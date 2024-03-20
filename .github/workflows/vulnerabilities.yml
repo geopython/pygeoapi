@@ -1,0 +1,46 @@
+name: Check vulnerabilities
+
+on:
+  push:
+    paths-ignore:
+      - '**.md'
+  pull_request:
+    branches:
+      - master
+    paths-ignore:
+      - '!**.md'
+  release:
+    types:
+      - released
+
+jobs:
+
+  vulnerabilities:
+    runs-on: ubuntu-22.04
+    defaults:
+      run:
+        working-directory: .
+    steps:
+    - name: Checkout pygeoapi
+      uses: actions/checkout@v4
+    - name: Scan vulnerabilities with trivy
+      uses: aquasecurity/trivy-action@master
+      with:
+        scan-type: fs
+        exit-code: 1
+        ignore-unfixed: true
+        severity: CRITICAL,HIGH
+        scanners: vuln,misconfig,secret
+        scan-ref: .
+    - name: Build locally the image from Dockerfile
+      run: |
+        docker buildx build -t ${{ github.repository }}:${{ github.sha }} --platform linux/amd64 --no-cache -f Dockerfile .
+    - name: Scan locally built Docker image for vulnerabilities with trivy
+      uses: aquasecurity/trivy-action@master
+      with:
+        scan-type: image
+        exit-code: 1
+        ignore-unfixed: true
+        severity: CRITICAL,HIGH
+        vuln-type: os,library
+        image-ref: '${{ github.repository }}:${{ github.sha }}'

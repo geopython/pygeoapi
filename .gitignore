@@ -103,6 +103,10 @@ ENV/
 # pygeoapi artifacts
 *.openapi.yml
 
+# development setup examples
+example-config.yml
+example-openapi.yml 
+
 # misc
 *.swp
 .pytest_cache
@@ -120,8 +124,10 @@ pygeoapi/db.sqlite3
 # Backup files
 *~
 
-# Pre-commit hooks config file
-.pre-commit-config.yaml
-
 # Pycharm project files
 .idea
+
+# ES data folder
+.pygeoapi/docker/examples/elastic/ES/data
+.pygeoapi/docker/examples/mvt-elastic/ES/data
+.pygeoapi/docker/examples/mvt-tippecanoe/ES/data
