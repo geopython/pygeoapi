@@ -80,12 +80,12 @@ def test_yaml_load(config):
 
 
 @pytest.mark.parametrize('env,input_config,expected', [
-    pytest.param({}, 'foo: something', {'foo': 'something'}, id='no-env-expansion'),  # noqa
-    pytest.param({'FOO': 'this'}, 'foo: ${FOO}', {'foo': 'this'}),  # noqa
-    pytest.param({'FOO': 'this'}, 'foo: !env the value is ${FOO}', {'foo': 'the value is this'}, id='explicit-yaml-tag'),  # noqa
-    pytest.param({}, 'foo: ${FOO:-some default}', {'foo': 'some default'}),  # noqa
-    pytest.param({'FOO': 'this', 'BAR': 'that'}, 'composite: ${FOO}:${BAR}', {'composite': 'this:that'}),  # noqa
-    pytest.param({}, 'composite: ${FOO:-default-foo}:${BAR:-default-bar}', {'composite': 'default-foo:default-bar'}),  # noqa
+    pytest.param({}, 'foo: something', {'foo': 'something'}, id='no-env-expansion'),  # noqa E501
+    pytest.param({'FOO': 'this'}, 'foo: ${FOO}', {'foo': 'this'}),  # noqa E501
+    pytest.param({'FOO': 'this'}, 'foo: !env the value is ${FOO}', {'foo': 'the value is this'}, id='explicit-yaml-tag'),  # noqa E501
+    pytest.param({}, 'foo: ${FOO:-some default}', {'foo': 'some default'}),  # noqa E501
+    pytest.param({'FOO': 'this', 'BAR': 'that'}, 'composite: ${FOO}:${BAR}', {'composite': 'this:that'}),  # noqa E501
+    pytest.param({}, 'composite: ${FOO:-default-foo}:${BAR:-default-bar}', {'composite': 'default-foo:default-bar'}),  # noqa E501
     pytest.param(
         {
             'HOST': 'fake-host',
@@ -93,7 +93,7 @@ def test_yaml_load(config):
             'PASSWORD': 'fake-pass',
             'DB': 'fake-db'
         },
-        'connection: !env "postgres://${USER}:${PASSWORD}@${HOST}:${PORT:-5432}/${DB}"',
+        'connection: !env "postgres://${USER}:${PASSWORD}@${HOST}:${PORT:-5432}/${DB}"',  # noqa E501
         {
             'connection': 'postgres://fake:fake-pass@fake-host:5432/fake-db'
         },
