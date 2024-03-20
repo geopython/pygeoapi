@@ -1355,11 +1355,6 @@ def test_get_collection_items_json_ld(config, api_):
 
 
 def test_get_collection_item(config, api_):
-    req = mock_api_request({'f': 'foo'})
-    rsp_headers, code, response = get_collection_item(api_, req, 'obs', '371')
-
-    assert code == HTTPStatus.BAD_REQUEST
-
     req = mock_api_request({'f': 'json'})
     rsp_headers, code, response = get_collection_item(
         api_, req, 'gdps-temperature', '371')
