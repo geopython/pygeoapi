@@ -3527,6 +3527,7 @@ class API:
                 process_id,
                 data_dict,
                 execution_mode=execution_mode,
+                requested_output=out_dict,
                 subscriber=subscriber,
             )
             job_id, mime_type, outputs, status, additional_headers = result
