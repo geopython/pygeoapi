@@ -163,16 +163,33 @@ def yaml_load(fh: IO) -> dict:
     :returns: `dict` representation of YAML
     """
 
-    # support environment variables in config
-    # https://stackoverflow.com/a/55301129
-    path_matcher = re.compile(r'.*\$\{([^}^{]+)\}.*')
+    # # support environment variables in config
+    # # https://stackoverflow.com/a/55301129
+
+    path_matcher = re.compile(
+        r'\$\{?(?P<varname>\w+)(:-(?P<default>[^}]+))?\}?')
 
     def path_constructor(loader, node):
-        env_var = path_matcher.match(node.value).group(1)
-        if env_var not in os.environ:
-            msg = f'Undefined environment variable {env_var} in config'
-            raise EnvironmentError(msg)
-        return get_typed_value(os.path.expandvars(node.value))
+        result = ""
+        current_index = 0
+        raw_value = node.value
+        print(f"{raw_value=}")
+        for match_obj in path_matcher.finditer(raw_value):
+            groups = match_obj.groupdict()
+            result += raw_value[current_index:match_obj.start()]
+            if (var_value := os.getenv(groups['varname'])) is not None:
+                result += var_value
+            elif (default_value := groups.get('default')) is not None:
+                result += default_value
+            else:
+                raise RuntimeError(
+                    f'Could not find the {groups["varname"]!r} environment '
+                    f'variable'
+                )
+            current_index = match_obj.end()
+        else:
+            result += raw_value[current_index:]
+        return get_typed_value(result)
 
     class EnvVarLoader(yaml.SafeLoader):
         pass
