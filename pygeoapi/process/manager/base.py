@@ -194,6 +194,7 @@ class BaseManager:
         :param p: `pygeoapi.process` object
         :param job_id: job identifier
         :param data_dict: `dict` of data parameters
+        :param subscriber: optional `Subscriber` specifying callback URLs
 
         :returns: tuple of None (i.e. initial response payload)
                   and JobStatus.accepted (i.e. initial job status)
