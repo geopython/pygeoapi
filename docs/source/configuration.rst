@@ -413,6 +413,28 @@ Below is an example of how to integrate system environment variables in pygeoapi
            port: ${MY_PORT}
 
 
+It is also possible to define a default value for a variable in case it does not exist in
+the environment using a syntax like: ``value: ${ENV_VAR:-the default}``
+
+.. code-block:: yaml
+
+   server:
+       bind:
+           host: ${MY_HOST:-localhost}
+           port: ${MY_PORT:-5000}
+
+
+If you need to refer to an environment variable in middle of the variable you must use the ``!env`` YAML tag,
+as shown in the example below:
+
+.. code-block:: yaml
+
+   metadata:
+       identification:
+           title:
+               en: !env This is pygeoapi host ${MY_HOST} and port ${MY_PORT:-5000}, nice to meet you!
+
+
 Hierarchical collections
 ------------------------
 

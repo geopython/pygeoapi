@@ -167,13 +167,12 @@ def yaml_load(fh: IO) -> dict:
     # # https://stackoverflow.com/a/55301129
 
     path_matcher = re.compile(
-        r'\$\{?(?P<varname>\w+)(:-(?P<default>[^}]+))?\}?')
+        r'\$\{(?P<varname>\w+)(:-(?P<default>[^}]+))?\}')
 
     def path_constructor(loader, node):
         result = ""
         current_index = 0
         raw_value = node.value
-        print(f"{raw_value=}")
         for match_obj in path_matcher.finditer(raw_value):
             groups = match_obj.groupdict()
             result += raw_value[current_index:match_obj.start()]
@@ -194,9 +193,8 @@ def yaml_load(fh: IO) -> dict:
     class EnvVarLoader(yaml.SafeLoader):
         pass
 
-    EnvVarLoader.add_implicit_resolver('!path', path_matcher, None)
-    EnvVarLoader.add_constructor('!path', path_constructor)
-
+    EnvVarLoader.add_implicit_resolver('!env', path_matcher, None)
+    EnvVarLoader.add_constructor('!env', path_constructor)
     return yaml.load(fh, Loader=EnvVarLoader)
 
 
