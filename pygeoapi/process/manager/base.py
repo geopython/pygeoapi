@@ -202,6 +202,8 @@ class BaseManager:
             The value of any key may be an object and include the property
             `transmissionMode` - defauts to `value`.
             Note: 'optional' is for backward compatibility.
+        :param subscriber: optional `Subscriber` specifying callback URLs
+
         :returns: tuple of None (i.e. initial response payload)
                   and JobStatus.accepted (i.e. initial job status)
         """
