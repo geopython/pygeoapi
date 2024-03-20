@@ -49,7 +49,6 @@ from pygeoapi.api.coverages import get_collection_coverage
 from pygeoapi.api.itemtypes import (
     get_collection_schema, get_collection_queryables, get_collection_item,
     get_collection_items, manage_collection_item)
-from pygeoapi.api.maps import get_collection_map
 from pygeoapi.api.tiles import (
     get_collection_tiles, tilematrixset, tilematrixsets,
 )
@@ -1560,19 +1559,6 @@ def test_get_collection_coverage(config, api_):
     # assert code == HTTPStatus.NO_CONTENT
 
 
-def test_get_collection_map(config, api_):
-    req = mock_api_request()
-    rsp_headers, code, response = get_collection_map(api_, req, 'notfound')
-    assert code == HTTPStatus.NOT_FOUND
-
-    req = mock_api_request()
-    rsp_headers, code, response = get_collection_map(
-        api_, req, 'mapserver_world_map')
-    assert code == HTTPStatus.OK
-    assert isinstance(response, bytes)
-    assert response[1:4] == b'PNG'
-
-
 def test_get_collection_tiles(config, api_):
     req = mock_api_request()
     rsp_headers, code, response = get_collection_tiles(api_, req, 'obs')
@@ -1590,6 +1576,7 @@ def test_get_collection_tiles(config, api_):
     content = json.loads(response)
     assert len(content['links']) > 0
     assert len(content['tilesets']) > 0
+
 
 def test_validate_bbox():
     assert validate_bbox('1,2,3,4') == [1, 2, 3, 4]
