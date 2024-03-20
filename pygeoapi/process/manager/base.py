@@ -234,6 +234,7 @@ class BaseManager:
             The value of any key may be an object and include the property
             `transmissionMode` - defauts to `value`.
             Note: 'optional' is for backward compatibility.
+        :param subscriber: optional `Subscriber` specifying callback URLs
 
         :returns: tuple of MIME type, response payload and status
         """
@@ -357,12 +358,12 @@ class BaseManager:
         :param data_dict: `dict` of data parameters
         :param execution_mode: `str` optionally specifying sync or async
                                processing.
-        :param subscriber: `Subscriber` optionally specifying callback urls
         :param requested_output: `dict` optionally specify the subset of
             required outputs - defaults to all outputs.
             The value of any key may be an object and include the property
             `transmissionMode` - defauts to `value`.
             Note: 'optional' is for backward compatibility.
+        :param subscriber: `Subscriber` optionally specifying callback urls
 
         :raises UnknownProcessError: if the input process_id does not
                                      correspond to a known process
