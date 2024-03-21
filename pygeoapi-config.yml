@@ -33,7 +33,6 @@ server:
         port: 5000
     url: http://localhost:5000
     mimetype: application/json; charset=UTF-8
-    encoding: utf-8
     gzip: false
     languages:
         # First language is the default language

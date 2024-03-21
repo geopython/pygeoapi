@@ -43,7 +43,6 @@ For more information related to API design rules (the ``api_rules`` property in 
         port: 5000  # listening port for incoming connections
     url: http://localhost:5000/  # url of server
     mimetype: application/json; charset=UTF-8  # default MIME type
-    encoding: utf-8  # default server encoding
     language: en-US  # default server language
     locale_dir: /path/to/translations
     gzip: false # default server config to gzip/compress responses to requests with gzip in the Accept-Encoding header

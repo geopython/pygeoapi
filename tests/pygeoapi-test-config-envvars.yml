@@ -33,7 +33,6 @@ server:
         port: ${PYGEOAPI_PORT}
     url: http://localhost:5000/
     mimetype: application/json; charset=UTF-8
-    encoding: utf-8
     language: en-US
     gzip: false
     cors: true
