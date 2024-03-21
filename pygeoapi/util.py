@@ -166,22 +166,23 @@ def yaml_load(fh: IO) -> dict:
     # # support environment variables in config
     # # https://stackoverflow.com/a/55301129
 
-    path_matcher = re.compile(
-        r'\$\{(?P<varname>\w+)(:-(?P<default>[^}]+))?\}')
+    env_matcher = re.compile(
+        r'.*?\$\{(?P<varname>\w+)(:-(?P<default>[^}]+))?\}')
 
-    def path_constructor(loader, node):
+    def env_constructor(loader, node):
         result = ""
         current_index = 0
         raw_value = node.value
-        for match_obj in path_matcher.finditer(raw_value):
+        for match_obj in env_matcher.finditer(raw_value):
             groups = match_obj.groupdict()
-            result += raw_value[current_index:match_obj.start()]
+            varname_start = match_obj.span('varname')[0]
+            result += raw_value[current_index:(varname_start-2)]
             if (var_value := os.getenv(groups['varname'])) is not None:
                 result += var_value
             elif (default_value := groups.get('default')) is not None:
                 result += default_value
             else:
-                raise RuntimeError(
+                raise EnvironmentError(
                     f'Could not find the {groups["varname"]!r} environment '
                     f'variable'
                 )
@@ -193,8 +194,8 @@ def yaml_load(fh: IO) -> dict:
     class EnvVarLoader(yaml.SafeLoader):
         pass
 
-    EnvVarLoader.add_implicit_resolver('!env', path_matcher, None)
-    EnvVarLoader.add_constructor('!env', path_constructor)
+    EnvVarLoader.add_implicit_resolver('!env', env_matcher, None)
+    EnvVarLoader.add_constructor('!env', env_constructor)
     return yaml.load(fh, Loader=EnvVarLoader)
 
 

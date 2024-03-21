@@ -422,17 +422,10 @@ the environment using a syntax like: ``value: ${ENV_VAR:-the default}``
        bind:
            host: ${MY_HOST:-localhost}
            port: ${MY_PORT:-5000}
-
-
-If you need to refer to an environment variable in middle of the variable you must use the ``!env`` YAML tag,
-as shown in the example below:
-
-.. code-block:: yaml
-
    metadata:
        identification:
            title:
-               en: !env This is pygeoapi host ${MY_HOST} and port ${MY_PORT:-5000}, nice to meet you!
+               en: This is pygeoapi host ${MY_HOST} and port ${MY_PORT:-5000}, nice to meet you!
 
 
 Hierarchical collections
