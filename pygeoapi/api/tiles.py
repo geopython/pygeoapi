@@ -437,7 +437,7 @@ def tilematrixset(api: API,
 
 
 def get_oas_30(cfg: dict, locale: str) -> dict:
-    from pygeoapi.openapi import OPENAPI_YAML
+    from pygeoapi.openapi import OPENAPI_YAML, get_visible_collections
 
     paths = {}
 
@@ -445,7 +445,7 @@ def get_oas_30(cfg: dict, locale: str) -> dict:
     collections = filter_dict_by_key_value(cfg['resources'],
                                            'type', 'collection')
 
-    for k, v in collections.items():
+    for k, v in get_visible_collections(cfg).items():
         tile_extension = filter_providers_by_type(
             collections[k]['providers'], 'tile')
 

@@ -201,14 +201,14 @@ def get_collection_coverage(
 
 
 def get_oas_30(cfg: dict, locale: str) -> dict:
-    from pygeoapi.openapi import OPENAPI_YAML
+    from pygeoapi.openapi import OPENAPI_YAML, get_visible_collections
 
     paths = {}
 
     collections = filter_dict_by_key_value(cfg['resources'],
                                            'type', 'collection')
 
-    for k, v in collections.items():
+    for k, v in get_visible_collections(cfg).items():
         try:
             load_plugin('provider', get_provider_by_type(
                         collections[k]['providers'], 'coverage'))

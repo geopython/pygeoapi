@@ -244,7 +244,7 @@ def get_collection_map_legend(api: API, request: APIRequest,
 
 
 def get_oas_30(cfg: dict, locale: str) -> dict:
-    from pygeoapi.openapi import OPENAPI_YAML
+    from pygeoapi.openapi import OPENAPI_YAML, get_visible_collections
 
     LOGGER.debug('setting up maps endpoints')
 
@@ -254,7 +254,7 @@ def get_oas_30(cfg: dict, locale: str) -> dict:
                                            'type', 'collection')
 
     parameters = get_oas_30_parameters(cfg, locale)
-    for k, v in collections.items():
+    for k, v in get_visible_collections(cfg).items():
         map_extension = filter_providers_by_type(
             collections[k]['providers'], 'map')
 

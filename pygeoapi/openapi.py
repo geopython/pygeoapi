@@ -359,13 +359,8 @@ def get_oas_30(cfg: dict, fail_on_invalid_collection: bool = True) -> dict:
     items_f['schema']['enum'].append('csv')
 
     LOGGER.debug('setting up datasets')
-    collections = filter_dict_by_key_value(cfg['resources'],
-                                           'type', 'collection')
 
-    for k, v in collections.items():
-        if v.get('visibility', 'default') == 'hidden':
-            LOGGER.debug(f'Skipping hidden layer: {k}')
-            continue
+    for k, v in get_visible_collections(cfg).items():
         name = l10n.translate(k, locale_)
         title = l10n.translate(v['title'], locale_)
         desc = l10n.translate(v['description'], locale_)
@@ -608,6 +603,17 @@ def get_oas_30_parameters(cfg: dict, locale_: str):
                  }
             }
         }
+
+
+def get_visible_collections(cfg: dict) -> dict:
+    collections = filter_dict_by_key_value(cfg['resources'],
+                                           'type', 'collection')
+
+    return {
+        k: v
+        for k, v in collections.items()
+        if v.get('visibility', 'default') != 'hidden'
+    }
 
 
 def get_config_schema():

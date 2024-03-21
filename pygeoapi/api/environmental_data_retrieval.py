@@ -207,7 +207,7 @@ def get_collection_edr_query(api: API, request: APIRequest,
 
 
 def get_oas_30(cfg: dict, locale: str) -> dict:
-    from pygeoapi.openapi import OPENAPI_YAML
+    from pygeoapi.openapi import OPENAPI_YAML, get_visible_collections
 
     LOGGER.debug('setting up edr endpoints')
 
@@ -216,7 +216,7 @@ def get_oas_30(cfg: dict, locale: str) -> dict:
     collections = filter_dict_by_key_value(cfg['resources'],
                                            'type', 'collection')
 
-    for k, v in collections.items():
+    for k, v in get_visible_collections(cfg).items():
         edr_extension = filter_providers_by_type(
             collections[k]['providers'], 'edr')
 
