@@ -412,6 +412,11 @@ Below is an example of how to integrate system environment variables in pygeoapi
            host: ${MY_HOST}
            port: ${MY_PORT}
 
+Multiple environment variables are supported as follows:
+
+.. code-block:: yaml
+
+   data: ${MY_HOST}:${MY_PORT}
 
 It is also possible to define a default value for a variable in case it does not exist in
 the environment using a syntax like: ``value: ${ENV_VAR:-the default}``
