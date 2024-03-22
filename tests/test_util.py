@@ -31,6 +31,8 @@ from datetime import datetime, date, time
 from decimal import Decimal
 from contextlib import nullcontext as does_not_raise
 from copy import deepcopy
+from io import StringIO
+from unittest import mock
 
 import pytest
 from pyproj.exceptions import CRSError
@@ -75,6 +77,40 @@ def test_yaml_load(config):
     with pytest.raises(FileNotFoundError):
         with open(get_test_file_path('404.yml')) as fh:
             util.yaml_load(fh)
+
+
+@pytest.mark.parametrize('env,input_config,expected', [
+    pytest.param({}, 'foo: something', {'foo': 'something'}, id='no-env-expansion'),  # noqa E501
+    pytest.param({'FOO': 'this'}, 'foo: ${FOO}', {'foo': 'this'}),  # noqa E501
+    pytest.param({'FOO': 'this'}, 'foo: the value is ${FOO}', {'foo': 'the value is this'}, id='no-need-for-yaml-tag'),  # noqa E501
+    pytest.param({}, 'foo: ${FOO:-some default}', {'foo': 'some default'}),  # noqa E501
+    pytest.param({'FOO': 'this', 'BAR': 'that'}, 'composite: ${FOO}:${BAR}', {'composite': 'this:that'}),  # noqa E501
+    pytest.param({}, 'composite: ${FOO:-default-foo}:${BAR:-default-bar}', {'composite': 'default-foo:default-bar'}),  # noqa E501
+    pytest.param(
+        {
+            'HOST': 'fake-host',
+            'USER': 'fake',
+            'PASSWORD': 'fake-pass',
+            'DB': 'fake-db'
+        },
+        'connection: postgres://${USER}:${PASSWORD}@${HOST}:${PORT:-5432}/${DB}',  # noqa E501
+        {
+            'connection': 'postgres://fake:fake-pass@fake-host:5432/fake-db'
+        },
+        id='multiple-no-need-yaml-tag'
+    ),
+])
+def test_yaml_load_with_env_variables(
+        env: dict[str, str], input_config: str, expected):
+
+    def mock_get_env(env_var_name):
+        result = env.get(env_var_name)
+        return result
+
+    with mock.patch('pygeoapi.util.os') as mock_os:
+        mock_os.getenv.side_effect = mock_get_env
+        loaded_config = util.yaml_load(StringIO(input_config))
+        assert loaded_config == expected
 
 
 def test_str2bool():
