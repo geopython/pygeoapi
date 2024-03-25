@@ -79,7 +79,8 @@ ARG ADD_DEB_PACKAGES="\
     python3-zarr \
     python3-mapscript \
     python3-pytest \
-    python3-pyld"
+    python3-pyld \
+    python3-numpy"
 
 # ENV settings
 ENV TZ=${TZ} \
