@@ -642,6 +642,7 @@ def get_admin():
             ],
             'responses': {
                 '200': {
+                    'description': 'Successful response',
                     'content': {
                         'application/json': {
                             'schema': schema_dict
@@ -703,6 +704,7 @@ def get_admin():
             ],
             'responses': {
                 '200': {
+                    'description': 'Successful response',
                     'content': {
                         'application/json': {
                             'schema': schema_dict['properties']['resources']['patternProperties']['^.*$']  # noqa
@@ -745,6 +747,7 @@ def get_admin():
             ],
             'responses': {
                 '200': {
+                    'description': 'Successful response',
                     'content': {
                         'application/json': {
                             'schema': schema_dict['properties']['resources']['patternProperties']['^.*$']  # noqa
