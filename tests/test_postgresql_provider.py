@@ -7,7 +7,7 @@
 #          Francesco Bartoli <xbartolone@gmail.com>
 #
 # Copyright (c) 2019 Just van den Broecke
-# Copyright (c) 2023 Tom Kralidis
+# Copyright (c) 2024 Tom Kralidis
 # Copyright (c) 2022 John A Stevenson and Colin Blackburn
 # Copyright (c) 2023 Francesco Bartoli
 #
@@ -47,7 +47,9 @@ from http import HTTPStatus
 from pygeofilter.parsers.ecql import parse
 
 from pygeoapi.api import API
-
+from pygeoapi.api.itemtypes import (
+    get_collection_items, get_collection_item, post_collection_items
+)
 from pygeoapi.provider.base import (
     ProviderConnectionError,
     ProviderItemNotFoundError,
@@ -433,8 +435,8 @@ def test_get_collection_items_postgresql_cql(pg_api_):
         'filter-lang': 'cql-text',
         'filter': cql_query
     })
-    rsp_headers, code, response = pg_api_.get_collection_items(
-        req, 'hot_osm_waterways')
+    rsp_headers, code, response = get_collection_items(
+        pg_api_, req, 'hot_osm_waterways')
 
     # Assert
     assert code == HTTPStatus.OK
@@ -446,8 +448,8 @@ def test_get_collection_items_postgresql_cql(pg_api_):
     req = mock_request({
         'filter': cql_query
     })
-    rsp_headers, code, response = pg_api_.get_collection_items(
-        req, 'hot_osm_waterways')
+    rsp_headers, code, response = get_collection_items(
+        pg_api_, req, 'hot_osm_waterways')
 
     # Assert
     assert code == HTTPStatus.OK
@@ -471,8 +473,8 @@ def test_get_collection_items_postgresql_cql_invalid_filter_language(pg_api_):
         'filter-lang': 'cql-json',  # Only cql-text is valid for GET
         'filter': cql_query
     })
-    rsp_headers, code, response = pg_api_.get_collection_items(
-        req, 'hot_osm_waterways')
+    rsp_headers, code, response = get_collection_items(
+        pg_api_, req, 'hot_osm_waterways')
 
     # Assert
     assert code == HTTPStatus.BAD_REQUEST
@@ -497,8 +499,8 @@ def test_get_collection_items_postgresql_cql_bad_cql(pg_api_, bad_cql):
     req = mock_request({
         'filter': bad_cql
     })
-    rsp_headers, code, response = pg_api_.get_collection_items(
-        req, 'hot_osm_waterways')
+    rsp_headers, code, response = get_collection_items(
+        pg_api_, req, 'hot_osm_waterways')
 
     # Assert
     assert code == HTTPStatus.BAD_REQUEST
@@ -527,8 +529,8 @@ def test_post_collection_items_postgresql_cql(pg_api_):
     req = mock_request({
         'filter-lang': 'cql-json'
     }, data=cql, **headers)
-    rsp_headers, code, response = pg_api_.post_collection_items(
-        req, 'hot_osm_waterways')
+    rsp_headers, code, response = post_collection_items(
+        pg_api_, req, 'hot_osm_waterways')
 
     # Assert
     assert code == HTTPStatus.OK
@@ -553,8 +555,8 @@ def test_post_collection_items_postgresql_cql_invalid_filter_language(pg_api_):
     req = mock_request({
         'filter-lang': 'cql-text'  # Only cql-json is valid for POST
     }, data=cql, **headers)
-    rsp_headers, code, response = pg_api_.post_collection_items(
-        req, 'hot_osm_waterways')
+    rsp_headers, code, response = post_collection_items(
+        pg_api_, req, 'hot_osm_waterways')
 
     # Assert
     assert code == HTTPStatus.BAD_REQUEST
@@ -583,8 +585,8 @@ def test_post_collection_items_postgresql_cql_bad_cql(pg_api_, bad_cql):
     req = mock_request({
         'filter-lang': 'cql-json'
     }, data=bad_cql, **headers)
-    rsp_headers, code, response = pg_api_.post_collection_items(
-        req, 'hot_osm_waterways')
+    rsp_headers, code, response = post_collection_items(
+        pg_api_, req, 'hot_osm_waterways')
 
     # Assert
     assert code == HTTPStatus.BAD_REQUEST
@@ -602,9 +604,8 @@ def test_get_collection_items_postgresql_crs(pg_api_):
 
     # Without CRS query parameter -> no coordinates transformation
     req = mock_request({'bbox': '29.0,-2.85,29.05,-2.8'})
-    rsp_headers, code, response = pg_api_.get_collection_items(
-        req, 'hot_osm_waterways',
-    )
+    rsp_headers, code, response = get_collection_items(
+        pg_api_, req, 'hot_osm_waterways')
 
     assert code == HTTPStatus.OK
 
@@ -614,9 +615,8 @@ def test_get_collection_items_postgresql_crs(pg_api_):
     # With CRS query parameter not resulting in coordinates transformation
     # (i.e. 'crs' query parameter is the same as 'storage_crs')
     req = mock_request({'crs': storage_crs, 'bbox': '29.0,-2.85,29.05,-2.8'})
-    rsp_headers, code, response = pg_api_.get_collection_items(
-        req, 'hot_osm_waterways',
-    )
+    rsp_headers, code, response = get_collection_items(
+        pg_api_, req, 'hot_osm_waterways')
 
     assert code == HTTPStatus.OK
     assert rsp_headers['Content-Crs'] == f'<{storage_crs}>'
@@ -625,9 +625,8 @@ def test_get_collection_items_postgresql_crs(pg_api_):
 
     # With CRS query parameter resulting in coordinates transformation
     req = mock_request({'crs': crs_32735, 'bbox': '29.0,-2.85,29.05,-2.8'})
-    rsp_headers, code, response = pg_api_.get_collection_items(
-        req, 'hot_osm_waterways',
-    )
+    rsp_headers, code, response = get_collection_items(
+        pg_api_, req, 'hot_osm_waterways')
 
     assert code == HTTPStatus.OK
     assert rsp_headers['Content-Crs'] == f'<{crs_32735}>'
@@ -689,9 +688,8 @@ def test_get_collection_item_postgresql_crs(pg_api_):
     for fid in fid_list:
         # Without CRS query parameter -> no coordinates transformation
         req = mock_request({'f': 'json'})
-        rsp_headers, code, response = pg_api_.get_collection_item(
-            req, 'hot_osm_waterways', fid,
-        )
+        rsp_headers, code, response = get_collection_item(
+            pg_api_, req, 'hot_osm_waterways', fid)
 
         assert code == HTTPStatus.OK
         assert rsp_headers['Content-Crs'] == f'<{DEFAULT_CRS}>'
@@ -702,9 +700,8 @@ def test_get_collection_item_postgresql_crs(pg_api_):
         # With CRS query parameter not resulting in coordinates transformation
         # (i.e. 'crs' query parameter is the same as 'storage_crs')
         req = mock_request({'f': 'json', 'crs': storage_crs})
-        rsp_headers, code, response = pg_api_.get_collection_item(
-            req, 'hot_osm_waterways', fid,
-        )
+        rsp_headers, code, response = get_collection_item(
+            pg_api_, req, 'hot_osm_waterways', fid)
 
         assert code == HTTPStatus.OK
         assert rsp_headers['Content-Crs'] == f'<{storage_crs}>'
@@ -717,9 +714,8 @@ def test_get_collection_item_postgresql_crs(pg_api_):
 
         # With CRS query parameter resulting in coordinates transformation
         req = mock_request({'f': 'json', 'crs': crs_32735})
-        rsp_headers, code, response = pg_api_.get_collection_item(
-            req, 'hot_osm_waterways', fid,
-        )
+        rsp_headers, code, response = get_collection_item(
+            pg_api_, req, 'hot_osm_waterways', fid)
 
         assert code == HTTPStatus.OK
         assert rsp_headers['Content-Crs'] == f'<{crs_32735}>'
@@ -742,8 +738,8 @@ def test_get_collection_items_postgresql_automap_naming_conflicts(pg_api_):
     classes and relationships from database schema.
     """
     req = mock_request()
-    rsp_headers, code, response = pg_api_.get_collection_items(
-        req, 'dummy_naming_conflicts')
+    rsp_headers, code, response = get_collection_items(
+        pg_api_, req, 'dummy_naming_conflicts')
 
     assert code == HTTPStatus.OK
     features = json.loads(response).get('features')

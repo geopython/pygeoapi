@@ -4,7 +4,7 @@
 # Authors: Tom Kralidis <tomkralidis@gmail.com>
 #
 # Copyright (c) 2019 Just van den Broecke
-# Copyright (c) 2022 Tom Kralidis
+# Copyright (c) 2024 Tom Kralidis
 #
 # Permission is hereby granted, free of charge, to any person
 # obtaining a copy of this software and associated documentation
@@ -35,8 +35,8 @@ import logging
 import pytest
 
 from pygeoapi.api import API
-from pygeoapi.util import yaml_load, geojson_to_geom
 from pygeoapi.api.itemtypes import get_collection_item, get_collection_items
+from pygeoapi.util import yaml_load, geojson_to_geom
 
 from .util import get_test_file_path, mock_api_request
 
