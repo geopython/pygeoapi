@@ -1436,7 +1436,7 @@ def get_oas_30(cfg: dict, locale: str) -> dict:
                         {'$ref': f"{OPENAPI_YAML['oapif-1']}#/components/parameters/limit"},  # noqa
                         {'$ref': '#/components/parameters/crs'},  # noqa
                         {'$ref': '#/components/parameters/bbox-crs'},
-                        {'properties': coll_properties},
+                        coll_properties,
                         {'$ref': '#/components/parameters/vendorSpecificParameters'},  # noqa
                         {'$ref': '#/components/parameters/skipGeometry'},
                         {'$ref': f"{OPENAPI_YAML['oapir']}/parameters/sortby.yaml"},  # noqa
@@ -1503,7 +1503,7 @@ def get_oas_30(cfg: dict, locale: str) -> dict:
                         'summary': f'Get {title} schema',
                         'description': description,
                         'tags': [k],
-                        'operationId': f'get{k.capitalize()}Queryables',
+                        'operationId': f'get{k.capitalize()}Schema',
                         'parameters': [
                             {'$ref': '#/components/parameters/f'},
                             {'$ref': '#/components/parameters/lang'}
