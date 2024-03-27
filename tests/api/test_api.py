@@ -32,7 +32,6 @@
 # =================================================================
 
 import json
-import logging
 import gzip
 from http import HTTPStatus
 
@@ -47,8 +46,6 @@ from pygeoapi.util import yaml_load, get_api_rules, get_base_url
 
 from tests.util import (get_test_file_path, mock_flask, mock_starlette,
                         mock_request)
-
-LOGGER = logging.getLogger(__name__)
 
 
 @pytest.fixture()

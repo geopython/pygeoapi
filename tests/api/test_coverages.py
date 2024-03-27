@@ -31,7 +31,6 @@
 # =================================================================
 
 import json
-import logging
 from http import HTTPStatus
 
 import pytest
@@ -42,8 +41,6 @@ from pygeoapi.api.itemtypes import get_collection_schema
 from pygeoapi.util import yaml_load
 
 from tests.util import get_test_file_path, mock_request, mock_api_request
-
-LOGGER = logging.getLogger(__name__)
 
 
 @pytest.fixture()

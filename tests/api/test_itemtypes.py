@@ -33,7 +33,6 @@
 import copy
 import gzip
 import json
-import logging
 from http import HTTPStatus
 
 from pyld import jsonld
@@ -49,8 +48,6 @@ from pygeoapi.api.itemtypes import (
 from pygeoapi.util import yaml_load, get_crs_from_uri
 
 from tests.util import get_test_file_path, mock_api_request
-
-LOGGER = logging.getLogger(__name__)
 
 
 @pytest.fixture()
