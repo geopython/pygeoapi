@@ -610,7 +610,6 @@ class JobStatus(Enum):
 @dataclass(frozen=True)
 class Subscriber:
     """Store subscriber urls as defined in:
-
     https://schemas.opengis.net/ogcapi/processes/part1/1.0/openapi/schemas/subscriber.yaml  # noqa
     """
     success_uri: str

@@ -72,7 +72,7 @@ class DummyManager(BaseManager):
             process_id: str,
             data_dict: dict,
             execution_mode: Optional[RequestedProcessExecutionMode] = None,
-            subscriber: Optional[Subscriber] = None,
+            subscriber: Optional[Subscriber] = None
     ) -> Tuple[str, str, Any, JobStatus, Optional[Dict[str, str]]]:
         """
         Default process execution handler

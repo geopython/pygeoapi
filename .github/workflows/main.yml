@@ -109,7 +109,7 @@ jobs:
       env:
         POSTGRESQL_PASSWORD: ${{ secrets.DatabasePassword || 'postgres' }}
       run: |
-        pytest tests/test_api.py
+        pytest tests/api
         pytest tests/test_api_ogr_provider.py
         pytest tests/test_config.py
         pytest tests/test_csv__formatter.py
