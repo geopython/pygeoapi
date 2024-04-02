@@ -59,7 +59,7 @@ def get_config(raw: bool = False) -> dict:
         else:
             CONFIG = yaml_load(fh)
 
-    return json.loads(to_json(CONFIG))
+    return CONFIG
 
 
 def load_schema() -> dict:
