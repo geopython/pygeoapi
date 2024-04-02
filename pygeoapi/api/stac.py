@@ -224,7 +224,16 @@ def get_stac_path(api: API, request: APIRequest,
         return headers, HTTPStatus.OK, stac_data
 
 
-def get_oas_30(cfg: dict, locale: str) -> dict:
+def get_oas_30(cfg: dict, locale: str) -> tuple[list[str], dict[str, dict]]:
+    """
+    Get OpenAPI fragments
+
+    :param cfg: `dict` of configuration
+    :param locale: `str` of locale
+
+    :returns: `tuple` of `list` of tags, and `dict` of path objects
+    """
+
     LOGGER.debug('setting up STAC')
     stac_collections = filter_dict_by_key_value(cfg['resources'],
                                                 'type', 'stac-collection')
@@ -243,11 +252,4 @@ def get_oas_30(cfg: dict, locale: str) -> dict:
                 }
             }
         }
-    return {
-        'tags': [{
-            'name': 'stac',
-            'description': 'SpatioTemporal Asset Catalog'
-        }],
-        'paths': paths,
-
-    }
+    return ['stac'], {'paths': paths}

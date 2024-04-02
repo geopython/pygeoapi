@@ -554,7 +554,16 @@ def delete_job(
     return {}, http_status, response
 
 
-def get_oas_30(cfg: dict, locale_: str):
+def get_oas_30(cfg: dict, locale: str) -> tuple[list[str], dict[str, dict]]:
+    """
+    Get OpenAPI fragments
+
+    :param cfg: `dict` of configuration
+    :param locale: `str` of locale
+
+    :returns: `tuple` of `list` of tags, and `dict` of path objects
+    """
+
     from pygeoapi.openapi import OPENAPI_YAML
 
     LOGGER.debug('setting up processes endpoints')
@@ -588,9 +597,9 @@ def get_oas_30(cfg: dict, locale_: str):
         if k.startswith('_'):
             LOGGER.debug(f'Skipping hidden layer: {k}')
             continue
-        name = l10n.translate(k, locale_)
+        name = l10n.translate(k, locale)
         p = process_manager.get_processor(k)
-        md_desc = l10n.translate(p.metadata['description'], locale_)
+        md_desc = l10n.translate(p.metadata['description'], locale)
         process_name_path = f'/processes/{name}'
         tag = {
             'name': name,
@@ -599,7 +608,7 @@ def get_oas_30(cfg: dict, locale_: str):
         }
         for link in p.metadata.get('links', []):
             if link['type'] == 'information':
-                translated_link = l10n.translate(link, locale_)
+                translated_link = l10n.translate(link, locale)
                 tag['externalDocs']['description'] = translated_link[
                     'type']
                 tag['externalDocs']['url'] = translated_link['url']
@@ -627,7 +636,7 @@ def get_oas_30(cfg: dict, locale_: str):
 
         paths[f'{process_name_path}/execution'] = {
             'post': {
-                'summary': f"Process {l10n.translate(p.metadata['title'], locale_)} execution",  # noqa
+                'summary': f"Process {l10n.translate(p.metadata['title'], locale)} execution",  # noqa
                 'description': md_desc,
                 'tags': [name],
                 'operationId': f'execute{name.capitalize()}Job',
@@ -728,12 +737,4 @@ def get_oas_30(cfg: dict, locale_: str):
         }
     }
 
-    oas['paths'] = paths
-
-    tag = {
-        'name': 'jobs',
-        'description': 'Process jobs',
-    }
-    oas['tags'].insert(1, tag)
-
-    return oas
+    return ['jobs'], {'paths': paths}

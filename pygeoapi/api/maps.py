@@ -243,7 +243,16 @@ def get_collection_map_legend(api: API, request: APIRequest,
             data, api.pretty_print)
 
 
-def get_oas_30(cfg: dict, locale: str) -> dict:
+def get_oas_30(cfg: dict, locale: str) -> tuple[list[str], dict[str, dict]]:
+    """
+    Get OpenAPI fragments
+
+    :param cfg: `dict` of configuration
+    :param locale: `str` of locale
+
+    :returns: `tuple` of `list` of tags, and `dict` of path objects
+    """
+
     from pygeoapi.openapi import OPENAPI_YAML, get_visible_collections
 
     LOGGER.debug('setting up maps endpoints')
@@ -328,4 +337,4 @@ def get_oas_30(cfg: dict, locale: str) -> dict:
                 paths[pth]['get']['parameters'].append(
                     {'$ref': f"{OPENAPI_YAML['oapif-1']}#/components/parameters/datetime"})  # noqa
 
-    return {'tags': [], 'paths': paths}
+    return [], {'paths': paths}

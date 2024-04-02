@@ -436,7 +436,16 @@ def tilematrixset(api: API,
     return headers, HTTPStatus.OK, to_json(tms, api.pretty_print)
 
 
-def get_oas_30(cfg: dict, locale: str) -> dict:
+def get_oas_30(cfg: dict, locale: str) -> tuple[list[str], dict[str, dict]]:
+    """
+    Get OpenAPI fragments
+
+    :param cfg: `dict` of configuration
+    :param locale: `str` of locale
+
+    :returns: `tuple` of `list` of tags, and `dict` of path objects
+    """
+
     from pygeoapi.openapi import OPENAPI_YAML, get_visible_collections
 
     paths = {}
@@ -522,4 +531,4 @@ def get_oas_30(cfg: dict, locale: str) -> dict:
                 }
             }
 
-    return {'tags': [], 'paths': paths}
+    return [], {'paths': paths}

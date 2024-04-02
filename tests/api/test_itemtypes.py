@@ -43,7 +43,7 @@ from shapely.geometry import Point
 from pygeoapi.api import (API, FORMAT_TYPES, F_GZIP, F_HTML, F_JSONLD,
                           apply_gzip)
 from pygeoapi.api.itemtypes import (
-    get_collection_schema, get_collection_queryables, get_collection_item,
+    get_collection_queryables, get_collection_item,
     get_collection_items, manage_collection_item)
 from pygeoapi.util import yaml_load, get_crs_from_uri
 
@@ -54,24 +54,6 @@ from tests.util import get_test_file_path, mock_api_request
 def config():
     with open(get_test_file_path('pygeoapi-test-config.yml')) as fh:
         return yaml_load(fh)
-
-
-def test_get_collection_schema(config, api_):
-    req = mock_api_request()
-    rsp_headers, code, response = get_collection_schema(api_, req, 'notfound')
-    assert code == HTTPStatus.NOT_FOUND
-
-    req = mock_api_request({'f': 'html'})
-    rsp_headers, code, response = get_collection_schema(api_, req, 'obs')
-    assert rsp_headers['Content-Type'] == FORMAT_TYPES[F_HTML]
-
-    req = mock_api_request({'f': 'json'})
-    rsp_headers, code, response = get_collection_schema(api_, req, 'obs')
-    assert rsp_headers['Content-Type'] == 'application/schema+json'
-    schema = json.loads(response)
-
-    assert 'properties' in schema
-    assert len(schema['properties']) == 5
 
 
 def test_get_collection_queryables(config, api_):

@@ -59,7 +59,8 @@ from pygeoapi.linked_data import jsonldify, jsonldify_collection
 from pygeoapi.log import setup_logger
 from pygeoapi.plugin import load_plugin
 from pygeoapi.process.manager.base import get_manager
-from pygeoapi.provider.base import ProviderConnectionError, ProviderTypeError
+from pygeoapi.provider.base import (
+    ProviderConnectionError, ProviderGenericError, ProviderTypeError)
 
 from pygeoapi.util import (
     CrsTransformSpec, TEMPLATES, UrlPrefetcher, dategetter,
@@ -1282,6 +1283,87 @@ class API:
             return headers, HTTPStatus.OK, to_json(jsonld, self.pretty_print)
 
         return headers, HTTPStatus.OK, to_json(fcm, self.pretty_print)
+
+    @gzip
+    @pre_process
+    def get_collection_schema(self, request: Union[APIRequest, Any],
+                              dataset) -> Tuple[dict, int, str]:
+        """
+        Returns a collection schema
+
+        :param request: A request object
+        :param dataset: dataset name
+
+        :returns: tuple of headers, status code, content
+        """
+
+        headers = request.get_response_headers(**self.api_headers)
+
+        if any([dataset is None,
+                dataset not in self.config['resources'].keys()]):
+
+            msg = 'Collection not found'
+            return self.get_exception(
+                HTTPStatus.NOT_FOUND, headers, request.format, 'NotFound', msg)
+
+        LOGGER.debug('Creating collection schema')
+        try:
+            LOGGER.debug('Loading feature provider')
+            p = load_plugin('provider', get_provider_by_type(
+                self.config['resources'][dataset]['providers'], 'feature'))
+        except ProviderTypeError:
+            try:
+                LOGGER.debug('Loading coverage provider')
+                p = load_plugin('provider', get_provider_by_type(
+                    self.config['resources'][dataset]['providers'], 'coverage'))  # noqa
+            except ProviderTypeError:
+                LOGGER.debug('Loading record provider')
+                p = load_plugin('provider', get_provider_by_type(
+                    self.config['resources'][dataset]['providers'], 'record'))
+        except ProviderGenericError as err:
+            LOGGER.error(err)
+            return self.get_exception(
+                err.http_status_code, headers, request.format,
+                err.ogc_exception_code, err.message)
+
+        schema = {
+            'type': 'object',
+            'title': l10n.translate(
+                self.config['resources'][dataset]['title'], request.locale),
+            'properties': {},
+            '$schema': 'http://json-schema.org/draft/2019-09/schema',
+            '$id': f'{self.get_collections_url()}/{dataset}/schema'
+        }
+
+        if p.type != 'coverage':
+            schema['properties']['geometry'] = {
+                '$ref': 'https://geojson.org/schema/Geometry.json',
+                'x-ogc-role': 'primary-geometry'
+            }
+
+        for k, v in p.fields.items():
+            schema['properties'][k] = v
+
+            if k == p.id_field:
+                schema['properties'][k]['x-ogc-role'] = 'id'
+            if k == p.time_field:
+                schema['properties'][k]['x-ogc-role'] = 'primary-instant'
+
+        if request.format == F_HTML:  # render
+            schema['title'] = l10n.translate(
+                self.config['resources'][dataset]['title'], request.locale)
+
+            schema['collections_path'] = self.get_collections_url()
+
+            content = render_j2_template(self.tpl_config,
+                                         'collections/schema.html',
+                                         schema, request.locale)
+
+            return headers, HTTPStatus.OK, content
+
+        headers['Content-Type'] = 'application/schema+json'
+
+        return headers, HTTPStatus.OK, to_json(schema, self.pretty_print)
 
     def get_exception(self, status, headers, format_, code,
                       description) -> Tuple[dict, int, str]:

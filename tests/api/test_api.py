@@ -40,7 +40,8 @@ import pytest
 
 from pygeoapi.api import (
     API, APIRequest, FORMAT_TYPES, F_HTML, F_JSON, F_JSONLD, F_GZIP,
-    __version__, validate_bbox, validate_datetime, validate_subset
+    __version__, validate_bbox, validate_datetime,
+    validate_subset
 )
 from pygeoapi.util import yaml_load, get_api_rules, get_base_url
 
@@ -594,6 +595,7 @@ def test_describe_collections(config, api_):
     rsp_headers, code, response = api_.describe_collections(req)
     collections = json.loads(response)
 
+    print(collections)
     assert len(collections) == 2
     assert len(collections['collections']) == 9
     assert len(collections['links']) == 3
@@ -751,6 +753,24 @@ def test_describe_collections_enclosures(config_enclosure, enclosure_api):
            modified_enclosures['download link 3']['length']
     assert original_enclosures['download link 3']['type'] != \
            modified_enclosures['download link 3']['type']
+
+
+def test_get_collection_schema(config, api_):
+    req = mock_request()
+    rsp_headers, code, response = api_.get_collection_schema(req, 'notfound')
+    assert code == HTTPStatus.NOT_FOUND
+
+    req = mock_request({'f': 'html'})
+    rsp_headers, code, response = api_.get_collection_schema(req, 'obs')
+    assert rsp_headers['Content-Type'] == FORMAT_TYPES[F_HTML]
+
+    req = mock_request({'f': 'json'})
+    rsp_headers, code, response = api_.get_collection_schema(req, 'obs')
+    assert rsp_headers['Content-Type'] == 'application/schema+json'
+    schema = json.loads(response)
+
+    assert 'properties' in schema
+    assert len(schema['properties']) == 5
 
 
 def test_validate_bbox():

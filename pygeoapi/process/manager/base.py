@@ -320,8 +320,6 @@ class BaseManager:
             self.update_job(job_id, job_metadata)
             self._send_failed_notification(subscriber)
 
-            self._send_failed_notification(subscriber)
-
         return jfmt, outputs, current_status
 
     def execute_process(

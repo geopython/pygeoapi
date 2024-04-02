@@ -206,7 +206,16 @@ def get_collection_edr_query(api: API, request: APIRequest,
     return headers, HTTPStatus.OK, content
 
 
-def get_oas_30(cfg: dict, locale: str) -> dict:
+def get_oas_30(cfg: dict, locale: str) -> tuple[list[str], dict[str, dict]]:
+    """
+    Get OpenAPI fragments
+
+    :param cfg: `dict` of configuration
+    :param locale: `str` of locale
+
+    :returns: `tuple` of `list` of tags and `dict` of path objects
+    """
+
     from pygeoapi.openapi import OPENAPI_YAML, get_visible_collections
 
     LOGGER.debug('setting up edr endpoints')
@@ -320,4 +329,4 @@ def get_oas_30(cfg: dict, locale: str) -> dict:
                     }
                 }
 
-    return {'tags': [], 'paths': paths}
+    return [], {'paths': paths}

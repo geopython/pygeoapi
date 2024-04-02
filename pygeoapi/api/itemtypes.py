@@ -100,86 +100,6 @@ CONFORMANCE_CLASSES_RECORDS = [
 ]
 
 
-def get_collection_schema(
-        api: API, request: APIRequest, dataset) -> Tuple[dict, int, str]:
-    """
-    Returns a collection schema
-
-    :param request: A request object
-    :param dataset: dataset name
-
-    :returns: tuple of headers, status code, content
-    """
-
-    headers = request.get_response_headers(**api.api_headers)
-
-    if any([dataset is None,
-            dataset not in api.config['resources'].keys()]):
-
-        msg = 'Collection not found'
-        return api.get_exception(
-            HTTPStatus.NOT_FOUND, headers, request.format, 'NotFound', msg)
-
-    LOGGER.debug('Creating collection schema')
-    try:
-        LOGGER.debug('Loading feature provider')
-        p = load_plugin('provider', get_provider_by_type(
-            api.config['resources'][dataset]['providers'], 'feature'))
-    except ProviderTypeError:
-        try:
-            LOGGER.debug('Loading coverage provider')
-            p = load_plugin('provider', get_provider_by_type(
-                api.config['resources'][dataset]['providers'], 'coverage'))  # noqa
-        except ProviderTypeError:
-            LOGGER.debug('Loading record provider')
-            p = load_plugin('provider', get_provider_by_type(
-                api.config['resources'][dataset]['providers'], 'record'))
-    except ProviderGenericError as err:
-        LOGGER.error(err)
-        return api.get_exception(
-            err.http_status_code, headers, request.format,
-            err.ogc_exception_code, err.message)
-
-    schema = {
-        'type': 'object',
-        'title': l10n.translate(
-            api.config['resources'][dataset]['title'], request.locale),
-        'properties': {},
-        '$schema': 'http://json-schema.org/draft/2019-09/schema',
-        '$id': f'{api.get_collections_url()}/{dataset}/schema'
-    }
-
-    if p.type != 'coverage':
-        schema['properties']['geometry'] = {
-            '$ref': 'https://geojson.org/schema/Geometry.json',
-            'x-ogc-role': 'primary-geometry'
-        }
-
-    for k, v in p.fields.items():
-        schema['properties'][k] = v
-
-        if k == p.id_field:
-            schema['properties'][k]['x-ogc-role'] = 'id'
-        if k == p.time_field:
-            schema['properties'][k]['x-ogc-role'] = 'primary-instant'
-
-    if request.format == F_HTML:  # render
-        schema['title'] = l10n.translate(
-            api.config['resources'][dataset]['title'], request.locale)
-
-        schema['collections_path'] = api.get_collections_url()
-
-        content = render_j2_template(api.tpl_config,
-                                     'collections/schema.html',
-                                     schema, request.locale)
-
-        return headers, HTTPStatus.OK, content
-
-    headers['Content-Type'] = 'application/schema+json'
-
-    return headers, HTTPStatus.OK, to_json(schema, api.pretty_print)
-
-
 def get_collection_queryables(api: API, request: Union[APIRequest, Any],
                               dataset=None) -> Tuple[dict, int, str]:
     """
@@ -1375,7 +1295,16 @@ def set_content_crs_header(
     headers['Content-Crs'] = f'<{content_crs_uri}>'
 
 
-def get_oas_30(cfg: dict, locale: str) -> dict:
+def get_oas_30(cfg: dict, locale: str) -> tuple[list[str], dict[str, dict]]:
+    """
+    Get OpenAPI fragments
+
+    :param cfg: `dict` of configuration
+    :param locale: `str` of locale
+
+    :returns: `tuple` of `list` of tags, and `dict` of path objects
+    """
+
     from pygeoapi.openapi import OPENAPI_YAML, get_visible_collections
 
     properties = {
@@ -1678,4 +1607,4 @@ def get_oas_30(cfg: dict, locale: str) -> dict:
         except ProviderTypeError:
             LOGGER.debug('collection is not feature/item based')
 
-    return {'tags': [], 'paths': paths}
+    return [], {'paths': paths}

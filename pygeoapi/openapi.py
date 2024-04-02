@@ -65,7 +65,7 @@ OPENAPI_YAML = {
 THISDIR = os.path.dirname(os.path.realpath(__file__))
 
 
-def get_ogc_schemas_location(server_config) -> dict:
+def get_ogc_schemas_location(server_config: dict) -> str:
     """
     Determine OGC schemas location
 
@@ -454,9 +454,9 @@ def get_oas_30(cfg: dict, fail_on_invalid_collection: bool = True) -> dict:
         LOGGER.debug(f'Adding OpenAPI definitions for {api_name}')
 
         try:
-            sub_oas = api_module.get_oas_30(cfg, locale_)
-            oas['paths'].update(sub_oas['paths'])
-            oas['tags'].extend(sub_oas['tags'])
+            sub_tags, sub_paths = api_module.get_oas_30(cfg, locale_)
+            oas['paths'].update(sub_paths)
+            oas['tags'].extend(sub_tags)
         except Exception as err:
             if fail_on_invalid_collection:
                 raise
