@@ -409,10 +409,11 @@ class XarrayProvider(BaseProvider):
             if epsg_code == 4326:
                 pass
             elif epsg_code is None:
-                LOGGER.debug(f'No epsg code parsed. Default CRS used.')
+                LOGGER.debug('No epsg code parsed. Default CRS used.')
             else:
-                properties['bbox_crs'] = f'https://www.opengis.net/def/crs/EPSG/0/{self._data.crs.epsg_code}'
-                properties['inverse_flattening'] = crs_attrs['inverse_flattening']
+                properties['bbox_crs'] = f'https://www.opengis.net/def/crs/EPSG/0/{epsg_code}'  # noqa
+                properties['inverse_flattening'] = \
+                    crs_attrs['inverse_flattening']
                 if crs_attrs['grid_mapping_name '] != 'latitude_longitude':
                     properties['crs_type'] = 'ProjectedCRS'
 
@@ -427,7 +428,7 @@ class XarrayProvider(BaseProvider):
 
                 properties['crs_type'] = 'ProjectedCRS'
             except KeyError:
-                LOGGER.debug('Unable to parse CRS information from dataset. Assuming default WGS84.')
+                LOGGER.debug('Unable to parse CRS. Assuming default WGS84.')
 
         properties['axes'] = [
             properties['x_axis_label'],
@@ -492,7 +493,7 @@ class XarrayProvider(BaseProvider):
                  in time_dict.items() if val > 0]
 
         return ', '.join(times)
-    
+
     def parse_grid_mapping(self):
         spatiotemporal_dims = (self.time_field, self.y_field, self.x_field)
         grid_mapping_name = None
