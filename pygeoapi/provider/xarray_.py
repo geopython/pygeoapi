@@ -414,17 +414,30 @@ class XarrayProvider(BaseProvider):
             'restime': self.get_time_resolution()
         }
 
-        # Update properties based on the xarray's CRS
-        epsg_code = self.storage_crs.to_epsg()
-        if epsg_code == 4326:
-            pass
-        else:
-            properties['bbox_crs'] = \
-                f'https://www.opengis.net/def/crs/EPSG/0/{epsg_code}'
-            properties['inverse_flattening'] = \
-                self.storage_crs.inverse_flattening
-            if self.storage_crs.is_projected:
+        grid_mapping = self.parse_grid_mapping()
+        if grid_mapping is not None:
+            crs_attrs = pyproj.CRS.to_cf(self._data[grid_mapping].attrs)
+            epsg_code = crs_attrs.to_epsg()
+            if epsg_code == 4326:
+                pass
+            elif epsg_code is None:
+                LOGGER.debug(f'No epsg code parsed. Default CRS used.')
+            else:
+                properties['bbox_crs'] = f'https://www.opengis.net/def/crs/EPSG/0/{self._data.crs.epsg_code}'
+                properties['inverse_flattening'] = crs_attrs['inverse_flattening']
+                if crs_attrs['grid_mapping_name '] != 'latitude_longitude':
+                    properties['crs_type'] = 'ProjectedCRS'
+
+        elif 'crs' in self._data.variables.keys():
+            try:
+                properties['bbox_crs'] = f'https://www.opengis.net/def/crs/EPSG/0/{self._data.crs.epsg_code}'  # noqa
+
+                properties['inverse_flattening'] = self._data.crs.\
+                    inverse_flattening
+
                 properties['crs_type'] = 'ProjectedCRS'
+            except KeyError:
+                LOGGER.debug('Unable to parse CRS information from dataset. Assuming default WGS84.')
 
         properties['axes'] = [
             properties['x_axis_label'],
@@ -489,6 +502,17 @@ class XarrayProvider(BaseProvider):
                  in time_dict.items() if val > 0]
 
         return ', '.join(times)
+    
+    def parse_grid_mapping(self):
+        spatiotemporal_dims = (self.time_field, self.y_field, self.x_field)
+        grid_mapping_name = None
+        for var_name, var in self._data.variables.items():
+            if all(dim in var.dims for dim in spatiotemporal_dims):
+                try:
+                    grid_mapping_name = self._data[var_name].attrs['grid_mapping']
+                except KeyError:
+                    LOGGER.debug()
+        return grid_mapping_name
 
     def _parse_grid_mapping(self):
         spatiotemporal_dims = (self.time_field, self.y_field, self.x_field)
