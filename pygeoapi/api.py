@@ -3954,7 +3954,8 @@ class API:
 
         if isinstance(stac_data, dict):
             content.update(stac_data)
-            content['links'].extend(stac_collections[dataset]['links'])
+            content['links'].extend(
+                stac_collections[dataset].get('links', []))
 
             if request.format == F_HTML:  # render
                 content['path'] = path
