@@ -167,7 +167,7 @@ def get_oas_30(cfg: dict, fail_on_invalid_collection: bool = True) -> dict:
         'x-keywords': l10n.translate(cfg['metadata']['identification']['keywords'], locale_),  # noqa
         'termsOfService':
             cfg['metadata']['identification']['terms_of_service'],
-        'contact': {
+            'contact': {
             'name': cfg['metadata']['provider']['name'],
             'url': cfg['metadata']['provider']['url'],
             'email': cfg['metadata']['contact']['email']
@@ -455,7 +455,7 @@ def get_oas_30(cfg: dict, fail_on_invalid_collection: bool = True) -> dict:
 
         try:
             sub_tags, sub_paths = api_module.get_oas_30(cfg, locale_)
-            oas['paths'].update(sub_paths)
+            oas['paths'].update(sub_paths['paths'])
             oas['tags'].extend(sub_tags)
         except Exception as err:
             if fail_on_invalid_collection:

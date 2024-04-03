@@ -88,7 +88,6 @@ def test_get_collection_schema(config, api_):
 
     assert 'properties' in schema
     assert len(schema['properties']) == 1
-    print(schema['properties'])
     assert schema['properties']['1']['type'] == 'number'
     assert schema['properties']['1']['title'] == 'Temperature [C]'
 

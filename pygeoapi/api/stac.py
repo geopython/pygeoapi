@@ -224,14 +224,14 @@ def get_stac_path(api: API, request: APIRequest,
         return headers, HTTPStatus.OK, stac_data
 
 
-def get_oas_30(cfg: dict, locale: str) -> tuple[list[str], dict[str, dict]]:
+def get_oas_30(cfg: dict, locale: str) -> tuple[list[dict[str, str]], dict[str, dict]]:  # noqa
     """
     Get OpenAPI fragments
 
     :param cfg: `dict` of configuration
     :param locale: `str` of locale
 
-    :returns: `tuple` of `list` of tags, and `dict` of path objects
+    :returns: `tuple` of `list` of tag objects, and `dict` of path objects
     """
 
     LOGGER.debug('setting up STAC')
@@ -252,4 +252,4 @@ def get_oas_30(cfg: dict, locale: str) -> tuple[list[str], dict[str, dict]]:
                 }
             }
         }
-    return ['stac'], {'paths': paths}
+    return [{'name': 'stac'}], {'paths': paths}

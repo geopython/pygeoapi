@@ -595,7 +595,6 @@ def test_describe_collections(config, api_):
     rsp_headers, code, response = api_.describe_collections(req)
     collections = json.loads(response)
 
-    print(collections)
     assert len(collections) == 2
     assert len(collections['collections']) == 9
     assert len(collections['links']) == 3
