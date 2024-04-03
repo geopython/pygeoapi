@@ -15,6 +15,6 @@ pygeometa
 pymongo==3.10.1
 scipy
 sodapy
-xarray==2024.2.0
+xarray
 zarr
 s3fs<=2023.6.0
