@@ -145,8 +145,8 @@ def collection_schema(request: HttpRequest,
     :returns: Django HTTP Response
     """
 
-    response_ = execute_from_django(
-        itemtypes_api.get_collection_schema, request, collection_id
+    response_ = _feed_response(
+        request, 'get_collection_schema', collection_id
     )
     response = _to_django_response(*response_)
 
