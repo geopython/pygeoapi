@@ -354,8 +354,7 @@ class APIRequest:
         return api_req
 
     @classmethod
-    def from_flask(cls, request, supported_locales
-                   ) -> 'APIRequest':
+    def from_flask(cls, request, supported_locales) -> 'APIRequest':
         """Factory class similar to with_data, but only for flask requests"""
         api_req = cls(request, supported_locales)
         api_req._data = request.data
