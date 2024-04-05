@@ -20,7 +20,7 @@ Tests can be run locally as part of development workflow.  They are also run on 
 `GitHub Actions setup`_ against all commits and pull requests to the code repository.
 
 To run all tests, simply run ``pytest`` in the repository.  To run a specific test file,
-run ``pytest tests/test_api.py``, for example.
+run ``pytest tests/api/test_itemtypes.py``, for example.
 
 
 CQL extension lifecycle

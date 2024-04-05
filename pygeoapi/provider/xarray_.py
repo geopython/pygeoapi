@@ -398,12 +398,15 @@ class XarrayProvider(BaseProvider):
         }
 
         if 'crs' in self._data.variables.keys():
-            properties['bbox_crs'] = f'http://www.opengis.net/def/crs/OGC/1.3/{self._data.crs.epsg_code}'  # noqa
+            try:
+                properties['bbox_crs'] = f'http://www.opengis.net/def/crs/OGC/1.3/{self._data.crs.epsg_code}'  # noqa
 
-            properties['inverse_flattening'] = self._data.crs.\
-                inverse_flattening
+                properties['inverse_flattening'] = self._data.crs.\
+                    inverse_flattening
 
-            properties['crs_type'] = 'ProjectedCRS'
+                properties['crs_type'] = 'ProjectedCRS'
+            except AttributeError:
+                pass
 
         properties['axes'] = [
             properties['x_axis_label'],
