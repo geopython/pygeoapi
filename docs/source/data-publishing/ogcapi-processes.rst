@@ -9,7 +9,7 @@ fashion (inputs, outputs).
 pygeoapi implements OGC API - Processes functionality by providing a plugin architecture, thereby
 allowing developers to implement custom processing workflows in Python.
 
-A `sample`_ ``hello-world`` process is provided with the pygeoapi default configuration.
+The pygeoapi offers two processes: a default_ ``hello-world`` process which allows you to quickly explore the capabilities of processes, and an optional_ ``shapely-functions`` process with more advanced features that leverages Shapely_ to expose various geometric processing functionality.
 
 Configuration
 -------------
@@ -17,9 +17,16 @@ Configuration
 .. code-block:: yaml
 
    processes:
+    
+    # enabled by default
        hello-world:
            processor:
                name: HelloWorld
+        
+        #Add this block to the configuration file to enable shapely processes.
+        #shapely-functions:
+           #processor:
+               #name: ShapelyFunctions
 
 Asynchronous support
 --------------------
@@ -76,6 +83,9 @@ To summarize how pygeoapi processes and managers work together::
 Processing examples
 -------------------
 
+Hello World (Default)
+^^^^^^^^^^^^^^^^^^^^^
+
 .. code-block:: sh
 
    # list all processes
@@ -108,8 +118,61 @@ Processing examples
        -H "Prefer: respond-async"
        -d "{\"inputs\":{\"name\": \"hi there2\"}}"
 
+
+Shapely Functions (Optional)
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+The `shapely-functions` process exposes some selected Shapely_ functions as sample process. The selection cut across different operations in shapely. To avoid function collision, it uses the name of the function category as the namespace. E.g *union* operation under the *set* module is described as *set:union*.
+
+The process is configured to accept a list of geometry *inputs* (WKT and/or GeoJSON geometry), *operation*  and an optional *output_format*. It performs the specified operation and returns the result in the specified *output_format* or the format of the input geometry, if an *output_format* is not provided.
+
+**Supported operations**
+
+* measurement:bounds - Computes the bounds (extent) of a geometry.
+* measurement:area - Computes the area of a (multi)polygon.
+* measurement:distance - Computes the Cartesian distance between two geometries.
+* predicates:covers - Returns True if no point in geometry B is outside geometry A.
+* predicates:within - Returns True if geometry A is completely inside geometry B.
+* set:difference - Returns the part of geometry A that does not intersect with geometry B.
+* set:union - Merges geometries into one.
+* constructive:buffer - Computes the buffer of a geometry for positive and negative buffer distance.
+* constructive:centroid - Computes the geometric center (center-of-mass) of a geometry.
+ 
+**Limitation**
+
+There is no support for passing optional function arguments yet. E.g when computing buffer on a geometry, no option to pass in the buffer distance.
+
+.. code-block:: sh
+
+   # describe the ``shapely-function`` process
+   curl http://localhost:5000/processes/shapely-function
+
+   # execute a job for the ``shapely-function`` process
+   curl -X POST http://localhost:5000/processes/shapely-function/execution \
+       -H "Content-Type: application/json" \
+       -d "{\"inputs\":{\"name\": \"hi there2\"}}"
+
+   # execute a job for the ``hello-world`` process with a raw response (default)
+   curl -X POST http://localhost:5000/processes/hello-world/execution \
+       -H "Content-Type: application/json" \
+       -d "{\"inputs\":{\"name\": \"hi there2\"}}"
+
+   # execute a job for the ``hello-world`` process with a response document
+   curl -X POST http://localhost:5000/processes/hello-world/execution \
+       -H "Content-Type: application/json" \
+       -d "{\"inputs\":{\"name\": \"hi there2\"},\"response\":\"document\"}"
+
+   # execute a job for the ``hello-world`` process in asynchronous mode
+   curl -X POST http://localhost:5000/processes/hello-world/execution \
+       -H "Content-Type: application/json" \
+       -H "Prefer: respond-async"
+       -d "{\"inputs\":{\"name\": \"hi there2\"}}"
+
+
 .. todo:: add more examples once OAProc implementation is complete
 
 .. _`OGC API - Processes`: https://ogcapi.ogc.org/processes
 .. _`sample`: https://github.com/geopython/pygeoapi/blob/master/pygeoapi/process/hello_world.py
+.. _`shapely_functions`: https://github.com/geopython/pygeoapi/blob/master/pygeoapi/process/shapely_functions.py
 .. _`TinyDB`: https://tinydb.readthedocs.io/en/latest
+.. _`Shapely`: https://shapely.readthedocs.io/

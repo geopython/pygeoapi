@@ -302,7 +302,4 @@ resources:
         type: process
         processor:
             name: HelloWorld
-    shapely-functions:
-        type: process
-        processor:
-            name: ShapelyFunctions
+    
