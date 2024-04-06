@@ -152,22 +152,7 @@ There is no support for passing optional function arguments yet. E.g when comput
        -H "Content-Type: application/json" \
        -d "{\"inputs\":{\"name\": \"hi there2\"}}"
 
-   # execute a job for the ``hello-world`` process with a raw response (default)
-   curl -X POST http://localhost:5000/processes/hello-world/execution \
-       -H "Content-Type: application/json" \
-       -d "{\"inputs\":{\"name\": \"hi there2\"}}"
-
-   # execute a job for the ``hello-world`` process with a response document
-   curl -X POST http://localhost:5000/processes/hello-world/execution \
-       -H "Content-Type: application/json" \
-       -d "{\"inputs\":{\"name\": \"hi there2\"},\"response\":\"document\"}"
-
-   # execute a job for the ``hello-world`` process in asynchronous mode
-   curl -X POST http://localhost:5000/processes/hello-world/execution \
-       -H "Content-Type: application/json" \
-       -H "Prefer: respond-async"
-       -d "{\"inputs\":{\"name\": \"hi there2\"}}"
-
+   
 
 .. todo:: add more examples once OAProc implementation is complete
 
