@@ -128,15 +128,15 @@ The process is configured to accept a list of geometry *inputs* (WKT and/or GeoJ
 
 **Supported operations**
 
-* measurement:bounds - Computes the bounds (extent) of a geometry.
-* measurement:area - Computes the area of a (multi)polygon.
-* measurement:distance - Computes the Cartesian distance between two geometries.
-* predicates:covers - Returns True if no point in geometry B is outside geometry A.
-* predicates:within - Returns True if geometry A is completely inside geometry B.
-* set:difference - Returns the part of geometry A that does not intersect with geometry B.
-* set:union - Merges geometries into one.
-* constructive:buffer - Computes the buffer of a geometry for positive and negative buffer distance.
-* constructive:centroid - Computes the geometric center (center-of-mass) of a geometry.
+* **measurement:bounds** - Computes the bounds (extent) of a geometry.
+* **measurement:area** - Computes the area of a (multi)polygon.
+* **measurement:distance** - Computes the Cartesian distance between two geometries.
+* **predicates:covers** - Returns True if no point in geometry B is outside geometry A.
+* **predicates:within** - Returns True if geometry A is completely inside geometry B.
+* **set:difference** - Returns the part of geometry A that does not intersect with geometry B.
+* **set:union** - Merges geometries into one.
+* **constructive:buffer** - Computes the buffer of a geometry for positive and negative buffer distance.
+* **constructive:centroid** - Computes the geometric center (center-of-mass) of a geometry.
  
 **Limitation**
 
@@ -147,13 +147,21 @@ There is no support for passing optional function arguments yet. E.g when comput
    # describe the ``shapely-function`` process
    curl http://localhost:5000/processes/shapely-function
 
-   # execute a job for the ``shapely-function`` process
+   # execute a job for the ``shapely-function`` process with a WKT input and GeoJSON response(default)
    curl -X POST http://localhost:5000/processes/shapely-function/execution \
        -H "Content-Type: application/json" \
+       -d "{\"inputs\":{\"operation\": \"measurement:bounds\",\"geoms\": [\"POINT(83.27651071580385 22.593553859283745)\"]}}"
+
+   # execute a job for the ``shapely-function`` process with a GeoJSON Feature input and WKT response
+   curl -X POST http://localhost:5000/processes/hello-world/execution \
+       -H "Content-Type: application/json" \
        -d "{\"inputs\":{\"name\": \"hi there2\"}}"
-
-   
-
+       
+   # execute a job for the ``shapely-function`` process with a GeoJSON feature input and WKT response 
+   curl -X POST http://localhost:5000/processes/hello-world/execution \
+       -H "Content-Type: application/json" \
+       -d "{\"inputs\":{\"name\": \"hi there2\"}}"
+    
 .. todo:: add more examples once OAProc implementation is complete
 
 .. _`OGC API - Processes`: https://ogcapi.ogc.org/processes
