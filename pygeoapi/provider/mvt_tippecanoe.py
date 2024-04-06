@@ -40,7 +40,7 @@ from pygeoapi.provider.base import (ProviderConnectionError,
                                     ProviderGenericError)
 from pygeoapi.provider.base_mvt import BaseMVTProvider
 from pygeoapi.models.provider.base import (
-    TileSetMetadata, LinkType)
+    TileSetMetadata, TileMatrixSetEnum, LinkType)
 from pygeoapi.models.provider.mvt import MVTTilesJson
 
 from pygeoapi.util import is_url, url_join
@@ -72,14 +72,13 @@ class MVTTippecanoeProvider(BaseMVTProvider):
         if is_url(self.data):
             url = urlparse(self.data)
             baseurl = f'{url.scheme}://{url.netloc}'
-            extension = Path(url.path).suffix  # e.g. ".pbf"
             layer = f'/{self.get_layer()}'
 
             LOGGER.debug('Extracting layer name from URL')
             LOGGER.debug(f'Layer: {layer}')
 
             tilepath = f'{layer}/tiles'
-            servicepath = f'{tilepath}/{{tileMatrixSetId}}/{{tileMatrix}}/{{tileRow}}/{{tileCol}}{extension}'  # noqa
+            servicepath = f'{tilepath}/{{tileMatrixSetId}}/{{tileMatrix}}/{{tileRow}}/{{tileCol}}?f=mvt'  # noqa
 
             self._service_url = url_join(baseurl, servicepath)
 
@@ -136,6 +135,13 @@ class MVTTippecanoeProvider(BaseMVTProvider):
 
         else:
             return Path(self.data).name
+
+    def get_tiling_schemes(self):
+
+        "Only WebMercatorQuad tiling scheme is supported in elastic"
+        return [
+                TileMatrixSetEnum.WEBMERCATORQUAD.value
+            ]
 
     def get_tiles_service(self, baseurl=None, servicepath=None,
                           dirpath=None, tile_type=None):
@@ -289,7 +295,7 @@ class MVTTippecanoeProvider(BaseMVTProvider):
             content.tiles = service_url
             content.vector_layers = json.loads(
                     metadata_json_content["json"])["vector_layers"]
-            metadata['metadata'] = content.model_dump()
+            metadata['metadata'] = content.dict()
             # Some providers may not implement tilejson metadata
             metadata['tilejson_url'] = f'{metadata_url}?f=tilejson'
         except ProviderConnectionError:
@@ -326,7 +332,7 @@ class MVTTippecanoeProvider(BaseMVTProvider):
 
                 tiling_scheme = LinkType(href=tiling_scheme_url,
                                          rel="http://www.opengis.net/def/rel/ogc/1.0/tiling-scheme", # noqa
-                                         type=tiling_scheme_url_type,
+                                         type_=tiling_scheme_url_type,
                                          title=tiling_scheme_url_title)
 
         if tiling_scheme is None:
@@ -343,7 +349,7 @@ class MVTTippecanoeProvider(BaseMVTProvider):
         service_url_link_type = "application/vnd.mapbox-vector-tile"
         service_url_link_title = f'{tileset} vector tiles for {layer}'
         service_url_link = LinkType(href=service_url, rel="item",
-                                    type=service_url_link_type,
+                                    type_=service_url_link_type,
                                     title=service_url_link_title)
 
         links.append(tiling_scheme)
@@ -351,7 +357,7 @@ class MVTTippecanoeProvider(BaseMVTProvider):
 
         content.links = links
 
-        return content.model_dump(exclude_none=True)
+        return content.dict(exclude_none=True)
 
     def get_vendor_metadata(self, dataset, server_url, layer, tileset,
                             title, description, keywords, **kwargs):
@@ -370,7 +376,7 @@ class MVTTippecanoeProvider(BaseMVTProvider):
             content.tiles = service_url
             content.vector_layers = json.loads(
                     metadata_json_content["json"])["vector_layers"]
-            return content.model_dump()
+            return content.dict()
         except ProviderConnectionError:
             msg = f'No tiles metadata json available: {self.service_metadata_url}'  # noqa
             LOGGER.error(msg)

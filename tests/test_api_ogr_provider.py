@@ -4,7 +4,7 @@
 # Authors: Tom Kralidis <tomkralidis@gmail.com>
 #
 # Copyright (c) 2019 Just van den Broecke
-# Copyright (c) 2022 Tom Kralidis
+# Copyright (c) 2024 Tom Kralidis
 #
 # Permission is hereby granted, free of charge, to any person
 # obtaining a copy of this software and associated documentation
@@ -35,8 +35,10 @@ import logging
 import pytest
 
 from pygeoapi.api import API
+from pygeoapi.api.itemtypes import get_collection_item, get_collection_items
 from pygeoapi.util import yaml_load, geojson_to_geom
-from .util import get_test_file_path, mock_request
+
+from .util import get_test_file_path, mock_api_request
 
 LOGGER = logging.getLogger(__name__)
 
@@ -70,16 +72,16 @@ def test_get_collection_items_bbox_crs(config, api_):
     COLLECTIONS = ['dutch_addresses_4326', 'dutch_addresses_28992']
     for coll in COLLECTIONS:
         # bbox-crs full extent
-        req = mock_request({'bbox': '5.670670, 52.042700, 5.829110, 52.123700', 'bbox-crs': 'http://www.opengis.net/def/crs/OGC/1.3/CRS84'}) # noqa
-        rsp_headers, code, response = api_.get_collection_items(req, coll) # noqa
+        req = mock_api_request({'bbox': '5.670670, 52.042700, 5.829110, 52.123700', 'bbox-crs': 'http://www.opengis.net/def/crs/OGC/1.3/CRS84'}) # noqa
+        rsp_headers, code, response = get_collection_items(api_, req, coll) # noqa
         features = json.loads(response)['features']
 
         assert len(features) == 10
 
         # bbox-crs partial extent, 1 feature, request with multiple CRSs
         for crs in CRS_BBOX_DICT:
-            req = mock_request({'bbox': CRS_BBOX_DICT[crs], 'bbox-crs': crs}) # noqa
-            rsp_headers, code, response = api_.get_collection_items(req, coll) # noqa
+            req = mock_api_request({'bbox': CRS_BBOX_DICT[crs], 'bbox-crs': crs}) # noqa
+            rsp_headers, code, response = get_collection_items(api_, req, coll) # noqa
             features = json.loads(response)['features']
 
             assert len(features) == 1
@@ -88,29 +90,29 @@ def test_get_collection_items_bbox_crs(config, api_):
             assert properties['huisnummer'] == '2'
 
         # bbox-crs outside extent
-        req = mock_request({'bbox': '5, 51.9, 5.1, 52.0', 'bbox-crs': 'http://www.opengis.net/def/crs/OGC/1.3/CRS84'}) # noqa
-        rsp_headers, code, response = api_.get_collection_items(req, coll) # noqa
+        req = mock_api_request({'bbox': '5, 51.9, 5.1, 52.0', 'bbox-crs': 'http://www.opengis.net/def/crs/OGC/1.3/CRS84'}) # noqa
+        rsp_headers, code, response = get_collection_items(api_, req, coll) # noqa
         features = json.loads(response)['features']
 
         assert len(features) == 0
 
         # bbox-crs outside extent
-        req = mock_request({'bbox': '130000, 440000, 140000, 450000', 'bbox-crs': 'http://www.opengis.net/def/crs/EPSG/0/28992'}) # noqa
-        rsp_headers, code, response = api_.get_collection_items(req, coll) # noqa
+        req = mock_api_request({'bbox': '130000, 440000, 140000, 450000', 'bbox-crs': 'http://www.opengis.net/def/crs/EPSG/0/28992'}) # noqa
+        rsp_headers, code, response = get_collection_items(api_, req, coll) # noqa
         features = json.loads(response)['features']
 
         assert len(features) == 0
 
         # bbox-crs outside extent - axis reversed CRS
-        req = mock_request({'bbox': '51.9, 5, 52.0, 5.1', 'bbox-crs': 'http://www.opengis.net/def/crs/EPSG/0/4326'}) # noqa
-        rsp_headers, code, response = api_.get_collection_items(req, coll) # noqa
+        req = mock_api_request({'bbox': '51.9, 5, 52.0, 5.1', 'bbox-crs': 'http://www.opengis.net/def/crs/EPSG/0/4326'}) # noqa
+        rsp_headers, code, response = get_collection_items(api_, req, coll) # noqa
         features = json.loads(response)['features']
 
         assert len(features) == 0
 
         # bbox-crs full extent - axis reversed CRS
-        req = mock_request({'bbox': '52.042700, 5.670670, 52.123700, 5.829110', 'bbox-crs': 'http://www.opengis.net/def/crs/EPSG/0/4326'}) # noqa
-        rsp_headers, code, response = api_.get_collection_items(req, coll) # noqa
+        req = mock_api_request({'bbox': '52.042700, 5.670670, 52.123700, 5.829110', 'bbox-crs': 'http://www.opengis.net/def/crs/EPSG/0/4326'}) # noqa
+        rsp_headers, code, response = get_collection_items(api_, req, coll) # noqa
         features = json.loads(response)['features']
 
         assert len(features) == 10
@@ -135,8 +137,8 @@ def test_get_collection_items_crs(config, api_):
     COLLECTIONS = ['dutch_addresses_4326', 'dutch_addresses_28992']
     for coll in COLLECTIONS:
         # crs full extent to get target feature
-        req = mock_request({}) # noqa
-        rsp_headers, code, response = api_.get_collection_items(req, coll) # noqa
+        req = mock_api_request({}) # noqa
+        rsp_headers, code, response = get_collection_items(api_, req, coll) # noqa
         features = json.loads(response)['features']
 
         assert len(features) == 10
@@ -145,13 +147,13 @@ def test_get_collection_items_crs(config, api_):
         # request with multiple CRSs
         for crs in CRS_DICT:
             # Do for query (/items)
-            req = mock_request({'crs': crs}) # noqa
+            req = mock_api_request({'crs': crs}) # noqa
             if crs == 'none':
                 # Test for default bbox CRS
-                req = mock_request({}) # noqa
+                req = mock_api_request({}) # noqa
                 crs = DEFAULT_CRS
 
-            rsp_headers, code, response = api_.get_collection_items(req, coll) # noqa
+            rsp_headers, code, response = get_collection_items(api_, req, coll) # noqa
             features = json.loads(response)['features']
 
             assert len(features) == 10
@@ -173,8 +175,8 @@ def test_get_collection_items_crs(config, api_):
             assert test_geom.equals_exact(crs_geom, 1), f'coords not equal for CRS: {crs} {crs_geom} in COLL: {coll} {test_geom}' # noqa
 
             # Same for single Feature 'get'
-            req = mock_request({'crs': crs}) # noqa
-            rsp_headers, code, response = api_.get_collection_item(req, coll, feature_id) # noqa
+            req = mock_api_request({'crs': crs}) # noqa
+            rsp_headers, code, response = get_collection_item(api_, req, coll, feature_id) # noqa
             test_feature = json.loads(response)
 
             assert test_feature['id'] == feature_id
@@ -195,13 +197,13 @@ def test_get_collection_items_crs(config, api_):
             # Test combining BBOX and BBOX-CRS
             for bbox_crs in CRS_BBOX_DICT:
                 # Do for query (/items)
-                req = mock_request({'crs': crs, 'bbox': CRS_BBOX_DICT[bbox_crs], 'bbox-crs': bbox_crs}) # noqa
+                req = mock_api_request({'crs': crs, 'bbox': CRS_BBOX_DICT[bbox_crs], 'bbox-crs': bbox_crs}) # noqa
                 if bbox_crs == 'none':
                     # Test for default bbox CRS
-                    req = mock_request({'crs': crs, 'bbox': CRS_BBOX_DICT[bbox_crs]}) # noqa
+                    req = mock_api_request({'crs': crs, 'bbox': CRS_BBOX_DICT[bbox_crs]}) # noqa
                     bbox_crs = DEFAULT_CRS
 
-                rsp_headers, code, response = api_.get_collection_items(req, coll) # noqa
+                rsp_headers, code, response = get_collection_items(api_, req, coll) # noqa
                 features = json.loads(response)['features']
 
                 assert len(features) == 1

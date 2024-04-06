@@ -44,12 +44,9 @@ from jsonschema import validate as jsonschema_validate
 import yaml
 
 from pygeoapi import l10n
+from pygeoapi.api import all_apis
 from pygeoapi.models.openapi import OAPIFormat
-from pygeoapi.plugin import load_plugin
-from pygeoapi.process.manager.base import get_manager
-from pygeoapi.provider.base import ProviderTypeError, SchemaType
-from pygeoapi.util import (filter_dict_by_key_value, get_provider_by_type,
-                           filter_providers_by_type, to_json, yaml_load,
+from pygeoapi.util import (filter_dict_by_key_value, to_json, yaml_load,
                            get_api_rules, get_base_url)
 
 LOGGER = logging.getLogger(__name__)
@@ -68,7 +65,14 @@ OPENAPI_YAML = {
 THISDIR = os.path.dirname(os.path.realpath(__file__))
 
 
-def get_ogc_schemas_location(server_config):
+def get_ogc_schemas_location(server_config: dict) -> str:
+    """
+    Determine OGC schemas location
+
+    :param server_config: `dict` of server configuration
+
+    :returns: `str` of OGC schemas location
+    """
 
     osl = server_config.get('ogc_schemas_location')
 
@@ -85,7 +89,7 @@ def get_ogc_schemas_location(server_config):
 
 
 # TODO: remove this function once OGC API - Processing is final
-def gen_media_type_object(media_type, api_type, path):
+def gen_media_type_object(media_type: str, api_type: str, path: str) -> dict:
     """
     Generates an OpenAPI Media Type Object
 
@@ -110,7 +114,8 @@ def gen_media_type_object(media_type, api_type, path):
 
 
 # TODO: remove this function once OGC API - Processing is final
-def gen_response_object(description, media_type, api_type, path):
+def gen_response_object(description: str, media_type: str,
+                        api_type: str, path: str) -> dict:
     """
     Generates an OpenAPI Response Object
 
@@ -129,20 +134,21 @@ def gen_response_object(description, media_type, api_type, path):
     return response
 
 
-def get_oas_30(cfg):
+def get_oas_30(cfg: dict, fail_on_invalid_collection: bool = True) -> dict:
     """
     Generates an OpenAPI 3.0 Document
 
     :param cfg: configuration object
+    :param fail_on_invalid_collection: `bool` of whether to fail on an invalid
+                                       collection
 
-    :returns: OpenAPI definition YAML dict
+    :returns: dict of OpenAPI definition
     """
 
     paths = {}
 
     # TODO: make openapi multilingual (default language only for now)
-    server_locales = l10n.get_locales(cfg)
-    locale_ = server_locales[0]
+    locale_ = l10n.get_locales(cfg)[0]
 
     api_rules = get_api_rules(cfg)
 
@@ -272,11 +278,6 @@ def get_oas_30(cfg):
                 'url': cfg['metadata']['identification']['url']}
         }
     )
-    oas['tags'].append({
-            'name': 'stac',
-            'description': 'SpatioTemporal Asset Catalog'
-        }
-    )
 
     oas['components'] = {
         'responses': {
@@ -299,7 +300,181 @@ def get_oas_30(cfg):
                 }
             }
         },
-        'parameters': {
+        'parameters': get_oas_30_parameters(cfg=cfg, locale_=locale_),
+        'schemas': {
+            # TODO: change this schema once OGC will definitively publish it
+            'queryable': {
+                'type': 'object',
+                'required': [
+                    'queryable',
+                    'type'
+                ],
+                'properties': {
+                    'queryable': {
+                        'description': 'the token that may be used in a CQL predicate', # noqa
+                        'type': 'string'
+                    },
+                    'title': {
+                        'description': 'a human readable title for the queryable', # noqa
+                        'type': 'string'
+                    },
+                    'description': {
+                        'description': 'a human-readable narrative describing the queryable', # noqa
+                        'type': 'string'
+                    },
+                    'language': {
+                        'description': 'the language used for the title and description', # noqa
+                        'type': 'string',
+                        'default': [
+                            'en'
+                        ]
+                    },
+                    'type': {
+                        'description': 'the data type of the queryable', # noqa
+                        'type': 'string'
+                    },
+                    'type-ref': {
+                        'description': 'a reference to the formal definition of the type', # noqa
+                        'type': 'string',
+                        'format': 'url'
+                    }
+                }
+            },
+            'queryables': {
+                'type': 'object',
+                'required': [
+                    'queryables'
+                ],
+                'properties': {
+                    'queryables': {
+                        'type': 'array',
+                        'items': {'$ref': '#/components/schemas/queryable'}
+                    }
+                }
+            }
+        }
+    }
+
+    items_f = deepcopy(oas['components']['parameters']['f'])
+    items_f['schema']['enum'].append('csv')
+
+    LOGGER.debug('setting up datasets')
+
+    for k, v in get_visible_collections(cfg).items():
+        name = l10n.translate(k, locale_)
+        title = l10n.translate(v['title'], locale_)
+        desc = l10n.translate(v['description'], locale_)
+        collection_name_path = f'/collections/{k}'
+        tag = {
+            'name': name,
+            'description': desc,
+            'externalDocs': {}
+        }
+        for link in l10n.translate(v.get('links', []), locale_):
+            if link['type'] == 'information':
+                tag['externalDocs']['description'] = link['type']
+                tag['externalDocs']['url'] = link['url']
+                break
+        if len(tag['externalDocs']) == 0:
+            del tag['externalDocs']
+
+        oas['tags'].append(tag)
+
+        paths[collection_name_path] = {
+            'get': {
+                'summary': f'Get {title} metadata',
+                'description': desc,
+                'tags': [name],
+                'operationId': f'describe{name.capitalize()}Collection',
+                'parameters': [
+                    {'$ref': '#/components/parameters/f'},
+                    {'$ref': '#/components/parameters/lang'}
+                ],
+                'responses': {
+                    '200': {'$ref': f"{OPENAPI_YAML['oapif-1']}#/components/responses/Collection"},  # noqa
+                    '400': {'$ref': f"{OPENAPI_YAML['oapif-1']}#/components/responses/InvalidParameter"},  # noqa
+                    '404': {'$ref': f"{OPENAPI_YAML['oapif-1']}#/components/responses/NotFound"},  # noqa
+                    '500': {'$ref': f"{OPENAPI_YAML['oapif-1']}#/components/responses/ServerError"}  # noqa
+                }
+            }
+        }
+
+        oas['components']['responses'].update({
+                'Tiles': {
+                    'description': 'Retrieves the tiles description for this collection', # noqa
+                    'content': {
+                        'application/json': {
+                            'schema': {
+                                '$ref': '#/components/schemas/tiles'
+                            }
+                        }
+                    }
+                }
+            }
+        )
+
+        oas['components']['schemas'].update({
+                'tilematrixsetlink': {
+                    'type': 'object',
+                    'required': ['tileMatrixSet'],
+                    'properties': {
+                        'tileMatrixSet': {
+                            'type': 'string'
+                        },
+                        'tileMatrixSetURI': {
+                            'type': 'string'
+                        }
+                    }
+                },
+                'tiles': {
+                    'type': 'object',
+                    'required': [
+                        'tileMatrixSetLinks',
+                        'links'
+                    ],
+                    'properties': {
+                        'tileMatrixSetLinks': {
+                            'type': 'array',
+                            'items': {
+                                '$ref': '#/components/schemas/tilematrixsetlink' # noqa
+                            }
+                        },
+                        'links': {
+                            'type': 'array',
+                            'items': {'$ref': f"{OPENAPI_YAML['oapit']}#/components/schemas/link"}  # noqa
+                        }
+                    }
+                }
+            }
+        )
+
+    oas['paths'] = paths
+
+    for api_name, api_module in all_apis().items():
+        LOGGER.debug(f'Adding OpenAPI definitions for {api_name}')
+
+        try:
+            sub_tags, sub_paths = api_module.get_oas_30(cfg, locale_)
+            oas['paths'].update(sub_paths['paths'])
+            oas['tags'].extend(sub_tags)
+        except Exception as err:
+            if fail_on_invalid_collection:
+                raise
+            else:
+                LOGGER.warning(f'Resource not added to OpenAPI: {err}')
+
+    if cfg['server'].get('admin', False):
+        schema_dict = get_config_schema()
+        oas['definitions'] = schema_dict['definitions']
+        LOGGER.debug('Adding admin endpoints')
+        oas['paths'].update(get_admin())
+
+    return oas
+
+
+def get_oas_30_parameters(cfg: dict, locale_: str):
+    server_locales = l10n.get_locales(cfg)
+    return {
             'f': {
                 'name': 'f',
                 'in': 'query',
@@ -322,20 +497,6 @@ def get_oas_30(cfg):
                     'type': 'string',
                     'enum': [l10n.locale2str(sl) for sl in server_locales],
                     'default': l10n.locale2str(locale_)
-                }
-            },
-            'properties': {
-                'name': 'properties',
-                'in': 'query',
-                'description': 'The properties that should be included for each feature. The parameter value is a comma-separated list of property names.',  # noqa
-                'required': False,
-                'style': 'form',
-                'explode': False,
-                'schema': {
-                    'type': 'array',
-                    'items': {
-                        'type': 'string'
-                    }
                 }
             },
             'skipGeometry': {
@@ -441,914 +602,18 @@ def get_oas_30(cfg):
                     'type': 'string'
                  }
             }
-        },
-        'schemas': {
-            # TODO: change this schema once OGC will definitively publish it
-            'queryable': {
-                'type': 'object',
-                'required': [
-                    'queryable',
-                    'type'
-                ],
-                'properties': {
-                    'queryable': {
-                        'description': 'the token that may be used in a CQL predicate', # noqa
-                        'type': 'string'
-                    },
-                    'title': {
-                        'description': 'a human readable title for the queryable', # noqa
-                        'type': 'string'
-                    },
-                    'description': {
-                        'description': 'a human-readable narrative describing the queryable', # noqa
-                        'type': 'string'
-                    },
-                    'language': {
-                        'description': 'the language used for the title and description', # noqa
-                        'type': 'string',
-                        'default': [
-                            'en'
-                        ]
-                    },
-                    'type': {
-                        'description': 'the data type of the queryable', # noqa
-                        'type': 'string'
-                    },
-                    'type-ref': {
-                        'description': 'a reference to the formal definition of the type', # noqa
-                        'type': 'string',
-                        'format': 'url'
-                    }
-                }
-            },
-            'queryables': {
-                'type': 'object',
-                'required': [
-                    'queryables'
-                ],
-                'properties': {
-                    'queryables': {
-                        'type': 'array',
-                        'items': {'$ref': '#/components/schemas/queryable'}
-                    }
-                }
-            }
         }
-    }
 
-    items_f = deepcopy(oas['components']['parameters']['f'])
-    items_f['schema']['enum'].append('csv')
-    items_l = deepcopy(oas['components']['parameters']['lang'])
 
-    LOGGER.debug('setting up datasets')
+def get_visible_collections(cfg: dict) -> dict:
     collections = filter_dict_by_key_value(cfg['resources'],
                                            'type', 'collection')
 
-    for k, v in collections.items():
-        if v.get('visibility', 'default') == 'hidden':
-            LOGGER.debug(f'Skipping hidden layer: {k}')
-            continue
-        name = l10n.translate(k, locale_)
-        title = l10n.translate(v['title'], locale_)
-        desc = l10n.translate(v['description'], locale_)
-        collection_name_path = f'/collections/{k}'
-        tag = {
-            'name': name,
-            'description': desc,
-            'externalDocs': {}
-        }
-        for link in l10n.translate(v.get('links', []), locale_):
-            if link['type'] == 'information':
-                tag['externalDocs']['description'] = link['type']
-                tag['externalDocs']['url'] = link['url']
-                break
-        if len(tag['externalDocs']) == 0:
-            del tag['externalDocs']
-
-        oas['tags'].append(tag)
-
-        paths[collection_name_path] = {
-            'get': {
-                'summary': f'Get {title} metadata',
-                'description': desc,
-                'tags': [name],
-                'operationId': f'describe{name.capitalize()}Collection',
-                'parameters': [
-                    {'$ref': '#/components/parameters/f'},
-                    {'$ref': '#/components/parameters/lang'}
-                ],
-                'responses': {
-                    '200': {'$ref': f"{OPENAPI_YAML['oapif-1']}#/components/responses/Collection"},  # noqa
-                    '400': {'$ref': f"{OPENAPI_YAML['oapif-1']}#/components/responses/InvalidParameter"},  # noqa
-                    '404': {'$ref': f"{OPENAPI_YAML['oapif-1']}#/components/responses/NotFound"},  # noqa
-                    '500': {'$ref': f"{OPENAPI_YAML['oapif-1']}#/components/responses/ServerError"}  # noqa
-                }
-            }
-        }
-
-        LOGGER.debug('setting up collection endpoints')
-        try:
-            ptype = None
-
-            if filter_providers_by_type(
-                    collections[k]['providers'], 'feature'):
-                ptype = 'feature'
-
-            if filter_providers_by_type(
-                    collections[k]['providers'], 'record'):
-                ptype = 'record'
-
-            p = load_plugin('provider', get_provider_by_type(
-                            collections[k]['providers'], ptype))
-
-            items_path = f'{collection_name_path}/items'
-
-            coll_properties = deepcopy(oas['components']['parameters']['properties'])  # noqa
-
-            coll_properties['schema']['items']['enum'] = list(p.fields.keys())
-
-            paths[items_path] = {
-                'get': {
-                    'summary': f'Get {title} items',
-                    'description': desc,
-                    'tags': [name],
-                    'operationId': f'get{name.capitalize()}Features',
-                    'parameters': [
-                        items_f,
-                        items_l,
-                        {'$ref': '#/components/parameters/bbox'},
-                        {'$ref': f"{OPENAPI_YAML['oapif-1']}#/components/parameters/limit"},  # noqa
-                        {'$ref': '#/components/parameters/crs'},  # noqa
-                        {'$ref': '#/components/parameters/bbox-crs'},  # noqa
-                        coll_properties,
-                        {'$ref': '#/components/parameters/vendorSpecificParameters'},  # noqa
-                        {'$ref': '#/components/parameters/skipGeometry'},
-                        {'$ref': f"{OPENAPI_YAML['oapir']}/parameters/sortby.yaml"},  # noqa
-                        {'$ref': '#/components/parameters/offset'},
-                    ],
-                    'responses': {
-                        '200': {'$ref': f"{OPENAPI_YAML['oapif-1']}#/components/responses/Features"},  # noqa
-                        '400': {'$ref': f"{OPENAPI_YAML['oapif-1']}#/components/responses/InvalidParameter"},  # noqa
-                        '404': {'$ref': f"{OPENAPI_YAML['oapif-1']}#/components/responses/NotFound"},  # noqa
-                        '500': {'$ref': f"{OPENAPI_YAML['oapif-1']}#/components/responses/ServerError"}  # noqa
-                    }
-                },
-                'options': {
-                    'summary': f'Options for {title} items',
-                    'description': desc,
-                    'tags': [name],
-                    'operationId': f'options{name.capitalize()}Features',
-                    'responses': {
-                        '200': {'description': 'options response'}
-                    }
-                }
-            }
-
-            if p.editable:
-                LOGGER.debug('Provider is editable; adding post')
-
-                paths[items_path]['post'] = {
-                    'summary': f'Add {title} items',
-                    'description': desc,
-                    'tags': [name],
-                    'operationId': f'add{name.capitalize()}Features',
-                    'requestBody': {
-                        'description': 'Adds item to collection',
-                        'content': {
-                            'application/geo+json': {
-                                'schema': {}
-                            }
-                        },
-                        'required': True
-                    },
-                    'responses': {
-                        '201': {'description': 'Successful creation'},
-                        '400': {'$ref': f"{OPENAPI_YAML['oapif-1']}#/components/responses/InvalidParameter"},  # noqa
-                        '500': {'$ref': f"{OPENAPI_YAML['oapif-1']}#/components/responses/ServerError"}  # noqa
-                    }
-                }
-
-                try:
-                    schema_ref = p.get_schema(SchemaType.create)
-                    paths[items_path]['post']['requestBody']['content'][schema_ref[0]] = {  # noqa
-                        'schema': schema_ref[1]
-                    }
-                except Exception as err:
-                    LOGGER.debug(err)
-
-            if ptype == 'record':
-                paths[items_path]['get']['parameters'].append(
-                    {'$ref': f"{OPENAPI_YAML['oapir']}/parameters/q.yaml"})
-            if p.fields:
-                schema_path = f'{collection_name_path}/schemna'
-
-                paths[schema_path] = {
-                    'get': {
-                        'summary': f'Get {title} schema',
-                        'description': desc,
-                        'tags': [name],
-                        'operationId': f'get{name.capitalize()}Queryables',
-                        'parameters': [
-                            items_f,
-                            items_l
-                        ],
-                        'responses': {
-                            '200': {'$ref': '#/components/responses/Queryables'},  # noqa
-                            '400': {'$ref': f"{OPENAPI_YAML['oapif-1']}#/components/responses/InvalidParameter"},  # noqa
-                            '404': {'$ref': f"{OPENAPI_YAML['oapif-1']}#/components/responses/NotFound"},  # noqa
-                            '500': {'$ref': f"{OPENAPI_YAML['oapif-1']}#/components/responses/ServerError"},  # noqa
-                        }
-                    }
-                }
-
-                queryables_path = f'{collection_name_path}/queryables'
-
-                paths[queryables_path] = {
-                    'get': {
-                        'summary': f'Get {title} queryables',
-                        'description': desc,
-                        'tags': [name],
-                        'operationId': f'get{name.capitalize()}Queryables',
-                        'parameters': [
-                            items_f,
-                            items_l
-                        ],
-                        'responses': {
-                            '200': {'$ref': '#/components/responses/Queryables'},  # noqa
-                            '400': {'$ref': f"{OPENAPI_YAML['oapif-1']}#/components/responses/InvalidParameter"},  # noqa
-                            '404': {'$ref': f"{OPENAPI_YAML['oapif-1']}#/components/responses/NotFound"},  # noqa
-                            '500': {'$ref': f"{OPENAPI_YAML['oapif-1']}#/components/responses/ServerError"},  # noqa
-                        }
-                    }
-                }
-
-            if p.time_field is not None:
-                paths[items_path]['get']['parameters'].append(
-                    {'$ref': f"{OPENAPI_YAML['oapif-1']}#/components/parameters/datetime"})  # noqa
-
-            for field, type_ in p.fields.items():
-
-                if p.properties and field not in p.properties:
-                    LOGGER.debug('Provider specified not to advertise property')  # noqa
-                    continue
-
-                if field == 'q' and ptype == 'record':
-                    LOGGER.debug('q parameter already declared, skipping')
-                    continue
-
-                if type_ == 'date':
-                    schema = {
-                        'type': 'string',
-                        'format': 'date'
-                    }
-                elif type_ == 'float':
-                    schema = {
-                        'type': 'number',
-                        'format': 'float'
-                    }
-                elif type_ == 'long':
-                    schema = {
-                        'type': 'integer',
-                        'format': 'int64'
-                    }
-                else:
-                    schema = type_
-
-                path_ = f'{collection_name_path}/items'
-                paths[path_]['get']['parameters'].append({
-                    'name': field,
-                    'in': 'query',
-                    'required': False,
-                    'schema': schema,
-                    'style': 'form',
-                    'explode': False
-                })
-
-            paths[f'{collection_name_path}/items/{{featureId}}'] = {
-                'get': {
-                    'summary': f'Get {title} item by id',
-                    'description': desc,
-                    'tags': [name],
-                    'operationId': f'get{name.capitalize()}Feature',
-                    'parameters': [
-                        {'$ref': f"{OPENAPI_YAML['oapif-1']}#/components/parameters/featureId"},  # noqa
-                        {'$ref': '#/components/parameters/crs'},  # noqa
-                        {'$ref': '#/components/parameters/f'},
-                        {'$ref': '#/components/parameters/lang'}
-                    ],
-                    'responses': {
-                        '200': {'$ref': f"{OPENAPI_YAML['oapif-1']}#/components/responses/Feature"},  # noqa
-                        '400': {'$ref': f"{OPENAPI_YAML['oapif-1']}#/components/responses/InvalidParameter"},  # noqa
-                        '404': {'$ref': f"{OPENAPI_YAML['oapif-1']}#/components/responses/NotFound"},  # noqa
-                        '500': {'$ref': f"{OPENAPI_YAML['oapif-1']}#/components/responses/ServerError"}  # noqa
-                    }
-                },
-                'options': {
-                    'summary': f'Options for {title} item by id',
-                    'description': desc,
-                    'tags': [name],
-                    'operationId': f'options{name.capitalize()}Feature',
-                    'parameters': [
-                        {'$ref': f"{OPENAPI_YAML['oapif-1']}#/components/parameters/featureId"}  # noqa
-                    ],
-                    'responses': {
-                        '200': {'description': 'options response'}
-                    }
-                }
-            }
-
-            try:
-                schema_ref = p.get_schema()
-                paths[f'{collection_name_path}/items/{{featureId}}']['get']['responses']['200'] = {  # noqa
-                    'content': {
-                        schema_ref[0]: {
-                            'schema': schema_ref[1]
-                        }
-                    }
-                }
-            except Exception as err:
-                LOGGER.debug(err)
-
-            if p.editable:
-                LOGGER.debug('Provider is editable; adding put/delete')
-                put_path = f'{collection_name_path}/items/{{featureId}}'  # noqa
-                paths[put_path]['put'] = {  # noqa
-                    'summary': f'Update {title} items',
-                    'description': desc,
-                    'tags': [name],
-                    'operationId': f'update{name.capitalize()}Features',
-                    'parameters': [
-                        {'$ref': f"{OPENAPI_YAML['oapif-1']}#/components/parameters/featureId"}  # noqa
-                    ],
-                    'requestBody': {
-                        'description': 'Updates item in collection',
-                        'content': {
-                            'application/geo+json': {
-                                'schema': {}
-                            }
-                        },
-                        'required': True
-                    },
-                    'responses': {
-                        '204': {'$ref': '#/components/responses/204'},
-                        '400': {'$ref': f"{OPENAPI_YAML['oapif-1']}#/components/responses/InvalidParameter"},  # noqa
-                        '500': {'$ref': f"{OPENAPI_YAML['oapif-1']}#/components/responses/ServerError"}  # noqa
-                    }
-                }
-
-                try:
-                    schema_ref = p.get_schema(SchemaType.replace)
-                    paths[put_path]['put']['requestBody']['content'][schema_ref[0]] = {  # noqa
-                        'schema': schema_ref[1]
-                    }
-                except Exception as err:
-                    LOGGER.debug(err)
-
-                paths[f'{collection_name_path}/items/{{featureId}}']['delete'] = {  # noqa
-                    'summary': f'Delete {title} items',
-                    'description': desc,
-                    'tags': [name],
-                    'operationId': f'delete{name.capitalize()}Features',
-                    'parameters': [
-                        {'$ref': f"{OPENAPI_YAML['oapif-1']}#/components/parameters/featureId"},  # noqa
-                    ],
-                    'responses': {
-                        '200': {'description': 'Successful delete'},
-                        '400': {'$ref': f"{OPENAPI_YAML['oapif-1']}#/components/responses/InvalidParameter"},  # noqa
-                        '500': {'$ref': f"{OPENAPI_YAML['oapif-1']}#/components/responses/ServerError"}  # noqa
-                    }
-                }
-
-        except ProviderTypeError:
-            LOGGER.debug('collection is not feature based')
-
-        LOGGER.debug('setting up coverage endpoints')
-        try:
-            load_plugin('provider', get_provider_by_type(
-                        collections[k]['providers'], 'coverage'))
-
-            coverage_path = f'{collection_name_path}/coverage'
-
-            paths[coverage_path] = {
-                'get': {
-                    'summary': f'Get {title} coverage',
-                    'description': desc,
-                    'tags': [name],
-                    'operationId': f'get{name.capitalize()}Coverage',
-                    'parameters': [
-                        items_f,
-                        items_l,
-                        {'$ref': '#/components/parameters/bbox'},
-                        {'$ref': '#/components/parameters/bbox-crs'},  # noqa
-                    ],
-                    'responses': {
-                        '200': {'$ref': f"{OPENAPI_YAML['oapif-1']}#/components/responses/Features"},  # noqa
-                        '400': {'$ref': f"{OPENAPI_YAML['oapif-1']}#/components/responses/InvalidParameter"},  # noqa
-                        '404': {'$ref': f"{OPENAPI_YAML['oapif-1']}#/components/responses/NotFound"},  # noqa
-                        '500': {'$ref': f"{OPENAPI_YAML['oapif-1']}#/components/responses/ServerError"}  # noqa
-                    }
-                }
-            }
-
-        except ProviderTypeError:
-            LOGGER.debug('collection is not coverage based')
-
-        LOGGER.debug('setting up tiles endpoints')
-        tile_extension = filter_providers_by_type(
-            collections[k]['providers'], 'tile')
-
-        if tile_extension:
-            tp = load_plugin('provider', tile_extension)
-            oas['components']['responses'].update({
-                    'Tiles': {
-                        'description': 'Retrieves the tiles description for this collection', # noqa
-                        'content': {
-                            'application/json': {
-                                'schema': {
-                                    '$ref': '#/components/schemas/tiles'
-                                }
-                            }
-                        }
-                    }
-                }
-            )
-
-            oas['components']['schemas'].update({
-                    'tilematrixsetlink': {
-                        'type': 'object',
-                        'required': ['tileMatrixSet'],
-                        'properties': {
-                            'tileMatrixSet': {
-                                'type': 'string'
-                            },
-                            'tileMatrixSetURI': {
-                                'type': 'string'
-                            }
-                        }
-                    },
-                    'tiles': {
-                        'type': 'object',
-                        'required': [
-                            'tileMatrixSetLinks',
-                            'links'
-                        ],
-                        'properties': {
-                            'tileMatrixSetLinks': {
-                                'type': 'array',
-                                'items': {
-                                    '$ref': '#/components/schemas/tilematrixsetlink' # noqa
-                                }
-                            },
-                            'links': {
-                                'type': 'array',
-                                'items': {'$ref': f"{OPENAPI_YAML['oapit']}#/components/schemas/link"}  # noqa
-                            }
-                        }
-                    }
-                }
-            )
-
-            tiles_path = f'{collection_name_path}/tiles'
-
-            paths[tiles_path] = {
-                'get': {
-                    'summary': f'Fetch a {title} tiles description',
-                    'description': desc,
-                    'tags': [name],
-                    'operationId': f'describe{name.capitalize()}Tiles',
-                    'parameters': [
-                        items_f,
-                        # items_l  TODO: is this useful?
-                    ],
-                    'responses': {
-                        '200': {'$ref': '#/components/responses/Tiles'},
-                        '400': {'$ref': f"{OPENAPI_YAML['oapif-1']}#/components/responses/InvalidParameter"},  # noqa
-                        '404': {'$ref': f"{OPENAPI_YAML['oapif-1']}#/components/responses/NotFound"},  # noqa
-                        '500': {'$ref': f"{OPENAPI_YAML['oapif-1']}#/components/responses/ServerError"}  # noqa
-                    }
-                }
-            }
-
-            tiles_data_path = f'{collection_name_path}/tiles/{{tileMatrixSetId}}/{{tileMatrix}}/{{tileRow}}/{{tileCol}}'  # noqa
-
-            paths[tiles_data_path] = {
-                'get': {
-                    'summary': f'Get a {title} tile',
-                    'description': desc,
-                    'tags': [name],
-                    'operationId': f'get{name.capitalize()}Tiles',
-                    'parameters': [
-                        {'$ref': f"{OPENAPI_YAML['oapit']}#/components/parameters/tileMatrixSetId"}, # noqa
-                        {'$ref': f"{OPENAPI_YAML['oapit']}#/components/parameters/tileMatrix"},  # noqa
-                        {'$ref': f"{OPENAPI_YAML['oapit']}#/components/parameters/tileRow"},  # noqa
-                        {'$ref': f"{OPENAPI_YAML['oapit']}#/components/parameters/tileCol"},  # noqa
-                        {
-                            'name': 'f',
-                            'in': 'query',
-                            'description': 'The optional f parameter indicates the output format which the server shall provide as part of the response document.',  # noqa
-                            'required': False,
-                            'schema': {
-                                'type': 'string',
-                                'enum': [tp.format_type],
-                                'default': tp.format_type
-                            },
-                            'style': 'form',
-                            'explode': False
-                        }
-                    ],
-                    'responses': {
-                        '400': {'$ref': f"{OPENAPI_YAML['oapif-1']}#/components/responses/InvalidParameter"},  # noqa
-                        '404': {'$ref': f"{OPENAPI_YAML['oapif-1']}#/components/responses/NotFound"},  # noqa
-                        '500': {'$ref': f"{OPENAPI_YAML['oapif-1']}#/components/responses/ServerError"}  # noqa
-                    }
-                }
-            }
-            mimetype = tile_extension['format']['mimetype']
-            paths[tiles_data_path]['get']['responses']['200'] = {
-                'description': 'successful operation',
-                'content': {
-                    mimetype: {
-                        'schema': {
-                            'type': 'string',
-                            'format': 'binary'
-                        }
-                    }
-                }
-            }
-
-        LOGGER.debug('setting up edr endpoints')
-        edr_extension = filter_providers_by_type(
-            collections[k]['providers'], 'edr')
-
-        if edr_extension:
-            ep = load_plugin('provider', edr_extension)
-
-            edr_query_endpoints = []
-
-            for qt in [qt for qt in ep.get_query_types() if qt != 'locations']:
-                edr_query_endpoints.append({
-                    'path': f'{collection_name_path}/{qt}',
-                    'qt': qt,
-                    'op_id': f'query{qt.capitalize()}{k.capitalize()}'
-                })
-                if ep.instances:
-                    edr_query_endpoints.append({
-                        'path': f'{collection_name_path}/instances/{{instanceId}}/{qt}',  # noqa
-                        'qt': qt,
-                        'op_id': f'query{qt.capitalize()}Instance{k.capitalize()}'  # noqa
-                    })
-
-            for eqe in edr_query_endpoints:
-                if eqe['qt'] == 'cube':
-                    spatial_parameter = 'bbox'
-                else:
-                    spatial_parameter = f"{eqe['qt']}Coords"
-                paths[eqe['path']] = {
-                    'get': {
-                        'summary': f"query {v['description']} by {eqe['qt']}",  # noqa
-                        'description': v['description'],
-                        'tags': [k],
-                        'operationId': eqe['op_id'],
-                        'parameters': [
-                            {'$ref': f"{OPENAPI_YAML['oaedr']}/parameters/{spatial_parameter}.yaml"},  # noqa
-                            {'$ref': f"{OPENAPI_YAML['oapif-1']}#/components/parameters/datetime"},  # noqa
-                            {'$ref': f"{OPENAPI_YAML['oaedr']}/parameters/parameter-name.yaml"},  # noqa
-                            {'$ref': f"{OPENAPI_YAML['oaedr']}/parameters/z.yaml"},  # noqa
-                            {'$ref': '#/components/parameters/f'}
-                        ],
-                        'responses': {
-                            '200': {
-                                'description': 'Response',
-                                'content': {
-                                    'application/prs.coverage+json': {
-                                        'schema': {
-                                            '$ref': f"{OPENAPI_YAML['oaedr']}/schemas/coverageJSON.yaml"  # noqa
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-            if 'locations' in ep.get_query_types():
-                paths[f'{collection_name_path}/locations'] = {
-                    'get': {
-                        'summary': f"Get pre-defined locations of {v['description']}",  # noqa
-                        'description': v['description'],
-                        'tags': [k],
-                        'operationId': f'queryLOCATIONS{k.capitalize()}',
-                        'parameters': [
-                            {'$ref': f"{OPENAPI_YAML['oaedr']}/parameters/bbox.yaml"},  # noqa
-                            {'$ref': f"{OPENAPI_YAML['oapif-1']}#/components/parameters/datetime"},  # noqa
-                            {'$ref': '#/components/parameters/f'}
-                        ],
-                        'responses': {
-                            '200': {'$ref': f"{OPENAPI_YAML['oapif-1']}#/components/responses/Features"},  # noqa
-                            '400': {'$ref': f"{OPENAPI_YAML['oapif-1']}#/components/responses/InvalidParameter"},  # noqa
-                            '500': {'$ref': f"{OPENAPI_YAML['oapif-1']}#/components/responses/ServerError"}  # noqa
-                        }
-                    }
-                }
-                paths[f'{collection_name_path}/locations/{{locId}}'] = {
-                    'get': {
-                        'summary': f"query {v['description']} by location",  # noqa
-                        'description': v['description'],
-                        'tags': [k],
-                        'operationId': f'queryLOCATIONSBYID{k.capitalize()}',
-                        'parameters': [
-                            {'$ref': f"{OPENAPI_YAML['oaedr']}/parameters/{spatial_parameter}.yaml"},  # noqa
-                            {'$ref': f"{OPENAPI_YAML['oaedr']}/parameters/locationId.yaml"},  # noqa
-                            {'$ref': f"{OPENAPI_YAML['oapif-1']}#/components/parameters/datetime"},  # noqa
-                            {'$ref': f"{OPENAPI_YAML['oaedr']}/parameters/parameter-name.yaml"},  # noqa
-                            {'$ref': f"{OPENAPI_YAML['oaedr']}/parameters/z.yaml"},  # noqa
-                            {'$ref': '#/components/parameters/f'}
-                        ],
-                        'responses': {
-                            '200': {
-                                'description': 'Response',
-                                'content': {
-                                    'application/prs.coverage+json': {
-                                        'schema': {
-                                            '$ref': f"{OPENAPI_YAML['oaedr']}/schemas/coverageJSON.yaml"  # noqa
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-
-        LOGGER.debug('setting up maps endpoints')
-        map_extension = filter_providers_by_type(
-            collections[k]['providers'], 'map')
-
-        if map_extension:
-            mp = load_plugin('provider', map_extension)
-
-            map_f = deepcopy(oas['components']['parameters']['f'])
-            map_f['schema']['enum'] = [map_extension['format']['name']]
-            map_f['schema']['default'] = map_extension['format']['name']
-
-            pth = f'/collections/{k}/map'
-            paths[pth] = {
-                'get': {
-                    'summary': 'Get map',
-                    'description': f"{v['description']} map",
-                    'tags': [k],
-                    'operationId': 'getMap',
-                    'parameters': [
-                        {'$ref': '#/components/parameters/bbox'},
-                        {'$ref': f"{OPENAPI_YAML['oapif-1']}#/components/parameters/datetime"},  # noqa
-                        {
-                            'name': 'width',
-                            'in': 'query',
-                            'description': 'Response image width',
-                            'required': False,
-                            'schema': {
-                                'type': 'integer',
-                            },
-                            'style': 'form',
-                            'explode': False
-                        },
-                        {
-                            'name': 'height',
-                            'in': 'query',
-                            'description': 'Response image height',
-                            'required': False,
-                            'schema': {
-                                'type': 'integer',
-                            },
-                            'style': 'form',
-                            'explode': False
-                        },
-                        {
-                            'name': 'transparent',
-                            'in': 'query',
-                            'description': 'Background transparency of map (default=true).',  # noqa
-                            'required': False,
-                            'schema': {
-                                'type': 'boolean',
-                                'default': True,
-                            },
-                            'style': 'form',
-                            'explode': False
-                        },
-                        {'$ref': '#/components/parameters/bbox-crs-epsg'},
-                        map_f
-                    ],
-                    'responses': {
-                        '200': {
-                            'description': 'Response',
-                            'content': {
-                                'application/json': {}
-                            }
-                        },
-                        '400': {'$ref': f"{OPENAPI_YAML['oapif-1']}#/components/responses/InvalidParameter"},  # noqa
-                        '500': {'$ref': f"{OPENAPI_YAML['oapif-1']}#/components/responses/ServerError"},  # noqa
-                    }
-                }
-            }
-            if mp.time_field is not None:
-                paths[pth]['get']['parameters'].append(
-                    {'$ref': f"{OPENAPI_YAML['oapif-1']}#/components/parameters/datetime"})  # noqa
-
-    LOGGER.debug('setting up STAC')
-    stac_collections = filter_dict_by_key_value(cfg['resources'],
-                                                'type', 'stac-collection')
-    if stac_collections:
-        paths['/stac'] = {
-            'get': {
-                'summary': 'SpatioTemporal Asset Catalog',
-                'description': 'SpatioTemporal Asset Catalog',
-                'tags': ['stac'],
-                'operationId': 'getStacCatalog',
-                'parameters': [],
-                'responses': {
-                    '200': {'$ref': '#/components/responses/200'},
-                    'default': {'$ref': '#/components/responses/default'}
-                }
-            }
-        }
-
-    process_manager = get_manager(cfg)
-
-    if len(process_manager.processes) > 0:
-        paths['/processes'] = {
-            'get': {
-                'summary': 'Processes',
-                'description': 'Processes',
-                'tags': ['server'],
-                'operationId': 'getProcesses',
-                'parameters': [
-                    {'$ref': '#/components/parameters/f'}
-                ],
-                'responses': {
-                    '200': {'$ref': f"{OPENAPI_YAML['oapip']}/responses/ProcessList.yaml"},  # noqa
-                    'default': {'$ref': '#/components/responses/default'}
-                }
-            }
-        }
-        LOGGER.debug('setting up processes')
-
-        for k, v in process_manager.processes.items():
-            if k.startswith('_'):
-                LOGGER.debug(f'Skipping hidden layer: {k}')
-                continue
-            name = l10n.translate(k, locale_)
-            p = process_manager.get_processor(k)
-            md_desc = l10n.translate(p.metadata['description'], locale_)
-            process_name_path = f'/processes/{name}'
-            tag = {
-                'name': name,
-                'description': md_desc,  # noqa
-                'externalDocs': {}
-            }
-            for link in p.metadata.get('links', []):
-                if link['type'] == 'information':
-                    translated_link = l10n.translate(link, locale_)
-                    tag['externalDocs']['description'] = translated_link[
-                        'type']
-                    tag['externalDocs']['url'] = translated_link['url']
-                    break
-            if len(tag['externalDocs']) == 0:
-                del tag['externalDocs']
-
-            oas['tags'].append(tag)
-
-            paths[process_name_path] = {
-                'get': {
-                    'summary': 'Get process metadata',
-                    'description': md_desc,
-                    'tags': [name],
-                    'operationId': f'describe{name.capitalize()}Process',
-                    'parameters': [
-                        {'$ref': '#/components/parameters/f'}
-                    ],
-                    'responses': {
-                        '200': {'$ref': '#/components/responses/200'},
-                        'default': {'$ref': '#/components/responses/default'}
-                    }
-                }
-            }
-
-            paths[f'{process_name_path}/execution'] = {
-                'post': {
-                    'summary': f"Process {l10n.translate(p.metadata['title'], locale_)} execution",  # noqa
-                    'description': md_desc,
-                    'tags': [name],
-                    'operationId': f'execute{name.capitalize()}Job',
-                    'responses': {
-                        '200': {'$ref': '#/components/responses/200'},
-                        '201': {'$ref': f"{OPENAPI_YAML['oapip']}/responses/ExecuteAsync.yaml"},  # noqa
-                        '404': {'$ref': f"{OPENAPI_YAML['oapip']}/responses/NotFound.yaml"},  # noqa
-                        '500': {'$ref': f"{OPENAPI_YAML['oapip']}/responses/ServerError.yaml"},  # noqa
-                        'default': {'$ref': '#/components/responses/default'}
-                    },
-                    'requestBody': {
-                        'description': 'Mandatory execute request JSON',
-                        'required': True,
-                        'content': {
-                            'application/json': {
-                                'schema': {
-                                    '$ref': f"{OPENAPI_YAML['oapip']}/schemas/execute.yaml"  # noqa
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-            if 'example' in p.metadata:
-                paths[f'{process_name_path}/execution']['post']['requestBody']['content']['application/json']['example'] = p.metadata['example']  # noqa
-
-            name_in_path = {
-                'name': 'jobId',
-                'in': 'path',
-                'description': 'job identifier',
-                'required': True,
-                'schema': {
-                    'type': 'string'
-                }
-            }
-
-        paths['/jobs'] = {
-            'get': {
-                'summary': 'Retrieve jobs list',
-                'description': 'Retrieve a list of jobs',
-                'tags': ['jobs'],
-                'operationId': 'getJobs',
-                'responses': {
-                    '200': {'$ref': '#/components/responses/200'},
-                    '404': {'$ref': f"{OPENAPI_YAML['oapip']}/responses/NotFound.yaml"},  # noqa
-                    'default': {'$ref': '#/components/responses/default'}
-                }
-            }
-        }
-
-        paths['/jobs/{jobId}'] = {
-            'get': {
-                'summary': 'Retrieve job details',
-                'description': 'Retrieve job details',
-                'tags': ['jobs'],
-                'parameters': [
-                    name_in_path,
-                    {'$ref': '#/components/parameters/f'}
-                ],
-                'operationId': 'getJob',
-                'responses': {
-                    '200': {'$ref': '#/components/responses/200'},
-                    '404': {'$ref': f"{OPENAPI_YAML['oapip']}/responses/NotFound.yaml"},  # noqa
-                    'default': {'$ref': '#/components/responses/default'}  # noqa
-                }
-            },
-            'delete': {
-                'summary': 'Cancel / delete job',
-                'description': 'Cancel / delete job',
-                'tags': ['jobs'],
-                'parameters': [
-                    name_in_path
-                ],
-                'operationId': 'deleteJob',
-                'responses': {
-                    '204': {'$ref': '#/components/responses/204'},
-                    '404': {'$ref': f"{OPENAPI_YAML['oapip']}/responses/NotFound.yaml"},  # noqa
-                    'default': {'$ref': '#/components/responses/default'}  # noqa
-                }
-            },
-        }
-
-        paths['/jobs/{jobId}/results'] = {
-            'get': {
-                'summary': 'Retrieve job results',
-                'description': 'Retrive job resiults',
-                'tags': ['jobs'],
-                'parameters': [
-                    name_in_path,
-                    {'$ref': '#/components/parameters/f'}
-                ],
-                'operationId': 'getJobResults',
-                'responses': {
-                    '200': {'$ref': '#/components/responses/200'},
-                    '404': {'$ref': f"{OPENAPI_YAML['oapip']}/responses/NotFound.yaml"},  # noqa
-                    'default': {'$ref': '#/components/responses/default'}  # noqa
-                }
-            }
-        }
-
-        tag = {
-            'name': 'jobs',
-            'description': 'Process jobs',
-        }
-        oas['tags'].insert(1, tag)
-
-    oas['paths'] = paths
-
-    if cfg['server'].get('admin', False):
-        schema_dict = get_config_schema()
-        oas['definitions'] = schema_dict['definitions']
-        LOGGER.debug('Adding admin endpoints')
-        oas['paths'].update(get_admin())
-
-    return oas
+    return {
+        k: v
+        for k, v in collections.items()
+        if v.get('visibility', 'default') != 'hidden'
+    }
 
 
 def get_config_schema():
@@ -1377,6 +642,7 @@ def get_admin():
             ],
             'responses': {
                 '200': {
+                    'description': 'Successful response',
                     'content': {
                         'application/json': {
                             'schema': schema_dict
@@ -1438,6 +704,7 @@ def get_admin():
             ],
             'responses': {
                 '200': {
+                    'description': 'Successful response',
                     'content': {
                         'application/json': {
                             'schema': schema_dict['properties']['resources']['patternProperties']['^.*$']  # noqa
@@ -1480,6 +747,7 @@ def get_admin():
             ],
             'responses': {
                 '200': {
+                    'description': 'Successful response',
                     'content': {
                         'application/json': {
                             'schema': schema_dict['properties']['resources']['patternProperties']['^.*$']  # noqa
@@ -1553,23 +821,27 @@ def get_admin():
     return paths
 
 
-def get_oas(cfg, version='3.0'):
+def get_oas(cfg: dict, fail_on_invalid_collection: bool = True,
+            version='3.0') -> dict:
     """
     Stub to generate OpenAPI Document
 
-    :param cfg: configuration object
+    :param cfg: `dict` configuration
+    :param fail_on_invalid_collection: `bool` of whether to fail on an
+                                       invalid collection
     :param version: version of OpenAPI (default 3.0)
 
-    :returns: OpenAPI definition YAML dict
+    :returns: `dict` of OpenAPI definition
     """
 
     if version == '3.0':
-        return get_oas_30(cfg)
+        return get_oas_30(
+            cfg, fail_on_invalid_collection=fail_on_invalid_collection)
     else:
         raise RuntimeError('OpenAPI version not supported')
 
 
-def validate_openapi_document(instance_dict):
+def validate_openapi_document(instance_dict: dict) -> bool:
     """
     Validate an OpenAPI document against the OpenAPI schema
 
@@ -1589,27 +861,36 @@ def validate_openapi_document(instance_dict):
 
 
 def generate_openapi_document(cfg_file: Union[Path, io.TextIOWrapper],
-                              output_format: OAPIFormat):
+                              output_format: OAPIFormat,
+                              fail_on_invalid_collection: bool = True) -> str:
     """
     Generate an OpenAPI document from the configuration file
 
-    :param cfg_file: configuration Path instance
+    :param cfg_file: configuration Path instance (`str` of filepath
+                     or parsed `dict`)
     :param output_format: output format for OpenAPI document
+    :param fail_on_invalid_collection: `bool` of whether to fail on an
+                                       invalid collection
 
-    :returns: content of the OpenAPI document in the output
-              format requested
+    :returns: `str` of the OpenAPI document in the output format requested
     """
+
+    LOGGER.debug(f'Loading configuration {cfg_file}')
+
     if isinstance(cfg_file, Path):
         with cfg_file.open(mode="r") as cf:
             s = yaml_load(cf)
     else:
         s = yaml_load(cfg_file)
+
     pretty_print = s['server'].get('pretty_print', False)
 
+    oas = get_oas(s, fail_on_invalid_collection=fail_on_invalid_collection)
+
     if output_format == 'yaml':
-        content = yaml.safe_dump(get_oas(s), default_flow_style=False)
+        content = yaml.safe_dump(oas, default_flow_style=False)
     else:
-        content = to_json(get_oas(s), pretty=pretty_print)
+        content = to_json(oas, pretty=pretty_print)
     return content
 
 
@@ -1640,17 +921,21 @@ def openapi():
 @click.command()
 @click.pass_context
 @click.argument('config_file', type=click.File(encoding='utf-8'))
+@click.option('--fail-on-invalid-collection/--no-fail-on-invalid-collection',
+              '-fic', default=True, help='Fail on invalid collection')
 @click.option('--format', '-f', 'format_', type=click.Choice(['json', 'yaml']),
               default='yaml', help='output format (json|yaml)')
 @click.option('--output-file', '-of', type=click.File('w', encoding='utf-8'),
               help='Name of output file')
-def generate(ctx, config_file, output_file, format_='yaml'):
+def generate(ctx, config_file, output_file, format_='yaml',
+             fail_on_invalid_collection=True):
     """Generate OpenAPI Document"""
 
     if config_file is None:
         raise click.ClickException('--config/-c required')
 
-    content = generate_openapi_document(config_file, format_)
+    content = generate_openapi_document(
+        config_file, format_, fail_on_invalid_collection)
 
     if output_file is None:
         click.echo(content)

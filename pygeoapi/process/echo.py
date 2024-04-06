@@ -1,8 +1,10 @@
 # =================================================================
 #
 # Authors: Alexander Pilz <a.pilz@52north.org>
+#          Tom Kralidis <tomkralidis@gmail.com>
 #
 # Copyright (c) 2023 Alexander Pilz
+# Copyright (c) 2023 Tom Kralidis
 #
 # Permission is hereby granted, free of charge, to any person
 # obtaining a copy of this software and associated documentation
@@ -26,6 +28,7 @@
 # OTHER DEALINGS IN THE SOFTWARE.
 #
 # =================================================================
+
 import logging
 import time
 
@@ -35,40 +38,40 @@ LOGGER = logging.getLogger(__name__)
 
 #: Process metadata and description
 PROCESS_METADATA = {
-  "id": "echo",
-  "title": "Echo Process",
-  "description": "Testable Echo process.",
-  "version": "1.0.0",
-  "jobControlOptions": [
-    "async-execute",
-    "sync-execute"
+  'id': 'echo',
+  'title': 'Echo Process',
+  'description': 'Testable Echo process.',
+  'version': '1.0.0',
+  'jobControlOptions': [
+    'async-execute',
+    'sync-execute'
   ],
-  "outputTransmission": [
-    "value",
-    "reference"
+  'outputTransmission': [
+    'value',
+    'reference'
   ],
-  "inputs": {
-    "echoInput": {
-      "title": "Echo value",
-      "description": "Value to be echoed back.",
-      "minOccurs": 1,
-      "maxOccurs": 1,
-      "schema": {
-        "type": "string",
-        "enum": [
-          "Echo",
-          "Test",
-          "42"
+  'inputs': {
+    'echoInput': {
+      'title': 'Echo value',
+      'description': 'Value to be echoed back.',
+      'minOccurs': 1,
+      'maxOccurs': 1,
+      'schema': {
+        'type': 'string',
+        'enum': [
+          'Echo',
+          'Test',
+          '42'
         ]
       }},
-    "pause": {
-      "title": "Pause value",
-      "description": "Value to control the processing time.",
-      "minOccurs": 1,
-      "maxOccurs": 1,
-      "schema": {
-        "type": "float",
-        "enum": [
+    'pause': {
+      'title': 'Pause value',
+      'description': 'Value to control the processing time.',
+      'minOccurs': 1,
+      'maxOccurs': 1,
+      'schema': {
+        'type': 'number',
+        'enum': [
           5.5,
           10.25,
           42.0
@@ -76,14 +79,14 @@ PROCESS_METADATA = {
       }
     }
   },
-  "outputs": {
-    "echoOutput": {
-      "schema": {
-        "type": "string"
+  'outputs': {
+    'echoOutput': {
+      'schema': {
+        'type': 'string'
       }
     }
   },
-  "links": [{
+  'links': [{
         'type': 'text/html',
         'rel': 'about',
         'title': 'information',
@@ -99,7 +102,7 @@ PROCESS_METADATA = {
 }
 
 
-class echoProcessor(BaseProcessor):
+class EchoProcessor(BaseProcessor):
     """Echo Processor example"""
     def __init__(self, processor_def):
         """
@@ -107,7 +110,7 @@ class echoProcessor(BaseProcessor):
 
         :param processor_def: provider definition
 
-        :returns: pygeoapi.process.echo.echoProcessor
+        :returns: pygeoapi.process.echo.EchoProcessor
         """
 
         super().__init__(processor_def, PROCESS_METADATA)
@@ -116,24 +119,26 @@ class echoProcessor(BaseProcessor):
 
         mimetype = 'application/json'
 
-        echo = data.get('echoInput', None)
-        pause = data.get('pause', None)
+        echo = data.get('echoInput')
+        pause = data.get('pause')
 
         if echo is None:
             raise ProcessorExecuteError(
                 'Cannot run process without echo value')
+
         if not isinstance(echo, str):
             raise ProcessorExecuteError(
-                'Cannot run process with echo not of type String')
+                'Cannot run process with echo not of type string')
 
         outputs = {
             'id': 'echoOutput',
             'value': echo
         }
+
         if pause is not None and isinstance(pause, float):
             time.sleep(pause)
 
         return mimetype, outputs
 
     def __repr__(self):
-        return '<echoProcessor> {}'.format(self.name)
+        return f'<EchoProcessor> {self.name}'

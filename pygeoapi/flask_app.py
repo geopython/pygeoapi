@@ -34,9 +34,17 @@ import os
 
 import click
 
-from flask import Flask, Blueprint, make_response, request, send_from_directory
+from flask import (Flask, Blueprint, make_response, request,
+                   send_from_directory, Response, Request)
 
-from pygeoapi.api import API
+from pygeoapi.api import API, APIRequest, apply_gzip
+import pygeoapi.api.coverages as coverages_api
+import pygeoapi.api.environmental_data_retrieval as edr_api
+import pygeoapi.api.itemtypes as itemtypes_api
+import pygeoapi.api.maps as maps_api
+import pygeoapi.api.processes as processes_api
+import pygeoapi.api.stac as stac_api
+import pygeoapi.api.tiles as tiles_api
 from pygeoapi.openapi import load_openapi_document
 from pygeoapi.config import get_config
 from pygeoapi.util import get_mimetype, get_api_rules
@@ -101,12 +109,16 @@ if (OGC_SCHEMAS_LOCATION is not None and
         dirname_ = os.path.dirname(full_filepath)
         basename_ = os.path.basename(full_filepath)
 
-        # TODO: better sanitization?
-        path_ = dirname_.replace('..', '').replace('//', '')
+        path_ = dirname_.replace('..', '').replace('//', '').replace('./', '')
+
+        if '..' in path_:
+            return 'Invalid path', 400
+
         return send_from_directory(path_, basename_,
                                    mimetype=get_mimetype(basename_))
 
 
+# TODO: inline in execute_from_flask when all views have been refactored
 def get_response(result: tuple):
     """
     Creates a Flask Response object and updates matching headers.
@@ -114,7 +126,7 @@ def get_response(result: tuple):
     :param result: The result of the API call.
                    This should be a tuple of (headers, status, content).
 
-    :returns: A Response instance.
+    :returns: A Response instance
     """
 
     headers, status, content = result
@@ -123,6 +135,33 @@ def get_response(result: tuple):
     if headers:
         response.headers = headers
     return response
+
+
+def execute_from_flask(api_function, request: Request, *args,
+                       skip_valid_check=False) -> Response:
+    """
+    Executes API function from Flask
+
+    :param api_function: API function
+    :param request: request object
+    :param *args: variable length additional arguments
+    :param skip_validity_check: bool
+
+    :returns: A Response instance
+    """
+
+    api_request = APIRequest.from_flask(request, api_.locales)
+
+    content: str | bytes
+
+    if not skip_valid_check and not api_request.is_valid():
+        headers, status, content = api_.get_format_exception(api_request)
+    else:
+        headers, status, content = api_function(api_, api_request, *args)
+        content = apply_gzip(headers, content)
+        # handle jsonld too?
+
+    return get_response((headers, status, content))
 
 
 @BLUEPRINT.route('/')
@@ -142,6 +181,7 @@ def openapi():
 
     :returns: HTTP response
     """
+
     return get_response(api_.openapi_(request))
 
 
@@ -152,6 +192,7 @@ def conformance():
 
     :returns: HTTP response
     """
+
     return get_response(api_.conformance(request))
 
 
@@ -161,9 +202,12 @@ def get_tilematrix_set(tileMatrixSetId=None):
     OGC API TileMatrixSet endpoint
 
     :param tileMatrixSetId: identifier of tile matrix set
+
     :returns: HTTP response
     """
-    return get_response(api_.tilematrixset(request, tileMatrixSetId))
+
+    return execute_from_flask(tiles_api.tilematrixset, request,
+                              tileMatrixSetId)
 
 
 @BLUEPRINT.route('/TileMatrixSets')
@@ -173,7 +217,8 @@ def get_tilematrix_sets():
 
     :returns: HTTP response
     """
-    return get_response(api_.tilematrixsets(request))
+
+    return execute_from_flask(tiles_api.tilematrixsets, request)
 
 
 @BLUEPRINT.route('/collections')
@@ -186,6 +231,7 @@ def collections(collection_id=None):
 
     :returns: HTTP response
     """
+
     return get_response(api_.describe_collections(request, collection_id))
 
 
@@ -198,6 +244,7 @@ def collection_schema(collection_id):
 
     :returns: HTTP response
     """
+
     return get_response(api_.get_collection_schema(request, collection_id))
 
 
@@ -210,7 +257,9 @@ def collection_queryables(collection_id=None):
 
     :returns: HTTP response
     """
-    return get_response(api_.get_collection_queryables(request, collection_id))
+
+    return execute_from_flask(itemtypes_api.get_collection_queryables, request,
+                              collection_id)
 
 
 @BLUEPRINT.route('/collections/<path:collection_id>/items',
@@ -231,36 +280,40 @@ def collection_items(collection_id, item_id=None):
 
     if item_id is None:
         if request.method == 'GET':  # list items
-            return get_response(
-                api_.get_collection_items(request, collection_id))
+            return execute_from_flask(itemtypes_api.get_collection_items,
+                                      request, collection_id,
+                                      skip_valid_check=True)
         elif request.method == 'POST':  # filter or manage items
             if request.content_type is not None:
                 if request.content_type == 'application/geo+json':
-                    return get_response(
-                        api_.manage_collection_item(request, 'create',
-                                                    collection_id))
+                    return execute_from_flask(
+                            itemtypes_api.manage_collection_item,
+                            request, 'create', collection_id,
+                            skip_valid_check=True)
                 else:
-                    return get_response(
-                        api_.post_collection_items(request, collection_id))
+                    return execute_from_flask(
+                            itemtypes_api.post_collection_items, request,
+                            collection_id, skip_valid_check=True)
         elif request.method == 'OPTIONS':
-            return get_response(
-                api_.manage_collection_item(request, 'options', collection_id))
+            return execute_from_flask(
+                    itemtypes_api.manage_collection_item, request, 'options',
+                    collection_id, skip_valid_check=True)
 
     elif request.method == 'DELETE':
-        return get_response(
-            api_.manage_collection_item(request, 'delete',
-                                        collection_id, item_id))
+        return execute_from_flask(itemtypes_api.manage_collection_item,
+                                  request, 'delete', collection_id, item_id,
+                                  skip_valid_check=True)
     elif request.method == 'PUT':
-        return get_response(
-            api_.manage_collection_item(request, 'update',
-                                        collection_id, item_id))
+        return execute_from_flask(itemtypes_api.manage_collection_item,
+                                  request, 'update', collection_id, item_id,
+                                  skip_valid_check=True)
     elif request.method == 'OPTIONS':
-        return get_response(
-            api_.manage_collection_item(request, 'options',
-                                        collection_id, item_id))
+        return execute_from_flask(itemtypes_api.manage_collection_item,
+                                  request, 'options', collection_id, item_id,
+                                  skip_valid_check=True)
     else:
-        return get_response(
-            api_.get_collection_item(request, collection_id, item_id))
+        return execute_from_flask(itemtypes_api.get_collection_item, request,
+                                  collection_id, item_id)
 
 
 @BLUEPRINT.route('/collections/<path:collection_id>/coverage')
@@ -272,7 +325,9 @@ def collection_coverage(collection_id):
 
     :returns: HTTP response
     """
-    return get_response(api_.get_collection_coverage(request, collection_id))
+
+    return execute_from_flask(coverages_api.get_collection_coverage, request,
+                              collection_id)
 
 
 @BLUEPRINT.route('/collections/<path:collection_id>/tiles')
@@ -284,8 +339,9 @@ def get_collection_tiles(collection_id=None):
 
     :returns: HTTP response
     """
-    return get_response(api_.get_collection_tiles(
-        request, collection_id))
+
+    return execute_from_flask(tiles_api.get_collection_tiles, request,
+                              collection_id)
 
 
 @BLUEPRINT.route('/collections/<path:collection_id>/tiles/<tileMatrixSetId>')
@@ -299,8 +355,10 @@ def get_collection_tiles_metadata(collection_id=None, tileMatrixSetId=None):
 
     :returns: HTTP response
     """
-    return get_response(api_.get_collection_tiles_metadata(
-        request, collection_id, tileMatrixSetId))
+
+    return execute_from_flask(tiles_api.get_collection_tiles_metadata,
+                              request, collection_id, tileMatrixSetId,
+                              skip_valid_check=True)
 
 
 @BLUEPRINT.route('/collections/<path:collection_id>/tiles/\
@@ -318,8 +376,12 @@ def get_collection_tiles_data(collection_id=None, tileMatrixSetId=None,
 
     :returns: HTTP response
     """
-    return get_response(api_.get_collection_tiles_data(
-        request, collection_id, tileMatrixSetId, tileMatrix, tileRow, tileCol))
+
+    return execute_from_flask(
+        tiles_api.get_collection_tiles_data,
+        request, collection_id, tileMatrixSetId, tileMatrix, tileRow, tileCol,
+        skip_valid_check=True,
+    )
 
 
 @BLUEPRINT.route('/collections/<collection_id>/map')
@@ -334,15 +396,9 @@ def collection_map(collection_id, style_id=None):
     :returns: HTTP response
     """
 
-    headers, status_code, content = api_.get_collection_map(
-        request, collection_id, style_id)
-
-    response = make_response(content, status_code)
-
-    if headers:
-        response.headers = headers
-
-    return response
+    return execute_from_flask(
+        maps_api.get_collection_map, request, collection_id, style_id
+    )
 
 
 @BLUEPRINT.route('/processes')
@@ -355,7 +411,9 @@ def get_processes(process_id=None):
 
     :returns: HTTP response
     """
-    return get_response(api_.describe_processes(request, process_id))
+
+    return execute_from_flask(processes_api.describe_processes, request,
+                              process_id)
 
 
 @BLUEPRINT.route('/jobs')
@@ -371,12 +429,12 @@ def get_jobs(job_id=None):
     """
 
     if job_id is None:
-        return get_response(api_.get_jobs(request))
+        return execute_from_flask(processes_api.get_jobs, request)
     else:
         if request.method == 'DELETE':  # dismiss job
-            return get_response(api_.delete_job(request, job_id))
+            return execute_from_flask(processes_api.delete_jobs, request)
         else:  # Return status of a specific job
-            return get_response(api_.get_jobs(request, job_id))
+            return execute_from_flask(processes_api.get_jobs, request, job_id)
 
 
 @BLUEPRINT.route('/processes/<process_id>/execution', methods=['POST'])
@@ -389,7 +447,8 @@ def execute_process_jobs(process_id):
     :returns: HTTP response
     """
 
-    return get_response(api_.execute_process(request, process_id))
+    return execute_from_flask(processes_api.execute_process, request,
+                              process_id)
 
 
 @BLUEPRINT.route('/jobs/<job_id>/results',
@@ -402,7 +461,8 @@ def get_job_result(job_id=None):
 
     :returns: HTTP response
     """
-    return get_response(api_.get_job_result(request, job_id))
+
+    return execute_from_flask(processes_api.get_job_result, request, job_id)
 
 
 @BLUEPRINT.route('/jobs/<job_id>/results/<resource>',
@@ -416,6 +476,8 @@ def get_job_result_resource(job_id, resource):
 
     :returns: HTTP response
     """
+
+    # TODO: this does not seem to exist?
     return get_response(api_.get_job_result_resource(
         request, job_id, resource))
 
@@ -447,14 +509,17 @@ def get_collection_edr_query(collection_id, instance_id=None,
 
     :returns: HTTP response
     """
+
     if location_id:
         query_type = 'locations'
     else:
         query_type = request.path.split('/')[-1]
 
-    return get_response(api_.get_collection_edr_query(request, collection_id,
-                                                      instance_id, query_type,
-                                                      location_id))
+    return execute_from_flask(
+        edr_api.get_collection_edr_query, request, collection_id, instance_id,
+        query_type, location_id,
+        skip_valid_check=True,
+    )
 
 
 @BLUEPRINT.route('/stac')
@@ -464,7 +529,8 @@ def stac_catalog_root():
 
     :returns: HTTP response
     """
-    return get_response(api_.get_stac_root(request))
+
+    return execute_from_flask(stac_api.get_stac_root, request)
 
 
 @BLUEPRINT.route('/stac/<path:path>')
@@ -476,7 +542,8 @@ def stac_catalog_path(path):
 
     :returns: HTTP response
     """
-    return get_response(api_.get_stac_path(request, path))
+
+    return execute_from_flask(stac_api.get_stac_path, request, path)
 
 
 @ADMIN_BLUEPRINT.route('/admin/config', methods=['GET', 'PUT', 'PATCH'])

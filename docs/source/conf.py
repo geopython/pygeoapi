@@ -3,6 +3,7 @@
 # Authors: Tom Kralidis <tomkralidis@gmail.com>
 #
 # Copyright (c) 2024 Tom Kralidis
+# Copyright (c) 2024 Angelos Tzotsos
 #
 # Permission is hereby granted, free of charge, to any person
 # obtaining a copy of this software and associated documentation
@@ -111,7 +112,7 @@ today_fmt = '%Y-%m-%d'
 # built documents.
 #
 # The short X.Y version.
-version = '0.16.dev0'
+version = '0.17.dev0'
 # The full version, including alpha/beta/rc tags.
 release = version
 

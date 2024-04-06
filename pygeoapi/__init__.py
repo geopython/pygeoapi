@@ -5,6 +5,7 @@
 #
 # Copyright (c) 2021 Tom Kralidis
 # Copyright (c) 2023 Ricardo Garcia Silva
+# Copyright (c) 2024 Angelos Tzotsos
 #
 # Permission is hereby granted, free of charge, to any person
 # obtaining a copy of this software and associated documentation
@@ -29,7 +30,7 @@
 #
 # =================================================================
 
-__version__ = '0.16.dev0'
+__version__ = '0.17.dev0'
 
 import click
 try:
@@ -96,11 +97,9 @@ def serve(ctx, server):
 
     if server == "flask":
         from pygeoapi.flask_app import serve as serve_flask
-        ctx.forward(serve_flask)
         ctx.invoke(serve_flask)
     elif server == "starlette":
         from pygeoapi.starlette_app import serve as serve_starlette
-        ctx.forward(serve_starlette)
         ctx.invoke(serve_starlette)
     elif server == "django":
         from pygeoapi.django_app import main as serve_django

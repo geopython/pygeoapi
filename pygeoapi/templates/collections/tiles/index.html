@@ -10,7 +10,7 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.3.1/leaflet.js"></script>
     <script src="https://unpkg.com/leaflet.vectorgrid@latest/dist/Leaflet.VectorGrid.bundled.js"></script>
     <style>
-      .leaflet-popup-content { 
+      .leaflet-popup-content {
           width: 200px;
           height: 100px;
       }
@@ -84,52 +84,78 @@
       {% endif %}
     {% endfor %}
 
-    var url = tilesUrl.replace('{dataset}', '{{ data["id"] }}').replace('{tileMatrixSetId}', scheme).replace("tileMatrix", "z").replace("tileRow", "x").replace("tileCol", "y");
+    var url = tilesUrl
+        .replace('{dataset}', '{{ data["id"] }}')
+        .replace('{tileMatrixSetId}', scheme)
+        .replace("tileMatrix", "z")
+    {% if data['tile_type'] == 'raster' %}
+        url = url
+            .replace("tileRow", "y")
+            .replace("tileCol", "x");
+        map.addLayer(new L.TileLayer(
+            url, {
+                maxZoom: {{ data['maxzoom'] }},
+                crs: 'EPSG:3857'
+            }
+        ));
+    {% elif data['tile_type'] == 'vector' %}
+        url = url
+            .replace("tileRow", "x")
+            .replace("tileCol", "y");
+        var VectorTileOptions = {
+            interactive: true,
+            rendererFactory: L.canvas.tile,
+            maxZoom: {{ data['maxzoom'] }},
+            indexMaxZoom: 5,
+            getFeatureId: function(feat) {
+                return feat.properties["id"]
+            }
+        };
 
-    var VectorTileOptions = {
-        interactive: true,
-        rendererFactory: L.canvas.tile,
-        maxZoom: {{ data['maxzoom'] }},
-        indexMaxZoom: 5,
-        getFeatureId: function(feat) {
-              return feat.properties["id"]
-        }
-    };
-    
-    var highlight;
-    var clearHighlight = function() {
-      if (highlight) {
-        tilesPbfLayer.resetFeatureStyle(highlight);
-      }
-      highlight = null;
-    };
+        var highlight;
+        var clearHighlight = function() {
+            if (highlight) {
+                tilesPbfLayer.resetFeatureStyle(highlight);
+            }
+            highlight = null;
+        };
 
-    var tilesPbfLayer = L.vectorGrid.protobuf(url, VectorTileOptions)
-      .on('click', function(e) { // The .on method attaches an event handler
-          L.popup()
-            .setContent("<b>Name</b>: " + e.layer.properties.name +
+        var tilesPbfLayer = L.vectorGrid.protobuf(url, VectorTileOptions)
+            .on('click', function(e) { // The .on method attaches an event handler
+                L.popup()
+                    .setContent("<b>Name</b>: " + e.layer.properties.name +
                         "<br><b>Class</b>: " + e.layer.properties.featureclass)
-            .setLatLng(e.latlng)
-            .openOn(map);
+                    .setLatLng(e.latlng)
+                    .openOn(map);
 
-          clearHighlight();
-          highlight = e.layer.properties.id;
-          tilesPbfLayer.setFeatureStyle(highlight, {
-            weight: 2,
-            color: 'red',
-            opacity: 1,
-            fillColor: 'red',
-            fill: false,
-            radius: 6,
-            fillOpacity: 1
-          })
+                clearHighlight();
+                highlight = e.layer.properties.id;
+                tilesPbfLayer.setFeatureStyle(highlight, {
+                    weight: 2,
+                    color: 'red',
+                    opacity: 1,
+                    fillColor: 'red',
+                    fill: false,
+                    radius: 6,
+                    fillOpacity: 1
+                });
 
-          L.DomEvent.stop(e);
-      })
-      .addTo(map);
+                L.DomEvent.stop(e);
+            })
+            .addTo(map);
 
-    map.on('click', clearHighlight);
-    bounds = L.latLngBounds([[{{ data['bounds'][1] }},{{data['bounds'][0]}}],[{{ data['bounds'][3] }},{{data['bounds'][2]}}]])
+        map.on('click', clearHighlight);
+    {% endif %}
+
+    bounds = L.latLngBounds([
+        [
+            {{ data['bounds'][1] }},
+            {{ data['bounds'][0] }}
+        ],[
+            {{ data['bounds'][3] }},
+            {{ data['bounds'][2] }}
+        ]
+    ]);
     map.fitBounds(bounds, maxZoom={{ data['maxzoom']}});
 
     </script>

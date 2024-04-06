@@ -18,8 +18,8 @@ parameters.
    :header: Provider, bbox, width/height
    :align: left
 
-   `MapScript`,,✅,✅
-   `WMSFacade`_,,✅,✅
+   `MapScript`,✅,✅
+   `WMSFacade`_,✅,✅
 
 
 Below are specific connection examples based on supported providers.

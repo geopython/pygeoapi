@@ -13,6 +13,9 @@ starlette
 uvicorn[standard]
 httpx
 
+# Pydantic/Dataclasses models
+polyfactory
+
 # PEP8
 flake8
 

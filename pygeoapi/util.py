@@ -163,23 +163,39 @@ def yaml_load(fh: IO) -> dict:
     :returns: `dict` representation of YAML
     """
 
-    # support environment variables in config
-    # https://stackoverflow.com/a/55301129
-    path_matcher = re.compile(r'.*\$\{([^}^{]+)\}.*')
+    # # support environment variables in config
+    # # https://stackoverflow.com/a/55301129
 
-    def path_constructor(loader, node):
-        env_var = path_matcher.match(node.value).group(1)
-        if env_var not in os.environ:
-            msg = f'Undefined environment variable {env_var} in config'
-            raise EnvironmentError(msg)
-        return get_typed_value(os.path.expandvars(node.value))
+    env_matcher = re.compile(
+        r'.*?\$\{(?P<varname>\w+)(:-(?P<default>[^}]+))?\}')
+
+    def env_constructor(loader, node):
+        result = ""
+        current_index = 0
+        raw_value = node.value
+        for match_obj in env_matcher.finditer(raw_value):
+            groups = match_obj.groupdict()
+            varname_start = match_obj.span('varname')[0]
+            result += raw_value[current_index:(varname_start-2)]
+            if (var_value := os.getenv(groups['varname'])) is not None:
+                result += var_value
+            elif (default_value := groups.get('default')) is not None:
+                result += default_value
+            else:
+                raise EnvironmentError(
+                    f'Could not find the {groups["varname"]!r} environment '
+                    f'variable'
+                )
+            current_index = match_obj.end()
+        else:
+            result += raw_value[current_index:]
+        return get_typed_value(result)
 
     class EnvVarLoader(yaml.SafeLoader):
         pass
 
-    EnvVarLoader.add_implicit_resolver('!path', path_matcher, None)
-    EnvVarLoader.add_constructor('!path', path_constructor)
-
+    EnvVarLoader.add_implicit_resolver('!env', env_matcher, None)
+    EnvVarLoader.add_constructor('!env', env_constructor)
     return yaml.load(fh, Loader=EnvVarLoader)
 
 
@@ -591,6 +607,19 @@ class JobStatus(Enum):
     dismissed = 'dismissed'
 
 
+@dataclass(frozen=True)
+class Subscriber:
+    """
+    Store subscriber URLs as defined in:
+
+    https://schemas.opengis.net/ogcapi/processes/part1/1.0/openapi/schemas/subscriber.yaml  # noqa
+    """
+
+    success_uri: str
+    in_progress_uri: Optional[str]
+    failed_uri: Optional[str]
+
+
 def read_data(path: Union[Path, str]) -> Union[bytes, str]:
     """
     helper function to read data (file or network)
@@ -674,11 +703,9 @@ def get_crs_from_uri(uri: str) -> pyproj.CRS:
     Author: @MTachon
 
     :param uri: Uniform resource identifier of the coordinate
-        reference system. In accordance with
-        https://docs.ogc.org/pol/09-048r5.html#_naming_rule URIs can
-        take either the form of a URL or a URN
-    :type uri: str
-
+                reference system. In accordance with
+                https://docs.ogc.org/pol/09-048r5.html#_naming_rule URIs can
+                take either the form of a URL or a URN
     :raises `CRSError`: Error raised if no CRS could be identified from the
         URI.
 
@@ -892,15 +919,15 @@ def modify_pygeofilter(
     Modifies the input pygeofilter with information from the provider.
 
     :param ast_tree: `pygeofilter.ast.Node` representing the
-    already parsed pygeofilter expression
+                     already parsed pygeofilter expression
     :param filter_crs_uri: URI of the CRS being used in the filtering
-    expression
+                           expression
     :param storage_crs_uri: An optional string containing the URI of
-    the provider's storage CRS
+                            the provider's storage CRS
     :param geometry_column_name: An optional string containing the
-    actual name of the provider's geometry field
+                                 actual name of the provider's geometry field
     :returns: A new pygeofilter.ast.Node, with the modified filter
-    expression
+              expression
 
     This function modifies the parsed pygeofilter that contains the raw
     filter expression provided by an external client. It performs the
