@@ -117,7 +117,11 @@ Hello World (Default)
        -H "Content-Type: application/json" \
        -H "Prefer: respond-async"
        -d "{\"inputs\":{\"name\": \"hi there2\"}}"
-
+   # execute a job for the ``hello-world`` process with a success subscriber
+    curl -X POST http://localhost:5000/processes/hello-world/execution \
+        -H "Content-Type: application/json" \
+        -d "{\"inputs\":{\"name\": \"hi there2\"}, \
+            \"subscriber\": {\"successUri\": \"https://www.example.com/success\"}}"
 
 Shapely Functions (Optional)
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -178,11 +182,6 @@ There is no support for passing optional function arguments yet. E.g when comput
        -d "{\"inputs\":{\"operation\": \"constructive:buffer\",\"geoms\": [{\"type\": \"LineString\",\"coordinates\": [[102.0,0.0],[103.0, 1.0],[104.0,0.0]]}],\"output_format\":\"wkt\"}}"
     
 .. todo:: add more examples once OAProc implementation is complete
-   # execute a job for the ``hello-world`` process with a success subscriber
-   curl -X POST http://localhost:5000/processes/hello-world/execution \
-       -H "Content-Type: application/json" \
-       -d "{\"inputs\":{\"name\": \"hi there2\"}, \
-            \"subscriber\": {\"successUri\": \"https://www.example.com/success\"}}"
 
 
 .. _`OGC API - Processes`: https://ogcapi.ogc.org/processes
