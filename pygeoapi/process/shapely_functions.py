@@ -98,7 +98,7 @@ PROCESS_METADATA = {
     "description": {
         "en": "An example process that takes one or more input geometry "
         "(WKT or GeoJSON geometry), applies the specified shapely"
-        "operation on the input, and returns the result "
+        " operation on the input, and returns the result "
         "in the specified output_format.",
         "fr": "Un exemple de processus qui prend une ou plusieurs géométries"
         " d'entrée (géométrie WKT ou GeoJSON) applique l'opération "
@@ -242,14 +242,11 @@ class ShapelyFunctionsProcessor(BaseProcessor):
 
         :returns: pygeoapi.process.shapely_functions.ShapelyFunctionsProcessor
         """
-        self.shapely_operations = [
-            ops.value for ops in SupportedShapelyOperations
-        ]  # noqa: E501
+        self.shapely_operations = [ops.value for ops in SupportedShapelyOperations]  # noqa: E501
         self.supported_formats = [fmt.value for fmt in SupportedFormats]
         super().__init__(processor_def, PROCESS_METADATA)
 
     def execute(self, data) -> Tuple[str, Dict[str, Any]]:
-
         mimetype = "application/json"
         operation = data.get("operation")
         output_format = data.get("output_format")
@@ -257,9 +254,7 @@ class ShapelyFunctionsProcessor(BaseProcessor):
 
         # validations
         if geometries is None:
-            raise ProcessorExecuteError(
-                "Cannot process without valid geometries."
-            )  # noqa: E501
+            raise ProcessorExecuteError("Cannot process without valid geometries.")  # noqa: E501
 
         if not isinstance(geometries, list):
             raise ProcessorExecuteError(
@@ -278,9 +273,7 @@ class ShapelyFunctionsProcessor(BaseProcessor):
             SupportedShapelyOperations.PREDICATES_WITHIN.value,
         }
         if output_format is None and operation not in nongeom_operations:
-            raise ProcessorExecuteError(
-                "Cannot process without an `output_format`."
-            )  # noqa: E501
+            raise ProcessorExecuteError("Cannot process without an `output_format`.")  # noqa: E501
 
         if (
             output_format is not None
@@ -295,9 +288,7 @@ class ShapelyFunctionsProcessor(BaseProcessor):
         self.output_format = output_format
 
         if operation is None:
-            raise ProcessorExecuteError(
-                "Cannot process without a valid operation."
-            )  # noqa: E501
+            raise ProcessorExecuteError("Cannot process without a valid operation.")  # noqa: E501
 
         if operation not in self.shapely_operations:
             raise ProcessorExecuteError(
@@ -355,9 +346,7 @@ class ShapelyFunctionsProcessor(BaseProcessor):
             else mapping(geom)
         )
 
-    def perform_operation(
-        self, parsed_geoms: List[BaseGeometry], operation: str
-    ):  # noqa: E501
+    def perform_operation(self, parsed_geoms: List[BaseGeometry], operation: str):  # noqa: E501
         """
         Perform the exact shapely operation specified by the client.
 
@@ -389,12 +378,8 @@ class ShapelyFunctionsProcessor(BaseProcessor):
             result.update({"result": parsed_geoms[0].area})
         elif operation == SupportedShapelyOperations.MEASUREMENT_BOUNDS.value:
             result.update({"result": parsed_geoms[0].bounds})
-        elif (
-            operation == SupportedShapelyOperations.MEASUREMENT_DISTANCE.value
-        ):  # noqa: E501
-            result.update(
-                {"result": parsed_geoms[0].distance(parsed_geoms[1])}
-            )  # noqa: E501
+        elif operation == SupportedShapelyOperations.MEASUREMENT_DISTANCE.value:  # noqa: E501
+            result.update({"result": parsed_geoms[0].distance(parsed_geoms[1])})  # noqa: E501
         elif operation == SupportedShapelyOperations.PREDICATES_COVERS.value:
             result.update({"result": parsed_geoms[0].covers(parsed_geoms[1])})
         elif operation == SupportedShapelyOperations.PREDICATES_WITHIN.value:
@@ -415,14 +400,9 @@ class ShapelyFunctionsProcessor(BaseProcessor):
             )
         elif operation == SupportedShapelyOperations.CONSTRUCTIVE_BUFFER.value:
             # todo - how do we receive kwargs from the user?
-            result.update(
-                {"result": self.parse_result(parsed_geoms[0].buffer(10))}
-            )  # noqa: E501
+            result.update({"result": self.parse_result(parsed_geoms[0].buffer(10))})  # noqa: E501
         else:
-
-            result.update(
-                {"result": self.parse_result(parsed_geoms[0].centroid)}
-            )  # noqa: E501
+            result.update({"result": self.parse_result(parsed_geoms[0].centroid)})  # noqa: E501
         return result
 
     def __repr__(self):

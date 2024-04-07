@@ -1,6 +1,15 @@
 # Overview
 
-# Related issue / discussion
+# Related Issue / discussion
+
+<!--
+
+Is there an existing Issue that this PR addresses?  Does this PR need a new Issue?
+
+Non-trivial PRs are best put forth initially as an Issue so that there can be
+discussion and consensus before a PR is put forth.
+
+-->
 
 # Additional information
 

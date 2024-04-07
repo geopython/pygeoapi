@@ -21,7 +21,7 @@ parameters.
 
    `CSV`_,✅/✅,results/hits,❌,❌,❌,✅,❌,❌,✅
    `Elasticsearch`_,✅/✅,results/hits,✅,✅,✅,✅,✅,✅,✅
-   `ERDDAP Tabledap Service`_,❌/❌,results/hits,✅,✅,❌,❌,❌,❌
+   `ERDDAP Tabledap Service`_,❌/❌,results/hits,✅,✅,❌,❌,❌,❌,❌
    `ESRI Feature Service`_,✅/✅,results/hits,✅,✅,✅,✅,❌,❌,✅
    `GeoJSON`_,✅/✅,results/hits,❌,❌,❌,✅,❌,❌,✅
    `MongoDB`_,✅/❌,results,✅,✅,✅,✅,❌,❌,✅
@@ -357,12 +357,36 @@ Mandatory properties
         table: lakes
         geom_field: geometry
         title_field: name
-        manadory_properties:
+        mandatory_properties:
         - example_group_id
 
 On large tables it could be useful to disallow a query on the complete dataset. For this reason it is possible to 
 configure mandatory properties. When this is activated, the provoder throws an exception when the parameter
 is not in the query uri.
+
+Extra properties
+""""""""""""""""""""
+.. code-block:: yaml
+
+  providers:
+      - type: feature
+        name: OracleDB
+        data:
+            host: 127.0.0.1
+            port: 1521
+            service_name: XEPDB1
+            user: geo_test
+            password: geo_test
+        id_field: id
+        table: lakes
+        geom_field: geometry
+        title_field: name
+        extra_properties:
+        - "'Here we have ' || name AS tooltip"
+
+Extra properties is a list of strings which are added as fields for data retrieval in the SELECT clauses. They
+can be used to return expressions computed by the database.
+
 
 Custom SQL Manipulator Plugin
 """""""""""""""""""""""""""""

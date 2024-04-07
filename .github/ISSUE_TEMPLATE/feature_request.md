@@ -7,6 +7,12 @@ assignees: ''
 
 ---
 
+<!--
+
+Please note that this Issue is subject to RFC4: https://pygeoapi.io/development/rfc/4
+
+-->
+
 **Is your feature request related to a problem? Please describe.**
 A clear and concise description of what the problem is. Ex. I'm always frustrated when [...]
 

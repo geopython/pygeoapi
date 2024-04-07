@@ -36,7 +36,7 @@ from pygeoapi.provider.base import (ProviderConnectionError,
                                     ProviderGenericError,
                                     ProviderInvalidQueryError)
 from pygeoapi.models.provider.base import (
-    TileSetMetadata, LinkType)
+    TileSetMetadata, TileMatrixSetEnum, LinkType)
 from pygeoapi.util import is_url, url_join
 
 LOGGER = logging.getLogger(__name__)
@@ -118,6 +118,13 @@ class MVTElasticProvider(BaseMVTProvider):
         LOGGER.debug(layer)
         LOGGER.debug('Removing leading "/"')
         return layer[1:]
+
+    def get_tiling_schemes(self):
+
+        "Only WebMercatorQuad tiling scheme is supported in elastic"
+        return [
+                TileMatrixSetEnum.WEBMERCATORQUAD.value
+            ]
 
     def get_tiles_service(self, baseurl=None, servicepath=None,
                           dirpath=None, tile_type=None):
@@ -224,7 +231,7 @@ class MVTElasticProvider(BaseMVTProvider):
 
                 tiling_scheme = LinkType(href=tiling_scheme_url,
                                          rel="http://www.opengis.net/def/rel/ogc/1.0/tiling-scheme", # noqa
-                                         type=tiling_scheme_url_type,
+                                         type_=tiling_scheme_url_type,
                                          title=tiling_scheme_url_title)
 
         if tiling_scheme is None:
@@ -240,7 +247,7 @@ class MVTElasticProvider(BaseMVTProvider):
         service_url_link_type = "application/vnd.mapbox-vector-tile"
         service_url_link_title = f'{tileset} vector tiles for {layer}'
         service_url_link = LinkType(href=service_url, rel="item",
-                                    type=service_url_link_type,
+                                    type_=service_url_link_type,
                                     title=service_url_link_title)
 
         links.append(tiling_scheme)

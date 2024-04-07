@@ -38,6 +38,8 @@ from pathlib import Path
 from typing import Any, Dict, Tuple, Optional, OrderedDict
 import uuid
 
+import requests
+
 from pygeoapi.plugin import load_plugin
 from pygeoapi.process.base import (
     BaseProcessor,
@@ -50,6 +52,7 @@ from pygeoapi.util import (
     JobStatus,
     ProcessExecutionMode,
     RequestedProcessExecutionMode,
+    Subscriber
 )
 
 LOGGER = logging.getLogger(__name__)
@@ -70,6 +73,7 @@ class BaseManager:
 
         self.name = manager_def['name']
         self.is_async = False
+        self.supports_subscribing = False
         self.connection = manager_def.get('connection')
         self.output_dir = manager_def.get('output_dir')
 
@@ -85,12 +89,12 @@ class BaseManager:
         for id_, process_conf in manager_def.get('processes', {}).items():
             self.processes[id_] = dict(process_conf)
 
-    def get_processor(self, process_id: str) -> Optional[BaseProcessor]:
+    def get_processor(self, process_id: str) -> BaseProcessor:
         """Instantiate a processor.
 
         :param process_id: Identifier of the process
 
-        :raise UnknownProcessError: if the processor cannot be created
+        :raises UnknownProcessError: if the processor cannot be created
         :returns: instance of the processor
         """
 
@@ -142,8 +146,8 @@ class BaseManager:
 
         :param job_id: job identifier
 
-        :raises: JobNotFoundError: if the job_id does not correspond to a
-            known job
+        :raises JobNotFoundError: if the job_id does not correspond to a
+                                  known job
         :returns: `dict` of job result
         """
 
@@ -155,10 +159,10 @@ class BaseManager:
 
         :param job_id: job identifier
 
-        :raises: JobNotFoundError: if the job_id does not correspond to a
-            known job
-        :raises: JobResultNotFoundError: if the job-related result cannot
-            be returned
+        :raises JobNotFoundError: if the job_id does not correspond to a
+                                  known job
+        :raises JobResultNotFoundError: if the job-related result cannot
+                                         be returned
         :returns: `tuple` of mimetype and raw output
         """
 
@@ -170,15 +174,17 @@ class BaseManager:
 
         :param job_id: job identifier
 
-        :raises: JobNotFoundError: if the job_id does not correspond to a
-            known job
+        :raises JobNotFoundError: if the job_id does not correspond to a
+                                   known job
         :returns: `bool` of status result
         """
 
         raise JobNotFoundError()
 
     def _execute_handler_async(self, p: BaseProcessor, job_id: str,
-                               data_dict: dict) -> Tuple[str, None, JobStatus]:
+                               data_dict: dict,
+                               subscriber: Optional[Subscriber] = None,
+                               ) -> Tuple[str, None, JobStatus]:
         """
         This private execution handler executes a process in a background
         thread using `multiprocessing.dummy`
@@ -188,19 +194,22 @@ class BaseManager:
         :param p: `pygeoapi.process` object
         :param job_id: job identifier
         :param data_dict: `dict` of data parameters
+        :param subscriber: optional `Subscriber` specifying callback URLs
 
         :returns: tuple of None (i.e. initial response payload)
                   and JobStatus.accepted (i.e. initial job status)
         """
         _process = dummy.Process(
             target=self._execute_handler_sync,
-            args=(p, job_id, data_dict)
+            args=(p, job_id, data_dict, subscriber)
         )
         _process.start()
         return 'application/json', None, JobStatus.accepted
 
     def _execute_handler_sync(self, p: BaseProcessor, job_id: str,
-                              data_dict: dict) -> Tuple[str, Any, JobStatus]:
+                              data_dict: dict,
+                              subscriber: Optional[Subscriber] = None,
+                              ) -> Tuple[str, Any, JobStatus]:
         """
         Synchronous execution handler
 
@@ -219,6 +228,7 @@ class BaseManager:
         current_status = JobStatus.accepted
 
         job_metadata = {
+            'type': 'process',
             'identifier': job_id,
             'process_id': process_id,
             'job_start_datetime': datetime.utcnow().strftime(
@@ -226,12 +236,13 @@ class BaseManager:
             'job_end_datetime': None,
             'status': current_status.value,
             'location': None,
-            'mimetype': None,
+            'mimetype': 'application/octet-stream',
             'message': 'Job accepted and ready for execution',
             'progress': 5
         }
 
         self.add_job(job_metadata)
+        self._send_in_progress_notification(subscriber)
 
         try:
             if self.output_dir is not None:
@@ -275,6 +286,7 @@ class BaseManager:
             }
 
             self.update_job(job_id, job_update_metadata)
+            self._send_success_notification(subscriber, outputs=outputs)
 
         except Exception as err:
             # TODO assess correct exception type and description to help users
@@ -289,6 +301,7 @@ class BaseManager:
             current_status = JobStatus.failed
             code = 'InvalidParameterValue'
             outputs = {
+                'type': code,
                 'code': code,
                 'description': 'Error updating job'
             }
@@ -298,13 +311,14 @@ class BaseManager:
                     DATETIME_FORMAT),
                 'status': current_status.value,
                 'location': None,
-                'mimetype': None,
+                'mimetype': 'application/octet-stream',
                 'message': f'{code}: {outputs["description"]}'
             }
 
             jfmt = 'application/json'
 
             self.update_job(job_id, job_metadata)
+            self._send_failed_notification(subscriber)
 
         return jfmt, outputs, current_status
 
@@ -312,7 +326,8 @@ class BaseManager:
             self,
             process_id: str,
             data_dict: dict,
-            execution_mode: Optional[RequestedProcessExecutionMode] = None
+            execution_mode: Optional[RequestedProcessExecutionMode] = None,
+            subscriber: Optional[Subscriber] = None
     ) -> Tuple[str, Any, JobStatus, Optional[Dict[str, str]]]:
         """
         Default process execution handler
@@ -320,10 +335,11 @@ class BaseManager:
         :param process_id: process identifier
         :param data_dict: `dict` of data parameters
         :param execution_mode: `str` optionally specifying sync or async
-        processing.
+                               processing.
+        :param subscriber: `Subscriber` optionally specifying callback urls
 
-        :raises: UnknownProcessError if the input process_id does not
-                 correspond to a known process
+        :raises UnknownProcessError: if the input process_id does not
+                                     correspond to a known process
         :returns: tuple of job_id, MIME type, response payload, status and
                   optionally additional HTTP headers to include in the final
                   response
@@ -365,8 +381,39 @@ class BaseManager:
             response_headers = None
         # TODO: handler's response could also be allowed to include more HTTP
         # headers
-        mime_type, outputs, status = handler(processor, job_id, data_dict)
+        mime_type, outputs, status = handler(
+            processor,
+            job_id,
+            data_dict,
+            # only pass subscriber if supported, otherwise this breaks existing
+            # managers
+            **({'subscriber': subscriber} if self.supports_subscribing else {})
+        )
+
         return job_id, mime_type, outputs, status, response_headers
+
+    def _send_in_progress_notification(self, subscriber: Optional[Subscriber]):
+        if subscriber and subscriber.in_progress_uri:
+            response = requests.post(subscriber.in_progress_uri, json={})
+            LOGGER.debug(
+                f'In progress notification response: {response.status_code}'
+            )
+
+    def _send_success_notification(
+            self, subscriber: Optional[Subscriber], outputs: Any
+    ):
+        if subscriber:
+            response = requests.post(subscriber.success_uri, json=outputs)
+            LOGGER.debug(
+                f'Success notification response: {response.status_code}'
+            )
+
+    def _send_failed_notification(self, subscriber: Optional[Subscriber]):
+        if subscriber and subscriber.failed_uri:
+            response = requests.post(subscriber.failed_uri, json={})
+            LOGGER.debug(
+                f'Failed notification response: {response.status_code}'
+            )
 
     def __repr__(self):
         return f'<BaseManager> {self.name}'

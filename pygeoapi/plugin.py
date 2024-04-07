@@ -62,6 +62,7 @@ PLUGINS = {
         'Socrata': 'pygeoapi.provider.socrata.SODAServiceProvider',
         'TinyDBCatalogue': 'pygeoapi.provider.tinydb_.TinyDBCatalogueProvider',
         'WMSFacade': 'pygeoapi.provider.wms_facade.WMSFacadeProvider',
+        'WMTSFacade': 'pygeoapi.provider.wmts_facade.WMTSFacadeProvider',
         'xarray': 'pygeoapi.provider.xarray_.XarrayProvider',
         'xarray-edr': 'pygeoapi.provider.xarray_edr.XarrayEDRProvider'
     },

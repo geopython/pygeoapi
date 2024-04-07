@@ -7,6 +7,12 @@ assignees: ''
 
 ---
 
+<!--
+
+Please note that this Issue is subject to RFC4: https://pygeoapi.io/development/rfc/4
+
+-->
+
 **Description**
 A clear and concise description of what the bug is.
 

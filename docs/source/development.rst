@@ -20,7 +20,7 @@ Tests can be run locally as part of development workflow.  They are also run on 
 `GitHub Actions setup`_ against all commits and pull requests to the code repository.
 
 To run all tests, simply run ``pytest`` in the repository.  To run a specific test file,
-run ``pytest tests/test_api.py``, for example.
+run ``pytest tests/api/test_itemtypes.py``, for example.
 
 
 CQL extension lifecycle
@@ -82,7 +82,7 @@ Install Python with the option to enable SQLite extensions:
 
 .. code-block:: bash
 
-   LDFLAGS="-L/usr/local/opt/sqlite/lib -L/usr/local/opt/zlib/lib" CPPFLAGS="-I/usr/local/opt/sqlite/include -I/usr/local/opt/zlib/include" PYTHON_CONFIGURE_OPTS="--enable-loadable-sqlite-extensions" pyenv install 3.7.6
+   LDFLAGS="-L/usr/local/opt/sqlite/lib -L/usr/local/opt/zlib/lib" CPPFLAGS="-I/usr/local/opt/sqlite/include -I/usr/local/opt/zlib/include" PYTHON_CONFIGURE_OPTS="--enable-loadable-sqlite-extensions" pyenv install 3.10.12
 
 Configure SQLite from Homebrew over that one shipped with the OS:
 
