@@ -663,15 +663,15 @@ def get_oas_30(cfg: dict, locale: str) -> tuple[list[dict[str, str]], dict[str, 
         if 'example' in p.metadata:
             paths[f'{process_name_path}/execution']['post']['requestBody']['content']['application/json']['example'] = p.metadata['example']  # noqa
 
-        name_in_path = {
-            'name': 'jobId',
-            'in': 'path',
-            'description': 'job identifier',
-            'required': True,
-            'schema': {
-                'type': 'string'
-            }
+    name_in_path = {
+        'name': 'jobId',
+        'in': 'path',
+        'description': 'job identifier',
+        'required': True,
+        'schema': {
+            'type': 'string'
         }
+    }
 
     paths['/jobs'] = {
         'get': {
