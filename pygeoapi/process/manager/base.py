@@ -54,7 +54,7 @@ from pygeoapi.util import (
     JobStatus,
     ProcessExecutionMode,
     RequestedProcessExecutionMode,
-    Subscriber,
+    Subscriber
 )
 
 LOGGER = logging.getLogger(__name__)
@@ -338,7 +338,6 @@ class BaseManager:
             jfmt = 'application/json'
 
             self.update_job(job_id, job_metadata)
-
             self._send_failed_notification(subscriber)
 
         return jfmt, outputs, current_status
@@ -349,7 +348,7 @@ class BaseManager:
             data_dict: dict,
             execution_mode: Optional[RequestedProcessExecutionMode] = None,
             requested_output: Optional[dict] = None,
-            subscriber: Optional[Subscriber] = None,
+            subscriber: Optional[Subscriber] = None
     ) -> Tuple[str, Any, JobStatus, Optional[Dict[str, str]]]:
         """
         Default process execution handler
@@ -417,6 +416,7 @@ class BaseManager:
             # managers
             **({'subscriber': subscriber} if self.supports_subscribing else {})
         )
+
         return job_id, mime_type, outputs, status, response_headers
 
     def _send_in_progress_notification(self, subscriber: Optional[Subscriber]):

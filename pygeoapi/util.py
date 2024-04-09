@@ -163,23 +163,39 @@ def yaml_load(fh: IO) -> dict:
     :returns: `dict` representation of YAML
     """
 
-    # support environment variables in config
-    # https://stackoverflow.com/a/55301129
-    path_matcher = re.compile(r'.*\$\{([^}^{]+)\}.*')
+    # # support environment variables in config
+    # # https://stackoverflow.com/a/55301129
 
-    def path_constructor(loader, node):
-        env_var = path_matcher.match(node.value).group(1)
-        if env_var not in os.environ:
-            msg = f'Undefined environment variable {env_var} in config'
-            raise EnvironmentError(msg)
-        return get_typed_value(os.path.expandvars(node.value))
+    env_matcher = re.compile(
+        r'.*?\$\{(?P<varname>\w+)(:-(?P<default>[^}]+))?\}')
+
+    def env_constructor(loader, node):
+        result = ""
+        current_index = 0
+        raw_value = node.value
+        for match_obj in env_matcher.finditer(raw_value):
+            groups = match_obj.groupdict()
+            varname_start = match_obj.span('varname')[0]
+            result += raw_value[current_index:(varname_start-2)]
+            if (var_value := os.getenv(groups['varname'])) is not None:
+                result += var_value
+            elif (default_value := groups.get('default')) is not None:
+                result += default_value
+            else:
+                raise EnvironmentError(
+                    f'Could not find the {groups["varname"]!r} environment '
+                    f'variable'
+                )
+            current_index = match_obj.end()
+        else:
+            result += raw_value[current_index:]
+        return get_typed_value(result)
 
     class EnvVarLoader(yaml.SafeLoader):
         pass
 
-    EnvVarLoader.add_implicit_resolver('!path', path_matcher, None)
-    EnvVarLoader.add_constructor('!path', path_constructor)
-
+    EnvVarLoader.add_implicit_resolver('!env', env_matcher, None)
+    EnvVarLoader.add_constructor('!env', env_constructor)
     return yaml.load(fh, Loader=EnvVarLoader)
 
 
@@ -593,10 +609,12 @@ class JobStatus(Enum):
 
 @dataclass(frozen=True)
 class Subscriber:
-    """Store subscriber urls as defined in:
+    """
+    Store subscriber URLs as defined in:
 
     https://schemas.opengis.net/ogcapi/processes/part1/1.0/openapi/schemas/subscriber.yaml  # noqa
     """
+
     success_uri: str
     in_progress_uri: Optional[str]
     failed_uri: Optional[str]
