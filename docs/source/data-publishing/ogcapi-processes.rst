@@ -121,7 +121,7 @@ Hello World (Default)
 Shapely Functions (Optional)
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-The `shapely-functions` process exposes some selected Shapely_ functions as sample process. The selection cut across different operations in shapely. To avoid function collision, it uses the name of the function category as the namespace. E.g *union* operation under the *set* module is described as *set:union*.
+The `shapely-functions` process exposes some selected Shapely_ functions as sample process. The selection cut across different operations in Shapely. To avoid function collision, it uses the name of the function category as the namespace. E.g *union* operation under the *set* module is described as *set:union*.
 
 The process is configured to accept a list of geometry *inputs* (WKT and/or GeoJSON geometry), *operation*  and an optional *output_format*. It performs the specified operation and returns the result in the specified *output_format* (If the operation does not return a geometry, then this is ignored).
 
