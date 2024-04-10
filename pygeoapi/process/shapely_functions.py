@@ -31,11 +31,14 @@
 
 import enum
 import logging
+
 from typing import Any, Dict, List, Tuple, Union
-from shapely.wkt import loads
-from shapely.geometry import shape, mapping
+
+from shapely.geometry import mapping, shape
 from shapely.geometry.base import BaseGeometry
 from shapely.prepared import prep
+from shapely.wkt import loads
+
 from pygeoapi.process.base import BaseProcessor, ProcessorExecuteError
 
 
@@ -93,7 +96,7 @@ PROCESS_METADATA = {
     "title": {
         "en": "Shapely Functions",
         "fr": "Fonctions galbées",
-        "es": "Funciones bien formadas",
+        "es": "Funciones bien formadas"
     },
     "description": {
         "en": "An example process that takes one or more input geometry "
@@ -107,7 +110,7 @@ PROCESS_METADATA = {
         "es": "Un proceso de ejemplo que toma una o más geometrías"
         "de entrada (geometría WKT o GeoJSON) aplica la operación"
         "de forma especificada en la entrada y devuelve el resultado"
-        "en el formato de salida especificado.",
+        "en el formato de salida especificado."
     },
     "jobControlOptions": ["sync-execute", "async-execute"],
     "keywords": [
@@ -115,15 +118,15 @@ PROCESS_METADATA = {
         "measurement",
         "predicates",
         "set operations",
-        "constructive ops",
+        "constructive ops"
     ],
     "links": [
         {
             "type": "text/html",
             "rel": "about",
             "title": "information",
-            "href": "https://example.org/process",
-            "hreflang": "en-US",
+            "href": "https://shapely.readthedocs.io",
+            "hreflang": "en-US"
         },
     ],
     "inputs": {
@@ -132,11 +135,11 @@ PROCESS_METADATA = {
             "description": "The shapely operation to perform. Namespace of the"
             "function category is used to avoid mixup in function names.",
             "schema": {
-                "type": "string",
+                "type": "string"
             },
             "minOccurs": 1,
             "maxOccurs": 1,
-            "enum": [ops.value for ops in SupportedShapelyOperations],
+            "enum": [ops.value for ops in SupportedShapelyOperations]
         },
         "geoms": {
             "title": "Input geometry",
@@ -179,11 +182,11 @@ PROCESS_METADATA = {
             "If the shapely operation does not return a geometry, then "
             " this is ignored.",
             "schema": {
-                "type": "string",
+                "type": "string"
             },
             "minOccurs": 0,
             "maxOccurs": 1,
-            "enum": [v.value for v in SupportedFormats],
+            "enum": [v.value for v in SupportedFormats]
         },
     },
     "outputs": {
@@ -193,7 +196,7 @@ PROCESS_METADATA = {
             "performed in the process.",
             "schema": {
                 "type": "object",
-                "contentMediaType": "application/json",
+                "contentMediaType": "application/json"
             },
         },
     },
@@ -223,7 +226,7 @@ PROCESS_METADATA = {
                             [80.58983993887352, 24.07996699713047],
                         ]
                     ],
-                    "type": "Polygon",
+                    "type": "Polygon"
                 },
             ],
         }
@@ -270,7 +273,7 @@ class ShapelyFunctionsProcessor(BaseProcessor):
             SupportedShapelyOperations.MEASUREMENT_DISTANCE.value,
             SupportedShapelyOperations.MEASUREMENT_BOUNDS.value,
             SupportedShapelyOperations.PREDICATES_COVERS.value,
-            SupportedShapelyOperations.PREDICATES_WITHIN.value,
+            SupportedShapelyOperations.PREDICATES_WITHIN.value
         }
         if output_format is None and operation not in nongeom_operations:
             raise ProcessorExecuteError("Cannot process without an `output_format`.")  # noqa: E501
@@ -300,7 +303,7 @@ class ShapelyFunctionsProcessor(BaseProcessor):
             SupportedShapelyOperations.MEASUREMENT_AREA.value,
             SupportedShapelyOperations.MEASUREMENT_BOUNDS.value,
             SupportedShapelyOperations.CONSTRUCTIVE_BUFFER.value,
-            SupportedShapelyOperations.CONSTRUCTIVE_CENTROID.value,
+            SupportedShapelyOperations.CONSTRUCTIVE_CENTROID.value
         }
 
         if operation in requires_single_geom and len(geometries) > 1:
@@ -368,7 +371,7 @@ class ShapelyFunctionsProcessor(BaseProcessor):
         if operation == SupportedShapelyOperations.MEASUREMENT_AREA.value:
             if parsed_geoms[0].type not in [
                 SupportedGeometryTypes.POLYGON.value,
-                SupportedGeometryTypes.MULTI_POLYGON.value,
+                SupportedGeometryTypes.MULTI_POLYGON.value
             ]:
                 raise ProcessorExecuteError(
                     f"""Invalid geometry type.{operation}
