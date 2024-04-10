@@ -302,4 +302,3 @@ resources:
         type: process
         processor:
             name: HelloWorld
-    
