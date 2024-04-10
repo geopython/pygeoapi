@@ -83,7 +83,9 @@ class XarrayProvider(BaseProvider):
                 data_to_open = self.data
 
             self._data = open_func(data_to_open)
-            self._coverage_properties = self._get_coverage_properties()
+            self._coverage_properties = self._get_coverage_properties(
+                provider_def
+            )
 
             self.axes = [self._coverage_properties['x_axis_label'],
                          self._coverage_properties['y_axis_label'],
@@ -335,9 +337,14 @@ class XarrayProvider(BaseProvider):
 
         return cj
 
-    def _get_coverage_properties(self):
+    def _get_coverage_properties(
+            self,
+            provider_def: dict
+        ):
         """
         Helper function to normalize coverage properties
+
+        :param provider_def: provider definition
 
         :returns: `dict` of coverage properties
         """
@@ -398,31 +405,42 @@ class XarrayProvider(BaseProvider):
             'restime': self.get_time_resolution()
         }
 
-        grid_mapping = self.parse_grid_mapping()
-        if grid_mapping is not None:
-            crs_attrs = pyproj.CRS.to_cf(self._data[grid_mapping].attrs)
-            epsg_code = crs_attrs.to_epsg()
-            if epsg_code == 4326:
-                pass
-            elif epsg_code is None:
-                LOGGER.debug('No epsg code parsed. Default CRS used.')
-            else:
-                properties['bbox_crs'] = f'https://www.opengis.net/def/crs/EPSG/0/{epsg_code}'  # noqa
-                properties['inverse_flattening'] = \
-                    crs_attrs['inverse_flattening']
-                if crs_attrs['grid_mapping_name '] != 'latitude_longitude':
-                    properties['crs_type'] = 'ProjectedCRS'
+        # TODO break some of this up into separate functions.
+        # TODO add some better error handling for pyproj?
+        try:
+            user_crs = provider_def['extents']['spatial']['crs']
+        except KeyError:
+            LOGGER.debug('No CRS provided in the configuration.')
+        
+        if isinstance(user_crs, pyproj.CRS):
+            ## add some error handling here in case users provide invalid CRS info
+            crs = pyproj.CRS.from_user_input(user_crs)
+            epsg_code = crs.to_epsg()
+            # This can return nothing (e.g. if a custom proj) -- add handling for that case 
+        else: 
+            grid_mapping = self.parse_grid_mapping()
+            if grid_mapping is not None:
+                crs = pyproj.CRS.from_dict(
+                    self._data[grid_mapping].attrs
+                )
+                epsg_code = crs.to_epsg()
+            # check if CRS included in dataset
+            elif 'crs' in self._data.variables.keys():
+                try:
+                    epsg_code = pyproj.CRS.from_epsg(
+                        self._data.crs.epsg_code
+                    )
+                except KeyError:
+                    LOGGER.debug('Unable to parse CRS. Assuming default WGS84.')
 
-        elif 'crs' in self._data.variables.keys():
-            try:
-                properties['bbox_crs'] = f'https://www.opengis.net/def/crs/EPSG/0/{self._data.crs.epsg_code}'  # noqa
-
-                properties['inverse_flattening'] = self._data.crs.\
-                    inverse_flattening
-
+        if epsg_code == 4326:
+            pass
+        else:
+            properties['bbox_crs'] = f'https://www.opengis.net/def/crs/EPSG/0/{epsg_code}'  # noqa
+            properties['inverse_flattening'] = \
+                crs.inverse_flattening
+            if crs.is_projected:
                 properties['crs_type'] = 'ProjectedCRS'
-            except KeyError:
-                LOGGER.debug('Unable to parse CRS. Assuming default WGS84.')
 
         properties['axes'] = [
             properties['x_axis_label'],
