@@ -76,21 +76,26 @@ class MongoProvider(BaseProvider):
         :returns: dict of fields
         """
 
-        map = Code(
-            "function() { for (var key in this.properties) "
-            "{ emit(key, null); } }")
-        reduce = Code("function(key, stuff) { return null; }")
-        result = self.featuredb[self.collection].map_reduce(
-            map, reduce, "myresults")
+        pipeline = [
+            {"$project": {"properties": 1}},
+            {"$unwind": "$properties"},
+            {"$group": {"_id": "$properties", "count": {"$sum": 1}}},
+            {"$project": {"_id": 1}}
+        ]
+
+        result = list(self.featuredb[self.collection].aggregate(pipeline))
 
         # prepare a dictionary with fields
         # set the field type to 'string'.
         # by operating without a schema, mongo can query any data type.
         fields = {}
-        for i in result.distinct('_id'):
-            fields[i] = {'type': 'string'}
 
-        return (fields)
+        for i in result:
+            for key in result[0]['_id'].keys():
+                fields[key]= {'type': 'string'}
+
+        return fields
+
 
     def _get_feature_list(self, filterObj, sortList=[], skip=0, maxitems=1,
                           skip_geometry=False):
