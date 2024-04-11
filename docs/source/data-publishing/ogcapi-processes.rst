@@ -164,31 +164,29 @@ There is no support for passing optional function arguments yet. E.g when comput
        -d "{\"inputs\":{\"operation\": \"measurement:bounds\",\"geoms\": [\"POINT(83.27651071580385 22.593553859283745)\"]}}"
 
    # execute a job for the ``shapely-functions`` process that calculates the area of a WKT Polygon 
-   curl -X POST http://localhost:5000/processes/hello-world/execution \
+   curl -X POST http://localhost:5000/processes/shapely-functions/execution \
        -H "Content-Type: application/json" \
        -d "{\"inputs\":{\"operation\": \"measurement:area\",\"geoms\": [\"POLYGON ((0 0, 1 0, 1 1, 0 1, 0 0))\"]}}"
    
    # execute a job for the ``shapely-functions`` process that calculates the distance between two WKTs
-   curl -X POST http://localhost:5000/processes/hello-world/execution \
+   curl -X POST http://localhost:5000/processes/shapely-functions/execution \
        -H "Content-Type: application/json" \
        -d "{\"inputs\":{\"operation\": \"measurement:distance\",\"geoms\": [\"POLYGON ((0 0, 1 0, 1 1, 0 1, 0 0))\",\"POINT(83.27651071580385 22.593553859283745)\"]}}"
    
    # execute a job for the ``shapely-functions`` process that calculates the predicate difference between two WKTs and returns a GeoJSON feature
-   curl -X POST http://localhost:5000/processes/hello-world/execution \
+   curl -X POST http://localhost:5000/processes/shapely-functions/execution \
        -H "Content-Type: application/json" \
        -d "{\"inputs\":{\"operation\": \"set:difference\",\"geoms\": [\"POLYGON ((0 0, 1 0, 1 1, 0 1, 0 0))\",\"POINT(83.27651071580385 22.593553859283745)\"],\"output_format\":\"geojson\"}}"
    
    # execute a job for the ``shapely-functions`` process that calculates the predicate difference between two WKTs and returns a WKT
-   curl -X POST http://localhost:5000/processes/hello-world/execution \
+   curl -X POST http://localhost:5000/processes/shapely-functions/execution \
        -H "Content-Type: application/json" \
        -d "{\"inputs\":{\"operation\": \"set:difference\",\"geoms\": [\"POLYGON ((0 0, 1 0, 1 1, 0 1, 0 0))\",\"POINT(83.27651071580385 22.593553859283745)\"],\"output_format\":\"wkt\"}}"
 
    # execute a job for the ``shapely-functions`` process that computes the buffer of a GeoJSON feature and returns a WKT 
-   curl -X POST http://localhost:5000/processes/hello-world/execution \
+   curl -X POST http://localhost:5000/processes/shapely-functions/execution \
        -H "Content-Type: application/json" \
        -d "{\"inputs\":{\"operation\": \"constructive:buffer\",\"geoms\": [{\"type\": \"LineString\",\"coordinates\": [[102.0,0.0],[103.0, 1.0],[104.0,0.0]]}],\"output_format\":\"wkt\"}}"
-    
-.. todo:: add more examples once OAProc implementation is complete
 
 
 .. _`OGC API - Processes`: https://ogcapi.ogc.org/processes
