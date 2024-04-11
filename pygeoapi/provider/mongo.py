@@ -31,7 +31,6 @@
 from datetime import datetime
 import logging
 
-from bson import Code
 from pymongo import MongoClient
 from pymongo import GEOSPHERE
 from pymongo import ASCENDING, DESCENDING
@@ -92,10 +91,9 @@ class MongoProvider(BaseProvider):
 
         for i in result:
             for key in result[0]['_id'].keys():
-                fields[key]= {'type': 'string'}
+                fields[key] = {'type': 'string'}
 
         return fields
-
 
     def _get_feature_list(self, filterObj, sortList=[], skip=0, maxitems=1,
                           skip_geometry=False):
