@@ -3,7 +3,7 @@
 # Authors: Tom Kralidis <tomkralidis@gmail.com>
 #          Ricardo Garcia Silva <ricardo.garcia.silva@geobeyond.it>
 #
-# Copyright (c) 2022 Tom Kralidis
+# Copyright (c) 2024 Tom Kralidis
 #           (c) 2023 Ricardo Garcia Silva
 #
 # Permission is hereby granted, free of charge, to any person
@@ -303,9 +303,9 @@ class BaseManager:
             outputs = {
                 'type': code,
                 'code': code,
-                'description': 'Error updating job'
+                'description': f'Error executing process: {err}'
             }
-            LOGGER.error(err)
+            LOGGER.exception(err)
             job_metadata = {
                 'job_end_datetime': datetime.utcnow().strftime(
                     DATETIME_FORMAT),

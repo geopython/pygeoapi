@@ -284,7 +284,7 @@ def test_execute_process(config, api_):
     assert code == HTTPStatus.BAD_REQUEST
     assert 'Location' in rsp_headers
     assert data['code'] == 'InvalidParameterValue'
-    assert data['description'] == 'Error updating job'
+    assert data['description'].startswith('Error executing process: ')
 
     cleanup_jobs.add(tuple(['hello-world',
                             rsp_headers['Location'].split('/')[-1]]))
@@ -296,7 +296,7 @@ def test_execute_process(config, api_):
     assert code == HTTPStatus.BAD_REQUEST
     assert 'Location' in rsp_headers
     assert data['code'] == 'InvalidParameterValue'
-    assert data['description'] == 'Error updating job'
+    assert data['description'].startswith('Error executing process: ')
 
     cleanup_jobs.add(tuple(['hello-world',
                             rsp_headers['Location'].split('/')[-1]]))
