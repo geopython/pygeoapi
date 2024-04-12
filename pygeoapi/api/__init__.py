@@ -715,59 +715,59 @@ class API:
         fcm['links'] = [{
             'rel': request.get_linkrel(F_JSON),
             'type': FORMAT_TYPES[F_JSON],
-            'title': 'This document as JSON',
+            'title': l10n.translate('This document as JSON', request.locale),
             'href': f"{self.base_url}?f={F_JSON}"
         }, {
             'rel': request.get_linkrel(F_JSONLD),
             'type': FORMAT_TYPES[F_JSONLD],
-            'title': 'This document as RDF (JSON-LD)',
+            'title': l10n.translate('This document as RDF (JSON-LD)', request.locale),  # noqa
             'href': f"{self.base_url}?f={F_JSONLD}"
         }, {
             'rel': request.get_linkrel(F_HTML),
             'type': FORMAT_TYPES[F_HTML],
-            'title': 'This document as HTML',
+            'title': l10n.translate('This document as HTML', request.locale),
             'href': f"{self.base_url}?f={F_HTML}",
             'hreflang': self.default_locale
         }, {
             'rel': 'service-desc',
             'type': 'application/vnd.oai.openapi+json;version=3.0',
-            'title': 'The OpenAPI definition as JSON',
+            'title': l10n.translate('The OpenAPI definition as JSON', request.locale),  # noqa
             'href': f"{self.base_url}/openapi"
         }, {
             'rel': 'service-doc',
             'type': FORMAT_TYPES[F_HTML],
-            'title': 'The OpenAPI definition as HTML',
+            'title': l10n.translate('The OpenAPI definition as HTML', request.locale),  # noqa
             'href': f"{self.base_url}/openapi?f={F_HTML}",
             'hreflang': self.default_locale
         }, {
             'rel': 'conformance',
             'type': FORMAT_TYPES[F_JSON],
-            'title': 'Conformance',
+            'title': l10n.translate('Conformance', request.locale),
             'href': f"{self.base_url}/conformance"
         }, {
             'rel': 'data',
             'type': FORMAT_TYPES[F_JSON],
-            'title': 'Collections',
+            'title': l10n.translate('Collections', request.locale),
             'href': self.get_collections_url()
         }, {
             'rel': 'http://www.opengis.net/def/rel/ogc/1.0/processes',
             'type': FORMAT_TYPES[F_JSON],
-            'title': 'Processes',
+            'title': l10n.translate('Processes', request.locale),
             'href': f"{self.base_url}/processes"
         }, {
             'rel': 'http://www.opengis.net/def/rel/ogc/1.0/job-list',
             'type': FORMAT_TYPES[F_JSON],
-            'title': 'Jobs',
+            'title': l10n.translate('Jobs', request.locale),
             'href': f"{self.base_url}/jobs"
         }, {
             'rel': 'http://www.opengis.net/def/rel/ogc/1.0/tiling-schemes',
             'type': FORMAT_TYPES[F_JSON],
-            'title': 'The list of supported tiling schemes (as JSON)',
+            'title': l10n.translate('The list of supported tiling schemes as JSON', request.locale),  # noqa
             'href': f"{self.base_url}/TileMatrixSets?f=json"
         }, {
             'rel': 'http://www.opengis.net/def/rel/ogc/1.0/tiling-schemes',
             'type': FORMAT_TYPES[F_HTML],
-            'title': 'The list of supported tiling schemes (as HTML)',
+            'title': l10n.translate('The list of supported tiling schemes as HTML', request.locale),  # noqa
             'href': f"{self.base_url}/TileMatrixSets?f=html"
         }]
 
@@ -1011,31 +1011,31 @@ class API:
             collection['links'].append({
                 'type': FORMAT_TYPES[F_JSON],
                 'rel': 'root',
-                'title': 'The landing page of this server as JSON',
+                'title': l10n.translate('The landing page of this server as JSON', request.locale),  # noqa
                 'href': f"{self.base_url}?f={F_JSON}"
             })
             collection['links'].append({
                 'type': FORMAT_TYPES[F_HTML],
                 'rel': 'root',
-                'title': 'The landing page of this server as HTML',
+                'title': l10n.translate('The landing page of this server as HTML', request.locale),  # noqa
                 'href': f"{self.base_url}?f={F_HTML}"
             })
             collection['links'].append({
                 'type': FORMAT_TYPES[F_JSON],
                 'rel': request.get_linkrel(F_JSON),
-                'title': 'This document as JSON',
+                'title': l10n.translate('This document as JSON', request.locale),  # noqa
                 'href': f'{self.get_collections_url()}/{k}?f={F_JSON}'
             })
             collection['links'].append({
                 'type': FORMAT_TYPES[F_JSONLD],
                 'rel': request.get_linkrel(F_JSONLD),
-                'title': 'This document as RDF (JSON-LD)',
+                'title': l10n.translate('This document as RED (JSON-LD)', request.locale),  # noqa
                 'href': f'{self.get_collections_url()}/{k}?f={F_JSONLD}'
             })
             collection['links'].append({
                 'type': FORMAT_TYPES[F_HTML],
                 'rel': request.get_linkrel(F_HTML),
-                'title': 'This document as HTML',
+                'title': l10n.translate('This document as HTML', request.locale),  # noqa
                 'href': f'{self.get_collections_url()}/{k}?f={F_HTML}'
             })
 
@@ -1043,13 +1043,13 @@ class API:
                 collection['links'].append({
                     'type': FORMAT_TYPES[F_JSON],
                     'rel': f'{OGC_RELTYPES_BASE}/schema',
-                    'title': 'Schema of collection in JSON',
+                    'title': l10.translate('Schema of collection in JSON', request.locale),  # noqa
                     'href': f'{self.get_collections_url()}/{k}/schema?f={F_JSON}'  # noqa
                 })
                 collection['links'].append({
                     'type': FORMAT_TYPES[F_HTML],
                     'rel': f'{OGC_RELTYPES_BASE}/schema',
-                    'title': 'Schema of collection in HTML',
+                    'title': l10.translate('Schema of collection in HTML', request.locale),  # noqa
                     'href': f'{self.get_collections_url()}/{k}/schema?f={F_HTML}'  # noqa
                 })
 
@@ -1060,31 +1060,31 @@ class API:
                 collection['links'].append({
                     'type': 'application/schema+json',
                     'rel': 'http://www.opengis.net/def/rel/ogc/1.0/queryables',
-                    'title': 'Queryables for this collection as JSON',
+                    'title': l10n.translate('Queryables for this collection as JSON', request.locale),  # noqa
                     'href': f'{self.get_collections_url()}/{k}/queryables?f={F_JSON}'  # noqa
                 })
                 collection['links'].append({
                     'type': FORMAT_TYPES[F_HTML],
                     'rel': 'http://www.opengis.net/def/rel/ogc/1.0/queryables',
-                    'title': 'Queryables for this collection as HTML',
+                    'title': l10n.translate('Queryables for this collection as HTML', request.locale),  # noqa
                     'href': f'{self.get_collections_url()}/{k}/queryables?f={F_HTML}'  # noqa
                 })
                 collection['links'].append({
                     'type': 'application/geo+json',
                     'rel': 'items',
-                    'title': 'items as GeoJSON',
+                    'title': l10n.translate('Items as GeoJSON', request.locale),  # noqa
                     'href': f'{self.get_collections_url()}/{k}/items?f={F_JSON}'  # noqa
                 })
                 collection['links'].append({
                     'type': FORMAT_TYPES[F_JSONLD],
                     'rel': 'items',
-                    'title': 'items as RDF (GeoJSON-LD)',
+                    'title': l10n.translate('Items as RDF (GeoJSON-LD)', request.locale),  # noqa
                     'href': f'{self.get_collections_url()}/{k}/items?f={F_JSONLD}'  # noqa
                 })
                 collection['links'].append({
                     'type': FORMAT_TYPES[F_HTML],
                     'rel': 'items',
-                    'title': 'Items as HTML',
+                    'title': l10n.translate('Items as HTML', request.locale),  # noqa
                     'href': f'{self.get_collections_url()}/{k}/items?f={F_HTML}'  # noqa
                 })
 
@@ -1101,14 +1101,16 @@ class API:
                 collection['links'].append({
                     'type': 'application/prs.coverage+json',
                     'rel': f'{OGC_RELTYPES_BASE}/coverage',
-                    'title': 'Coverage data',
+                    'title': l10n.translate('Coverage data', request.locale),
                     'href': f'{self.get_collections_url()}/{k}/coverage?f={F_JSON}'  # noqa
                 })
                 if collection_data_format is not None:
+                    title_ = l10n.translate('Coverage data as', request.locale)  # noqa
+                    title_ = f"{title_} {collection_data_format['name']}"
                     collection['links'].append({
                         'type': collection_data_format['mimetype'],
                         'rel': f'{OGC_RELTYPES_BASE}/coverage',
-                        'title': f"Coverage data as {collection_data_format['name']}",  # noqa
+                        'title': title_,
                         'href': f"{self.get_collections_url()}/{k}/coverage?f={collection_data_format['name']}"  # noqa
                     })
                 if dataset is not None:
@@ -1154,13 +1156,13 @@ class API:
                 collection['links'].append({
                     'type': FORMAT_TYPES[F_JSON],
                     'rel': f'http://www.opengis.net/def/rel/ogc/1.0/tilesets-{p.tile_type}',  # noqa
-                    'title': 'Tiles as JSON',
+                    'title': l10n.translate('Tiles as JSON', request.locale),
                     'href': f'{self.get_collections_url()}/{k}/tiles?f={F_JSON}'  # noqa
                 })
                 collection['links'].append({
                     'type': FORMAT_TYPES[F_HTML],
                     'rel': f'http://www.opengis.net/def/rel/ogc/1.0/tilesets-{p.tile_type}',  # noqa
-                    'title': 'Tiles as HTML',
+                    'title': l10n.translate('Tiles as HTML', request.locale),
                     'href': f'{self.get_collections_url()}/{k}/tiles?f={F_HTML}'  # noqa
                 })
 
@@ -1175,10 +1177,13 @@ class API:
                 map_mimetype = map_['format']['mimetype']
                 map_format = map_['format']['name']
 
+                title_ = l10n.translate('Map as', request.locale)
+                title_ = f"{title_} {map_format}"
+
                 collection['links'].append({
                     'type': map_mimetype,
                     'rel': 'http://www.opengis.net/def/rel/ogc/1.0/map',
-                    'title': f'Map as {map_format}',
+                    'title': title_,
                     'href': f"{self.get_collections_url()}/{k}/map?f={map_format}"  # noqa
                 })
 
@@ -1216,16 +1221,21 @@ class API:
                         }
 
                 for qt in p.get_query_types():
+                    title1 = l10n.translate('query for this collection as JSON', request.locale)  # noqa
+                    title1 = f'{qt} {title1}'
+                    title2 = l10n.translate('query for this collection as HTML', request.locale)  # noqa
+                    title2 = f'{qt} {title2}'
+
                     collection['links'].append({
                         'type': 'application/json',
                         'rel': 'data',
-                        'title': f'{qt} query for this collection as JSON',
+                        'title': title1,
                         'href': f'{self.get_collections_url()}/{k}/{qt}?f={F_JSON}'  # noqa
                     })
                     collection['links'].append({
                         'type': FORMAT_TYPES[F_HTML],
                         'rel': 'data',
-                        'title': f'{qt} query for this collection as HTML',
+                        'title': title2,
                         'href': f'{self.get_collections_url()}/{k}/{qt}?f={F_HTML}'  # noqa
                     })
 
@@ -1240,19 +1250,19 @@ class API:
             fcm['links'].append({
                 'type': FORMAT_TYPES[F_JSON],
                 'rel': request.get_linkrel(F_JSON),
-                'title': 'This document as JSON',
+                'title': l10n.translate('This document as JSON', request.locale),  # noqa
                 'href': f'{self.get_collections_url()}?f={F_JSON}'
             })
             fcm['links'].append({
                 'type': FORMAT_TYPES[F_JSONLD],
                 'rel': request.get_linkrel(F_JSONLD),
-                'title': 'This document as RDF (JSON-LD)',
+                'title': l10n.translate('This document as RDF (JSON-LD)', request.locale),  # noqa
                 'href': f'{self.get_collections_url()}?f={F_JSONLD}'
             })
             fcm['links'].append({
                 'type': FORMAT_TYPES[F_HTML],
                 'rel': request.get_linkrel(F_HTML),
-                'title': 'This document as HTML',
+                'title': l10n.translate('This document as HTML', request.locale),  # noqa
                 'href': f'{self.get_collections_url()}?f={F_HTML}'
             })
 
