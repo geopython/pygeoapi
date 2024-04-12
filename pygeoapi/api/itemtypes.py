@@ -509,17 +509,17 @@ def get_collection_items(
     content['links'] = [{
         'type': 'application/geo+json',
         'rel': request.get_linkrel(F_JSON),
-        'title': 'This document as GeoJSON',
+        'title': l10n.translate('This document as GeoJSON', request.locale),
         'href': f'{uri}?f={F_JSON}{serialized_query_params}'
     }, {
         'rel': request.get_linkrel(F_JSONLD),
         'type': FORMAT_TYPES[F_JSONLD],
-        'title': 'This document as RDF (JSON-LD)',
+        'title': l10n.translate('This document as RDF (JSON-LD)', request.locale),  # noqa
         'href': f'{uri}?f={F_JSONLD}{serialized_query_params}'
     }, {
         'type': FORMAT_TYPES[F_HTML],
         'rel': request.get_linkrel(F_HTML),
-        'title': 'This document as HTML',
+        'title': l10n.translate('This document as HTML', request.locale),
         'href': f'{uri}?f={F_HTML}{serialized_query_params}'
     }]
 
@@ -529,7 +529,7 @@ def get_collection_items(
             {
                 'type': 'application/geo+json',
                 'rel': 'prev',
-                'title': 'items (prev)',
+                'title': l10n.translate('Items (prev)', request.locale),
                 'href': f'{uri}?offset={prev}{serialized_query_params}'
             })
 
@@ -541,7 +541,7 @@ def get_collection_items(
                 {
                     'type': 'application/geo+json',
                     'rel': 'next',
-                    'title': 'items (next)',
+                    'title': l10n.translate('Items (next)', request.locale),
                     'href': next_href
                 })
 
@@ -1125,27 +1125,27 @@ def get_collection_item(api: API, request: APIRequest,
     content['links'].extend([{
         'type': FORMAT_TYPES[F_JSON],
         'rel': 'root',
-        'title': 'The landing page of this server as JSON',
+        'title': l10n.translate('The landing page of this server as JSON', request.locale),  # noqa
         'href': f"{api.base_url}?f={F_JSON}"
         }, {
         'type': FORMAT_TYPES[F_HTML],
         'rel': 'root',
-        'title': 'The landing page of this server as HTML',
+        'title': l10n.translate('The landing page of this server as HTML', request.locale),  # noqa
         'href': f"{api.base_url}?f={F_HTML}"
         }, {
         'rel': request.get_linkrel(F_JSON),
         'type': 'application/geo+json',
-        'title': 'This document as GeoJSON',
+        'title': l10n.translate('This document as JSON', request.locale),
         'href': f'{uri}?f={F_JSON}'
         }, {
         'rel': request.get_linkrel(F_JSONLD),
         'type': FORMAT_TYPES[F_JSONLD],
-        'title': 'This document as RDF (JSON-LD)',
+        'title': l10n.translate('This document as RDF (JSON-LD)', request.locale),  # noqa
         'href': f'{uri}?f={F_JSONLD}'
         }, {
         'rel': request.get_linkrel(F_HTML),
         'type': FORMAT_TYPES[F_HTML],
-        'title': 'This document as HTML',
+        'title': l10n.translate('This document as HTML', request.locale),
         'href': f'{uri}?f={F_HTML}'
         }, {
         'rel': 'collection',

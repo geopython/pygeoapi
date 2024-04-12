@@ -116,19 +116,19 @@ def get_collection_tiles(api: API, request: APIRequest,
     tiles['links'].append({
         'type': FORMAT_TYPES[F_JSON],
         'rel': request.get_linkrel(F_JSON),
-        'title': 'This document as JSON',
+        'title': l10n.translate('This document as JSON', request.locale),
         'href': f'{api.get_collections_url()}/{dataset}/tiles?f={F_JSON}'
     })
     tiles['links'].append({
         'type': FORMAT_TYPES[F_JSONLD],
         'rel': request.get_linkrel(F_JSONLD),
-        'title': 'This document as RDF (JSON-LD)',
+        'title': l10n.translate('This document as RDF (JSON-LD)', request.locale),  # noqa
         'href': f'{api.get_collections_url()}/{dataset}/tiles?f={F_JSONLD}'
     })
     tiles['links'].append({
         'type': FORMAT_TYPES[F_HTML],
         'rel': request.get_linkrel(F_HTML),
-        'title': 'This document as HTML',
+        'title': l10n.translate('This document as HTML', request.locale),
         'href': f'{api.get_collections_url()}/{dataset}/tiles?f={F_HTML}'
     })
 
@@ -153,7 +153,7 @@ def get_collection_tiles(api: API, request: APIRequest,
         tile_matrix['links'].append({
             'type': FORMAT_TYPES[F_JSON],
             'rel': 'http://www.opengis.net/def/rel/ogc/1.0/tiling-scheme',
-            'title': f'{matrix.tileMatrixSet} TileMatrixSet definition (as {F_JSON})', # noqa
+            'title': l10n.translate('TileMatrixSet definition in JSON', request.locale),  # noqa
             'href': f'{api.base_url}/TileMatrixSets/{matrix.tileMatrixSet}?f={F_JSON}'  # noqa
         })
         tile_matrix['links'].append({
@@ -370,12 +370,12 @@ def tilematrixsets(api: API,
     tms['links'] = [{
         "rel": "alternate",
         "type": "text/html",
-        "title": "This document as HTML",
+        "title": l10n.translate('This document as HTML', request.locale),
         "href": f"{api.base_url}/tileMatrixSets?f=html"
     }, {
         "rel": "self",
         "type": "application/json",
-        "title": "This document",
+        "title": l10n.translate('This document as JSON', request.locale),
         "href": f"{api.base_url}/tileMatrixSets?f=json"
     }]
 
