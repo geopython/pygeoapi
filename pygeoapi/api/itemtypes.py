@@ -135,7 +135,6 @@ def get_collection_queryables(api: API, request: Union[APIRequest, Any],
             p = load_plugin('provider', get_provider_by_type(
                 api.config['resources'][dataset]['providers'], 'record'))
     except ProviderGenericError as err:
-        LOGGER.error(err)
         return api.get_exception(
             err.http_status_code, headers, request.format,
             err.ogc_exception_code, err.message)
@@ -316,7 +315,6 @@ def get_collection_items(
                 HTTPStatus.BAD_REQUEST, headers, request.format,
                 'NoApplicableCode', msg)
     except ProviderGenericError as err:
-        LOGGER.error(err)
         return api.get_exception(
             err.http_status_code, headers, request.format,
             err.ogc_exception_code, err.message)
@@ -443,8 +441,7 @@ def get_collection_items(
                 storage_crs_uri=provider_def.get('storage_crs'),
                 geometry_column_name=provider_def.get('geom_field'),
             )
-        except Exception as err:
-            LOGGER.error(err)
+        except Exception:
             msg = f'Bad CQL string : {cql_text}'
             return api.get_exception(
                 HTTPStatus.BAD_REQUEST, headers, request.format,
@@ -491,7 +488,6 @@ def get_collection_items(
                           crs_transform_spec=crs_transform_spec,
                           q=q, language=prv_locale, filterq=filter_)
     except ProviderGenericError as err:
-        LOGGER.error(err)
         return api.get_exception(
             err.http_status_code, headers, request.format,
             err.ogc_exception_code, err.message)
@@ -596,8 +592,7 @@ def get_collection_items(
                                         'feature')
                 }
             )
-        except FormatterSerializationError as err:
-            LOGGER.error(err)
+        except FormatterSerializationError:
             msg = 'Error serializing output'
             return api.get_exception(
                 HTTPStatus.INTERNAL_SERVER_ERROR, headers, request.format,
@@ -857,8 +852,7 @@ def post_collection_items(
         # Parse bytes data, if applicable
         data = request.data.decode()
         LOGGER.debug(data)
-    except UnicodeDecodeError as err:
-        LOGGER.error(err)
+    except UnicodeDecodeError:
         msg = 'Unicode error in data'
         return api.get_exception(
             HTTPStatus.BAD_REQUEST, headers, request.format,
@@ -875,8 +869,7 @@ def post_collection_items(
                 storage_crs_uri=provider_def.get('storage_crs'),
                 geometry_column_name=provider_def.get('geom_field')
             )
-        except Exception as err:
-            LOGGER.error(err)
+        except Exception:
             msg = f'Bad CQL string : {data}'
             return api.get_exception(
                 HTTPStatus.BAD_REQUEST, headers, request.format,
@@ -885,8 +878,7 @@ def post_collection_items(
         LOGGER.debug('processing Elasticsearch CQL_JSON data')
         try:
             filter_ = CQLModel.parse_raw(data)
-        except Exception as err:
-            LOGGER.error(err)
+        except Exception:
             msg = f'Bad CQL string : {data}'
             return api.get_exception(
                 HTTPStatus.BAD_REQUEST, headers, request.format,
@@ -902,7 +894,6 @@ def post_collection_items(
                           q=q,
                           filterq=filter_)
     except ProviderGenericError as err:
-        LOGGER.error(err)
         return api.get_exception(
             err.http_status_code, headers, request.format,
             err.ogc_exception_code, err.message)
@@ -935,7 +926,6 @@ def manage_collection_item(
 
     if dataset not in collections.keys():
         msg = 'Collection not found'
-        LOGGER.error(msg)
         return api.get_exception(
             HTTPStatus.NOT_FOUND, headers, request.format, 'NotFound', msg)
 
@@ -951,7 +941,6 @@ def manage_collection_item(
             p = load_plugin('provider', provider_def)
         except ProviderTypeError:
             msg = 'Invalid provider type'
-            LOGGER.error(msg)
             return api.get_exception(
                 HTTPStatus.BAD_REQUEST, headers, request.format,
                 'InvalidParameterValue', msg)
@@ -967,14 +956,12 @@ def manage_collection_item(
 
     if not p.editable:
         msg = 'Collection is not editable'
-        LOGGER.error(msg)
         return api.get_exception(
             HTTPStatus.BAD_REQUEST, headers, request.format,
             'InvalidParameterValue', msg)
 
     if action in ['create', 'update'] and not request.data:
         msg = 'No data found'
-        LOGGER.error(msg)
         return api.get_exception(
             HTTPStatus.BAD_REQUEST, headers, request.format,
             'InvalidParameterValue', msg)
@@ -989,7 +976,6 @@ def manage_collection_item(
                 HTTPStatus.BAD_REQUEST, headers, request.format,
                 'InvalidParameterValue', msg)
         except ProviderGenericError as err:
-            LOGGER.error(err)
             return api.get_exception(
                 err.http_status_code, headers, request.format,
                 err.ogc_exception_code, err.message)
@@ -1008,7 +994,6 @@ def manage_collection_item(
                 HTTPStatus.BAD_REQUEST, headers, request.format,
                 'InvalidParameterValue', msg)
         except ProviderGenericError as err:
-            LOGGER.error(err)
             return api.get_exception(
                 err.http_status_code, headers, request.format,
                 err.ogc_exception_code, err.message)
@@ -1020,7 +1005,6 @@ def manage_collection_item(
         try:
             _ = p.delete(identifier)
         except ProviderGenericError as err:
-            LOGGER.error(err)
             return api.get_exception(
                 err.http_status_code, headers, request.format,
                 err.ogc_exception_code, err.message)
@@ -1073,7 +1057,6 @@ def get_collection_item(api: API, request: APIRequest,
                 HTTPStatus.BAD_REQUEST, headers, request.format,
                 'InvalidParameterValue', msg)
     except ProviderGenericError as err:
-        LOGGER.error(err)
         return api.get_exception(
             err.http_status_code, headers, request.format,
             err.ogc_exception_code, err.message)
@@ -1106,7 +1089,6 @@ def get_collection_item(api: API, request: APIRequest,
             crs_transform_spec=crs_transform_spec,
         )
     except ProviderGenericError as err:
-        LOGGER.error(err)
         return api.get_exception(
             err.http_status_code, headers, request.format,
             err.ogc_exception_code, err.message)

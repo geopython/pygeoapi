@@ -364,9 +364,8 @@ def execute_process(api: API, request: APIRequest,
 
     try:
         data = json.loads(data)
-    except (json.decoder.JSONDecodeError, TypeError) as err:
+    except (json.decoder.JSONDecodeError, TypeError):
         # Input does not appear to be valid JSON
-        LOGGER.error(err)
         msg = 'invalid request data'
         return api.get_exception(
             HTTPStatus.BAD_REQUEST, headers, request.format,
@@ -407,7 +406,6 @@ def execute_process(api: API, request: APIRequest,
         headers.update(additional_headers or {})
         headers['Location'] = f'{api.base_url}/jobs/{job_id}'
     except ProcessorExecuteError as err:
-        LOGGER.error(err)
         return api.get_exception(
             err.http_status_code, headers,
             request.format, err.ogc_exception_code, err.message)
