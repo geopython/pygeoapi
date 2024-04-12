@@ -4,8 +4,9 @@ elasticsearch
 elasticsearch-dsl
 fiona
 GDAL<=3.8.4
-geoalchemy
+geoalchemy2
 netCDF4
+numpy
 oracledb
 pandas
 psycopg2
