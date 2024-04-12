@@ -198,7 +198,7 @@ def gzip(func):
     return inner
 
 
-def apply_gzip(headers: dict, content: str | bytes) -> str | bytes:
+def apply_gzip(headers: dict, content: Union[str, bytes]) -> Union[str, bytes]:
     """
     Compress content if requested in header.
     """

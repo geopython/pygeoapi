@@ -31,9 +31,9 @@
 """Flask module providing the route paths to the api"""
 
 import os
+from typing import Union
 
 import click
-
 from flask import (Flask, Blueprint, make_response, request,
                    send_from_directory, Response, Request)
 
@@ -152,7 +152,7 @@ def execute_from_flask(api_function, request: Request, *args,
 
     api_request = APIRequest.from_flask(request, api_.locales)
 
-    content: str | bytes
+    content: Union[str, bytes]
 
     if not skip_valid_check and not api_request.is_valid():
         headers, status, content = api_.get_format_exception(api_request)
