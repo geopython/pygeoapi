@@ -541,7 +541,7 @@ def delete_job(
                     'href': jobs_url,
                     'rel': 'up',
                     'type': FORMAT_TYPES[F_JSON],
-                    'title': l10.translate('The job list for the current process', request.locale)  # noqa
+                    'title': l10n.translate('The job list for the current process', request.locale)  # noqa
                 }]
             }
         else:

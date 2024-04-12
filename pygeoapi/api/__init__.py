@@ -1043,13 +1043,13 @@ class API:
                 collection['links'].append({
                     'type': FORMAT_TYPES[F_JSON],
                     'rel': f'{OGC_RELTYPES_BASE}/schema',
-                    'title': l10.translate('Schema of collection in JSON', request.locale),  # noqa
+                    'title': l10n.translate('Schema of collection in JSON', request.locale),  # noqa
                     'href': f'{self.get_collections_url()}/{k}/schema?f={F_JSON}'  # noqa
                 })
                 collection['links'].append({
                     'type': FORMAT_TYPES[F_HTML],
                     'rel': f'{OGC_RELTYPES_BASE}/schema',
-                    'title': l10.translate('Schema of collection in HTML', request.locale),  # noqa
+                    'title': l10n.translate('Schema of collection in HTML', request.locale),  # noqa
                     'href': f'{self.get_collections_url()}/{k}/schema?f={F_HTML}'  # noqa
                 })
 
