@@ -35,7 +35,7 @@
 
 """Integration module for Django"""
 
-from typing import Tuple, Dict, Mapping, Optional
+from typing import Tuple, Dict, Mapping, Optional, Union
 
 from django.conf import settings
 from django.http import HttpRequest, HttpResponse
@@ -562,7 +562,7 @@ def execute_from_django(api_function, request: HttpRequest, *args,
         api_ = API(settings.PYGEOAPI_CONFIG, settings.OPENAPI_DOCUMENT)
 
     api_request = APIRequest.from_django(request, api_.locales)
-    content: str | bytes
+    content: Union[str, bytes]
     if not skip_valid_check and not api_request.is_valid():
         headers, status, content = api_.get_format_exception(api_request)
     else:
@@ -575,7 +575,7 @@ def execute_from_django(api_function, request: HttpRequest, *args,
 
 # TODO: inline this to execute_from_django after refactoring
 def _to_django_response(headers: Mapping, status_code: int,
-                        content: str | bytes) -> HttpResponse:
+                        content: Union[str, bytes]) -> HttpResponse:
     """Convert API payload to a django response"""
 
     response = HttpResponse(content, status=status_code)
