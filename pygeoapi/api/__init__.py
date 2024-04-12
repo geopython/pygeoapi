@@ -1029,7 +1029,7 @@ class API:
             collection['links'].append({
                 'type': FORMAT_TYPES[F_JSONLD],
                 'rel': request.get_linkrel(F_JSONLD),
-                'title': l10n.translate('This document as RED (JSON-LD)', request.locale),  # noqa
+                'title': l10n.translate('This document as RDF (JSON-LD)', request.locale),  # noqa
                 'href': f'{self.get_collections_url()}/{k}?f={F_JSONLD}'
             })
             collection['links'].append({
