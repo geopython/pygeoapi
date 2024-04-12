@@ -103,7 +103,6 @@ def get_collection_tiles(api: API, request: APIRequest,
             HTTPStatus.BAD_REQUEST, headers, request.format,
             'InvalidParameterValue', msg)
     except ProviderGenericError as err:
-        LOGGER.error(err)
         return api.get_exception(
             err.http_status_code, headers, request.format,
             err.ogc_exception_code, err.message)
@@ -252,7 +251,6 @@ def get_collection_tiles_data(
             HTTPStatus.BAD_REQUEST, headers, format_,
             'InvalidParameterValue', msg)
     except ProviderGenericError as err:
-        LOGGER.error(err)
         return api.get_exception(
             err.http_status_code, headers, request.format,
             err.ogc_exception_code, err.message)
@@ -295,7 +293,6 @@ def get_collection_tiles_metadata(
             HTTPStatus.BAD_REQUEST, headers, request.format,
             'InvalidParameterValue', msg)
     except ProviderGenericError as err:
-        LOGGER.error(err)
         return api.get_exception(
             err.http_status_code, headers, request.format,
             err.ogc_exception_code, err.message)

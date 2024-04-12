@@ -144,8 +144,7 @@ def get_stac_path(api: API, request: APIRequest,
     try:
         p = load_plugin('provider', get_provider_by_type(
             stac_collections[dataset]['providers'], 'stac'))
-    except ProviderConnectionError as err:
-        LOGGER.error(err)
+    except ProviderConnectionError:
         msg = 'connection error (check logs)'
         return api.get_exception(
             HTTPStatus.INTERNAL_SERVER_ERROR, headers,
@@ -168,13 +167,11 @@ def get_stac_path(api: API, request: APIRequest,
             path,
             path.replace(dataset, '', 1)
         )
-    except ProviderNotFoundError as err:
-        LOGGER.error(err)
+    except ProviderNotFoundError:
         msg = 'resource not found'
         return api.get_exception(HTTPStatus.NOT_FOUND, headers,
                                  request.format, 'NotFound', msg)
-    except Exception as err:
-        LOGGER.error(err)
+    except Exception:
         msg = 'data query error'
         return api.get_exception(
             HTTPStatus.INTERNAL_SERVER_ERROR, headers,
@@ -204,7 +201,6 @@ def get_stac_path(api: API, request: APIRequest,
                     )
                 else:
                     msg = f'Unknown STAC type {content.type}'
-                    LOGGER.error(msg)
                     return api.get_exception(
                         HTTPStatus.INTERNAL_SERVER_ERROR,
                         headers,

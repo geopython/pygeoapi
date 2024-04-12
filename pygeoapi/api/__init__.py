@@ -49,6 +49,7 @@ from gzip import compress
 from http import HTTPStatus
 import logging
 import re
+import sys
 from typing import Any, Tuple, Union, Optional
 
 from dateutil.parser import parse as dateparse
@@ -1388,7 +1389,11 @@ class API:
         :returns: tuple of headers, status, and message
         """
 
-        LOGGER.error(description)
+        exception_info = sys.exc_info()
+        LOGGER.error(
+            description,
+            exc_info=exception_info if exception_info[0] is not None else None
+        )
         exception = {
             'code': code,
             'type': code,
