@@ -372,6 +372,20 @@ def processes(request: HttpRequest,
                                process_id)
 
 
+def process_execution(request: HttpRequest, process_id: str) -> HttpResponse:
+    """
+    OGC API - Processes execution endpoint
+
+    :request Django HTTP Request
+    :param process_id: process identifier
+
+    :returns: Django HTTP response
+    """
+
+    return execute_from_django(processes_api.execute_process, request,
+                               process_id)
+
+
 def jobs(request: HttpRequest, job_id: Optional[str] = None) -> HttpResponse:
     """
     OGC API - Jobs endpoint
@@ -382,7 +396,15 @@ def jobs(request: HttpRequest, job_id: Optional[str] = None) -> HttpResponse:
 
     :returns: Django HTTP response
     """
-    return execute_from_django(processes_api.get_jobs, request, job_id)
+
+    if job_id is None:
+        return execute_from_django(processes_api.get_jobs, request)
+    else:
+        if request.method == 'DELETE':  # dismiss job
+            return execute_from_django(processes_api.delete_job, request,
+                                       job_id)
+        else:  # Return status of a specific job
+            return execute_from_django(processes_api.get_jobs, request, job_id)
 
 
 def job_results(request: HttpRequest,
