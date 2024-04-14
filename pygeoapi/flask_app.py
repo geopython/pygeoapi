@@ -432,7 +432,8 @@ def get_jobs(job_id=None):
         return execute_from_flask(processes_api.get_jobs, request)
     else:
         if request.method == 'DELETE':  # dismiss job
-            return execute_from_flask(processes_api.delete_jobs, request)
+            return execute_from_flask(processes_api.delete_job, request,
+                                      job_id)
         else:  # Return status of a specific job
             return execute_from_flask(processes_api.get_jobs, request, job_id)
 

@@ -234,6 +234,8 @@ urlpatterns = [
     ),
     path(apply_slash_rule('processes/'), views.processes, name='processes'),
     path('processes/<str:process_id>', views.processes, name='process-detail'),
+    path('processes/<str:process_id>/execution', views.process_execution,
+         name='process-execution'),
     path(apply_slash_rule('jobs/'), views.jobs, name='jobs'),
     path('jobs/<str:job_id>', views.jobs, name='job'),
     path(
