@@ -135,7 +135,6 @@ def get_collection_queryables(api: API, request: Union[APIRequest, Any],
             p = load_plugin('provider', get_provider_by_type(
                 api.config['resources'][dataset]['providers'], 'record'))
     except ProviderGenericError as err:
-        LOGGER.error(err)
         return api.get_exception(
             err.http_status_code, headers, request.format,
             err.ogc_exception_code, err.message)
@@ -316,7 +315,6 @@ def get_collection_items(
                 HTTPStatus.BAD_REQUEST, headers, request.format,
                 'NoApplicableCode', msg)
     except ProviderGenericError as err:
-        LOGGER.error(err)
         return api.get_exception(
             err.http_status_code, headers, request.format,
             err.ogc_exception_code, err.message)
@@ -443,8 +441,7 @@ def get_collection_items(
                 storage_crs_uri=provider_def.get('storage_crs'),
                 geometry_column_name=provider_def.get('geom_field'),
             )
-        except Exception as err:
-            LOGGER.error(err)
+        except Exception:
             msg = f'Bad CQL string : {cql_text}'
             return api.get_exception(
                 HTTPStatus.BAD_REQUEST, headers, request.format,
@@ -491,7 +488,6 @@ def get_collection_items(
                           crs_transform_spec=crs_transform_spec,
                           q=q, language=prv_locale, filterq=filter_)
     except ProviderGenericError as err:
-        LOGGER.error(err)
         return api.get_exception(
             err.http_status_code, headers, request.format,
             err.ogc_exception_code, err.message)
@@ -509,17 +505,17 @@ def get_collection_items(
     content['links'] = [{
         'type': 'application/geo+json',
         'rel': request.get_linkrel(F_JSON),
-        'title': 'This document as GeoJSON',
+        'title': l10n.translate('This document as GeoJSON', request.locale),
         'href': f'{uri}?f={F_JSON}{serialized_query_params}'
     }, {
         'rel': request.get_linkrel(F_JSONLD),
         'type': FORMAT_TYPES[F_JSONLD],
-        'title': 'This document as RDF (JSON-LD)',
+        'title': l10n.translate('This document as RDF (JSON-LD)', request.locale),  # noqa
         'href': f'{uri}?f={F_JSONLD}{serialized_query_params}'
     }, {
         'type': FORMAT_TYPES[F_HTML],
         'rel': request.get_linkrel(F_HTML),
-        'title': 'This document as HTML',
+        'title': l10n.translate('This document as HTML', request.locale),
         'href': f'{uri}?f={F_HTML}{serialized_query_params}'
     }]
 
@@ -529,7 +525,7 @@ def get_collection_items(
             {
                 'type': 'application/geo+json',
                 'rel': 'prev',
-                'title': 'items (prev)',
+                'title': l10n.translate('Items (prev)', request.locale),
                 'href': f'{uri}?offset={prev}{serialized_query_params}'
             })
 
@@ -541,7 +537,7 @@ def get_collection_items(
                 {
                     'type': 'application/geo+json',
                     'rel': 'next',
-                    'title': 'items (next)',
+                    'title': l10n.translate('Items (next)', request.locale),
                     'href': next_href
                 })
 
@@ -596,8 +592,7 @@ def get_collection_items(
                                         'feature')
                 }
             )
-        except FormatterSerializationError as err:
-            LOGGER.error(err)
+        except FormatterSerializationError:
             msg = 'Error serializing output'
             return api.get_exception(
                 HTTPStatus.INTERNAL_SERVER_ERROR, headers, request.format,
@@ -857,8 +852,7 @@ def post_collection_items(
         # Parse bytes data, if applicable
         data = request.data.decode()
         LOGGER.debug(data)
-    except UnicodeDecodeError as err:
-        LOGGER.error(err)
+    except UnicodeDecodeError:
         msg = 'Unicode error in data'
         return api.get_exception(
             HTTPStatus.BAD_REQUEST, headers, request.format,
@@ -875,8 +869,7 @@ def post_collection_items(
                 storage_crs_uri=provider_def.get('storage_crs'),
                 geometry_column_name=provider_def.get('geom_field')
             )
-        except Exception as err:
-            LOGGER.error(err)
+        except Exception:
             msg = f'Bad CQL string : {data}'
             return api.get_exception(
                 HTTPStatus.BAD_REQUEST, headers, request.format,
@@ -885,8 +878,7 @@ def post_collection_items(
         LOGGER.debug('processing Elasticsearch CQL_JSON data')
         try:
             filter_ = CQLModel.parse_raw(data)
-        except Exception as err:
-            LOGGER.error(err)
+        except Exception:
             msg = f'Bad CQL string : {data}'
             return api.get_exception(
                 HTTPStatus.BAD_REQUEST, headers, request.format,
@@ -902,7 +894,6 @@ def post_collection_items(
                           q=q,
                           filterq=filter_)
     except ProviderGenericError as err:
-        LOGGER.error(err)
         return api.get_exception(
             err.http_status_code, headers, request.format,
             err.ogc_exception_code, err.message)
@@ -935,7 +926,6 @@ def manage_collection_item(
 
     if dataset not in collections.keys():
         msg = 'Collection not found'
-        LOGGER.error(msg)
         return api.get_exception(
             HTTPStatus.NOT_FOUND, headers, request.format, 'NotFound', msg)
 
@@ -951,7 +941,6 @@ def manage_collection_item(
             p = load_plugin('provider', provider_def)
         except ProviderTypeError:
             msg = 'Invalid provider type'
-            LOGGER.error(msg)
             return api.get_exception(
                 HTTPStatus.BAD_REQUEST, headers, request.format,
                 'InvalidParameterValue', msg)
@@ -967,14 +956,12 @@ def manage_collection_item(
 
     if not p.editable:
         msg = 'Collection is not editable'
-        LOGGER.error(msg)
         return api.get_exception(
             HTTPStatus.BAD_REQUEST, headers, request.format,
             'InvalidParameterValue', msg)
 
     if action in ['create', 'update'] and not request.data:
         msg = 'No data found'
-        LOGGER.error(msg)
         return api.get_exception(
             HTTPStatus.BAD_REQUEST, headers, request.format,
             'InvalidParameterValue', msg)
@@ -989,7 +976,6 @@ def manage_collection_item(
                 HTTPStatus.BAD_REQUEST, headers, request.format,
                 'InvalidParameterValue', msg)
         except ProviderGenericError as err:
-            LOGGER.error(err)
             return api.get_exception(
                 err.http_status_code, headers, request.format,
                 err.ogc_exception_code, err.message)
@@ -1008,7 +994,6 @@ def manage_collection_item(
                 HTTPStatus.BAD_REQUEST, headers, request.format,
                 'InvalidParameterValue', msg)
         except ProviderGenericError as err:
-            LOGGER.error(err)
             return api.get_exception(
                 err.http_status_code, headers, request.format,
                 err.ogc_exception_code, err.message)
@@ -1020,7 +1005,6 @@ def manage_collection_item(
         try:
             _ = p.delete(identifier)
         except ProviderGenericError as err:
-            LOGGER.error(err)
             return api.get_exception(
                 err.http_status_code, headers, request.format,
                 err.ogc_exception_code, err.message)
@@ -1073,7 +1057,6 @@ def get_collection_item(api: API, request: APIRequest,
                 HTTPStatus.BAD_REQUEST, headers, request.format,
                 'InvalidParameterValue', msg)
     except ProviderGenericError as err:
-        LOGGER.error(err)
         return api.get_exception(
             err.http_status_code, headers, request.format,
             err.ogc_exception_code, err.message)
@@ -1106,7 +1089,6 @@ def get_collection_item(api: API, request: APIRequest,
             crs_transform_spec=crs_transform_spec,
         )
     except ProviderGenericError as err:
-        LOGGER.error(err)
         return api.get_exception(
             err.http_status_code, headers, request.format,
             err.ogc_exception_code, err.message)
@@ -1125,27 +1107,27 @@ def get_collection_item(api: API, request: APIRequest,
     content['links'].extend([{
         'type': FORMAT_TYPES[F_JSON],
         'rel': 'root',
-        'title': 'The landing page of this server as JSON',
+        'title': l10n.translate('The landing page of this server as JSON', request.locale),  # noqa
         'href': f"{api.base_url}?f={F_JSON}"
         }, {
         'type': FORMAT_TYPES[F_HTML],
         'rel': 'root',
-        'title': 'The landing page of this server as HTML',
+        'title': l10n.translate('The landing page of this server as HTML', request.locale),  # noqa
         'href': f"{api.base_url}?f={F_HTML}"
         }, {
         'rel': request.get_linkrel(F_JSON),
         'type': 'application/geo+json',
-        'title': 'This document as GeoJSON',
+        'title': l10n.translate('This document as JSON', request.locale),
         'href': f'{uri}?f={F_JSON}'
         }, {
         'rel': request.get_linkrel(F_JSONLD),
         'type': FORMAT_TYPES[F_JSONLD],
-        'title': 'This document as RDF (JSON-LD)',
+        'title': l10n.translate('This document as RDF (JSON-LD)', request.locale),  # noqa
         'href': f'{uri}?f={F_JSONLD}'
         }, {
         'rel': request.get_linkrel(F_HTML),
         'type': FORMAT_TYPES[F_HTML],
-        'title': 'This document as HTML',
+        'title': l10n.translate('This document as HTML', request.locale),
         'href': f'{uri}?f={F_HTML}'
         }, {
         'rel': 'collection',

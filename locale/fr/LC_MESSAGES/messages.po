@@ -593,3 +593,101 @@ msgstr ""
 msgid "Results of job"
 msgstr ""
 
+msgid "This document as JSON"
+msgstr ""
+
+msgid "This document as RDF (JSON-LD)"
+msgstr ""
+
+msgid "This document as HTML"
+msgstr ""
+
+msgid "The OpenAPI definition as JSON"
+msgstr ""
+
+msgid "The list of supported tiling schemes as JSON"
+msgstr ""
+
+msgid "The list of supported tiling schemes as HTML"
+msgstr ""
+
+msgid "The landing page of this server as JSON"
+msgstr ""
+
+msgid "The landing page of this server as HTML"
+msgstr ""
+
+msgid "Schema of collection in JSON"
+msgstr ""
+
+msgid "Schema of collection in HTML"
+msgstr ""
+
+msgid "Queryables for this collection as JSON"
+msgstr ""
+
+msgid "Queryables for this collection as HTML"
+msgstr ""
+
+msgid "Items as GeoJSON"
+msgstr ""
+
+msgid "Items as HTML"
+msgstr ""
+
+msgid "Items as RDF (GeoJSON-LD)"
+msgstr ""
+
+msgid "Coverage data"
+msgstr ""
+
+msgid "Coverage data as"
+msgstr ""
+
+msgid "Tiles as HTML"
+msgstr ""
+
+msgid "Tiles as JSON"
+msgstr ""
+
+msgid "query for this collection as HTML"
+msgstr ""
+
+msgid "query for this collection as JSON"
+msgstr ""
+
+msgid "Items (prev)"
+msgstr ""
+
+msgid "Items (next)"
+msgstr ""
+
+msgid "Process description as JSON"
+msgstr ""
+
+msgid "Process description as HTML"
+msgstr ""
+
+msgid "query for this collection as HTML"
+msgstr ""
+
+msgid "Execution for process as JSON"
+msgstr ""
+
+msgid "Jobs list as JSON"
+msgstr ""
+
+msgid "Jobs list as HTML"
+msgstr ""
+
+msgid "Results of job as JSON"
+msgstr ""
+
+msgid "Results of job as HTML"
+msgstr ""
+
+msgid "The job list for the current process"
+msgstr ""
+
+msgid "TileMatrixSet definition in JSON"
+msgstr ""

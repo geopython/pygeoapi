@@ -96,7 +96,6 @@ def get_collection_map(api: API, request: APIRequest,
         return headers, HTTPStatus.NOT_FOUND, to_json(
             exception, api.pretty_print)
     except ProviderGenericError as err:
-        LOGGER.error(err)
         return api.get_exception(
             err.http_status_code, headers, request.format,
             err.ogc_exception_code, err.message)
@@ -160,7 +159,6 @@ def get_collection_map(api: API, request: APIRequest,
     try:
         data = p.query(**query_args)
     except ProviderGenericError as err:
-        LOGGER.error(err)
         return api.get_exception(
             err.http_status_code, headers, request.format,
             err.ogc_exception_code, err.message)
@@ -214,7 +212,6 @@ def get_collection_map_legend(api: API, request: APIRequest,
         return headers, HTTPStatus.NOT_FOUND, to_json(
             exception, api.pretty_print)
     except ProviderGenericError as err:
-        LOGGER.error(err)
         return api.get_exception(
             err.http_status_code, headers, request.format,
             err.ogc_exception_code, err.message)
@@ -223,7 +220,6 @@ def get_collection_map_legend(api: API, request: APIRequest,
     try:
         data = p.get_legend(style, request.params.get('f', 'png'))
     except ProviderGenericError as err:
-        LOGGER.error(err)
         return api.get_exception(
             err.http_status_code, headers, request.format,
             err.ogc_exception_code, err.message)

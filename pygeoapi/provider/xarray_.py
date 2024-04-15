@@ -211,9 +211,9 @@ class XarrayProvider(BaseProvider):
                 _to_datetime_string(data.coords[self.time_field].values[-1])
             ],
             "driver": "xarray",
-            "height": data.dims[self.y_field],
-            "width": data.dims[self.x_field],
-            "time_steps": data.dims[self.time_field],
+            "height": data.sizes[self.y_field],
+            "width": data.sizes[self.x_field],
+            "time_steps": data.sizes[self.time_field],
             "variables": {var_name: var.attrs
                           for var_name, var in data.variables.items()}
         }
@@ -385,9 +385,9 @@ class XarrayProvider(BaseProvider):
             'x_axis_label': self.x_field,
             'y_axis_label': self.y_field,
             'time_axis_label': self.time_field,
-            'width': self._data.dims[self.x_field],
-            'height': self._data.dims[self.y_field],
-            'time': self._data.dims[self.time_field],
+            'width': self._data.sizes[self.x_field],
+            'height': self._data.sizes[self.y_field],
+            'time': self._data.sizes[self.time_field],
             'time_duration': self.get_time_coverage_duration(),
             'bbox_units': 'degrees',
             'resx': np.abs(self._data.coords[self.x_field].values[1]

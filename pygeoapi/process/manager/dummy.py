@@ -2,7 +2,7 @@
 #
 # Authors: Tom Kralidis <tomkralidis@gmail.com>
 #
-# Copyright (c) 2022 Tom Kralidis
+# Copyright (c) 2024 Tom Kralidis
 #
 # Permission is hereby granted, free of charge, to any person
 # obtaining a copy of this software and associated documentation
@@ -102,13 +102,13 @@ class DummyManager(BaseManager):
             jfmt, outputs = processor.execute(data_dict)
             current_status = JobStatus.successful
             self._send_success_notification(subscriber, outputs)
-        except Exception:
+        except Exception as err:
             outputs = {
                 'code': 'InvalidParameterValue',
-                'description': 'Error updating job'
+                'description': f'Error executing process: {err}'
             }
             current_status = JobStatus.failed
-            LOGGER.exception('Process failed')
+            LOGGER.exception(err)
             self._send_failed_notification(subscriber)
         job_id = str(uuid.uuid1())
         return job_id, jfmt, outputs, current_status, response_headers

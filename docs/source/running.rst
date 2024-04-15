@@ -158,8 +158,12 @@ main Django application urls:
    ]
 
 
-This integration can be seen in the provided example Django project. Refer to `examples/django/sample_project/README.md` 
+This integration can be seen in the provided example Django project. Refer to the `Django example in the pygeoapi-examples repository`_
 for the integration of pygeoapi with an already exising Django application.
+
+
+.. note::
+   To enable HTTP POST/PUT/PATCH/DELETE functionality, `django.middleware.csrf.CsrfViewMiddleware` must not be set.  Note that this enables create/replace/update/delete functionality against resources in your application.
 
 Hot-reloading
 ^^^^^^^^^^^^^
@@ -293,3 +297,4 @@ and modify accordingly.
 .. _`Uvicorn`: https://www.uvicorn.org
 .. _`mod_wsgi`: https://modwsgi.readthedocs.io/en/master
 .. _`Django`: https://www.djangoproject.com
+.. _`Django example in the pygeoapi-examples repository`: https://github.com/geopython/pygeoapi-examples/blob/main/django/sample_project/README.md

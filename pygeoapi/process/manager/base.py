@@ -4,7 +4,7 @@
 #          Ricardo Garcia Silva <ricardo.garcia.silva@geobeyond.it>
 #          Francesco Martinelli <francesco.martinelli@ingv.it>
 #
-# Copyright (c) 2022 Tom Kralidis
+# Copyright (c) 2024 Tom Kralidis
 #           (c) 2023 Ricardo Garcia Silva
 #           (c) 2024 Francesco Martinelli
 #
@@ -324,9 +324,9 @@ class BaseManager:
             outputs = {
                 'type': code,
                 'code': code,
-                'description': 'Error updating job'
+                'description': f'Error executing process: {err}'
             }
-            LOGGER.error(err)
+            LOGGER.exception(err)
             job_metadata = {
                 'job_end_datetime': datetime.utcnow().strftime(
                     DATETIME_FORMAT),
