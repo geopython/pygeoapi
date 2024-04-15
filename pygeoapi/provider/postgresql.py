@@ -151,15 +151,9 @@ class PostgreSQLProvider(BaseProvider):
                        .filter(property_filters)
                        .filter(cql_filters)
                        .filter(bbox_filter)
-                       .order_by(*order_by_clauses)
-                       .options(selected_properties)
-                       .offset(offset))
+                       .options(selected_properties))
 
             matched = results.count()
-            if limit < matched:
-                returned = limit
-            else:
-                returned = matched
 
             LOGGER.debug(f'Found {matched} result(s)')
 
@@ -168,14 +162,16 @@ class PostgreSQLProvider(BaseProvider):
                 'type': 'FeatureCollection',
                 'features': [],
                 'numberMatched': matched,
-                'numberReturned': returned
+                'numberReturned': 0
             }
 
             if resulttype == "hits" or not results:
-                response['numberReturned'] = 0
                 return response
+
             crs_transform_out = self._get_crs_transform(crs_transform_spec)
-            for item in results.limit(limit):
+
+            for item in results.order_by(*order_by_clauses).offset(offset).limit(limit):  # noqa
+                response['numberReturned'] += 1
                 response['features'].append(
                     self._sqlalchemy_to_feature(item, crs_transform_out)
                 )
