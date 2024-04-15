@@ -471,7 +471,7 @@ class PostgreSQLProvider(BaseProvider):
                 LOGGER.debug('detected time range')
                 time_begin, time_end = datetime_.split('/')
                 if time_begin == '..':
-                    datetime_filter = time_column < time_end
+                    datetime_filter = time_column <= time_end
                 elif time_end == '..':
                     datetime_filter = time_column >= time_begin
                 else:
