@@ -271,7 +271,7 @@ class BaseManager:
                 data_dict,
                 # only pass requested_outputs if supported,
                 # otherwise this breaks existing processes
-                **({'outputs': requested_outputs} 
+                **({'outputs': requested_outputs}
                    if p.supports_outputs else {})
             )
 
