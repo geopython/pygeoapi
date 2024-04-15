@@ -149,7 +149,6 @@ def get_collection_edr_query(api: API, request: APIRequest,
         p = load_plugin('provider', get_provider_by_type(
             collections[dataset]['providers'], 'edr'))
     except ProviderGenericError as err:
-        LOGGER.error(err)
         return api.get_exception(
             err.http_status_code, headers, request.format,
             err.ogc_exception_code, err.message)
@@ -191,7 +190,6 @@ def get_collection_edr_query(api: API, request: APIRequest,
     try:
         data = p.query(**query_args)
     except ProviderGenericError as err:
-        LOGGER.error(err)
         return api.get_exception(
             err.http_status_code, headers, request.format,
             err.ogc_exception_code, err.message)

@@ -38,7 +38,6 @@ from typing import Callable, Union
 from pathlib import Path
 
 import click
-
 from starlette.routing import Route, Mount
 from starlette.staticfiles import StaticFiles
 from starlette.applications import Starlette
@@ -142,7 +141,7 @@ def _to_response(headers, status, content):
 async def execute_from_starlette(api_function, request: Request, *args,
                                  skip_valid_check=False) -> Response:
     api_request = await APIRequest.from_starlette(request, api_.locales)
-    content: str | bytes
+    content: Union[str, bytes]
     if not skip_valid_check and not api_request.is_valid():
         headers, status, content = api_.get_format_exception(api_request)
     else:
