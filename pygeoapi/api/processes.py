@@ -377,8 +377,8 @@ def execute_process(api: API, request: APIRequest,
     data_dict = data.get('inputs', {})
     LOGGER.debug(data_dict)
 
-    out_dict = data.get('outputs', None)
-    LOGGER.debug(f'outputs: {out_dict}')
+    requested_outputs = data.get('outputs')
+    LOGGER.debug(f'outputs: {requested_outputs}')
 
     subscriber = None
     subscriber_dict = data.get('subscriber')
@@ -407,7 +407,7 @@ def execute_process(api: API, request: APIRequest,
         LOGGER.debug('Executing process')
         result = api.manager.execute_process(
             process_id, data_dict, execution_mode=execution_mode,
-            requested_output=out_dict,
+            requested_outputs=requested_outputs,
             subscriber=subscriber)
         job_id, mime_type, outputs, status, additional_headers = result
         headers.update(additional_headers or {})
