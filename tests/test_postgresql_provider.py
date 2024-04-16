@@ -158,6 +158,21 @@ def test_query_with_property_filter(config):
     assert feature_collection['numberReturned'] == 50
 
 
+def test_query_with_paging(config):
+    """Test query valid features with paging"""
+    p = PostgreSQLProvider(config)
+    feature_collection = p.query(limit=50)
+
+    assert feature_collection['numberMatched'] == 14776
+    assert feature_collection['numberReturned'] == 50
+
+    offset = feature_collection['numberMatched'] - 10
+
+    feature_collection = p.query(offset=offset)
+    assert feature_collection['numberMatched'] == 14776
+    assert feature_collection['numberReturned'] == 10
+
+
 def test_query_with_config_properties(config):
     """
     Test that query is restricted by properties in the config.

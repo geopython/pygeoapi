@@ -1,5 +1,6 @@
 azure-identity
 azure-storage-blob
+cftime
 elasticsearch
 elasticsearch-dsl
 fiona

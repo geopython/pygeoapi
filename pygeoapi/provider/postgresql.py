@@ -140,6 +140,7 @@ class PostgreSQLProvider(BaseProvider):
         property_filters = self._get_property_filters(properties)
         cql_filters = self._get_cql_filters(filterq)
         bbox_filter = self._get_bbox_filter(bbox)
+        time_filter = self._get_datetime_filter(datetime_)
         order_by_clauses = self._get_order_by_clauses(sortby, self.table_model)
         selected_properties = self._select_properties_clause(select_properties,
                                                              skip_geometry)
@@ -151,15 +152,10 @@ class PostgreSQLProvider(BaseProvider):
                        .filter(property_filters)
                        .filter(cql_filters)
                        .filter(bbox_filter)
-                       .order_by(*order_by_clauses)
-                       .options(selected_properties)
-                       .offset(offset))
+                       .filter(time_filter)
+                       .options(selected_properties))
 
             matched = results.count()
-            if limit < matched:
-                returned = limit
-            else:
-                returned = matched
 
             LOGGER.debug(f'Found {matched} result(s)')
 
@@ -168,14 +164,16 @@ class PostgreSQLProvider(BaseProvider):
                 'type': 'FeatureCollection',
                 'features': [],
                 'numberMatched': matched,
-                'numberReturned': returned
+                'numberReturned': 0
             }
 
             if resulttype == "hits" or not results:
-                response['numberReturned'] = 0
                 return response
+
             crs_transform_out = self._get_crs_transform(crs_transform_spec)
-            for item in results.limit(limit):
+
+            for item in results.order_by(*order_by_clauses).offset(offset).limit(limit):  # noqa
+                response['numberReturned'] += 1
                 response['features'].append(
                     self._sqlalchemy_to_feature(item, crs_transform_out)
                 )
@@ -458,6 +456,29 @@ class PostgreSQLProvider(BaseProvider):
         bbox_filter = geom_column.intersects(envelope)
 
         return bbox_filter
+
+    def _get_datetime_filter(self, datetime_):
+        if datetime_ in (None, '../..'):
+            return True
+        else:
+            if self.time_field is None:
+                LOGGER.error('time_field not enabled for collection')
+                raise ProviderQueryError()
+
+            time_column = getattr(self.table_model, self.time_field)
+
+            if '/' in datetime_:  # envelope
+                LOGGER.debug('detected time range')
+                time_begin, time_end = datetime_.split('/')
+                if time_begin == '..':
+                    datetime_filter = time_column <= time_end
+                elif time_end == '..':
+                    datetime_filter = time_column >= time_begin
+                else:
+                    datetime_filter = time_column.between(time_begin, time_end)
+            else:
+                datetime_filter = time_column == datetime_
+        return datetime_filter
 
     def _select_properties_clause(self, select_properties, skip_geometry):
         # List the column names that we want

@@ -13,7 +13,7 @@ pytz
 PyYAML
 rasterio
 requests
-shapely<2.0
+shapely
 SQLAlchemy<2.0.0
 tinydb
 unicodecsv
