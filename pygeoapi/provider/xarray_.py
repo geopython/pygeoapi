@@ -351,14 +351,9 @@ class XarrayProvider(BaseProvider):
 
         return cj
 
-    def _get_coverage_properties(
-            self,
-            provider_def: dict
-        ):
+    def _get_coverage_properties(self):
         """
         Helper function to normalize coverage properties
-
-        :param provider_def: provider definition
 
         :returns: `dict` of coverage properties
         """
@@ -419,41 +414,16 @@ class XarrayProvider(BaseProvider):
             'restime': self.get_time_resolution()
         }
 
-        # TODO break some of this up into separate functions.
-        # TODO add some better error handling for pyproj?
-        try:
-            user_crs = provider_def['extents']['spatial']['crs']
-        except KeyError:
-            LOGGER.debug('No CRS provided in the configuration.')
-        
-        if isinstance(user_crs, pyproj.CRS):
-            ## add some error handling here in case users provide invalid CRS info
-            crs = pyproj.CRS.from_user_input(user_crs)
-            epsg_code = crs.to_epsg()
-            # This can return nothing (e.g. if a custom proj) -- add handling for that case 
-        else: 
-            grid_mapping = self.parse_grid_mapping()
-            if grid_mapping is not None:
-                crs = pyproj.CRS.from_dict(
-                    self._data[grid_mapping].attrs
-                )
-                epsg_code = crs.to_epsg()
-            # check if CRS included in dataset
-            elif 'crs' in self._data.variables.keys():
-                try:
-                    epsg_code = pyproj.CRS.from_epsg(
-                        self._data.crs.epsg_code
-                    )
-                except KeyError:
-                    LOGGER.debug('Unable to parse CRS. Assuming default WGS84.')
-
+        # Update properties based on the xarray's CRS
+        epsg_code = self.storage_crs.to_epsg()
         if epsg_code == 4326:
             pass
         else:
-            properties['bbox_crs'] = f'https://www.opengis.net/def/crs/EPSG/0/{epsg_code}'  # noqa
+            properties['bbox_crs'] = \
+                f'https://www.opengis.net/def/crs/EPSG/0/{epsg_code}'
             properties['inverse_flattening'] = \
-                crs.inverse_flattening
-            if crs.is_projected:
+                self.storage_crs.inverse_flattening
+            if self.storage_crs.is_projected:
                 properties['crs_type'] = 'ProjectedCRS'
 
         properties['axes'] = [
@@ -520,7 +490,7 @@ class XarrayProvider(BaseProvider):
 
         return ', '.join(times)
 
-    def parse_grid_mapping(self):
+    def _parse_grid_mapping(self):
         spatiotemporal_dims = (self.time_field, self.y_field, self.x_field)
         grid_mapping_name = None
         for var_name, var in self._data.variables.items():
@@ -530,6 +500,48 @@ class XarrayProvider(BaseProvider):
                 except KeyError:
                     LOGGER.debug()
         return grid_mapping_name
+    
+    def _parse_storage_crs(
+        self,
+        provider_def: dict
+    ) -> pyproj.CRS
+        """
+        Parse the storage CRS from an xarray dataset.
+        :param provider_def: provider definition
+        :returns: `pyproj.CRS` instance parsed from dataset
+        """
+        
+        try:
+            storage_crs = provider_def['storage_crs']
+            crs_function = pyproj.CRS.from_user_input            
+        except KeyError:
+            LOGGER.debug('''
+                No storage crs provided in the provider configuration.
+                Attempting to parse the CRS.
+                '''
+            )
+
+        if storage_crs is None:
+            grid_mapping = self._parse_grid_mapping()
+            crs_function = pyproj.CRS.from_dict
+            if grid_mapping is not None:
+                storage_crs = self._data[grid_mapping].attrs
+            elif 'crs' in self._data.variables.keys():
+                storage_crs = self._data['crs'].attrs
+            else:
+                storage_crs = DEFAULT_STORAGE_CRS
+                crs_function = get_crs_from_uri
+                LOGGER.debug('Failed to parse dataset CRS. Assuming WGS84.')
+
+        LOGGER.debug(f'Parsing CRS {storage_crs} with {crs_function}')
+        try:
+            crs = crs_function(storage_crs)
+        except CRSError as e:
+            LOGGER.debug(f'Unable to parse projection with pyproj: {e}')
+            LOGGER.debug('Assuming default WGS84.')
+            crs = get_crs_from_uri(DEFAULT_STORAGE_CRS)
+
+        return crs
 
     def _parse_grid_mapping(self):
         spatiotemporal_dims = (self.time_field, self.y_field, self.x_field)
