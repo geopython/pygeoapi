@@ -89,10 +89,7 @@ class XarrayProvider(BaseProvider):
                 data_to_open = self.data
 
             self._data = open_func(data_to_open)
-            self.storage_crs = self._parse_storage_crs(
-                self,
-                provider_def
-            )
+            self.storage_crs = self._parse_storage_crs(provider_def)
             self._coverage_properties = self._get_coverage_properties()
 
             self.axes = [self._coverage_properties['x_axis_label'],
@@ -416,7 +413,7 @@ class XarrayProvider(BaseProvider):
             properties['bbox_crs'] = \
                 f'https://www.opengis.net/def/crs/EPSG/0/{epsg_code}'
             properties['inverse_flattening'] = \
-                self.storage_crs.inverse_flattening
+                self.storage_crs.ellipsoid.inverse_flattening
             if self.storage_crs.is_projected:
                 properties['crs_type'] = 'ProjectedCRS'
 
@@ -485,6 +482,11 @@ class XarrayProvider(BaseProvider):
         return ', '.join(times)
 
     def _parse_grid_mapping(self):
+        """
+        Identifies grid_mapping.
+    
+        :returns: name of xarray data variable that contains CRS information.
+        """
         spatiotemporal_dims = (self.time_field, self.y_field, self.x_field)
         grid_mapping_name = None
         for var_name, var in self._data.variables.items():
@@ -498,22 +500,26 @@ class XarrayProvider(BaseProvider):
     def _parse_storage_crs(
         self,
         provider_def: dict
-    ) -> pyproj.CRS
+    ) -> pyproj.CRS:
         """
         Parse the storage CRS from an xarray dataset.
+
         :param provider_def: provider definition
+    
         :returns: `pyproj.CRS` instance parsed from dataset
         """
-        
+        storage_crs = None
+
         try:
             storage_crs = provider_def['storage_crs']
-            crs_function = pyproj.CRS.from_user_input            
+            crs_function = pyproj.CRS.from_user_input
         except KeyError:
-            LOGGER.debug('''
+            LOGGER.debug(
+                '''
                 No storage crs provided in the provider configuration.
                 Attempting to parse the CRS.
                 '''
-            )
+                )
 
         if storage_crs is None:
             grid_mapping = self._parse_grid_mapping()
