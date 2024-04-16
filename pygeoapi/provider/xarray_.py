@@ -93,9 +93,7 @@ class XarrayProvider(BaseProvider):
                 self,
                 provider_def
             )
-            self._coverage_properties = self._get_coverage_properties(
-                provider_def
-            )
+            self._coverage_properties = self._get_coverage_properties()
 
             self.axes = [self._coverage_properties['x_axis_label'],
                          self._coverage_properties['y_axis_label'],
