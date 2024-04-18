@@ -92,7 +92,7 @@
               {% for k in data['features'][0]['properties'].keys() %}
                 {% if k not in [data.id_field, data.title_field, data.uri_field, 'extent'] %}
                   {% set props = props.append(k) %}
-                  <th>{{ k }}</th>
+                  <th>{{ k | striptags }}</th>
                 {% endif %}
               {% endfor %}
             </tr>
