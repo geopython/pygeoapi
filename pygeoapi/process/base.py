@@ -53,8 +53,8 @@ class BaseProcessor:
         self.metadata = process_metadata
         self.supports_outputs = False
 
-    def execute(
-        self, data: dict, outputs: Optional[dict] = None) -> Tuple[str, Any]:
+    def execute(self, data: dict, outputs: Optional[dict] = None
+               ) -> Tuple[str, Any]:
         """
         execute the process
 
