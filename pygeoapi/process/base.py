@@ -54,7 +54,7 @@ class BaseProcessor:
         self.supports_outputs = False
 
     def execute(self, data: dict, outputs: Optional[dict] = None
-               ) -> Tuple[str, Any]:
+                ) -> Tuple[str, Any]:
         """
         execute the process
 
