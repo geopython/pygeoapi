@@ -32,6 +32,8 @@ import logging
 from enum import Enum
 from http import HTTPStatus
 
+import fsspec
+
 from pygeoapi.error import GenericError
 
 LOGGER = logging.getLogger(__name__)
@@ -62,9 +64,24 @@ class BaseProvider:
             self.data = provider_def['data']
         except KeyError:
             raise RuntimeError('name/type/data are required')
-
         self.editable = provider_def.get('editable', False)
         self.options = provider_def.get('options')
+        file_system = provider_def.get('file_system')
+        if file_system is not None:
+            protocol = file_system['protocol']
+            fs_options = file_system.get('storage_options', dict())
+            cache_storage = file_system.get('cache_storage')
+            if cache_storage is not None:
+                if fs_options:
+                    fs_options = {'target_options': fs_options}
+                fs_options['target_protocol'] = protocol
+                fs_options['cache_storage'] = cache_storage
+                fs_options.update(file_system.get('cache_options', dict()))
+                self.fs = fsspec.filesystem('filecache', **fs_options)
+            else:
+                self.fs = fsspec.filesystem(protocol, **fs_options)
+        else:
+            self.fs = fsspec.filesystem('file')
         self.id_field = provider_def.get('id_field')
         self.uri_field = provider_def.get('uri_field')
         self.x_field = provider_def.get('x_field')
