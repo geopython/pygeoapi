@@ -92,7 +92,7 @@
               {% for k, v in data['properties'].items() %}
                 {% if k != data['id_field'] %}
                 <tr>
-                  <td>{{ k }}</td>
+                  <td>{{ k | striptags }}</td>
                   <td>{{ render_item_value(v, 80) }}</td>
                 </tr>
                 {% endif %}
