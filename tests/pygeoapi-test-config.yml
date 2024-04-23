@@ -331,17 +331,18 @@ resources:
         providers:
             - type: edr
               name: xarray-edr
-              data: s3://mdmf/gdp/PRISM_v2.zarr
+              data: mdmf/gdp/PRISM_v2.zarr
+              file_system:
+                  protocol: s3
+                  storage_options:
+                      anon: true
+                      requester_pays: false
+                      client_kwargs:
+                          endpoint_url: https://usgs.osn.mghpcc.org/
               format:
                   name: zarr
                   mimetype: application/zip
-              options:
-                  s3:
-                    anon: true
-                    requester_pays: false
-                    client_kwargs:
-                        endpoint_url: https://usgs.osn.mghpcc.org/
-    
+
     objects:
         type: collection
         title: GeoJSON objects

@@ -41,7 +41,6 @@ from pygeoapi.provider.base import (BaseProvider,
                                     ProviderConnectionError,
                                     ProviderNoDataError,
                                     ProviderQueryError)
-from pygeoapi.util import read_data
 
 LOGGER = logging.getLogger(__name__)
 
@@ -124,7 +123,7 @@ class XarrayProvider(BaseProvider):
             if format_ == 'zarr':
                 return _get_zarr_data(self._data)
             else:
-                return read_data(self.data)
+                return self.fs.open(self.data).read()
 
         if len(properties) < 1:
             properties = self.fields.keys()
