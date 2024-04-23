@@ -97,7 +97,6 @@ def get_collection_coverage(
             HTTPStatus.NOT_FOUND, headers, format_,
             'InvalidParameterValue', msg)
     except ProviderGenericError as err:
-        LOGGER.error(err)
         return api.get_exception(
             err.http_status_code, headers, request.format,
             err.ogc_exception_code, err.message)
@@ -161,14 +160,12 @@ def get_collection_coverage(
             subsets = validate_subset(request.params['subset'] or '')
         except (AttributeError, ValueError) as err:
             msg = f'Invalid subset: {err}'
-            LOGGER.error(msg)
             return api.get_exception(
                     HTTPStatus.BAD_REQUEST, headers, format_,
                     'InvalidParameterValue', msg)
 
         if not set(subsets.keys()).issubset(p.axes):
             msg = 'Invalid axis name'
-            LOGGER.error(msg)
             return api.get_exception(
                 HTTPStatus.BAD_REQUEST, headers, format_,
                 'InvalidParameterValue', msg)
@@ -180,7 +177,6 @@ def get_collection_coverage(
     try:
         data = p.query(**query_args)
     except ProviderGenericError as err:
-        LOGGER.error(err)
         return api.get_exception(
             err.http_status_code, headers, request.format,
             err.ogc_exception_code, err.message)

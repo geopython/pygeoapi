@@ -142,7 +142,7 @@ def describe_processes(api: API, request: APIRequest,
                 'type': FORMAT_TYPES[F_JSON],
                 'rel': request.get_linkrel(F_JSON),
                 'href': f'{process_url}?f={F_JSON}',
-                'title': 'Process description as JSON',
+                'title': l10n.translate('Process description as JSON', request.locale),  # noqa
                 'hreflang': api.default_locale
             }
             p2['links'].append(link)
@@ -151,7 +151,7 @@ def describe_processes(api: API, request: APIRequest,
                 'type': FORMAT_TYPES[F_HTML],
                 'rel': request.get_linkrel(F_HTML),
                 'href': f'{process_url}?f={F_HTML}',
-                'title': 'Process description as HTML',
+                'title': l10n.translate('Process description as HTML', request.locale),  # noqa
                 'hreflang': api.default_locale
             }
             p2['links'].append(link)
@@ -160,7 +160,7 @@ def describe_processes(api: API, request: APIRequest,
                 'type': FORMAT_TYPES[F_HTML],
                 'rel': 'http://www.opengis.net/def/rel/ogc/1.0/job-list',
                 'href': f'{jobs_url}?f={F_HTML}',
-                'title': 'jobs for this process as HTML',
+                'title': l10n.translate('Jobs for this process as HTML', request.locale),  # noqa
                 'hreflang': api.default_locale
             }
             p2['links'].append(link)
@@ -169,7 +169,7 @@ def describe_processes(api: API, request: APIRequest,
                 'type': FORMAT_TYPES[F_JSON],
                 'rel': 'http://www.opengis.net/def/rel/ogc/1.0/job-list',
                 'href': f'{jobs_url}?f={F_JSON}',
-                'title': 'jobs for this process as JSON',
+                'title': l10n.translate('Jobs for this process as HTML', request.locale),  # noqa
                 'hreflang': api.default_locale
             }
             p2['links'].append(link)
@@ -178,7 +178,7 @@ def describe_processes(api: API, request: APIRequest,
                 'type': FORMAT_TYPES[F_JSON],
                 'rel': 'http://www.opengis.net/def/rel/ogc/1.0/execute',
                 'href': f'{process_url}/execution?f={F_JSON}',
-                'title': 'Execution for this process as JSON',
+                'title': l10n.translate('Execution for this process as JSON', request.locale),  # noqa
                 'hreflang': api.default_locale
             }
             p2['links'].append(link)
@@ -194,17 +194,17 @@ def describe_processes(api: API, request: APIRequest,
             'links': [{
                 'type': FORMAT_TYPES[F_JSON],
                 'rel': request.get_linkrel(F_JSON),
-                'title': 'This document as JSON',
+                'title': l10n.translate('This document as JSON', request.locale),  # noqa
                 'href': f'{process_url}?f={F_JSON}'
             }, {
                 'type': FORMAT_TYPES[F_JSONLD],
                 'rel': request.get_linkrel(F_JSONLD),
-                'title': 'This document as RDF (JSON-LD)',
+                'title': l10n.translate('This document as RDF (JSON-LD)', request.locale),  # noqa
                 'href': f'{process_url}?f={F_JSONLD}'
             }, {
                 'type': FORMAT_TYPES[F_HTML],
                 'rel': request.get_linkrel(F_HTML),
-                'title': 'This document as HTML',
+                'title': l10n.translate('This document as HTML', request.locale),  # noqa
                 'href': f'{process_url}?f={F_HTML}'
             }]
         }
@@ -256,12 +256,12 @@ def get_jobs(api: API, request: APIRequest,
             'href': f"{api.base_url}/jobs?f={F_HTML}",
             'rel': request.get_linkrel(F_HTML),
             'type': FORMAT_TYPES[F_HTML],
-            'title': 'Jobs list as HTML'
+            'title': l10n.translate('Jobs list as HTML', request.locale)
         }, {
             'href': f"{api.base_url}/jobs?f={F_JSON}",
             'rel': request.get_linkrel(F_JSON),
             'type': FORMAT_TYPES[F_JSON],
-            'title': 'Jobs list as JSON'
+            'title': l10n.translate('Jobs list as JSON', request.locale)
         }]
     }
     for job_ in jobs:
@@ -287,12 +287,12 @@ def get_jobs(api: API, request: APIRequest,
                 'href': f'{job_result_url}?f={F_HTML}',
                 'rel': 'http://www.opengis.net/def/rel/ogc/1.0/results',
                 'type': FORMAT_TYPES[F_HTML],
-                'title': f'results of job {job_id} as HTML'
+                'title': l10n.translate(f'Results of job as HTML', request.locale),  # noqa
             }, {
                 'href': f'{job_result_url}?f={F_JSON}',
                 'rel': 'http://www.opengis.net/def/rel/ogc/1.0/results',
                 'type': FORMAT_TYPES[F_JSON],
-                'title': f'results of job {job_id} as JSON'
+                'title': l10n.translate(f'Results of job as JSON', request.locale),  # noqa
             }]
 
             if job_['mimetype'] not in (FORMAT_TYPES[F_JSON],
@@ -302,7 +302,7 @@ def get_jobs(api: API, request: APIRequest,
                     'href': job_result_url,
                     'rel': 'http://www.opengis.net/def/rel/ogc/1.0/results',  # noqa
                     'type': job_['mimetype'],
-                    'title': f"results of job {job_id} as {job_['mimetype']}"  # noqa
+                    'title': f"Results of job {job_id} as {job_['mimetype']}"  # noqa
                 })
 
         serialized_jobs['jobs'].append(job2)
@@ -364,9 +364,8 @@ def execute_process(api: API, request: APIRequest,
 
     try:
         data = json.loads(data)
-    except (json.decoder.JSONDecodeError, TypeError) as err:
+    except (json.decoder.JSONDecodeError, TypeError):
         # Input does not appear to be valid JSON
-        LOGGER.error(err)
         msg = 'invalid request data'
         return api.get_exception(
             HTTPStatus.BAD_REQUEST, headers, request.format,
@@ -407,7 +406,6 @@ def execute_process(api: API, request: APIRequest,
         headers.update(additional_headers or {})
         headers['Location'] = f'{api.base_url}/jobs/{job_id}'
     except ProcessorExecuteError as err:
-        LOGGER.error(err)
         return api.get_exception(
             err.http_status_code, headers,
             request.format, err.ogc_exception_code, err.message)
@@ -541,7 +539,7 @@ def delete_job(
                     'href': jobs_url,
                     'rel': 'up',
                     'type': FORMAT_TYPES[F_JSON],
-                    'title': 'The job list for the current process'
+                    'title': l10n.translate('The job list for the current process', request.locale)  # noqa
                 }]
             }
         else:
