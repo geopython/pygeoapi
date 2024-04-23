@@ -64,7 +64,7 @@ class CSVProvider(BaseProvider):
         """
 
         LOGGER.debug('Treating all columns as string types')
-        with open(self.data) as ff:
+        with self.fs.open(self.data) as ff:
             LOGGER.debug('Serializing DictReader')
             data_ = csv.DictReader(ff)
             fields = {}
@@ -117,7 +117,7 @@ class CSVProvider(BaseProvider):
             # Loop through all rows when searching for a single feature
             limit = self._load(resulttype='hits').get('numberMatched')
 
-        with open(self.data) as ff:
+        with self.fs.open(self.data) as ff:
             LOGGER.debug('Serializing DictReader')
             data_ = csv.DictReader(ff)
             if properties:
