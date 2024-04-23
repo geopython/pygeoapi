@@ -35,7 +35,6 @@ import tempfile
 import zipfile
 
 import xarray
-import fsspec
 import numpy as np
 
 from pygeoapi.provider.base import (BaseProvider,
@@ -60,28 +59,22 @@ class XarrayProvider(BaseProvider):
         super().__init__(provider_def)
 
         try:
-            if provider_def['data'].endswith('.zarr'):
-                open_func = xarray.open_zarr
+            open_func = xarray.open_dataset
+            if self.data.endswith('.zarr'):
+                engine = 'zarr'
+                data_to_open = self.fs.get_mapper(self.data)
             else:
+                engine = 'h5netcdf'
                 if '*' in self.data:
                     LOGGER.debug('Detected multi file dataset')
                     open_func = xarray.open_mfdataset
+                    data_to_open = [
+                        self.fs.open(f) for f in self.fs.glob(self.data)
+                    ]
                 else:
-                    open_func = xarray.open_dataset
-            if provider_def['data'].startswith('s3://'):
-                LOGGER.debug('Data is stored in S3 bucket.')
-                if 's3' in provider_def.get('options', {}):
-                    s3_options = provider_def['options']['s3']
-                else:
-                    s3_options = {}
-                LOGGER.debug(s3_options)
-                data_to_open = fsspec.get_mapper(self.data,
-                                                 **s3_options)
-                LOGGER.debug('Completed S3 Open Function')
-            else:
-                data_to_open = self.data
+                    data_to_open = self.fs.open(self.data)
 
-            self._data = open_func(data_to_open)
+            self._data = open_func(data_to_open, engine=engine)
             self._coverage_properties = self._get_coverage_properties()
 
             self.axes = [self._coverage_properties['x_axis_label'],
@@ -228,7 +221,7 @@ class XarrayProvider(BaseProvider):
         else:  # return data in native format
             with tempfile.TemporaryFile() as fp:
                 LOGGER.debug('Returning data in native NetCDF format')
-                fp.write(data.to_netcdf())
+                fp.write(data.to_netcdf(engine='h5netcdf'))
                 fp.seek(0)
                 return fp.read()
 
