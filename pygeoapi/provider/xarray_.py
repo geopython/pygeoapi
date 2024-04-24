@@ -63,7 +63,7 @@ class XarrayProvider(BaseProvider):
                 engine = 'zarr'
                 data_to_open = self.fs.get_mapper(self.data)
             else:
-                engine = 'h5netcdf'
+                engine = None
                 if '*' in self.data:
                     LOGGER.debug('Detected multi file dataset')
                     open_func = xarray.open_mfdataset
@@ -220,7 +220,7 @@ class XarrayProvider(BaseProvider):
         else:  # return data in native format
             with tempfile.TemporaryFile() as fp:
                 LOGGER.debug('Returning data in native NetCDF format')
-                fp.write(data.to_netcdf(engine='h5netcdf'))
+                fp.write(data.to_netcdf())
                 fp.seek(0)
                 return fp.read()
 
