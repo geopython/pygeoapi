@@ -36,7 +36,6 @@ import rasterio.mask
 
 from pygeoapi.provider.base import (BaseProvider, ProviderConnectionError,
                                     ProviderQueryError)
-from pygeoapi.util import read_data
 
 LOGGER = logging.getLogger(__name__)
 
@@ -54,7 +53,7 @@ class RasterioProvider(BaseProvider):
         super().__init__(provider_def)
 
         try:
-            self._data = rasterio.open(self.data)
+            self._data = rasterio.open(self.fs.open(self.data))
             self._coverage_properties = self._get_coverage_properties()
             self.axes = self._coverage_properties['axes']
             self.crs = self._coverage_properties['bbox_crs']
@@ -118,7 +117,7 @@ class RasterioProvider(BaseProvider):
 
         if all([not bands, not subsets, not bbox, format_ != 'json']):
             LOGGER.debug('No parameters specified, returning native data')
-            return read_data(self.data)
+            return self.fs.open(self.data).read()
 
         if all([self._coverage_properties['x_axis_label'] in subsets,
                 self._coverage_properties['y_axis_label'] in subsets,
@@ -193,7 +192,7 @@ class RasterioProvider(BaseProvider):
             LOGGER.debug('Selecting bands')
             args['indexes'] = list(map(int, bands))
 
-        with rasterio.open(self.data) as _data:
+        with rasterio.open(self.fs.open(self.data)) as _data:
             LOGGER.debug('Creating output coverage metadata')
             out_meta = _data.meta
 
