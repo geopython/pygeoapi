@@ -28,14 +28,13 @@
 # =================================================================
 
 from datetime import datetime
-import io
 from json import loads
 import logging
 import os
 
 from pygeoapi.provider.base import (BaseProvider, ProviderConnectionError,
                                     ProviderNotFoundError)
-from pygeoapi.util import file_modified_iso8601, get_path_basename, url_join
+from pygeoapi.util import get_path_basename, url_join
 
 LOGGER = logging.getLogger(__name__)
 
@@ -54,8 +53,11 @@ class FileSystemProvider(BaseProvider):
 
         super().__init__(provider_def)
 
-        if not os.path.exists(self.data):
-            msg = f'Directory does not exist: {self.data}'
+        if not self.fs.exists(self.data):
+            msg = (
+                'Directory does not exist: '
+                f'{self.fs.protocol[0]}://{self.data}'
+            )
             LOGGER.error(msg)
             raise ProviderConnectionError(msg)
 
@@ -122,13 +124,13 @@ class FileSystemProvider(BaseProvider):
         LOGGER.debug('Checking if path exists as raw file or directory')
         if data_path.endswith(tuple(self.file_types)):
             resource_type = 'raw_file'
-        elif os.path.exists(data_path):
+        elif self.fs.exists(data_path):
             resource_type = 'directory'
         else:
             LOGGER.debug('Checking if path exists as file via file_types')
             for ft in self.file_types:
                 tmp_path = f'{data_path}{ft}'
-                if os.path.exists(tmp_path):
+                if self.fs.exists(tmp_path):
                     resource_type = 'file'
                     data_path = tmp_path
                     break
@@ -139,12 +141,12 @@ class FileSystemProvider(BaseProvider):
             raise ProviderNotFoundError(msg)
 
         if resource_type == 'raw_file':
-            with io.open(data_path, 'rb') as fh:
+            with self.fs.open(data_path, 'rb') as fh:
                 return fh.read()
 
         elif resource_type == 'directory':
             content['type'] = 'Catalog'
-            dirpath2 = os.listdir(data_path)
+            dirpath2 = self.fs.listdir(data_path)
             dirpath2.sort()
             for dc in dirpath2:
                 # TODO: handle a generic directory for tiles
@@ -152,10 +154,10 @@ class FileSystemProvider(BaseProvider):
                     continue
 
                 fullpath = os.path.join(data_path, dc)
-                filectime = file_modified_iso8601(fullpath)
-                filesize = os.path.getsize(fullpath)
+                filectime = self.fs.modified(fullpath).isoformat()
+                filesize = self.fs.du(fullpath)
 
-                if os.path.isdir(fullpath):
+                if self.fs.isdir(fullpath):
                     newpath = os.path.join(baseurl, urlpath, dc)
                     child_links.append({
                         'rel': 'child',
@@ -164,7 +166,7 @@ class FileSystemProvider(BaseProvider):
                         'created': filectime,
                         'entry:type': 'Catalog'
                     })
-                elif os.path.isfile(fullpath):
+                elif self.fs.isfile(fullpath):
                     basename, extension = os.path.splitext(dc)
                     newpath = os.path.join(baseurl, urlpath, basename)
                     newpath2 = f'{newpath}{extension}'
@@ -180,15 +182,15 @@ class FileSystemProvider(BaseProvider):
                         })
 
         elif resource_type == 'file':
-            filename = os.path.basename(data_path)
+            filename = get_path_basename(data_path)
 
             id_ = os.path.splitext(filename)[0]
             if urlpath:
                 filename = filename.replace(id_, '')
             url = f'{baseurl}/{urlpath}{filename}'
 
-            filectime = file_modified_iso8601(data_path)
-            filesize = os.path.getsize(data_path)
+            filectime = self.fs.modified(data_path).isoformat()
+            filesize = self.fs.du(data_path)
 
             content = {
                 'id': id_,
@@ -214,13 +216,14 @@ class FileSystemProvider(BaseProvider):
         return f'<FileSystemProvider> {self.data}'
 
 
-def _describe_file(filepath):
+def _describe_file(filepath, fs):
     """
     Helper function to describe a geospatial data
     First checks if a sidecar mcf file is available, if so uses that
     if not, script will parse the file to retrieve some info from the file
 
     :param filepath: path to file
+    :param fs: filesystem instance compatible with ``fsspec``
 
     :returns: `dict` of GeoJSON item
     """
@@ -233,7 +236,7 @@ def _describe_file(filepath):
 
     mcf_file = f'{os.path.splitext(filepath)[0]}.yml'
 
-    if os.path.isfile(mcf_file):
+    if fs.isfile(mcf_file):
         try:
             from pygeometa.core import read_mcf, MCFReadError
             from pygeometa.schemas.stac import STACItemOutputSchema
@@ -269,7 +272,7 @@ def _describe_file(filepath):
 
         try:  # raster
             LOGGER.debug('Testing raster data detection')
-            d = rasterio.open(filepath)
+            d = rasterio.open(fs.open(filepath))
             scrs = CRS(d.crs)
             LOGGER.debug(f'CRS: {d.crs}')
             LOGGER.debug(f'bounds: {d.bounds}')
@@ -304,7 +307,7 @@ def _describe_file(filepath):
         except rasterio.errors.RasterioIOError:
             try:
                 LOGGER.debug('Testing vector data detection')
-                d = fiona.open(filepath)
+                d = fiona.open(fs.open(filepath))
                 LOGGER.debug(f'CRS: {d.crs}')
                 LOGGER.debug(f'bounds: {d.bounds}')
                 scrs = CRS(d.crs)
@@ -343,14 +346,14 @@ def _describe_file(filepath):
                     content['properties'][k] = v
 
                 if d.driver == 'ESRI Shapefile':
-                    id_ = os.path.splitext(os.path.basename(filepath))[0]
+                    id_ = os.path.splitext(get_path_basename(filepath))[0]
                     content['assets'] = {}
                     for suffix in ['shx', 'dbf', 'prj']:
                         fullpath = f'{os.path.splitext(filepath)[0]}.{suffix}'
 
-                        if os.path.exists(fullpath):
-                            filectime = file_modified_iso8601(fullpath)
-                            filesize = os.path.getsize(fullpath)
+                        if fs.exists(fullpath):
+                            filectime = fs.modified(fullpath).isoformat()
+                            filesize = fs.du(fullpath)
 
                             content['assets'][suffix] = {
                                 'href': f'./{id_}.{suffix}',
