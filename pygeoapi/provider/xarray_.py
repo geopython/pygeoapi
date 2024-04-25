@@ -89,8 +89,7 @@ class XarrayProvider(BaseProvider):
                 data_to_open = self.data
 
             self._data = open_func(data_to_open)
-            self.storage_crs = self._parse_storage_crs(provider_def)
-            self._coverage_properties = self._get_coverage_properties()
+            self._coverage_properties = self._get_coverage_properties(provider_def)
 
             self.axes = [self._coverage_properties['x_axis_label'],
                          self._coverage_properties['y_axis_label'],
@@ -346,9 +345,10 @@ class XarrayProvider(BaseProvider):
 
         return cj
 
-    def _get_coverage_properties(self):
+    def _get_coverage_properties(self, provider_def: dict):
         """
         Helper function to normalize coverage properties
+        :param provider_def: provider definition
 
         :returns: `dict` of coverage properties
         """
@@ -410,9 +410,12 @@ class XarrayProvider(BaseProvider):
         }
 
         # Update properties based on the xarray's CRS
+        self.storage_crs = self._parse_storage_crs(provider_def)
         epsg_code = self.storage_crs.to_epsg()
-        if epsg_code == 4326:
+        LOGGER.debug(f'{epsg_code}')
+        if (epsg_code == 4326) | (self.storage_crs == 'OGC:CRS84'):
             pass
+            LOGGER.debug('Confirmed default of WGS 84')
         else:
             properties['bbox_crs'] = \
                 f'https://www.opengis.net/def/crs/EPSG/0/{epsg_code}'
@@ -420,6 +423,8 @@ class XarrayProvider(BaseProvider):
                 self.storage_crs.ellipsoid.inverse_flattening
             if self.storage_crs.is_projected:
                 properties['crs_type'] = 'ProjectedCRS'
+
+        LOGGER.debug(f'properties: {properties}')
 
         properties['axes'] = [
             properties['x_axis_label'],
@@ -491,16 +496,19 @@ class XarrayProvider(BaseProvider):
     
         :returns: name of xarray data variable that contains CRS information.
         """
+        LOGGER.debug('Parsing grid mapping...')
         spatiotemporal_dims = (self.time_field, self.y_field, self.x_field)
+        LOGGER.debug(spatiotemporal_dims)
         grid_mapping_name = None
         for var_name, var in self._data.variables.items():
             if all(dim in var.dims for dim in spatiotemporal_dims):
                 try:
                     grid_mapping_name = self._data[var_name].attrs['grid_mapping']
-                except KeyError:
-                    LOGGER.debug()
+                    LOGGER.debug(f'Grid mapping: {grid_mapping_name}')
+                except KeyError as e:
+                    LOGGER.debug('No grid mapping information found.')
         return grid_mapping_name
-    
+
     def _parse_storage_crs(
         self,
         provider_def: dict
@@ -509,7 +517,7 @@ class XarrayProvider(BaseProvider):
         Parse the storage CRS from an xarray dataset.
 
         :param provider_def: provider definition
-    
+
         :returns: `pyproj.CRS` instance parsed from dataset
         """
         storage_crs = None
@@ -517,21 +525,17 @@ class XarrayProvider(BaseProvider):
         try:
             storage_crs = provider_def['storage_crs']
             crs_function = pyproj.CRS.from_user_input
-        except KeyError:
-            LOGGER.debug(
-                '''
-                No storage crs provided in the provider configuration.
-                Attempting to parse the CRS.
-                '''
-                )
+        except KeyError as e:
+            LOGGER.debug('No storage_crs found. Attempting to parse the CRS.')
 
         if storage_crs is None:
             grid_mapping = self._parse_grid_mapping()
-            crs_function = pyproj.CRS.from_dict
             if grid_mapping is not None:
                 storage_crs = self._data[grid_mapping].attrs
+                crs_function = pyproj.CRS.from_cf
             elif 'crs' in self._data.variables.keys():
                 storage_crs = self._data['crs'].attrs
+                crs_function = pyproj.CRS.from_dict
             else:
                 storage_crs = DEFAULT_STORAGE_CRS
                 crs_function = get_crs_from_uri
@@ -544,6 +548,8 @@ class XarrayProvider(BaseProvider):
             LOGGER.debug(f'Unable to parse projection with pyproj: {e}')
             LOGGER.debug('Assuming default WGS84.')
             crs = get_crs_from_uri(DEFAULT_STORAGE_CRS)
+
+        LOGGER.debug(crs)
 
         return crs
 
