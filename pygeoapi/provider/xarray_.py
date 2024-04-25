@@ -89,7 +89,9 @@ class XarrayProvider(BaseProvider):
                 data_to_open = self.data
 
             self._data = open_func(data_to_open)
-            self._coverage_properties = self._get_coverage_properties(provider_def)
+            self._coverage_properties = self._get_coverage_properties(
+                provider_def
+            )
 
             self.axes = [self._coverage_properties['x_axis_label'],
                          self._coverage_properties['y_axis_label'],
@@ -493,7 +495,7 @@ class XarrayProvider(BaseProvider):
     def _parse_grid_mapping(self):
         """
         Identifies grid_mapping.
-    
+
         :returns: name of xarray data variable that contains CRS information.
         """
         LOGGER.debug('Parsing grid mapping...')
@@ -503,9 +505,10 @@ class XarrayProvider(BaseProvider):
         for var_name, var in self._data.variables.items():
             if all(dim in var.dims for dim in spatiotemporal_dims):
                 try:
-                    grid_mapping_name = self._data[var_name].attrs['grid_mapping']
+                    grid_mapping_name = self._data[var_name].attrs['grid_mapping']  # noqa 
                     LOGGER.debug(f'Grid mapping: {grid_mapping_name}')
-                except KeyError as e:
+                except KeyError as err:
+                    LOGGER.debug(err)
                     LOGGER.debug('No grid mapping information found.')
         return grid_mapping_name
 
@@ -525,7 +528,8 @@ class XarrayProvider(BaseProvider):
         try:
             storage_crs = provider_def['storage_crs']
             crs_function = pyproj.CRS.from_user_input
-        except KeyError as e:
+        except KeyError as err:
+            LOGGER.debug(err)
             LOGGER.debug('No storage_crs found. Attempting to parse the CRS.')
 
         if storage_crs is None:
