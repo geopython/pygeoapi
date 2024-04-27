@@ -29,10 +29,14 @@
 
 import json
 from pathlib import Path
+import os
 import sys
 
 from elasticsearch import Elasticsearch, helpers
-es = Elasticsearch('http://localhost:9200')
+
+elastic_url = os.getenv(
+    'PYGEOAPI_ELASTICSEARCH_SERVER_URL', 'http://localhost:9200')
+es = Elasticsearch(elastic_url)
 
 if len(sys.argv) < 3:
     print(f'Usage: {sys.argv[0]} <path/to/data.geojson> <id-field>')

@@ -105,7 +105,10 @@ ENV/
 
 # development setup examples
 example-config.yml
-example-openapi.yml 
+example-openapi.yml
+
+# CITE openapi document (must be (re)generated before runing CITE tests)
+tests/cite/cite.openapi.yml
 
 # misc
 *.swp

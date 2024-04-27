@@ -1,16 +1,14 @@
 server:
     bind:
         host: 0.0.0.0
-        port: 5001
-    url: http://localhost:5001
+        port: ${PYGEOAPI_PORT:-5001}
+    url: ${PYGEOAPI_PUBLIC_URL:-http://localhost:5001}
     mimetype: application/json; charset=UTF-8
     encoding: utf-8
     language: en-US
     cors: true
     pretty_print: true
-    limits:
-        default_items: 10
-        max_items: 10
+    limit: 100
     # templates: /path/to/templates
     map:
         url: https://tile.openstreetmap.org/{z}/{x}/{y}.png
@@ -58,35 +56,6 @@ metadata:
         role: pointOfContact
 
 resources:
-    icoads-sst:
-        type: collection
-        title: International Comprehensive Ocean-Atmosphere Data Set (ICOADS)
-        description: International Comprehensive Ocean-Atmosphere Data Set (ICOADS)
-        keywords:
-            - icoads
-            - sst
-            - air temperature
-        extents:
-            spatial:
-                bbox: [-180,-90,180,90]
-                crs: http://www.opengis.net/def/crs/OGC/1.3/CRS84
-            temporal:
-                begin: 2000-01-16T06:00:00Z
-                end: 2000-12-16T01:20:06Z
-        links:
-            - type: text/html
-              rel: canonical
-              title: information
-              href: https://psl.noaa.gov/data/gridded/data.coads.1deg.html
-              hreflang: en-US
-        providers:
-            - type: edr
-              name: xarray-edr
-              data: ../data/coads_sst.nc
-              format:
-                  name: NetCDF
-                  mimetype: application/x-netcdf
-
     canada-hydat-daily-mean-02hc003:
         type: collection
         title: Daily Mean of Water Level or Flow
@@ -127,46 +96,13 @@ resources:
             temporal:
                 begin: 1850-01-01T00:00:00Z
                 end: null # or empty
+
         providers:
             - type: feature
-              name: TinyDB
-              data: ../data/canada-hydat-daily-mean-02hc003.tinydb
+              name: Elasticsearch
+              data: ${PYGEOAPI_ELASTICSEARCH_SERVER_URL:-http://localhost:9200}/canada-hydat-daily-mean-02hc003
               id_field: IDENTIFIER
               time_field: DATE
-
-    lakes:
-        type: collection
-        title: Large Lakes
-        description: lakes of the world, public domain
-        keywords:
-            - lakes
-        crs:
-            - CRS84
-        links:
-            - type: text/html
-              rel: canonical
-              title: information
-              href: http://www.naturalearthdata.com/
-              hreflang: en-US
-        extents:
-            spatial:
-                bbox: [-180,-90,180,90]
-                crs: http://www.opengis.net/def/crs/OGC/1.3/CRS84
-            temporal:
-                begin: 2011-11-11T00:00:00Z
-                end: null  # or empty
-        providers:
-            - type: tile
-              name: MVT-tippecanoe
-              data: ../data/tiles/ne_110m_lakes
-              options:
-                bounds: [[-124.953634,-16.536406],[109.929807,66.969298]]
-                zoom:
-                    min: 0
-                    max: 5
-              format:
-                    name: pbf
-                    mimetype: application/vnd.mapbox-vector-tile
 
     hello-world:
         type: process
