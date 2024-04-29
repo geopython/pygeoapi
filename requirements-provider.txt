@@ -4,7 +4,6 @@ cftime
 elasticsearch
 elasticsearch-dsl
 fiona
-fsspec
 GDAL<=3.8.4
 geoalchemy2
 h5py
