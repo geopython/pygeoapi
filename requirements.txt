@@ -2,7 +2,6 @@ Babel
 click
 filelock
 Flask
-fsspec
 jinja2
 jsonschema
 pydantic<2.0
