@@ -146,7 +146,7 @@ class FileSystemProvider(BaseProvider):
 
         elif resource_type == 'directory':
             content['type'] = 'Catalog'
-            dirpath2 = self.fs.listdir(data_path)
+            dirpath2 = self.fs.listdir(data_path, detail=False)
             dirpath2.sort()
             for dc in dirpath2:
                 # TODO: handle a generic directory for tiles
