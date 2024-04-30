@@ -77,10 +77,8 @@ class FileSystemProvider(BaseProvider):
         resource_type = None
         root_link = None
         child_links = []
-
         data_path = os.path.join(self.data, dirpath)
         data_path = self.data + dirpath
-
         if '/' not in dirpath:  # root
             root_link = baseurl
         else:
@@ -150,13 +148,12 @@ class FileSystemProvider(BaseProvider):
             dirpath2.sort()
             for dc in dirpath2:
                 # TODO: handle a generic directory for tiles
-                if dc == "tiles":
+                if get_path_basename(dc) == "tiles":
                     continue
 
                 fullpath = os.path.join(data_path, dc)
                 filectime = self.fs.modified(fullpath).isoformat()
                 filesize = self.fs.du(fullpath)
-
                 if self.fs.isdir(fullpath):
                     newpath = os.path.join(baseurl, urlpath, dc)
                     child_links.append({
@@ -200,7 +197,7 @@ class FileSystemProvider(BaseProvider):
                 'assets': {}
             }
 
-            content.update(_describe_file(data_path))
+            content.update(_describe_file(data_path, self.fs))
 
             content['assets']['default'] = {
                 'href': url,
@@ -209,7 +206,6 @@ class FileSystemProvider(BaseProvider):
             }
 
         content['links'].extend(child_links)
-
         return content
 
     def __repr__(self):
