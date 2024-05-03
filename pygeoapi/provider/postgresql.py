@@ -286,7 +286,7 @@ class PostgreSQLProvider(BaseProvider):
         self.db_port = parameters.get('port', 5432)
         self.db_name = parameters.get('dbname')
         # db_search_path gets converted to a tuple here in order to ensure it
-        # is hashable - which allows us to use functools.lru_cache() when
+        # is hashable - which allows us to use functools.cache() when
         # reflecting the table definition from the DB
         self.db_search_path = tuple(parameters.get('search_path', ['public']))
         self._db_password = parameters.get('password')
@@ -428,7 +428,7 @@ class PostgreSQLProvider(BaseProvider):
         return crs_transform
 
 
-@functools.lru_cache()
+@functools.cache
 def get_engine(
         host: str,
         port: str,
@@ -458,7 +458,7 @@ def get_engine(
     return engine
 
 
-@functools.lru_cache()
+@functools.cache
 def get_table_model(
         table_name: str,
         id_field: str,
