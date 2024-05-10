@@ -1,8 +1,10 @@
 # =================================================================
 #
 # Authors: Tom Kralidis <tomkralidis@gmail.com>
+#          Francesco Martinelli <francesco.martinelli@ingv.it>
 #
 # Copyright (c) 2022 Tom Kralidis
+# Copyright (c) 2024 Francesco Martinelli
 #
 # Permission is hereby granted, free of charge, to any person
 # obtaining a copy of this software and associated documentation
@@ -115,9 +117,9 @@ class HelloWorldProcessor(BaseProcessor):
         """
 
         super().__init__(processor_def, PROCESS_METADATA)
+        self.supports_outputs = True
 
-    def execute(self, data):
-
+    def execute(self, data, outputs=None):
         mimetype = 'application/json'
         name = data.get('name')
 
@@ -127,12 +129,14 @@ class HelloWorldProcessor(BaseProcessor):
         message = data.get('message', '')
         value = f'Hello {name}! {message}'.strip()
 
-        outputs = {
-            'id': 'echo',
-            'value': value
-        }
+        produced_outputs = {}
+        if outputs is None or 'echo' in outputs:
+            produced_outputs = {
+                'id': 'echo',
+                'value': value
+            }
 
-        return mimetype, outputs
+        return mimetype, produced_outputs
 
     def __repr__(self):
         return f'<HelloWorldProcessor> {self.name}'
