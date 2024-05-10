@@ -173,7 +173,7 @@ class MVTElasticProvider(BaseMVTProvider):
 
             try:
                 with requests.Session() as session:
-                    data = {"fields": ["*"]}
+                    data = {'fields': ['*']}
                     session.get(base_url)
                     resp = session.get(f'{base_url}/{layer}/{z}/{y}/{x}{url_query}', json=data)  # noqa
                     resp.raise_for_status()
