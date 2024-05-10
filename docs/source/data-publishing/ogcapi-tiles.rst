@@ -19,7 +19,7 @@ pygeoapi core tile providers are listed below, along with supported features.
    :align: left
 
    `MVT-tippecanoe`_,❌,✅,✅,❌
-   `MVT-elastic`_,✅,❌,✅,❌
+   `MVT-elastic`_,✅,✅,✅,❌
    `MVT-proxy`_,❓,❓,❓,❓
    `WMTSFacade`_,✅,❌,✅,✅
 
