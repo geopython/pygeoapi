@@ -101,8 +101,8 @@ def get_collection_edr_query(api: API, request: APIRequest,
             HTTPStatus.BAD_REQUEST, headers, request.format,
             'InvalidParameterValue', msg)
 
-    LOGGER.debug('Processing parameter_names parameter')
-    parameternames = request.params.get('parameter_names') or []
+    LOGGER.debug('Processing parameter-name parameter')
+    parameternames = request.params.get('parameter-name') or []
     if isinstance(parameternames, str):
         parameternames = parameternames.split(',')
 
@@ -167,7 +167,7 @@ def get_collection_edr_query(api: API, request: APIRequest,
 
     if parameternames and not any((fld in parameternames)
                                   for fld in p.get_fields().keys()):
-        msg = 'Invalid parameter_names'
+        msg = 'Invalid parameter-name'
         return api.get_exception(
             HTTPStatus.BAD_REQUEST, headers, request.format,
             'InvalidParameterValue', msg)
