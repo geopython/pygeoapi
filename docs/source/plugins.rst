@@ -374,9 +374,9 @@ The below template provides a minimal example (let's call the file ``mycooljsonf
 Featured plugins
 ----------------
 
-Community based plugins can be found on the `pygeoapi Community Plugins wiki page`_.
+Community based plugins can be found on the `pygeoapi Community Plugins and Themes wiki page`_.
 
 
-.. _`pygeoapi Community Plugins wiki page`: https://github.com/geopython/pygeoapi/wiki/CommunityPlugins
+.. _`pygeoapi Community Plugins and Themes wiki page`: https://github.com/geopython/pygeoapi/wiki/CommunityPluginsThemes
 .. _`Cookiecutter`: https://github.com/audreyfeldroy/cookiecutter-pypackage
 .. _`pygeoapi-plugin-cookiecutter`: https://code.usgs.gov/wma/nhgf/pygeoapi-plugin-cookiecutter
