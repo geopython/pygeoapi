@@ -31,7 +31,11 @@
 
 from enum import Enum
 
-from pydantic import BaseModel
+try:
+    from pydantic.v1 import BaseModel, Field
+except ModuleNotFoundError:
+    # Pydantic version < 2.0
+    from pydantic import BaseModel, Field
 
 
 class SupportedFormats(Enum):

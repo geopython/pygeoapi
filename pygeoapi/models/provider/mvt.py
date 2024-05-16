@@ -27,7 +27,11 @@
 #
 # =================================================================
 
-from pydantic import BaseModel
+try:
+    from pydantic.v1 import BaseModel
+except ModuleNotFoundError:
+    # Pydantic version < 2.0
+    from pydantic import BaseModel
 from typing import List, Optional
 
 
