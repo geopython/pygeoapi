@@ -580,10 +580,17 @@ class OGRProvider(BaseProvider):
                 # Ignore gdal error
                 ogr_feature = _ignore_gdal_error(layer, 'GetNextFeature')
 
-            return feature_collection
         except RuntimeError as gdalerr:
             LOGGER.error(self.gdal.GetLastErrorMsg())
             raise gdalerr
+
+        # Ask for one extra element to see if there are more available
+        numberMatched = len(feature_collection['features'])
+        if _ignore_gdal_error(layer, 'GetNextFeature') is not None:
+            numberMatched += 1
+        feature_collection['numberMatched'] = numberMatched
+
+        return feature_collection
 
     def _response_feature_hits(self, layer):
         """
