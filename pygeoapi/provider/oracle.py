@@ -243,7 +243,7 @@ class DatabaseConnection:
         """
         try:
             if self.conn:
-                self.conn.close()
+                DatabaseConnection.pool.release(self.conn)
                 LOGGER.debug("Connection released back to pool.")
         except oracledb.DatabaseError as e:
             LOGGER.error("Error closing the connection.")
