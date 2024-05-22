@@ -188,6 +188,7 @@ class DatabaseConnection:
         # Initialize the connection pool if it hasn't been initialized
         if DatabaseConnection.pool is None:
             DatabaseConnection.initialize_pool(conn_dic)
+            LOGGER.debug(f"Initialized conneciton pool with {DatabaseConnection.pool.max}connections ")
 
     def __enter__(self):
 
