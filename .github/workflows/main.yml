@@ -4,11 +4,13 @@ on:
   push:
     paths-ignore:
       - '**.md'
+      - 'docs/**'
   pull_request:
     branches:
       - master
     paths-ignore:
       - '!**.md'
+      - 'docs/**'
   release:
     types:
       - released
@@ -90,7 +92,6 @@ jobs:
         pip3 install -r requirements-dev.txt
         pip3 install -r requirements-provider.txt
         pip3 install -r requirements-django.txt
-        pip3 install -r docs/requirements.txt
         python3 setup.py install
         pip3 install --upgrade numpy elasticsearch
         pip3 install --upgrade numpy "sqlalchemy<2"
@@ -139,8 +140,6 @@ jobs:
         pytest tests/test_util.py
         pytest tests/test_xarray_netcdf_provider.py
         pytest tests/test_xarray_zarr_provider.py
-    - name: build docs 🏗️
-      run: cd docs && make html
     - name: failed tests 🚩
       if: ${{ failure() }}
       run: |

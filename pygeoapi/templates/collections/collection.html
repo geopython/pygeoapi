@@ -119,6 +119,14 @@
       }
     ));
 
+   {# if this collection has a map representation, add it to the map #}
+   {% for link in data['links'] %}
+      {% if link['rel'] == 'http://www.opengis.net/def/rel/ogc/1.0/map' and link['href'] %} 
+        L.tileLayer.wms("{{ link['href'] }}", {"opacity": .7, "transparent": true, "crs": L.CRS.EPSG4326}).addTo(map); 
+      {% endif %}
+    {% endfor %}
+
+
     var bbox_layer = L.polygon([
       ['{{ data['extent']['spatial']['bbox'][0][1] }}', '{{ data['extent']['spatial']['bbox'][0][0] }}'],
       ['{{ data['extent']['spatial']['bbox'][0][3] }}', '{{ data['extent']['spatial']['bbox'][0][0] }}'],
