@@ -17,4 +17,3 @@ shapely
 SQLAlchemy<2.0.0
 tinydb
 unicodecsv
-oracledb==2.2.0
