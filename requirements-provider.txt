@@ -8,7 +8,7 @@ GDAL<=3.8.4
 geoalchemy2
 netCDF4
 numpy
-oracledb==2.2.0
+oracledb
 pandas
 psycopg2
 pygeofilter[backend-sqlalchemy]
