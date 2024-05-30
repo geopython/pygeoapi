@@ -581,40 +581,37 @@ class OracleProvider(BaseProvider):
                             f"Missing mandatory filter property: {mand_col}"
                         )
 
-        if resulttype == "hits":
-            with DatabaseConnection(
-                self.conn_dic,
-                self.table,
-                properties=self.properties,
-                context="hits",
-            ) as db:
-                cursor = db.conn.cursor()
+        with DatabaseConnection(
+            self.conn_dic,
+            self.table,
+            properties=self.properties,
+            context="hits",
+        ) as db:
+            cursor = db.conn.cursor()
 
-                where_dict = self._get_where_clauses(
-                    properties=properties,
-                    bbox=bbox,
-                    bbox_crs=self.storage_crs,
-                    sdo_param=self.sdo_param,
-                    sdo_operator=self.sdo_operator,
+            where_dict = self._get_where_clauses(
+                properties=properties,
+                bbox=bbox,
+                bbox_crs=self.storage_crs,
+                sdo_param=self.sdo_param,
+                sdo_operator=self.sdo_operator,
+            )
+
+            # Not dangerous to use self.table as substitution,
+            # because of getFields ...
+            sql_query = f"SELECT COUNT(1) AS hits \
+                            FROM {self.table} \
+                            {where_dict['clause']}"
+            try:
+                cursor.execute(sql_query, where_dict["properties"])
+            except oracledb.Error as err:
+                LOGGER.error(
+                    f"Error executing sql_query: {sql_query}: {err}"
                 )
+                raise ProviderQueryError()
 
-                # Not dangerous to use self.table as substitution,
-                # because of getFields ...
-                sql_query = f"SELECT COUNT(1) AS hits \
-                                FROM {self.table} \
-                                {where_dict['clause']}"
-                try:
-                    cursor.execute(sql_query, where_dict["properties"])
-                except oracledb.Error as err:
-                    LOGGER.error(
-                        f"Error executing sql_query: {sql_query}: {err}"
-                    )
-                    raise ProviderQueryError()
-
-                hits = cursor.fetchone()[0]
-                LOGGER.debug(f"hits: {str(hits)}")
-
-            return self._response_feature_hits(hits)
+            hits = cursor.fetchone()[0]
+            LOGGER.debug(f"hits: {str(hits)}")
 
         with DatabaseConnection(
             self.conn_dic, self.table, properties=self.properties
@@ -753,6 +750,7 @@ class OracleProvider(BaseProvider):
             # Generate feature JSON
             features = [self._response_feature(rd) for rd in row_data]
             feature_collection = {
+                "numberMatched": hits,
                 "type": "FeatureCollection",
                 "features": features,
             }
