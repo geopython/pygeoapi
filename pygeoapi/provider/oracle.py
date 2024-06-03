@@ -33,6 +33,7 @@ import logging
 import oracledb
 import pyproj
 from typing import Optional
+import threading
 
 from pygeoapi.api import DEFAULT_STORAGE_CRS
 
@@ -55,99 +56,102 @@ class DatabaseConnection:
     The class returns a connection object.
     """
     pool = None  # Class-level connection pool
+    lock = threading.Lock()
     @classmethod
     def initialize_pool(cls, conn_dict):
         """Initialize the connection pool if not already initialized."""
-        LOGGER.debug(f"conn_dict contains {conn_dict}")
-        if DatabaseConnection.pool is None:
-            # dsn = oracledb.makedsn(
-            #     conn_dict["host"],
-            #     conn_dict.get("port", 1521),
-            #     service_name=conn_dict["service_name"]
-            # )
-            try:
-                if conn_dict.get("init_oracle_client", False):
-                    oracledb.init_oracle_client()
+        with DatabaseConnection.lock:
+            LOGGER.debug(f"conn_dict contains {conn_dict}")
+            if DatabaseConnection.pool is None:  
+                try:
+                    if conn_dict.get("init_oracle_client", False):
+                        oracledb.init_oracle_client()
 
-                # Connect with tnsnames.ora entry and Login with Oracle Wallet
-                if conn_dict.get("external_auth") == "wallet":
-                    LOGGER.debug(
-                        "Oracle connect with tnsnames.ora entry \
-                        and login with Oracle Wallet"
-                    )
+                    # Connect with tnsnames.ora entry and Login with Oracle Wallet
+                    if conn_dict.get("external_auth") == "wallet":
+                        LOGGER.debug(
+                            "Oracle connect with tnsnames.ora entry \
+                            and login with Oracle Wallet"
+                        )
 
-                    if "tns_name" not in conn_dict:
+                        if "tns_name" not in conn_dict:
+                            raise ProviderConnectionError(
+                                "tns_name must be set for external authentication!"
+                            )
+
+                        dsn = conn_dict["tns_name"]
+
+                    # Connect with SERVICE_NAME
+                    if "service_name" in conn_dict:
+                        LOGGER.debug(
+                            f"Oracle connect with service_name: \
+                                {conn_dict['service_name']}"
+                        )
+
+                        if "host" not in conn_dict:
+                            raise ProviderConnectionError(
+                                "Host must be set for connection with service_name!"
+                            )
+
+                        dsn = oracledb.makedsn(
+                            conn_dict["host"],
+                            conn_dict.get("port", 1521),
+                            service_name=conn_dict["service_name"],
+                        )
+
+                    # Connect with SID
+                    elif "sid" in conn_dict:
+                        LOGGER.debug(
+                            f"Oracle connect with sid: {conn_dict['sid']}"
+                        )
+
+                        if "host" not in conn_dict:
+                            raise ProviderConnectionError(
+                                "Host must be set for connection with sid!"
+                            )
+
+                        dsn = oracledb.makedsn(
+                            conn_dict["host"],
+                            conn_dict.get("port", 1521),
+                            sid=conn_dict["sid"],
+                        )
+
+                    # Connect with tnsnames.ora entry
+                    elif "tns_name" in conn_dict:
+                        LOGGER.debug(
+                            f"Oracle connect with tns_name: \
+                                {conn_dict['tns_name']}"
+                        )
+                        dsn = conn_dict["tns_name"]
+
+                    else:
                         raise ProviderConnectionError(
-                            "tns_name must be set for external authentication!"
+                            "One of service_name, sid or tns_name must be specified!"
                         )
 
-                    dsn = conn_dict["tns_name"]
+                    LOGGER.debug(f"Oracle DSN string: {dsn}")
 
-                # Connect with SERVICE_NAME
-                if "service_name" in conn_dict:
-                    LOGGER.debug(
-                        f"Oracle connect with service_name: \
-                            {conn_dict['service_name']}"
+                    # Create the pool
+                    # TODO make this configurable in the YAML file.
+                    DatabaseConnection.pool = oracledb.create_pool(
+                                user=conn_dict["user"],
+                                password=conn_dict["password"],
+                                dsn=dsn,
+                                min=2,  # Minimum number of connections in the pool
+                                max=10,  # Maximum number of connections in the pool
+                                increment=1,  # Number of connections to add if pool is empty
+                            )
+                    LOGGER.debug("Connection pool created successfully.")
+
+                    return DatabaseConnection.pool
+
+                except oracledb.DatabaseError as e:
+                    LOGGER.error(
+                        f"Couldn't connect to Oracle using:{str(self.conn_dict)}"
                     )
-
-                    if "host" not in conn_dict:
-                        raise ProviderConnectionError(
-                            "Host must be set for connection with service_name!"
-                        )
-
-                    dsn = oracledb.makedsn(
-                        conn_dict["host"],
-                        conn_dict.get("port", 1521),
-                        service_name=conn_dict["service_name"],
-                    )
-
-                # Connect with SID
-                elif "sid" in conn_dict:
-                    LOGGER.debug(
-                        f"Oracle connect with sid: {conn_dict['sid']}"
-                    )
-
-                    if "host" not in conn_dict:
-                        raise ProviderConnectionError(
-                            "Host must be set for connection with sid!"
-                        )
-
-                    dsn = oracledb.makedsn(
-                        conn_dict["host"],
-                        conn_dict.get("port", 1521),
-                        sid=conn_dict["sid"],
-                    )
-
-                # Connect with tnsnames.ora entry
-                elif "tns_name" in conn_dict:
-                    LOGGER.debug(
-                        f"Oracle connect with tns_name: \
-                            {conn_dict['tns_name']}"
-                    )
-                    dsn = conn_dict["tns_name"]
-
-                else:
-                    raise ProviderConnectionError(
-                        "One of service_name, sid or tns_name must be specified!"
-                    )
-
-                LOGGER.debug(f"Oracle DSN string: {dsn}")
-
-                DatabaseConnection.pool = oracledb.create_pool(
-                            user=conn_dict["user"],
-                            password=conn_dict["password"],
-                            dsn=dsn,
-                            min=2,  # Minimum number of connections in the pool
-                            max=10,  # Maximum number of connections in the pool
-                            increment=1,  # Number of connections to add if pool is empty
-                        )
-                LOGGER.debug("Connection pool created successfully.")
-            except oracledb.DatabaseError as e:
-                LOGGER.error(
-                    f"Couldn't connect to Oracle using:{str(self.conn_dict)}"
-                )
-                LOGGER.error(e)
-                raise ProviderConnectionError(e)
+                    LOGGER.error(e)
+                    raise ProviderConnectionError(e)
+        
 
 
 
@@ -195,7 +199,7 @@ class DatabaseConnection:
         """Acquires a connection from the pool."""
         try:
             self.conn = DatabaseConnection.pool.acquire()
-            LOGGER.debug("Connection acquired from pool.")
+            LOGGER.debug("Connection acquired from pool .")
             LOGGER.debug(f"Connection {self.conn}.")
 
         except oracledb.DatabaseError as e:
