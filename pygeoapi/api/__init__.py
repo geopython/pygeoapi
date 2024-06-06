@@ -1098,6 +1098,8 @@ class API:
 
             elif collection_data_type == 'coverage':
                 # TODO: translate
+                collection['dataType'] = 'coverage'
+
                 LOGGER.debug('Adding coverage based links')
                 collection['links'].append({
                     'type': 'application/prs.coverage+json',
@@ -1137,6 +1139,25 @@ class API:
                             'cellsCount': p._coverage_properties['height'],
                             'resolution': p._coverage_properties['resy']
                         }]
+                        collection['extent']['temporal'] = {
+                            'interval': [p._coverage_properties['time_range']],
+                            'grid': {
+                                'resolution': p._coverage_properties['restime']
+                            }
+                        }
+                        for key, value in p.get_fields().items():
+                            collection['extent'][key] = {
+                                'crs': f'http://www.opengis.net/def/crs/OGC/0/{key}',  # noqa
+                                'interval': [[
+                                    value['min'],
+                                    value['max']
+                                ]],
+                                'unit': value['x-ogc-unit'],
+                                'grid': {
+                                    'cellsCount': value['count']
+                                },
+                                '_meta': value.get('_meta')
+                            }
 
             try:
                 tile = get_provider_by_type(v['providers'], 'tile')

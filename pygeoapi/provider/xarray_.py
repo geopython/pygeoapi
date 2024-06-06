@@ -106,7 +106,13 @@ class XarrayProvider(BaseProvider):
                 fields[key] = {
                     'type': dtype,
                     'title': value.attrs['long_name'],
-                    'x-ogc-unit': value.attrs.get('units')
+                    'x-ogc-unit': value.attrs.get('units'),
+                    'min': value.min().item(),
+                    'max': value.max().item(),
+                    'count': len(value),
+                    '_meta': {
+                        'tags': value.attrs
+                    }
                 }
 
         return fields
