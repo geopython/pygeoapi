@@ -85,7 +85,6 @@ class DatabaseConnection:
 
         return DatabaseConnection.pool
 
-
     def __init__(self, conn_dic, table, properties=[], context="query"):
         """
         OracleProvider Class constructor
@@ -122,7 +121,7 @@ class DatabaseConnection:
 
         # Initialize the connection pool if it hasn't been initialized
         if os.environ.get('ORACLE_POOL_MIN') and os.environ.get('ORACLE_POOL_MAX'):  # noqa
-            LOGGER.debug(f"Found environment variables for session pooling:")
+            LOGGER.debug("Found environment variables for session pooling:")
             LOGGER.debug(f"ORACLE_POOL_MIN: {os.environ.get('ORACLE_POOL_MIN')}")  # noqa
             LOGGER.debug(f"ORACLE_POOL_MAX: {os.environ.get('ORACLE_POOL_MAX')}")  # noqa
             if DatabaseConnection.pool is None:
@@ -130,7 +129,6 @@ class DatabaseConnection:
                     LOGGER.debug(f"self.conn_dict contains {self.conn_dict}")
                     DatabaseConnection.initialize_pool(self.conn_dict)
                     LOGGER.debug(f"Initialized conneciton pool with {DatabaseConnection.pool.max} connections ")  # noqa
-
 
     @staticmethod
     def _make_dsn(conn_dict):
@@ -202,9 +200,7 @@ class DatabaseConnection:
 
         return dsn
 
-
     def __enter__(self):
-
         """Acquires a connection from the pool."""
         try:
             if DatabaseConnection.pool:
@@ -297,7 +293,6 @@ class DatabaseConnection:
         except oracledb.DatabaseError as e:
             LOGGER.error("Error closing the connection.")
             LOGGER.error(e)
-
 
     def _get_table_columns(self, schema, table):
         """
