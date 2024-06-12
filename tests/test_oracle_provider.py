@@ -147,6 +147,7 @@ def config():
         "editable": True,
     }
 
+
 @pytest.fixture()
 def config_db_conn():
     return {
@@ -630,18 +631,19 @@ def test_query_mandatory_properties_must_be_specified(config):
     with pytest.raises(ProviderInvalidQueryError):
         p.query(properties=[("id", "123")])
 
+
 def test_oracle_pool(config_db_conn):
     """
     Test whether an oracle session pool is created when there are
     the required env variables.
     """
     os.environ["ORACLE_POOL_MIN"] = "2"
-    os.environ["ORACLE_POOL_MAx"] = "10"
     oracle_pool_min = os.environ.get('ORACLE_POOL_MIN', 2)
+    os.environ["ORACLE_POOL_MAx"] = "10"
     oracle_pool_max = os.environ.get('ORACLE_POOL_MAX', 10)
     db_conn = DatabaseConnection(**config_db_conn)
-    assert db_conn.pool != None
-    
+    assert db_conn.pool is not None
+
     if 'ORACLE_POOL_MIN' in os.environ:
         del os.environ["ORACLE_POOL_MIN"]
     
@@ -650,28 +652,20 @@ def test_oracle_pool(config_db_conn):
 
 
 def test_query_pool(config):
-    """Test query using a DB Session Pool for a valid JSON object with geometry"""
+    """Test query using a DB Session Pool for a valid JSON object with geometry"""   # noqa
     # Set ENV Var for creating a session pool
     os.environ["ORACLE_POOL_MIN"] = "2"
+    oracle_pool_min = os.environ.get('ORACLE_POOL_MIN', 2)
     os.environ["ORACLE_POOL_MAx"] = "10"
+    oracle_pool_max = os.environ.get('ORACLE_POOL_MAX', 10)
     # Create DatabaseConnection config from standard config
     keys = ['data', 'table']
     config_db_conn = {x:config[x] for x in keys}
     config_db_conn['conn_dic'] = config_db_conn.pop('data')
     # Create Connection class and check against pool
     db_conn = DatabaseConnection(**config_db_conn)
-    assert db_conn.pool != None
-    # Run query tests
-    # p = OracleProvider(config)
-    # feature_collection = p.query()
-    # assert feature_collection.get("type") == "FeatureCollection"
-    # features = feature_collection.get("features")
-    # assert features is not None
-    # feature = features[0]
-    # properties = feature.get("properties")
-    # assert properties is not None
-    # geometry = feature.get("geometry")
-    # assert geometry is not None
+    assert db_conn.pool is not None
+    # Run query test again with session pool
     test_query(config)
 
     if 'ORACLE_POOL_MIN' in os.environ:
