@@ -667,6 +667,6 @@ def test_query_pool(config):
 
     if 'ORACLE_POOL_MIN' in os.environ:
         del os.environ["ORACLE_POOL_MIN"]
-    
+
     if 'ORACLE_POOL_MAx' in os.environ:
         del os.environ["ORACLE_POOL_MAX"]
