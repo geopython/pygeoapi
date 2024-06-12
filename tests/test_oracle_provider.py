@@ -638,10 +638,10 @@ def test_oracle_pool(config_db_conn):
     the required env variables.
     """
     os.environ["ORACLE_POOL_MIN"] = "2"     # noqa
-    os.environ["ORACLE_POOL_MAx"] = "10"    # noqa
+    os.environ["ORACLE_POOL_MAX"] = "10"    # noqa
     db_conn = DatabaseConnection(**config_db_conn)
-    assert db_conn.pool is not None
-
+    assert db_conn.pool.max == int(os.environ.get("ORACLE_POOL_MAX"))
+    assert db_conn.pool
     if 'ORACLE_POOL_MIN' in os.environ:
         del os.environ["ORACLE_POOL_MIN"]
 
@@ -653,14 +653,15 @@ def test_query_pool(config):
     """Test query using a DB Session Pool for a valid JSON object with geometry"""   # noqa
     # Set ENV Var for creating a session pool
     os.environ["ORACLE_POOL_MIN"] = "2"     # noqa
-    os.environ["ORACLE_POOL_MAx"] = "10"    # noqa
+    os.environ["ORACLE_POOL_MAX"] = "10"    # noqa
     # Create DatabaseConnection config from standard config
     keys = ['data', 'table']
     config_db_conn = {x: config[x] for x in keys}
     config_db_conn['conn_dic'] = config_db_conn.pop('data')
     # Create Connection class and check against pool
     db_conn = DatabaseConnection(**config_db_conn)
-    assert db_conn.pool is not None
+    assert db_conn.pool.max == int(os.environ.get("ORACLE_POOL_MAX"))
+    assert db_conn.pool
     # Run query test again with session pool
     test_query(config)
 
