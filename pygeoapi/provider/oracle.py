@@ -67,8 +67,8 @@ class DatabaseConnection:
         # Get env var values for Oracle Pool config
         # This has to be done with global vars instead of YAML File
         # Because pool should constant and not for every layer
-        oracle_pool_min = os.environ.get('ORACLE_POOL_MIN')
-        oracle_pool_max = os.environ.get('ORACLE_POOL_MAX')
+        oracle_pool_min = int(os.environ.get('ORACLE_POOL_MIN'))
+        oracle_pool_max = int(os.environ.get('ORACLE_POOL_MAX'))
 
         dsn = cls._make_dsn(conn_dict)
         # Create the pool
