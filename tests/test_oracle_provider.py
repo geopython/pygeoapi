@@ -646,7 +646,7 @@ def test_oracle_pool(config_db_conn):
         del os.environ["ORACLE_POOL_MIN"]
 
     if 'ORACLE_POOL_MAx' in os.environ:
-        del os.environ["ORACLE_POOL_MAx"]
+        del os.environ["ORACLE_POOL_MAX"]
 
 
 def test_query_pool(config):
@@ -669,4 +669,4 @@ def test_query_pool(config):
         del os.environ["ORACLE_POOL_MIN"]
     
     if 'ORACLE_POOL_MAx' in os.environ:
-        del os.environ["ORACLE_POOL_MAx"]
+        del os.environ["ORACLE_POOL_MAX"]
