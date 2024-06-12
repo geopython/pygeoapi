@@ -33,7 +33,7 @@
 import os
 import pytest
 from pygeoapi.provider.base import ProviderInvalidQueryError
-from pygeoapi.provider.oracle import OracleProvider
+from pygeoapi.provider.oracle import OracleProvider, DatabaseConnection
 
 USERNAME = os.environ.get("PYGEOAPI_ORACLE_USER", "geo_test")
 PASSWORD = os.environ.get("PYGEOAPI_ORACLE_PASSWD", "geo_test")
@@ -145,6 +145,19 @@ def config():
         "table": "lakes",
         "geom_field": "geometry",
         "editable": True,
+    }
+
+@pytest.fixture()
+def config_db_conn():
+    return {
+        "conn_dic": {
+            "host": HOST,
+            "port": PORT,
+            "service_name": SERVICE_NAME,
+            "user": USERNAME,
+            "password": PASSWORD,
+        },
+        "table": "lakes",
     }
 
 
@@ -616,3 +629,53 @@ def test_query_mandatory_properties_must_be_specified(config):
     p = OracleProvider(config)
     with pytest.raises(ProviderInvalidQueryError):
         p.query(properties=[("id", "123")])
+
+def test_oracle_pool(config_db_conn):
+    """
+    Test whether an oracle session pool is created when there are
+    the required env variables.
+    """
+    os.environ["ORACLE_POOL_MIN"] = "2"
+    os.environ["ORACLE_POOL_MAx"] = "10"
+    oracle_pool_min = os.environ.get('ORACLE_POOL_MIN', 2)
+    oracle_pool_max = os.environ.get('ORACLE_POOL_MAX', 10)
+    db_conn = DatabaseConnection(**config_db_conn)
+    assert db_conn.pool != None
+    
+    if 'ORACLE_POOL_MIN' in os.environ:
+        del os.environ["ORACLE_POOL_MIN"]
+    
+    if 'ORACLE_POOL_MAx' in os.environ:
+        del os.environ["ORACLE_POOL_MAx"]
+
+
+def test_query_pool(config):
+    """Test query using a DB Session Pool for a valid JSON object with geometry"""
+    # Set ENV Var for creating a session pool
+    os.environ["ORACLE_POOL_MIN"] = "2"
+    os.environ["ORACLE_POOL_MAx"] = "10"
+    # Create DatabaseConnection config from standard config
+    keys = ['data', 'table']
+    config_db_conn = {x:config[x] for x in keys}
+    config_db_conn['conn_dic'] = config_db_conn.pop('data')
+    # Create Connection class and check against pool
+    db_conn = DatabaseConnection(**config_db_conn)
+    assert db_conn.pool != None
+    # Run query tests
+    # p = OracleProvider(config)
+    # feature_collection = p.query()
+    # assert feature_collection.get("type") == "FeatureCollection"
+    # features = feature_collection.get("features")
+    # assert features is not None
+    # feature = features[0]
+    # properties = feature.get("properties")
+    # assert properties is not None
+    # geometry = feature.get("geometry")
+    # assert geometry is not None
+    test_query(config)
+
+    if 'ORACLE_POOL_MIN' in os.environ:
+        del os.environ["ORACLE_POOL_MIN"]
+    
+    if 'ORACLE_POOL_MAx' in os.environ:
+        del os.environ["ORACLE_POOL_MAx"]
