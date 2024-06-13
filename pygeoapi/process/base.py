@@ -59,7 +59,7 @@ class BaseProcessor:
         To be implemented by derived classes where required.
         """
         pass
-    
+
     def execute(self, data: dict, outputs: Optional[dict] = None
                 ) -> Tuple[str, Any]:
         """
