@@ -60,20 +60,13 @@ class DatabaseConnection:
     lock = threading.Lock()
 
     @classmethod
-    def initialize_pool(cls, conn_dict):
+    def create_pool(cls, conn_dict, oracle_pool_min, oracle_pool_max):
         """Initialize the connection pool for the class
            Lock is implemented before function call at __init__"""
-
-        # Get env var values for Oracle Pool config
-        # This has to be done with global vars instead of YAML File
-        # Because pool should constant and not for every layer
-        oracle_pool_min = int(os.environ.get('ORACLE_POOL_MIN'))
-        oracle_pool_max = int(os.environ.get('ORACLE_POOL_MAX'))
-
         dsn = cls._make_dsn(conn_dict)
         # Create the pool
 
-        DatabaseConnection.pool = oracledb.create_pool(
+        p = oracledb.create_pool(
                     user=conn_dict["user"],
                     password=conn_dict["password"],
                     dsn=dsn,
@@ -83,7 +76,7 @@ class DatabaseConnection:
                 )
         LOGGER.debug("Connection pool created successfully.")
 
-        return DatabaseConnection.pool
+        return p
 
     def __init__(self, conn_dic, table, properties=[], context="query"):
         """
@@ -118,17 +111,23 @@ class DatabaseConnection:
         )
         self.properties = [item.lower() for item in properties]
         self.fields = {}  # Dict of columns. Key is col name, value is type
-
+        oracle_pool_min = int(os.environ.get('ORACLE_POOL_MIN', 0))
+        oracle_pool_max = int(os.environ.get('ORACLE_POOL_MAX', 0))
         # Initialize the connection pool if it hasn't been initialized
-        if os.environ.get('ORACLE_POOL_MIN') and os.environ.get('ORACLE_POOL_MAX'):  # noqa
+        if oracle_pool_min and oracle_pool_max:
             LOGGER.debug("Found environment variables for session pooling:")
-            LOGGER.debug(f"ORACLE_POOL_MIN: {os.environ.get('ORACLE_POOL_MIN')}")  # noqa
-            LOGGER.debug(f"ORACLE_POOL_MAX: {os.environ.get('ORACLE_POOL_MAX')}")  # noqa
-            if DatabaseConnection.pool is None:
-                with DatabaseConnection.lock:
+            LOGGER.debug(f"ORACLE_POOL_MIN: {oracle_pool_min}")
+            LOGGER.debug(f"ORACLE_POOL_MAX: {oracle_pool_max}")
+            with DatabaseConnection.lock:
+                if DatabaseConnection.pool is None:
                     LOGGER.debug(f"self.conn_dict contains {self.conn_dict}")
-                    DatabaseConnection.initialize_pool(self.conn_dict)
-                    LOGGER.debug(f"Initialized conneciton pool with {DatabaseConnection.pool.max} connections ")  # noqa
+                    DatabaseConnection.pool = DatabaseConnection.create_pool(
+                        self.conn_dict, oracle_pool_min, oracle_pool_max
+                    )
+                    LOGGER.debug(
+                        "Initialized conneciton pool with "
+                        f"{DatabaseConnection.pool.max} connections"
+                    )
 
     @staticmethod
     def _make_dsn(conn_dict):
@@ -287,7 +286,7 @@ class DatabaseConnection:
             if DatabaseConnection.pool:
                 DatabaseConnection.pool.release(self.conn)
                 LOGGER.debug("Connection released back to pool.")
-            elif self.conn:
+            else:
                 self.conn.close()
                 LOGGER.debug("Single Connection closed")
         except oracledb.DatabaseError as e:
