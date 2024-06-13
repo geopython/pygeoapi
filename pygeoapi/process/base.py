@@ -53,6 +53,13 @@ class BaseProcessor:
         self.metadata = process_metadata
         self.supports_outputs = False
 
+    def set_job_id(self, job_id: str) -> None:
+       """
+       set the job_id within the processor
+       To be implemented by derived classes where required.
+       """
+       pass
+    
     def execute(self, data: dict, outputs: Optional[dict] = None
                 ) -> Tuple[str, Any]:
         """
