@@ -264,7 +264,7 @@ class BaseManager:
 
             if self.output_dir is not None:
                 LOGGER.debug(f'writing output to {job_filename}')
-                if isinstance(outputs, dict):
+                if isinstance(outputs, (dict, list)):
                     mode = 'w'
                     data = json.dumps(outputs, sort_keys=True, indent=4)
                     encoding = 'utf-8'
