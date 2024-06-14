@@ -74,10 +74,10 @@ class BaseProcessor:
 
         :param data: Dict with the input data that the process needs in order
                      to execute
-        :param outputs: `dict` optionally specify the subset of required
-            outputs - defaults to all outputs.
-            The value of any key may be an object and include the property
-            `transmissionMode` - defauts to `value`.
+        :param outputs: `dict` or `list` to optionally specify the subset of
+                        required outputs - defaults to all outputs.
+                        The value of any key may be an object and include the
+                        property `transmissionMode` - defauts to `value`.
         :returns: tuple of MIME type and process response
                   (string or bytes, or dict)
         """
