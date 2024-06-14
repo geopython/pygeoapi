@@ -57,6 +57,12 @@ class BaseProcessor:
         """
         set the job_id within the processor
         To be implemented by derived classes where required.
+
+        :job_id: the job_id assigned to the request by the Manager.
+            The function shuold be called by the Manager upon assigning
+            the job_id. The job_id is intended to be used by derived
+            classes, e.g. to write temporary files where filenames
+            contains the string job_id.
         """
         pass
 
