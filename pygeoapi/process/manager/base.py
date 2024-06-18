@@ -238,25 +238,6 @@ class BaseManager:
 
         :returns: tuple of MIME type, response payload and status
         """
-
-        process_id = p.metadata['id']
-        current_status = JobStatus.accepted
-
-        job_metadata = {
-            'type': 'process',
-            'identifier': job_id,
-            'process_id': process_id,
-            'job_start_datetime': datetime.utcnow().strftime(
-                DATETIME_FORMAT),
-            'job_end_datetime': None,
-            'status': current_status.value,
-            'location': None,
-            'mimetype': 'application/octet-stream',
-            'message': 'Job accepted and ready for execution',
-            'progress': 5
-        }
-
-        self.add_job(job_metadata)
         self._send_in_progress_notification(subscriber)
 
         try:
@@ -283,7 +264,7 @@ class BaseManager:
 
             if self.output_dir is not None:
                 LOGGER.debug(f'writing output to {job_filename}')
-                if isinstance(outputs, dict):
+                if isinstance(outputs, (dict, list)):
                     mode = 'w'
                     data = json.dumps(outputs, sort_keys=True, indent=4)
                     encoding = 'utf-8'
@@ -374,6 +355,8 @@ class BaseManager:
 
         job_id = str(uuid.uuid1())
         processor = self.get_processor(process_id)
+        processor.set_job_id(job_id)
+
         if execution_mode == RequestedProcessExecutionMode.respond_async:
             job_control_options = processor.metadata.get(
                 'jobControlOptions', [])
@@ -406,6 +389,23 @@ class BaseManager:
             LOGGER.debug('Synchronous execution')
             handler = self._execute_handler_sync
             response_headers = None
+
+        # Add Job before returning any response.
+        current_status = JobStatus.accepted
+        job_metadata = {
+            'type': 'process',
+            'identifier': job_id,
+            'process_id': process_id,
+            'job_start_datetime': datetime.utcnow().strftime(DATETIME_FORMAT),
+            'job_end_datetime': None,
+            'status': current_status.value,
+            'location': None,
+            'mimetype': 'application/octet-stream',
+            'message': 'Job accepted and ready for execution',
+            'progress': 5
+        }
+        self.add_job(job_metadata)
+
         # TODO: handler's response could also be allowed to include more HTTP
         # headers
         mime_type, outputs, status = handler(
