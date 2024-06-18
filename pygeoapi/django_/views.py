@@ -106,15 +106,13 @@ def tilematrixsets(request: HttpRequest,
     :returns: Django HTTP Response
     """
 
-    response = None
-
     if tilematrixset_id is None:
-        response_ = _feed_response(request, 'tilematrixsets')
+        response_ = execute_from_django(tiles_api.tilematrixsets, request)
     else:
-        response_ = _feed_response(request, 'tilematrixset', tilematrixset_id)
-    response = _to_django_response(*response_)
+        response_ = execute_from_django(tiles_api.tilematrixsets, request,
+                                        tilematrixset_id)
 
-    return response
+    return response_
 
 
 def collections(request: HttpRequest,
@@ -129,9 +127,8 @@ def collections(request: HttpRequest,
     """
 
     response_ = _feed_response(request, 'describe_collections', collection_id)
-    response = _to_django_response(*response_)
 
-    return response
+    return _to_django_response(*response_)
 
 
 def collection_schema(request: HttpRequest,
@@ -145,12 +142,8 @@ def collection_schema(request: HttpRequest,
     :returns: Django HTTP Response
     """
 
-    response_ = _feed_response(
-        request, 'get_collection_schema', collection_id
-    )
-    response = _to_django_response(*response_)
-
-    return response
+    return execute_from_django(itemtypes_api.get_collection_schema, request,
+                               collection_id)
 
 
 def collection_queryables(request: HttpRequest,
@@ -164,12 +157,9 @@ def collection_queryables(request: HttpRequest,
     :returns: Django HTTP Response
     """
 
-    response_ = execute_from_django(
+    return execute_from_django(
         itemtypes_api.get_collection_queryables, request, collection_id
     )
-    response = _to_django_response(*response_)
-
-    return response
 
 
 def collection_items(request: HttpRequest, collection_id: str) -> HttpResponse:
@@ -204,9 +194,7 @@ def collection_items(request: HttpRequest, collection_id: str) -> HttpResponse:
                                         request, 'options', collection_id,
                                         skip_valid_check=True)
 
-    response = _to_django_response(*response_)
-
-    return response
+    return response_
 
 
 def collection_map(request: HttpRequest, collection_id: str):
@@ -217,6 +205,7 @@ def collection_map(request: HttpRequest, collection_id: str):
 
     :returns: HTTP response
     """
+
     return execute_from_django(
         maps_api.get_collection_map, request, collection_id
     )
@@ -233,12 +222,8 @@ def collection_style_map(request: HttpRequest, collection_id: str,
     :returns: HTTP response
     """
 
-    response_ = _feed_response(request, 'get_collection_map',
+    return execute_from_django(maps_api.get_collection_map, request,
                                collection_id, style_id)
-
-    response = _to_django_response(*response_)
-
-    return response
 
 
 def collection_item(request: HttpRequest,
@@ -254,27 +239,22 @@ def collection_item(request: HttpRequest,
     """
 
     if request.method == 'GET':
-        response_ = _feed_response(
-            request, 'get_collection_item', collection_id, item_id
-        )
+        response_ = execute_from_django(itemtypes_api.get_collection_item,
+                                        request, collection_id, item_id)
     elif request.method == 'PUT':
-        response_ = _feed_response(
-            request, 'manage_collection_item', request, 'update',
-            collection_id, item_id, skip_valid_check=True,
-        )
+        response_ = execute_from_django(itemtypes_api.manage_collection_item,
+                                        request, 'update', collection_id,
+                                        item_id, skip_valid_check=True)
     elif request.method == 'DELETE':
-        response_ = _feed_response(
-            request, 'manage_collection_item', request, 'delete',
-            collection_id, item_id, skip_valid_check=True,
-        )
+        response_ = execute_from_django(itemtypes_api.manage_collection_item,
+                                        request, 'delete', collection_id,
+                                        item_id, skip_valid_check=True)
     elif request.method == 'OPTIONS':
-        response_ = _feed_response(
-            request, 'manage_collection_item', request, 'options',
-            collection_id, item_id, skip_valid_check=True)
+        response_ = execute_from_django(itemtypes_api.manage_collection_item,
+                                        request, 'options', collection_id,
+                                        item_id, skip_valid_check=True)
 
-    response = _to_django_response(*response_)
-
-    return response
+    return response_
 
 
 def collection_coverage(request: HttpRequest,
@@ -288,12 +268,9 @@ def collection_coverage(request: HttpRequest,
     :returns: Django HTTP response
     """
 
-    response_ = execute_from_django(
+    return execute_from_django(
         coverages_api.get_collection_coverage, request, collection_id
     )
-    response = _to_django_response(*response_)
-
-    return response
 
 
 def collection_tiles(request: HttpRequest, collection_id: str) -> HttpResponse:
@@ -325,7 +302,7 @@ def collection_tiles_metadata(request: HttpRequest, collection_id: str,
     return execute_from_django(
         tiles_api.get_collection_tiles_metadata,
         request, collection_id, tileMatrixSetId,
-        skip_valid_check=True,
+        skip_valid_check=True
     )
 
 
@@ -353,7 +330,7 @@ def collection_item_tiles(request: HttpRequest, collection_id: str,
         tileMatrix,
         tileRow,
         tileCol,
-        skip_valid_check=True,
+        skip_valid_check=True
     )
 
 
@@ -398,13 +375,16 @@ def jobs(request: HttpRequest, job_id: Optional[str] = None) -> HttpResponse:
     """
 
     if job_id is None:
-        return execute_from_django(processes_api.get_jobs, request)
+        response_ = execute_from_django(processes_api.get_jobs, request)
     else:
         if request.method == 'DELETE':  # dismiss job
-            return execute_from_django(processes_api.delete_job, request,
-                                       job_id)
+            response_ = execute_from_django(processes_api.delete_job, request,
+                                            job_id)
         else:  # Return status of a specific job
-            return execute_from_django(processes_api.get_jobs, request, job_id)
+            response_ = execute_from_django(processes_api.get_jobs, request,
+                                            job_id)
+
+    return response_
 
 
 def job_results(request: HttpRequest,
@@ -434,15 +414,8 @@ def job_results_resource(request: HttpRequest, process_id: str, job_id: str,
     """
 
     # TODO: this api method does not exist
-    response_ = _feed_response(
-        request,
-        'get_job_result_resource',
-        job_id,
-        resource
-    )
-    response = _to_django_response(*response_)
-
-    return response
+    return execute_from_django(processes_api.get_job_result_resource,
+                               request, job_id, resource)
 
 
 def get_collection_edr_query(
@@ -465,6 +438,7 @@ def get_collection_edr_query(
         query_type = 'locations'
     else:
         query_type = request.path.split('/')[-1]
+
     return execute_from_django(
         edr_api.get_collection_edr_query,
         request,
@@ -472,7 +446,7 @@ def get_collection_edr_query(
         instance_id,
         query_type,
         location_id,
-        skip_valid_check=True,
+        skip_valid_check=True
     )
 
 
