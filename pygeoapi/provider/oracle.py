@@ -1,6 +1,7 @@
 # =================================================================
 #
 # Authors: Andreas Kosubek <andreas.kosubek@ama.gv.at>
+# Authors: Moritz Langer <moritz.b.langer@gmail.com>
 #
 # Copyright (c) 2023 Andreas Kosubek
 #
