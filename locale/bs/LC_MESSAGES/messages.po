@@ -632,3 +632,9 @@ msgstr ""
 
 msgid "TileMatrixSet definition in JSON"
 msgstr ""
+
+msgid "Data collections in this service"
+msgstr ""
+
+msgid "Record collections in this service"
+msgstr ""
