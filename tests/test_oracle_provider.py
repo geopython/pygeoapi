@@ -43,6 +43,9 @@ PORT = os.environ.get("PYGEOAPI_ORACLE_PORT", "1521")
 
 
 class SqlManipulator:
+    def __init__(self, provider_def):
+        self.provider_def = provider_def
+
     def process_query(
         self,
         db,
@@ -62,8 +65,12 @@ class SqlManipulator:
         q,
         language,
         filterq,
+        extra_params,
     ):
         sql = "ID = 10 AND :foo != :bar"
+
+        if extra_params.get("custom-auth") == "forbidden":
+            sql += " AND 'auth' = 'you arent allowed'"
 
         if sql_query.find(" WHERE ") == -1:
             sql_query = sql_query.replace("#WHERE#", f" WHERE {sql}")
@@ -616,3 +623,12 @@ def test_query_mandatory_properties_must_be_specified(config):
     p = OracleProvider(config)
     with pytest.raises(ProviderInvalidQueryError):
         p.query(properties=[("id", "123")])
+
+
+def test_extra_params_are_passed_to_sql_manipulator(config_manipulator):
+    extra_params = {"custom-auth": "forbidden"}
+
+    p = OracleProvider(config_manipulator)
+    response = p.query(extra_params=extra_params)
+
+    assert not response['features']
