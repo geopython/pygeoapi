@@ -115,23 +115,18 @@ class XarrayEDRProvider(BaseEDRProvider, XarrayProvider):
                 data = self._data
 
             if self.time_field in query_params:
-                remaining_query = {
-                    key: val for key, val in query_params.items()
-                    if key != self.time_field
-                }
                 if isinstance(query_params[self.time_field], slice):
+                    remaining_query = {
+                        key: val for key, val in query_params.items()
+                        if key != self.time_field
+                    }
                     time_query = {
                         self.time_field: query_params[self.time_field]
                     }
+                    data = data.sel(
+                        time_query).sel(remaining_query, method='nearest')
                 else:
-                    time_query = {
-                        self.time_field: (
-                                data[self.time_field].dt.date ==
-                                query_params[self.time_field]
-                        )
-                    }
-                data = data.sel(
-                    time_query).sel(remaining_query, method='nearest')
+                    data = data.sel(query_params, method='nearest')
             else:
                 data = data.sel(query_params, method='nearest')
         except KeyError:
