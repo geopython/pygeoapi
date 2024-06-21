@@ -4,7 +4,7 @@
 # Authors: Moritz Langer <moritz.b.langer@gmail.com>
 #
 # Copyright (c) 2023 Andreas Kosubek
-#
+# Copyright (c) 2024 Moritz Langer
 # Permission is hereby granted, free of charge, to any person
 # obtaining a copy of this software and associated documentation
 # files (the "Software"), to deal in the Software without
@@ -31,11 +31,12 @@
 import importlib
 import json
 import logging
+import os
+import threading
+from typing import Optional
+
 import oracledb
 import pyproj
-from typing import Optional
-import threading
-import os
 
 from pygeoapi.api import DEFAULT_STORAGE_CRS
 
