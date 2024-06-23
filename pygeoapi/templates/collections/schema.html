@@ -21,7 +21,6 @@
         <th>Type</th>
         <th>Units</th>
         <th>Values</th>
-      <ul>
       {% for qname, qinfo in data['properties'].items() %}
         <tr>
           <td>{{ qname }}</td>
@@ -29,7 +28,11 @@
           {% if qname == 'geometry' %}
           <td><a href="{{ qinfo['$ref'] }}">{{ qname }} </a></td>
           {% else %}
-          <td><code>{{ qinfo['type'] }}</code></td>
+          <td><code>{{ qinfo['type'] }}</code>
+          {% if 'format' in qinfo %}
+          (<code>{{ qinfo['format'] }}</code>)
+          {% endif %}
+          </td>
           {% endif %}
           <td>{{ qinfo['x-ogc-unit'] }}</td>
           <td>

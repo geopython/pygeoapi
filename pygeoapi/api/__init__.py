@@ -1353,6 +1353,8 @@ class API:
 
         for k, v in p.fields.items():
             schema['properties'][k] = v
+            if v.get('format') is None:
+                schema['properties'][k].pop('format', None)
 
             if k == p.id_field:
                 schema['properties'][k]['x-ogc-role'] = 'id'
