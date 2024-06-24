@@ -248,7 +248,7 @@ class PostgreSQLProvider(BaseProvider):
             if column.name == self.geom:
                 continue
 
-            fields[column.name] = {
+            fields[str(column.name)] = {
                 'type': _column_type_to_json_schema_type(column.type),
                 'format': _column_format_to_json_schema_format(column.type)
             }
