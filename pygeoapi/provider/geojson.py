@@ -30,7 +30,6 @@
 
 import json
 import logging
-import os
 import uuid
 
 from pygeoapi.provider.base import BaseProvider, ProviderItemNotFoundError
@@ -79,8 +78,8 @@ class GeoJSONProvider(BaseProvider):
 
         fields = {}
         LOGGER.debug('Treating all columns as string types')
-        if os.path.exists(self.data):
-            with open(self.data) as src:
+        if self.fs.exists(self.data):
+            with self.fs.open(self.data) as src:
                 data = json.loads(src.read())
             for key, value in data['features'][0]['properties'].items():
                 if isinstance(value, float):
@@ -103,8 +102,8 @@ class GeoJSONProvider(BaseProvider):
         happens on every request. This is not efficient.
         """
 
-        if os.path.exists(self.data):
-            with open(self.data) as src:
+        if self.fs.exists(self.data):
+            with self.fs.open(self.data) as src:
                 data = json.loads(src.read())
         else:
             LOGGER.warning(f'File {self.data} does not exist.')
@@ -199,7 +198,7 @@ class GeoJSONProvider(BaseProvider):
 
         all_data['features'].append(new_feature)
 
-        with open(self.data, 'w') as dst:
+        with self.fs.open(self.data, 'w') as dst:
             dst.write(json.dumps(all_data))
 
     def update(self, identifier, new_feature):
@@ -219,7 +218,7 @@ class GeoJSONProvider(BaseProvider):
                 if feature['properties'][self.id_field] == identifier:
                     new_feature['properties'][self.id_field] = identifier
                     all_data['features'][i] = new_feature
-        with open(self.data, 'w') as dst:
+        with self.fs.open(self.data, 'w') as dst:
             dst.write(json.dumps(all_data))
 
     def delete(self, identifier):
@@ -236,7 +235,7 @@ class GeoJSONProvider(BaseProvider):
             elif self.id_field in feature['properties']:
                 if feature['properties'][self.id_field] == identifier:
                     all_data['features'].pop(i)
-        with open(self.data, 'w') as dst:
+        with self.fs.open(self.data, 'w') as dst:
             dst.write(json.dumps(all_data))
 
     def __repr__(self):

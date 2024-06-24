@@ -6,7 +6,8 @@ elasticsearch-dsl
 fiona
 GDAL<=3.8.4
 geoalchemy2
-netCDF4
+h5py
+h5netcdf
 numpy
 oracledb
 pandas
