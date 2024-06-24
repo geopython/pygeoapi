@@ -38,6 +38,7 @@ import mimetypes
 import os
 import re
 import functools
+import uuid
 from functools import partial
 from dataclasses import dataclass
 from datetime import date, datetime, time
@@ -383,6 +384,8 @@ def json_serial(obj: Any) -> str:
 
     if isinstance(obj, (datetime, date, time)):
         return obj.isoformat()
+    elif isinstance(obj, uuid.UUID):
+        return str(obj)
     elif isinstance(obj, bytes):
         try:
             LOGGER.debug('Returning as UTF-8 decoded bytes')
