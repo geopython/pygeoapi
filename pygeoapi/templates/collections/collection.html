@@ -64,6 +64,14 @@
               {% trans %}Display Queryables of{% endtrans %} "{{ data['title'] }}"</a></div>
         </li>
       </ul>
+      <h3>{% trans %}Schema{% endtrans %}</h3>
+      <ul>
+        <li>
+          <div>
+            <a title="{% trans %}Display Schema{% endtrans %}" href="{{ data['collections_path'] }}/{{ data['id'] }}/schema">
+              {% trans %}Display Schema of{% endtrans %} "{{ data['title'] }}"</a></div>
+        </li>
+      </ul>
       {% for provider in config['resources'][data['id']]['providers'] %}
         {% if 'tile' in provider['type'] %}
       <h3>{% trans %}Tiles{% endtrans %}</h3>

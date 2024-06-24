@@ -21,6 +21,9 @@
         <li><a href="{{ qinfo['$ref'] }}">{{ qname }} </a></li>
         {% else %}
         <li>{{ qname }} (<code>{{ qinfo['type'] }}</code>)
+        {% if 'format' in qinfo %}
+        (<code>{{ qinfo['format'] }}</code>)
+        {% endif %}
         {% if 'enum' in qinfo %}
           <ul>
           {% for value in qinfo['enum'] %}

@@ -199,7 +199,10 @@ class PostgreSQLProvider(BaseProvider):
 
         :returns: dict of fields
         """
+
         LOGGER.debug('Get available fields/properties')
+
+        fields = {}
 
         # sql-schema only allows these types, so we need to map from sqlalchemy
         # string, number, integer, object, array, boolean, null,
@@ -208,30 +211,49 @@ class PostgreSQLProvider(BaseProvider):
             str: 'string',
             float: 'number',
             int: 'integer',
-            bool: 'boolean',
+            bool: 'boolean'
         }
-        default_value = 'string'
+        default_type = 'string'
+
+        # https://json-schema.org/understanding-json-schema/reference/string#built-in-formats  # noqa
+        column_format_map = {
+            'date': 'date',
+            'timestamp': 'date-time',
+            'time': 'time',
+            'interval': 'duration'
+        }
 
         def _column_type_to_json_schema_type(column_type):
             try:
                 python_type = column_type.python_type
             except NotImplementedError:
                 LOGGER.warning(f'Unsupported column type {column_type}')
-                return default_value
+                return default_type
             else:
                 try:
                     return column_type_map[python_type]
                 except KeyError:
                     LOGGER.warning(f'Unsupported column type {column_type}')
-                    return default_value
+                    return default_type
 
-        return {
-            str(column.name): {
-                'type': _column_type_to_json_schema_type(column.type)
+        def _column_format_to_json_schema_format(column_type):
+            try:
+                ct = str(column_type).lower()
+                return column_format_map[ct]
+            except KeyError:
+                LOGGER.warning(f'Unsupported column type {column_type}')
+                return None
+
+        for column in self.table_model.__table__.columns:
+            if column.name == self.geom:
+                continue
+
+            fields[str(column.name)] = {
+                'type': _column_type_to_json_schema_type(column.type),
+                'format': _column_format_to_json_schema_format(column.type)
             }
-            for column in self.table_model.__table__.columns
-            if column.name != self.geom  # Exclude geometry column
-        }
+
+        return fields
 
     def get(self, identifier, crs_transform_spec=None, **kwargs):
         """

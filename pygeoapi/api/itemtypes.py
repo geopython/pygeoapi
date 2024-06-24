@@ -167,6 +167,8 @@ def get_collection_queryables(api: API, request: Union[APIRequest, Any],
                 'title': k,
                 'type': v['type']
             }
+            if v.get('format') is not None:
+                queryables['properties'][k]['format'] = v['format']
             if 'values' in v:
                 queryables['properties'][k]['enum'] = v['values']
 
@@ -1478,6 +1480,9 @@ def get_oas_30(cfg: dict, locale: str) -> tuple[list[dict[str, str]], dict[str, 
                     }
                 else:
                     schema = type_
+
+                if schema.get('format') is None:
+                    schema.pop('format', None)
 
                 path_ = f'{collection_name_path}/items'
                 paths[path_]['get']['parameters'].append({

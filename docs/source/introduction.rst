@@ -12,10 +12,10 @@ Features
 * certified OGC Compliant and Reference Implementation
   * OGC API - Features
   * OGC API - Environmental Data Retrieval
+  * OGC API - Tiles
 * additionally implements
   * OGC API - Coverages
   * OGC API - Maps
-  * OGC API - Tiles
   * OGC API - Processes
   * OGC API - Records
   * SpatioTemporal Asset Library

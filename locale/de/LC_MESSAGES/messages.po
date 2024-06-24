@@ -688,3 +688,9 @@ msgstr ""
 
 msgid "Record collections in this service"
 msgstr ""
+
+msgid "Display Schema"
+msgstr ""
+
+msgid "Display Schema of"
+msgstr ""
