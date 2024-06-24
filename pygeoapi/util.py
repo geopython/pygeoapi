@@ -32,23 +32,23 @@
 import base64
 from copy import deepcopy
 from filelock import FileLock
-import json
-import logging
-import mimetypes
-import os
-import re
 import functools
-import uuid
 from functools import partial
 from dataclasses import dataclass
 from datetime import date, datetime, time
 from decimal import Decimal
 from enum import Enum
+import json
+import logging
+import mimetypes
+import os
 import pathlib
 from pathlib import Path
+import re
 from typing import Any, IO, Union, List, Optional, Callable
 from urllib.parse import urlparse
 from urllib.request import urlopen
+import uuid
 
 import dateutil.parser
 from shapely import ops
@@ -384,8 +384,6 @@ def json_serial(obj: Any) -> str:
 
     if isinstance(obj, (datetime, date, time)):
         return obj.isoformat()
-    elif isinstance(obj, uuid.UUID):
-        return str(obj)
     elif isinstance(obj, bytes):
         try:
             LOGGER.debug('Returning as UTF-8 decoded bytes')
@@ -402,6 +400,8 @@ def json_serial(obj: Any) -> str:
     elif isinstance(obj, l10n.Locale):
         return l10n.locale2str(obj)
     elif isinstance(obj, (pathlib.PurePath, Path)):
+        return str(obj)
+    elif isinstance(obj, uuid.UUID):
         return str(obj)
     else:
         msg = f'{obj} type {type(obj)} not serializable'
