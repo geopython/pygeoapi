@@ -1481,6 +1481,9 @@ def get_oas_30(cfg: dict, locale: str) -> tuple[list[dict[str, str]], dict[str, 
                 else:
                     schema = type_
 
+                if schema.get('format') is None:
+                    schema.pop('format', None)
+
                 path_ = f'{collection_name_path}/items'
                 paths[path_]['get']['parameters'].append({
                     'name': field,
