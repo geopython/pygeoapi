@@ -33,6 +33,7 @@ from contextlib import nullcontext as does_not_raise
 from copy import deepcopy
 from io import StringIO
 from unittest import mock
+import uuid
 
 import pytest
 from pyproj.exceptions import CRSError
@@ -141,6 +142,9 @@ def test_json_serial():
 
     d = Decimal(1.0)
     assert util.json_serial(d) == 1.0
+
+    d = uuid.UUID('12345678-1234-5678-1234-567812345678')
+    assert util.json_serial(d) == '12345678-1234-5678-1234-567812345678'
 
     with pytest.raises(TypeError):
         util.json_serial('foo')
