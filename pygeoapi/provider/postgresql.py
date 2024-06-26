@@ -245,7 +245,7 @@ class PostgreSQLProvider(BaseProvider):
                 ct = str(column_type).lower()
                 return column_format_map[ct]
             except KeyError:
-                LOGGER.debug('Not a string type/no format')
+                LOGGER.debug('No string format detected')
                 return None
 
         for column in self.table_model.__table__.columns:
