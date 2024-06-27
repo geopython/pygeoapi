@@ -88,6 +88,26 @@ def config():
 
 
 @pytest.fixture()
+def config_types():
+    return {
+        'name': 'PostgreSQL',
+        'type': 'feature',
+        'data': {'host': '127.0.0.1',
+                 'dbname': 'test',
+                 'user': 'postgres',
+                 'password': PASSWORD,
+                 'search_path': ['public']
+                 },
+        'options': {
+                        'connect_timeout': 10
+                   },
+        'id_field': 'id',
+        'table': 'foo',
+        'geom_field': 'the_geom'
+    }
+
+
+@pytest.fixture()
 def openapi():
     with open(get_test_file_path('pygeoapi-test-openapi.yml')) as fh:
         return yaml_load(fh)
@@ -338,6 +358,21 @@ def test_query_cql_properties_bbox_filters(config):
     # Assert
     ids = [feature["id"] for feature in feature_collection.get('features')]
     assert ids == expected_ids
+
+
+def test_get_fields_types(config_types):
+    provider = PostgreSQLProvider(config_types)
+
+    expected_fields = {
+        'id': {'type': 'integer', 'format': None},
+        'field1': {'type': 'number', 'format': None},
+        'field2': {'type': 'string', 'format': None},
+        'field3': {'type': 'number', 'format': None},
+        'dt': {'type': 'string', 'format': 'date-time'}
+    }
+
+    assert provider.get_fields() == expected_fields
+    assert provider.fields == expected_fields  # API uses .fields attribute
 
 
 def test_get_fields(config):
