@@ -549,7 +549,7 @@ def get_collection_items(
             'title': l10n.translate(
                 collections[dataset]['title'], request.locale),
             'rel': 'collection',
-            'href': uri
+            'href': '/'.join(uri.split('/')[:-1])
         })
 
     content['timeStamp'] = datetime.utcnow().strftime(
