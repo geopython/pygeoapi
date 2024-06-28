@@ -176,7 +176,7 @@ Translator guide
 Hardcoded strings in pygeoapi templates are translated using the Babel translation system.
 
 By default, pygeoapi stores translation files in the `locale` directory at the root of the
-source code repository. This value can be overriden in the pygeoapi configuration with
+source code repository. This value can be overridden in the pygeoapi configuration with
 the `server.locale_dir` directive.
 
 Translators can follow these steps to prepare their environment for translations.

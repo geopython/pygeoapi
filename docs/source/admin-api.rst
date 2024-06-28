@@ -18,7 +18,7 @@ Access control
 --------------
 
 It should be made clear that authentication and authorization is beyond the responsibility of pygeoapi.  This means that
-if a pygeoapi user enables the Admin API, they must provide access control explicity via another service.
+if a pygeoapi user enables the Admin API, they must provide access control explicitly via another service.
 
 pygeoapi hot reloading in gunicorn
 ----------------------------------

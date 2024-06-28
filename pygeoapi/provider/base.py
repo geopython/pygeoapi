@@ -87,7 +87,7 @@ class BaseProvider:
 
         Example response: {'field1': 'string', 'field2': 'number'}}
 
-        :returns: dict of field names and their associated JSON Schema typess
+        :returns: dict of field names and their associated JSON Schema types
         """
 
         raise NotImplementedError()

@@ -200,7 +200,7 @@ class BaseManager:
         :param requested_outputs: `dict` specify the subset of required
             outputs - defaults to all outputs.
             The value of any key may be an object and include the property
-            `transmissionMode` - defauts to `value`.
+            `transmissionMode` - defaults to `value`.
             Note: 'optional' is for backward compatibility.
         :param subscriber: optional `Subscriber` specifying callback URLs
 
@@ -232,7 +232,7 @@ class BaseManager:
         :param requested_outputs: `dict` specify the subset of required
             outputs - defaults to all outputs.
             The value of any key may be an object and include the property
-            `transmissionMode` - defauts to `value`.
+            `transmissionMode` - defaults to `value`.
             Note: 'optional' is for backward compatibility.
         :param subscriber: optional `Subscriber` specifying callback URLs
 
@@ -293,7 +293,7 @@ class BaseManager:
         except Exception as err:
             # TODO assess correct exception type and description to help users
             # NOTE, the /results endpoint should return the error HTTP status
-            # for jobs that failed, ths specification says that failing jobs
+            # for jobs that failed, the specification says that failing jobs
             # must still be able to be retrieved with their error message
             # intact, and the correct HTTP error status at the /results
             # endpoint, even if the /result endpoint correctly returns the
@@ -342,7 +342,7 @@ class BaseManager:
         :param requested_outputs: `dict` optionally specify the subset of
             required outputs - defaults to all outputs.
             The value of any key may be an object and include the property
-            `transmissionMode` - defauts to `value`.
+            `transmissionMode` - defaults to `value`.
             Note: 'optional' is for backward compatibility.
         :param subscriber: `Subscriber` optionally specifying callback urls
 

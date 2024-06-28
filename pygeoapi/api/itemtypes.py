@@ -361,7 +361,7 @@ def get_collection_items(
                 HTTPStatus.BAD_REQUEST, headers, request.format,
                 'NoApplicableCode', msg)
     elif len(bbox) > 0:
-        # bbox but no bbox-crs parm: assume bbox is in default CRS
+        # bbox but no bbox-crs param: assume bbox is in default CRS
         bbox_crs = DEFAULT_CRS
 
     # Transform bbox to storageCRS
