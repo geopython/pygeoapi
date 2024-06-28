@@ -110,7 +110,7 @@ Hello World (Default)
    # execute a job for the ``hello-world`` process in asynchronous mode
    curl -X POST http://localhost:5000/processes/hello-world/execution \
        -H "Content-Type: application/json" \
-       -H "Prefer: respond-async"
+       -H "Prefer: respond-async" \
        -d "{\"inputs\":{\"name\": \"hi there2\"}}"
    # execute a job for the ``hello-world`` process with a success subscriber
     curl -X POST http://localhost:5000/processes/hello-world/execution \
