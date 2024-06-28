@@ -741,4 +741,4 @@ def get_oas_30(cfg: dict, locale: str) -> tuple[list[dict[str, str]], dict[str, 
         }
     }
 
-    return [{'name': 'proceses'}, {'name': 'jobs'}], {'paths': paths}
+    return [{'name': 'processes'}, {'name': 'jobs'}], {'paths': paths}
