@@ -35,7 +35,11 @@ from datetime import datetime
 from enum import Enum
 from typing import List, Optional
 
-from pydantic import BaseModel
+try:
+    from pydantic.v1 import BaseModel
+except ModuleNotFoundError:
+    # Pydantic version < 2.0
+    from pydantic import BaseModel
 
 
 class TilesMetadataFormat(str, Enum):

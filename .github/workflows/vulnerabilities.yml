@@ -21,6 +21,10 @@ jobs:
       run:
         working-directory: .
     steps:
+    - id: string
+      uses: ASzc/change-string-case-action
+      with:
+        string: ${{ github.repository }}
     - name: Checkout pygeoapi
       uses: actions/checkout@v4
     - name: Scan vulnerabilities with trivy
@@ -34,7 +38,7 @@ jobs:
         scan-ref: .
     - name: Build locally the image from Dockerfile
       run: |
-        docker buildx build -t ${{ github.repository }}:${{ github.sha }} --platform linux/amd64 --no-cache -f Dockerfile .
+        docker buildx build -t ${{ steps.string.outputs.lowercase }}:${{ github.sha }} --platform linux/amd64 --no-cache -f Dockerfile .
     - name: Scan locally built Docker image for vulnerabilities with trivy
       uses: aquasecurity/trivy-action@master
       with:
@@ -43,4 +47,4 @@ jobs:
         ignore-unfixed: true
         severity: CRITICAL,HIGH
         vuln-type: os,library
-        image-ref: '${{ github.repository }}:${{ github.sha }}'
+        image-ref: '${{ steps.string.outputs.lowercase }}:${{ github.sha }}'

@@ -35,7 +35,11 @@
 from datetime import date, datetime
 from typing import Any, List, Literal, Optional, Union
 
-from pydantic import BaseModel, Field
+try:
+    from pydantic.v1 import BaseModel, Field
+except ModuleNotFoundError:
+    # Pydantic version < 2.0
+    from pydantic import BaseModel, Field
 
 
 class CQLModel(BaseModel):
