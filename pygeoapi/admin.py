@@ -136,7 +136,7 @@ class Admin(API):
         config = patch.apply(config)
 
         # write pygeoapi configuration
-        LOGGER.debug('Writing pygeoapi configutation')
+        LOGGER.debug('Writing pygeoapi configuration')
         yaml_dump(config, self.PYGEOAPI_CONFIG)
         LOGGER.debug('Finished writing pygeoapi configuration')
 

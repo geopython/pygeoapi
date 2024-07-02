@@ -49,7 +49,7 @@ Connection examples
 pygeometa metadata control files
 --------------------------------
 
-pygeoapi's STAC filesystem fuctionality supports `pygeometa`_ MCF files residing
+pygeoapi's STAC filesystem functionality supports `pygeometa`_ MCF files residing
 in the same directory as data files.  If an MCF file is found, it will be used
 as part of generating the STAC item metadata (e.g. a file named ``birds.csv``
 having an associated ``birds.yml`` file).  If no MCF file is found, then

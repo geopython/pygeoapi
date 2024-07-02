@@ -122,7 +122,7 @@ class BaseMVTProvider(BaseTileProvider):
     def get_html_metadata(self, dataset, server_url, layer, tileset,
                           title, description, keywords, **kwargs):
         """
-        Gets tile metadata informations in html format
+        Gets tile metadata information in html format
 
         :param dataset: dataset name
         :param server_url: server base url

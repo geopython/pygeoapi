@@ -362,7 +362,7 @@ class XarrayProvider(BaseProvider):
             self.time_field = time_var
 
         # It would be preferable to use CF attributes to get width
-        # resolution etc but for now a generic approach is used to asess
+        # resolution etc but for now a generic approach is used to assess
         # all of the attributes based on lat lon vars
 
         properties = {

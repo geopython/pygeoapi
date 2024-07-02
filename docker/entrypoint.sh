@@ -71,7 +71,7 @@ case ${entry_cmd} in
 	test)
 	  for test_py in $(ls tests/test_*.py)
 	  do
-	    # Skip tests requireing backend server or libs installed
+	    # Skip tests requiring backend server or libs installed
 	    case ${test_py} in
 	        tests/test_elasticsearch__provider.py)
 	        ;&

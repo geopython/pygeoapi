@@ -127,7 +127,7 @@ class DatabaseConnection:
                         self.conn_dict, oracle_pool_min, oracle_pool_max
                     )
                     LOGGER.debug(
-                        "Initialized conneciton pool with "
+                        "Initialized connection pool with "
                         f"{DatabaseConnection.pool.max} connections"
                     )
 
@@ -300,7 +300,7 @@ class DatabaseConnection:
         Returns an array with all column names and data types
         from Oracle table ALL_TAB_COLUMNS.
         Lookup for public and private synonyms.
-        Throws ProviderGenericError when table not exist or accesable.
+        Throws ProviderGenericError when table not exist or accessible.
         """
 
         sql = """
@@ -728,7 +728,7 @@ class OracleProvider(BaseProvider):
             LOGGER.debug(f"target_srid: {target_srid}")
 
             # Build geometry column call
-            #   When a different output CRS is definded, the geometry
+            #   When a different output CRS is defined, the geometry
             #   geometry column would be transformed.
             if skip_geometry:
                 geom = ""
@@ -920,7 +920,7 @@ class OracleProvider(BaseProvider):
             LOGGER.debug(f"target_srid: {target_srid}")
 
             # Build geometry column call
-            #   When a different output CRS is definded, the geometry
+            #   When a different output CRS is defined, the geometry
             #   geometry column would be transformed.
             if source_srid != target_srid:
                 crs_dict = {"target_srid": target_srid}
@@ -1051,7 +1051,7 @@ class OracleProvider(BaseProvider):
                 if col.lower() in db.filtered_fields
             ]
 
-            # Flter function to get only properties who are
+            # Filter function to get only properties who are
             # in the column list
             def filter_binds(pair):
                 return pair[0].lower() in db.filtered_fields
@@ -1148,7 +1148,7 @@ class OracleProvider(BaseProvider):
                 if col.lower() in db.filtered_fields
             ]
 
-            # Flter function to get only properties who are
+            # Filter function to get only properties who are
             # in the column list
             def filter_binds(pair):
                 return pair[0].lower() in db.filtered_fields
