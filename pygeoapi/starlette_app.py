@@ -391,7 +391,8 @@ async def collection_coverage(request: Request, collection_id=None):
         collection_id = request.path_params['collection_id']
 
     return await execute_from_starlette(
-        coverages_api.get_collection_coverage, request, collection_id)
+        coverages_api.get_collection_coverage, request, collection_id,
+        skip_valid_check=True)
 
 
 async def collection_map(request: Request, collection_id, style_id=None):
