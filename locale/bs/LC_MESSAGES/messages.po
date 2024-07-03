@@ -644,3 +644,15 @@ msgstr ""
 
 msgid "Display Schema of"
 msgstr ""
+
+msgid "Contact"
+msgstr ""
+
+msgid "CRS"
+msgstr ""
+
+msgid "Epoch"
+msgstr ""
+
+msgid "not specified"
+msgstr ""
