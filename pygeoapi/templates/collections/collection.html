@@ -106,10 +106,10 @@
       <h3>{% trans %}Storage CRS{% endtrans %}</h3>
       <ul>
           <li>
-            CRS: <a title="{{ data['storageCRS'] }}" href="{{ data['storageCRS'] }}"><span>{{ data['storageCRS'] }}</span></a>
+            {% trans %}CRS{% endtrans %}: <a title="{{ data['storageCRS'] }}" href="{{ data['storageCRS'] }}"><span>{{ data['storageCRS'] }}</span></a>
           </li>
         <li>
-          Epoch: <span>{{ data['storageCrsCoordinateEpoch'] or 'not specified' }}</span></a>
+          {% trans %}Epoch{% endtrans %}: <span>{{ data['storageCrsCoordinateEpoch'] or '_(not specified)' }}</span></a>
         </li>
       </ul>
      {% endif %}
