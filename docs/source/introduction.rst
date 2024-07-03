@@ -10,15 +10,19 @@ Features
 
 * out of the box modern OGC API server
 * certified OGC Compliant and Reference Implementation
+  
   * OGC API - Features
   * OGC API - Environmental Data Retrieval
   * OGC API - Tiles
+
 * additionally implements
+
   * OGC API - Coverages
   * OGC API - Maps
   * OGC API - Processes
   * OGC API - Records
   * SpatioTemporal Asset Library
+  
 * out of the box data provider plugins for rasterio, GDAL/OGR, Elasticsearch, PostgreSQL/PostGIS
 * easy to use OpenAPI / Swagger documentation for developers
 * supports JSON, GeoJSON, HTML and CSV output
