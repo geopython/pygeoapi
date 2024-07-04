@@ -194,7 +194,7 @@ def test_get_collection_items(config, api_):
     assert features['features'][1]['properties']['stn_id'] == 35
 
     links = features['links']
-    assert len(links) == 4
+    assert len(links) == 5
     assert '/collections/obs/items?f=json' in links[0]['href']
     assert links[0]['rel'] == 'self'
     assert '/collections/obs/items?f=jsonld' in links[1]['href']
@@ -202,7 +202,8 @@ def test_get_collection_items(config, api_):
     assert '/collections/obs/items?f=html' in links[2]['href']
     assert links[2]['rel'] == 'alternate'
     assert '/collections/obs' in links[3]['href']
-    assert links[3]['rel'] == 'collection'
+    assert links[3]['rel'] == 'next'
+    assert links[4]['rel'] == 'collection'
 
     # Invalid offset
     req = mock_api_request({'offset': -1})
@@ -242,7 +243,7 @@ def test_get_collection_items(config, api_):
     assert len(features['features']) == 1
 
     links = features['links']
-    assert len(links) == 5
+    assert len(links) == 6
     assert '/collections/obs/items?f=json&limit=1&bbox=-180,90,180,90' in \
         links[0]['href']
     assert links[0]['rel'] == 'self'
@@ -256,7 +257,9 @@ def test_get_collection_items(config, api_):
         in links[3]['href']
     assert links[3]['rel'] == 'prev'
     assert '/collections/obs' in links[4]['href']
-    assert links[4]['rel'] == 'collection'
+    assert links[3]['rel'] == 'prev'
+    assert links[4]['rel'] == 'next'
+    assert links[5]['rel'] == 'collection'
 
     req = mock_api_request({
         'sortby': 'bad-property',
