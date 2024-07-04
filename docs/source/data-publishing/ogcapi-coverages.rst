@@ -100,23 +100,41 @@ Data access examples
 --------------------
 
 * list all collections
+
   * http://localhost:5000/collections
+  
 * overview of dataset
+
   * http://localhost:5000/collections/foo
+  
 * schema of dataset
+
   * http://localhost:5000/collections/foo/schema
+  
 * coverage access via CoverageJSON (default)
+
   * http://localhost:5000/collections/foo/coverage?f=json
+  
 * coverage access via native format (as defined in ``provider.format.name``)
+
   * http://localhost:5000/collections/foo/coverage?f=GRIB
+  
 * coverage access with comma-separated properties
+
   * http://localhost:5000/collections/foo/coverage?properties=1,3
+  
 * coverage access with subsetting
+
   * http://localhost:5000/collections/foo/coverage?subset=lat(10:20)&subset=long(10:20)
+  
 * coverage with bbox
+
   * http://localhost:5000/collections/foo/coverage?bbox=10,10,20,20
+  
 * coverage with bbox and bbox CRS
+
   * http://localhost:5000/collections/foo/coverage?bbox=-8794239.772668611,5311971.846945471,-8348961.809495518,5621521.486192066&bbox=crs=3857
+  
 
 .. note::
    ``.../coverage`` queries which return an alternative representation to CoverageJSON (which prompt a download)

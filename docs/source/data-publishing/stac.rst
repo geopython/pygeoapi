@@ -66,6 +66,7 @@ Data access examples
 --------------------
 
 * STAC root page
+
   * http://localhost:5000/stac
 
 From here, browse the filesystem accordingly.
