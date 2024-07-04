@@ -327,7 +327,7 @@ def collection_coverage(collection_id):
     """
 
     return execute_from_flask(coverages_api.get_collection_coverage, request,
-                              collection_id)
+                              collection_id, skip_valid_check=True)
 
 
 @BLUEPRINT.route('/collections/<path:collection_id>/tiles')

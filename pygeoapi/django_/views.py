@@ -269,7 +269,8 @@ def collection_coverage(request: HttpRequest,
     """
 
     return execute_from_django(
-        coverages_api.get_collection_coverage, request, collection_id
+        coverages_api.get_collection_coverage, request, collection_id,
+        skip_valid_check=True
     )
 
 
