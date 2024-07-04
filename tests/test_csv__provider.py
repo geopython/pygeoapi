@@ -137,7 +137,7 @@ def test_get_station(station_config):
 
     results = p.query(limit=20)
     assert len(results['features']) == 20
-    assert results['numberMatched'] == 20
+    assert results['numberMatched'] == 79
     assert results['numberReturned'] == 20
 
     result = p.get('0-20000-0-16337')
