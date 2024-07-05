@@ -130,7 +130,7 @@ class HelloWorldProcessor(BaseProcessor):
         value = f'Hello {name}! {message}'.strip()
 
         produced_outputs = {}
-        if outputs is None or 'echo' in outputs:
+        if not bool(outputs) or 'echo' in outputs:
             produced_outputs = {
                 'id': 'echo',
                 'value': value
