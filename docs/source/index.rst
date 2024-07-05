@@ -40,6 +40,7 @@ reference documentation on all aspects of the project.
    data-publishing/index
    transactions
    admin-api
+   security
    plugins
    html-templating
    crs
