@@ -9,7 +9,7 @@ fashion (inputs, outputs).
 pygeoapi implements OGC API - Processes functionality by providing a plugin architecture, thereby
 allowing developers to implement custom processing workflows in Python.
 
-The pygeoapi offers two processes: a default ``hello-world`` process which allows you to quickly explore the capabilities of processes, and an optional ``shapely-functions`` process with more advanced features that leverages `Shapely_` to expose various geometric processing functionality.
+The pygeoapi offers two processes: a default ``hello-world`` process which allows you to quickly explore the capabilities of processes, and an optional ``shapely-functions`` process with more advanced features that leverages `Shapely`_ to expose various geometric processing functionality.
 
 Configuration
 -------------
@@ -110,7 +110,7 @@ Hello World (Default)
    # execute a job for the ``hello-world`` process in asynchronous mode
    curl -X POST http://localhost:5000/processes/hello-world/execution \
        -H "Content-Type: application/json" \
-       -H "Prefer: respond-async"
+       -H "Prefer: respond-async" \
        -d "{\"inputs\":{\"name\": \"hi there2\"}}"
    # execute a job for the ``hello-world`` process with a success subscriber
     curl -X POST http://localhost:5000/processes/hello-world/execution \

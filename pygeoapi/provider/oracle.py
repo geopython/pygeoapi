@@ -1,9 +1,10 @@
 # =================================================================
 #
 # Authors: Andreas Kosubek <andreas.kosubek@ama.gv.at>
+# Authors: Moritz Langer <moritz.b.langer@gmail.com>
 #
 # Copyright (c) 2023 Andreas Kosubek
-#
+# Copyright (c) 2024 Moritz Langer
 # Permission is hereby granted, free of charge, to any person
 # obtaining a copy of this software and associated documentation
 # files (the "Software"), to deal in the Software without
@@ -30,9 +31,12 @@
 import importlib
 import json
 import logging
+import os
+import threading
+from typing import Optional
+
 import oracledb
 import pyproj
-from typing import Optional
 
 from pygeoapi.api import DEFAULT_STORAGE_CRS
 
@@ -54,6 +58,27 @@ class DatabaseConnection:
     """Database connection class to be used as 'with' statement.
     The class returns a connection object.
     """
+    pool = None  # Class-level connection pool
+    lock = threading.Lock()
+
+    @classmethod
+    def create_pool(cls, conn_dict, oracle_pool_min, oracle_pool_max):
+        """Initialize the connection pool for the class
+           Lock is implemented before function call at __init__"""
+        dsn = cls._make_dsn(conn_dict)
+        # Create the pool
+
+        p = oracledb.create_pool(
+                    user=conn_dict["user"],
+                    password=conn_dict["password"],
+                    dsn=dsn,
+                    min=oracle_pool_min,
+                    max=oracle_pool_max,
+                    increment=1,
+                )
+        LOGGER.debug("Connection pool created successfully.")
+
+        return p
 
     def __init__(self, conn_dic, table, properties=[], context="query"):
         """
@@ -88,106 +113,137 @@ class DatabaseConnection:
         )
         self.properties = [item.lower() for item in properties]
         self.fields = {}  # Dict of columns. Key is col name, value is type
-        self.conn = None
+        oracle_pool_min = int(os.environ.get('ORACLE_POOL_MIN', 0))
+        oracle_pool_max = int(os.environ.get('ORACLE_POOL_MAX', 0))
+        # Initialize the connection pool if it hasn't been initialized
+        if oracle_pool_min and oracle_pool_max:
+            LOGGER.debug("Found environment variables for session pooling:")
+            LOGGER.debug(f"ORACLE_POOL_MIN: {oracle_pool_min}")
+            LOGGER.debug(f"ORACLE_POOL_MAX: {oracle_pool_max}")
+            with DatabaseConnection.lock:
+                if DatabaseConnection.pool is None:
+                    LOGGER.debug(f"self.conn_dict contains {self.conn_dict}")
+                    DatabaseConnection.pool = DatabaseConnection.create_pool(
+                        self.conn_dict, oracle_pool_min, oracle_pool_max
+                    )
+                    LOGGER.debug(
+                        "Initialized connection pool with "
+                        f"{DatabaseConnection.pool.max} connections"
+                    )
+
+    @staticmethod
+    def _make_dsn(conn_dict):
+        if conn_dict.get("init_oracle_client", False):
+            oracledb.init_oracle_client()
+
+        # Connect with tnsnames.ora entry and Login with Oracle Wallet
+        if conn_dict.get("external_auth") == "wallet":
+            LOGGER.debug(
+                "Oracle connect with tnsnames.ora entry \
+                and login with Oracle Wallet"
+            )
+            if "tns_name" not in conn_dict:
+                raise ProviderConnectionError(
+                    "tns_name must be set for external authentication!"
+                )
+
+            dsn = conn_dict["tns_name"]
+
+        # Connect with SERVICE_NAME
+        if "service_name" in conn_dict:
+            LOGGER.debug(
+                f"Oracle connect with service_name: \
+                    {conn_dict['service_name']}"
+            )
+
+            if "host" not in conn_dict:
+                raise ProviderConnectionError(
+                    "Host must be set for connection with service_name!"
+                )
+
+            dsn = oracledb.makedsn(
+                conn_dict["host"],
+                conn_dict.get("port", 1521),
+                service_name=conn_dict["service_name"],
+            )
+
+        # Connect with SID
+        elif "sid" in conn_dict:
+            LOGGER.debug(
+                f"Oracle connect with sid: {conn_dict['sid']}"
+            )
+
+            if "host" not in conn_dict:
+                raise ProviderConnectionError(
+                    "Host must be set for connection with sid!"
+                )
+
+            dsn = oracledb.makedsn(
+                conn_dict["host"],
+                conn_dict.get("port", 1521),
+                sid=conn_dict["sid"],
+            )
+
+        # Connect with tnsnames.ora entry
+        elif "tns_name" in conn_dict:
+            LOGGER.debug(
+                f"Oracle connect with tns_name: \
+                    {conn_dict['tns_name']}"
+            )
+            dsn = conn_dict["tns_name"]
+
+        else:
+            raise ProviderConnectionError(
+                "One of service_name, sid or tns_name must be specified!"
+            )
+
+        LOGGER.debug(f"Oracle DSN string: {dsn}")
+
+        return dsn
 
     def __enter__(self):
+        """Acquires a connection from the pool."""
         try:
-            if self.conn_dict.get("init_oracle_client", False):
-                oracledb.init_oracle_client()
-
-            # Connect with tnsnames.ora entry and Login with Oracle Wallet
-            if self.conn_dict.get("external_auth") == "wallet":
-                LOGGER.debug(
-                    "Oracle connect with tnsnames.ora entry \
-                    and login with Oracle Wallet"
-                )
-
-                if "tns_name" not in self.conn_dict:
-                    raise ProviderConnectionError(
-                        "tns_name must be set for external authentication!"
-                    )
-
-                dsn = self.conn_dict["tns_name"]
-
-            # Connect with SERVICE_NAME
-            if "service_name" in self.conn_dict:
-                LOGGER.debug(
-                    f"Oracle connect with service_name: \
-                        {self.conn_dict['service_name']}"
-                )
-
-                if "host" not in self.conn_dict:
-                    raise ProviderConnectionError(
-                        "Host must be set for connection with service_name!"
-                    )
-
-                dsn = oracledb.makedsn(
-                    self.conn_dict["host"],
-                    self.conn_dict.get("port", 1521),
-                    service_name=self.conn_dict["service_name"],
-                )
-
-            # Connect with SID
-            elif "sid" in self.conn_dict:
-                LOGGER.debug(
-                    f"Oracle connect with sid: {self.conn_dict['sid']}"
-                )
-
-                if "host" not in self.conn_dict:
-                    raise ProviderConnectionError(
-                        "Host must be set for connection with sid!"
-                    )
-
-                dsn = oracledb.makedsn(
-                    self.conn_dict["host"],
-                    self.conn_dict.get("port", 1521),
-                    sid=self.conn_dict["sid"],
-                )
-
-            # Connect with tnsnames.ora entry
-            elif "tns_name" in self.conn_dict:
-                LOGGER.debug(
-                    f"Oracle connect with tns_name: \
-                        {self.conn_dict['tns_name']}"
-                )
-                dsn = self.conn_dict["tns_name"]
-
+            if DatabaseConnection.pool:
+                self.conn = DatabaseConnection.pool.acquire()
+                LOGGER.debug("Connection acquired from pool .")
+                LOGGER.debug(f"Connection from pool is {self.conn}.")
             else:
-                raise ProviderConnectionError(
-                    "One of service_name, sid or tns_name must be specified!"
-                )
+                dsn = self._make_dsn(self.conn_dict)
+                LOGGER.debug(f"Created dsn for single connection with params: {dsn}")  # noqa
+                # Connect with tnsnames.ora entry and Login with Oracle Wallet  # noqa
+                if self.conn_dict.get("external_auth") == "wallet":
+                    self.conn = oracledb.connect(externalauth=True, dsn=dsn)
 
-            LOGGER.debug(f"Oracle DSN string: {dsn}")
+                # Connect with tnsnames.ora entry,
+                # TNS_ADMIN is set via configuration
+                if "tns_admin" in self.conn_dict:
+                    self.conn = oracledb.connect(
+                        user=self.conn_dict["user"],
+                        password=self.conn_dict["password"],
+                        dsn=dsn,
+                        config_dir=self.conn_dict["tns_admin"],
+                    )
 
-            # Connect with tnsnames.ora entry and Login with Oracle Wallet
-            if self.conn_dict.get("external_auth") == "wallet":
-                self.conn = oracledb.connect(externalauth=True, dsn=dsn)
-
-            # Connect with tnsnames.ora entry,
-            # TNS_ADMIN is set via configuration
-            if "tns_admin" in self.conn_dict:
-                self.conn = oracledb.connect(
-                    user=self.conn_dict["user"],
-                    password=self.conn_dict["password"],
-                    dsn=dsn,
-                    config_dir=self.conn_dict["tns_admin"],
-                )
-
-            # Connect with user / password via dsn string
-            # When dsn is a TNS name, the environment variable TNS_ADMIN must
-            # be set (Path to tnsnames.ora file)
-            else:
-                self.conn = oracledb.connect(
-                    user=self.conn_dict["user"],
-                    password=self.conn_dict["password"],
-                    dsn=dsn,
-                )
+                # Connect with user / password via dsn string
+                # When dsn is a TNS name, the environment variable TNS_ADMIN must   # noqa
+                # be set (Path to tnsnames.ora file)
+                else:
+                    self.conn = oracledb.connect(
+                        user=self.conn_dict["user"],
+                        password=self.conn_dict["password"],
+                        dsn=dsn,
+                    )
 
         except oracledb.DatabaseError as e:
-            LOGGER.error(
-                f"Couldn't connect to Oracle using:{str(self.conn_dict)}"
-            )
-            LOGGER.error(e)
+            if DatabaseConnection.pool:
+                LOGGER.error("Couldn't acquire a connection from the pool.")
+                LOGGER.error(e)
+            else:
+                LOGGER.error(
+                    f"Couldn't connect to Oracle using:{str(self.conn_dict)}"
+                )
+                LOGGER.error(e)
             raise ProviderConnectionError(e)
 
         # Check if table name has schema/owner inside
@@ -225,15 +281,26 @@ class DatabaseConnection:
         return self
 
     def __exit__(self, exc_type, exc_val, exc_tb):
-        # some logic to commit/rollback
-        self.conn.close()
+        """
+        Releases the connection back to the pool.
+        """
+        try:
+            if DatabaseConnection.pool:
+                DatabaseConnection.pool.release(self.conn)
+                LOGGER.debug("Connection released back to pool.")
+            else:
+                self.conn.close()
+                LOGGER.debug("Single Connection closed")
+        except oracledb.DatabaseError as e:
+            LOGGER.error("Error closing the connection.")
+            LOGGER.error(e)
 
     def _get_table_columns(self, schema, table):
         """
         Returns an array with all column names and data types
         from Oracle table ALL_TAB_COLUMNS.
         Lookup for public and private synonyms.
-        Throws ProviderGenericError when table not exist or accesable.
+        Throws ProviderGenericError when table not exist or accessible.
         """
 
         sql = """
@@ -581,40 +648,37 @@ class OracleProvider(BaseProvider):
                             f"Missing mandatory filter property: {mand_col}"
                         )
 
-        if resulttype == "hits":
-            with DatabaseConnection(
-                self.conn_dic,
-                self.table,
-                properties=self.properties,
-                context="hits",
-            ) as db:
-                cursor = db.conn.cursor()
+        with DatabaseConnection(
+            self.conn_dic,
+            self.table,
+            properties=self.properties,
+            context="hits",
+        ) as db:
+            cursor = db.conn.cursor()
 
-                where_dict = self._get_where_clauses(
-                    properties=properties,
-                    bbox=bbox,
-                    bbox_crs=self.storage_crs,
-                    sdo_param=self.sdo_param,
-                    sdo_operator=self.sdo_operator,
+            where_dict = self._get_where_clauses(
+                properties=properties,
+                bbox=bbox,
+                bbox_crs=self.storage_crs,
+                sdo_param=self.sdo_param,
+                sdo_operator=self.sdo_operator,
+            )
+
+            # Not dangerous to use self.table as substitution,
+            # because of getFields ...
+            sql_query = f"SELECT COUNT(1) AS hits \
+                            FROM {self.table} \
+                            {where_dict['clause']}"
+            try:
+                cursor.execute(sql_query, where_dict["properties"])
+            except oracledb.Error as err:
+                LOGGER.error(
+                    f"Error executing sql_query: {sql_query}: {err}"
                 )
+                raise ProviderQueryError()
 
-                # Not dangerous to use self.table as substitution,
-                # because of getFields ...
-                sql_query = f"SELECT COUNT(1) AS hits \
-                                FROM {self.table} \
-                                {where_dict['clause']}"
-                try:
-                    cursor.execute(sql_query, where_dict["properties"])
-                except oracledb.Error as err:
-                    LOGGER.error(
-                        f"Error executing sql_query: {sql_query}: {err}"
-                    )
-                    raise ProviderQueryError()
-
-                hits = cursor.fetchone()[0]
-                LOGGER.debug(f"hits: {str(hits)}")
-
-            return self._response_feature_hits(hits)
+            hits = cursor.fetchone()[0]
+            LOGGER.debug(f"hits: {str(hits)}")
 
         with DatabaseConnection(
             self.conn_dic, self.table, properties=self.properties
@@ -664,7 +728,7 @@ class OracleProvider(BaseProvider):
             LOGGER.debug(f"target_srid: {target_srid}")
 
             # Build geometry column call
-            #   When a different output CRS is definded, the geometry
+            #   When a different output CRS is defined, the geometry
             #   geometry column would be transformed.
             if skip_geometry:
                 geom = ""
@@ -753,6 +817,7 @@ class OracleProvider(BaseProvider):
             # Generate feature JSON
             features = [self._response_feature(rd) for rd in row_data]
             feature_collection = {
+                "numberMatched": hits,
                 "type": "FeatureCollection",
                 "features": features,
             }
@@ -855,7 +920,7 @@ class OracleProvider(BaseProvider):
             LOGGER.debug(f"target_srid: {target_srid}")
 
             # Build geometry column call
-            #   When a different output CRS is definded, the geometry
+            #   When a different output CRS is defined, the geometry
             #   geometry column would be transformed.
             if source_srid != target_srid:
                 crs_dict = {"target_srid": target_srid}
@@ -986,7 +1051,7 @@ class OracleProvider(BaseProvider):
                 if col.lower() in db.filtered_fields
             ]
 
-            # Flter function to get only properties who are
+            # Filter function to get only properties who are
             # in the column list
             def filter_binds(pair):
                 return pair[0].lower() in db.filtered_fields
@@ -1083,7 +1148,7 @@ class OracleProvider(BaseProvider):
                 if col.lower() in db.filtered_fields
             ]
 
-            # Flter function to get only properties who are
+            # Filter function to get only properties who are
             # in the column list
             def filter_binds(pair):
                 return pair[0].lower() in db.filtered_fields

@@ -14,6 +14,6 @@ Access control
 ^^^^^^^^^^^^^^
 
 It should be made clear that authentication and authorization is beyond the responsibility of pygeoapi.  This means that
-if a pygeoapi user enables transactions, they must provide access control explicity via another service.
+if a pygeoapi user enables transactions, they must provide access control explicitly via another service.
 
 .. _`OGC API - Features - Part 4: Create, Replace, Update and Delete`: https://docs.ogc.org/DRAFTS/20-002.html

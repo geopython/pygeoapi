@@ -49,9 +49,26 @@ class BaseProcessor:
 
         :returns: pygeoapi.processor.base.BaseProvider
         """
+
         self.name = processor_def['name']
         self.metadata = process_metadata
         self.supports_outputs = False
+
+    def set_job_id(self, job_id: str) -> None:
+        """
+        Set the job_id within the processor
+        To be implemented by derived classes where required.
+
+        :param job_id: the job_id assigned to the request by the Manager.
+                       The function should be called by the Manager upon
+                       assigning the job_id. The job_id is intended to be used
+                       by derived classes, e.g. to write temporary files where
+                       filenames contains the string job_id.
+
+        :returns: `None`
+        """
+
+        pass
 
     def execute(self, data: dict, outputs: Optional[dict] = None
                 ) -> Tuple[str, Any]:
@@ -60,10 +77,10 @@ class BaseProcessor:
 
         :param data: Dict with the input data that the process needs in order
                      to execute
-        :param outputs: `dict` optionally specify the subset of required
-            outputs - defaults to all outputs.
-            The value of any key may be an object and include the property
-            `transmissionMode` - defauts to `value`.
+        :param outputs: `dict` or `list` to optionally specify the subset of
+                        required outputs - defaults to all outputs.
+                        The value of any key may be an object and include the
+                        property `transmissionMode` - defaults to `value`.
         :returns: tuple of MIME type and process response
                   (string or bytes, or dict)
         """

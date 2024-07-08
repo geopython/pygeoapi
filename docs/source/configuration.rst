@@ -83,8 +83,8 @@ The ``logging`` section provides directives for logging messages which are usefu
   logging:
       level: ERROR  # the logging level (see https://docs.python.org/3/library/logging.html#logging-levels)
       logfile: /path/to/pygeoapi.log  # the full file path to the logfile
-      logformat: # example for miliseconds:'[%(asctime)s.%(msecs)03d] {%(pathname)s:%(lineno)d} %(levelname)s - %(message)s'
-      dateformat: # example for miliseconds:'%Y-%m-%dT%H:%M:%S'
+      logformat: # example for milliseconds:'[%(asctime)s.%(msecs)03d] {%(pathname)s:%(lineno)d} %(levelname)s - %(message)s'
+      dateformat: # example for milliseconds:'%Y-%m-%dT%H:%M:%S'
 
 .. note::
    If ``level`` is defined and ``logfile`` is undefined, logging messages are output to the server's ``stdout``.

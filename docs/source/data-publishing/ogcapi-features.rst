@@ -361,7 +361,7 @@ Mandatory properties
         - example_group_id
 
 On large tables it could be useful to disallow a query on the complete dataset. For this reason it is possible to 
-configure mandatory properties. When this is activated, the provoder throws an exception when the parameter
+configure mandatory properties. When this is activated, the provider throws an exception when the parameter
 is not in the query uri.
 
 Extra properties
@@ -387,13 +387,28 @@ Extra properties
 Extra properties is a list of strings which are added as fields for data retrieval in the SELECT clauses. They
 can be used to return expressions computed by the database.
 
+Session Pooling
+""""""""""""""""
+
+Configured using environment variables.
+
+.. code-block:: bash
+
+   export ORACLE_POOL_MIN=2
+   export ORACLE_POOL_MAX=10
+
+
+The ``ORACLE_POOL_MIN`` and ``ORACLE_POOL_MAX`` environment variables are used to trigger session pool creation in the Oracle Provider and the ``DatabaseConnection`` class. See https://python-oracledb.readthedocs.io/en/latest/api_manual/module.html#oracledb.create_pool for documentation of the ``create_pool`` function.
+
+If none or only one of the environment variables is set, session pooling will not be activated and standalone connections are established at every request.
+
 
 Custom SQL Manipulator Plugin
 """""""""""""""""""""""""""""
 The provider supports a SQL-Manipulator-Plugin class. With this, the SQL statement could be manipulated. This is
 useful e.g. for authorization at row level or manipulation of the explain plan with hints. 
 
-An example an more informations about that feature you can find in the test class in tests/test_oracle_provider.py.
+An example an more information about that feature you can find in the test class in tests/test_oracle_provider.py.
 
 .. _PostgreSQL:
 
@@ -488,7 +503,7 @@ SQLiteGPKG
 ^^^^^^^^^^
 
 .. note::
-   Requries Spatialite installation
+   Requires Spatialite installation
 
 SQLite file:
 

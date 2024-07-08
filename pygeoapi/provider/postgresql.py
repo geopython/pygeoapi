@@ -8,7 +8,7 @@
 #          Francesco Bartoli <xbartolone@gmail.com>
 #
 # Copyright (c) 2018 Jorge Samuel Mendes de Jesus
-# Copyright (c) 2023 Tom Kralidis
+# Copyright (c) 2024 Tom Kralidis
 # Copyright (c) 2022 John A Stevenson and Colin Blackburn
 # Copyright (c) 2023 Francesco Bartoli
 #
@@ -48,10 +48,12 @@
 # gunzip < tests/data/hotosm_bdi_waterways.sql.gz |
 #  psql -U postgres -h 127.0.0.1 -p 5432 test
 
-import logging
-import functools
-
 from copy import deepcopy
+from datetime import datetime
+from decimal import Decimal
+import functools
+import logging
+
 from geoalchemy2 import Geometry  # noqa - this isn't used explicitly but is needed to process Geometry columns
 from geoalchemy2.functions import ST_MakeEnvelope
 from geoalchemy2.shape import to_shape
@@ -199,39 +201,64 @@ class PostgreSQLProvider(BaseProvider):
 
         :returns: dict of fields
         """
+
         LOGGER.debug('Get available fields/properties')
+
+        fields = {}
 
         # sql-schema only allows these types, so we need to map from sqlalchemy
         # string, number, integer, object, array, boolean, null,
         # https://json-schema.org/understanding-json-schema/reference/type.html
         column_type_map = {
-            str: 'string',
+            bool: 'boolean',
+            datetime: 'string',
+            Decimal: 'number',
             float: 'number',
             int: 'integer',
-            bool: 'boolean',
+            str: 'string'
         }
-        default_value = 'string'
+        default_type = 'string'
+
+        # https://json-schema.org/understanding-json-schema/reference/string#built-in-formats  # noqa
+        column_format_map = {
+            'date': 'date',
+            'interval': 'duration',
+            'time': 'time',
+            'timestamp': 'date-time'
+        }
 
         def _column_type_to_json_schema_type(column_type):
             try:
                 python_type = column_type.python_type
             except NotImplementedError:
                 LOGGER.warning(f'Unsupported column type {column_type}')
-                return default_value
+                return default_type
             else:
                 try:
                     return column_type_map[python_type]
                 except KeyError:
                     LOGGER.warning(f'Unsupported column type {column_type}')
-                    return default_value
+                    return default_type
 
-        return {
-            str(column.name): {
-                'type': _column_type_to_json_schema_type(column.type)
+        def _column_format_to_json_schema_format(column_type):
+            try:
+                ct = str(column_type).lower()
+                return column_format_map[ct]
+            except KeyError:
+                LOGGER.debug('No string format detected')
+                return None
+
+        for column in self.table_model.__table__.columns:
+            LOGGER.debug(f'Testing {column.name}')
+            if column.name == self.geom:
+                continue
+
+            fields[str(column.name)] = {
+                'type': _column_type_to_json_schema_type(column.type),
+                'format': _column_format_to_json_schema_format(column.type)
             }
-            for column in self.table_model.__table__.columns
-            if column.name != self.geom  # Exclude geometry column
-        }
+
+        return fields
 
     def get(self, identifier, crs_transform_spec=None, **kwargs):
         """

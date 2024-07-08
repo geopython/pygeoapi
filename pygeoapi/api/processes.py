@@ -726,7 +726,7 @@ def get_oas_30(cfg: dict, locale: str) -> tuple[list[dict[str, str]], dict[str, 
     paths['/jobs/{jobId}/results'] = {
         'get': {
             'summary': 'Retrieve job results',
-            'description': 'Retrive job resiults',
+            'description': 'Retrieve job results',
             'tags': ['jobs'],
             'parameters': [
                 name_in_path,
@@ -741,4 +741,4 @@ def get_oas_30(cfg: dict, locale: str) -> tuple[list[dict[str, str]], dict[str, 
         }
     }
 
-    return [{'name': 'proceses'}, {'name': 'jobs'}], {'paths': paths}
+    return [{'name': 'processes'}, {'name': 'jobs'}], {'paths': paths}

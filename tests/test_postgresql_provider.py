@@ -88,6 +88,26 @@ def config():
 
 
 @pytest.fixture()
+def config_types():
+    return {
+        'name': 'PostgreSQL',
+        'type': 'feature',
+        'data': {'host': '127.0.0.1',
+                 'dbname': 'test',
+                 'user': 'postgres',
+                 'password': PASSWORD,
+                 'search_path': ['public']
+                 },
+        'options': {
+                        'connect_timeout': 10
+                   },
+        'id_field': 'id',
+        'table': 'foo',
+        'geom_field': 'the_geom'
+    }
+
+
+@pytest.fixture()
 def openapi():
     with open(get_test_file_path('pygeoapi-test-openapi.yml')) as fh:
         return yaml_load(fh)
@@ -340,21 +360,36 @@ def test_query_cql_properties_bbox_filters(config):
     assert ids == expected_ids
 
 
+def test_get_fields_types(config_types):
+    provider = PostgreSQLProvider(config_types)
+
+    expected_fields = {
+        'id': {'type': 'integer', 'format': None},
+        'field1': {'type': 'number', 'format': None},
+        'field2': {'type': 'string', 'format': None},
+        'field3': {'type': 'number', 'format': None},
+        'dt': {'type': 'string', 'format': 'date-time'}
+    }
+
+    assert provider.get_fields() == expected_fields
+    assert provider.fields == expected_fields  # API uses .fields attribute
+
+
 def test_get_fields(config):
     # Arrange
     expected_fields = {
-        'blockage': {'type': 'string'},
-        'covered': {'type': 'string'},
-        'depth': {'type': 'string'},
-        'layer': {'type': 'string'},
-        'name': {'type': 'string'},
-        'natural': {'type': 'string'},
-        'osm_id': {'type': 'integer'},
-        'tunnel': {'type': 'string'},
-        'water': {'type': 'string'},
-        'waterway': {'type': 'string'},
-        'width': {'type': 'string'},
-        'z_index': {'type': 'string'}
+        'blockage': {'type': 'string', 'format': None},
+        'covered': {'type': 'string', 'format': None},
+        'depth': {'type': 'string', 'format': None},
+        'layer': {'type': 'string', 'format': None},
+        'name': {'type': 'string', 'format': None},
+        'natural': {'type': 'string', 'format': None},
+        'osm_id': {'type': 'integer', 'format': None},
+        'tunnel': {'type': 'string', 'format': None},
+        'water': {'type': 'string', 'format': None},
+        'waterway': {'type': 'string', 'format': None},
+        'width': {'type': 'string', 'format': None},
+        'z_index': {'type': 'string', 'format': None}
     }
 
     # Act

@@ -130,7 +130,7 @@ class CSVProvider(BaseProvider):
                 feature_collection['numberMatched'] = len(list(data_))
                 return feature_collection
             LOGGER.debug('Slicing CSV rows')
-            for row in itertools.islice(data_, offset, offset+limit):
+            for row in itertools.islice(data_, 0, None):
                 try:
                     coordinates = [
                         float(row.pop(self.geometry_x)),
@@ -177,6 +177,9 @@ class CSVProvider(BaseProvider):
             return None
         elif identifier is not None and found:
             return result
+
+        features_returned = feature_collection['features'][offset:offset+limit]
+        feature_collection['features'] = features_returned
 
         feature_collection['numberReturned'] = len(
             feature_collection['features'])

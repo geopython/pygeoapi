@@ -38,16 +38,18 @@
 
     var layers = L.control.layers(null, null, {collapsed: false}).addTo(map)
 
-    var layer
-    CovJSON.read(JSON.parse('{{ data | to_json | safe }}')).then(function (coverage) {
-      layer = C.dataLayer(coverage, {parameter: 'SST'})
-        .on('afterAdd', function () {
-          C.legend(layer).addTo(map)
-          map.fitBounds(layer.getBounds())
-        })
-        .addTo(map)
-      layers.addOverlay(layer, 'Temperature')
-      map.setZoom(5)
+    CovJSON.read(JSON.parse('{{ data | to_json | safe }}')).then(function (cov) {
+      cov.parameters.forEach((p) => {
+          var layer = C.dataLayer(cov, {parameter: p.key})
+            .on('afterAdd', function () {
+              C.legend(layer).addTo(map)
+              map.fitBounds(layer.getBounds())
+            })
+            .addTo(map)
+          layers.addOverlay(layer, p.observedProperty.label?.en)
+          map.setZoom(5)
+      })
+
     })
 
     map.on('click', function (e) {

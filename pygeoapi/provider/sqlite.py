@@ -109,7 +109,7 @@ class SQLiteGPKGProvider(BaseProvider):
         Generarates WHERE conditions to be implemented in query.
         Private method mainly associated with query method.
 
-        Method returns part of the SQL query, plus tupple to be used
+        Method returns part of the SQL query, plus tuple to be used
         in the sqlite query method
 
         :param properties: list of tuples (name, value)

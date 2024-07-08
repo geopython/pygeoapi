@@ -167,6 +167,8 @@ def get_collection_queryables(api: API, request: Union[APIRequest, Any],
                 'title': k,
                 'type': v['type']
             }
+            if v.get('format') is not None:
+                queryables['properties'][k]['format'] = v['format']
             if 'values' in v:
                 queryables['properties'][k]['enum'] = v['values']
 
@@ -359,7 +361,7 @@ def get_collection_items(
                 HTTPStatus.BAD_REQUEST, headers, request.format,
                 'NoApplicableCode', msg)
     elif len(bbox) > 0:
-        # bbox but no bbox-crs parm: assume bbox is in default CRS
+        # bbox but no bbox-crs param: assume bbox is in default CRS
         bbox_crs = DEFAULT_CRS
 
     # Transform bbox to storageCRS
@@ -547,7 +549,7 @@ def get_collection_items(
             'title': l10n.translate(
                 collections[dataset]['title'], request.locale),
             'rel': 'collection',
-            'href': uri
+            'href': '/'.join(uri.split('/')[:-1])
         })
 
     content['timeStamp'] = datetime.utcnow().strftime(
@@ -1478,6 +1480,9 @@ def get_oas_30(cfg: dict, locale: str) -> tuple[list[dict[str, str]], dict[str, 
                     }
                 else:
                     schema = type_
+
+                if schema.get('format') is None:
+                    schema.pop('format', None)
 
                 path_ = f'{collection_name_path}/items'
                 paths[path_]['get']['parameters'].append({

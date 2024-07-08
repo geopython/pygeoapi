@@ -684,3 +684,27 @@ msgstr ""
 
 msgid "TileMatrixSet definition in JSON"
 msgstr ""
+
+msgid "Data collections in this service"
+msgstr ""
+
+msgid "Record collections in this service"
+msgstr ""
+
+msgid "Display Schema"
+msgstr ""
+
+msgid "Display Schema of"
+msgstr ""
+
+msgid "Contact"
+msgstr ""
+
+msgid "CRS"
+msgstr ""
+
+msgid "Epoch"
+msgstr ""
+
+msgid "not specified"
+msgstr ""
