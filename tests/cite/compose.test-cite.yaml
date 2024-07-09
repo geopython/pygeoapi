@@ -4,28 +4,19 @@
 # initialization:
 #
 # 1 - Stand up this stack:
-# docker compose -f docker/compose.test-cite.yaml up --detach
+# docker compose -f tests/cite/compose.test-cite.yaml up --detach
 #
-# 2 - install pygeoapi dev and provider requirements:
-# docker exec -ti pygeoapi-integration-pygeoapi-1 pip3 install -r requirements-dev.txt -r requirements-provider.txt
+# 2 - Bootstrap the teamengine service, basically create a user for running tests)
+# ./tests/cite/bootstrap-teamengine.sh
+#
+# 3 - Access the teamengine GUI at http://localhost:8080/teamengine and login
+# with:
+#    - user: teamengine
+#    - password: tester
+#
+# 4 - Use the teamengine GUI to run tests suite(s)
 
-# 3 - Upgrade the elasticsearch-dsl package for version 8.x of elasticsearch
-# docker exec -ti pygeoapi-integration-pygeoapi-1 pip3 install 'elasticsearch-dsl>=8.0.0,<9.0.0'
-#
-# 4 - load elasticsearch data:
-# docker exec -ti pygeoapi-integration-pygeoapi-1 python3 tests/load_es_data.py tests/data/ne_110m_populated_places_simple.geojson geonameid
-# docker exec -ti pygeoapi-integration-pygeoapi-1 python3 tests/load_es_data.py tests/cite/canada-hydat-daily-mean-02HC003.geojson IDENTIFIER
-#
-# 5 - install GDAL in the pygeoapi container:
-# docker exec -ti pygeoapi-integration-pygeoapi-1 bash docker/install-gdal-python-bindings.sh
 
-#
-#
-# running tests:
-#
-# POSTGRESQL_PASSWORD=pass pytest -v tests/test_postgresql_provider.py
-#
-# docker exec -ti pygeoapi-integration-pygeoapi-1 bash -c 'POSTGRESQL_PASSWORD=pass pytest -v tests/test_postgresql_provider.py'
 
 name: pygeoapi-cite
 
@@ -40,7 +31,7 @@ services:
       PYGEOAPI_PORT: 5000
       PYGEOAPI_PUBLIC_URL: http://localhost:5001
       PYGEOAPI_CONFIG: /pygeoapi/tests/cite/cite.config.yml
-      PYGEOAPI_OPENAPI: /pygeoapi/example-openapi.yml
+      PYGEOAPI_OPENAPI: /pygeoapi/tests/cite/cite.openapi.yml
       PYGEOAPI_ELASTICSEARCH_SERVER_URL: http://elasticsearch-server:9200
     volumes:
       - type: bind
@@ -55,6 +46,7 @@ services:
         pip3 install 'elasticsearch-dsl>=8.0.0,<9.0.0'
         python3 tests/load_es_data.py tests/data/ne_110m_populated_places_simple.geojson geonameid
         python3 tests/load_es_data.py tests/cite/canada-hydat-daily-mean-02HC003.geojson IDENTIFIER
+        pygeoapi openapi generate /pygeoapi/tests/cite/cite.config.yml --output-file /pygeoapi/tests/cite/cite.openapi.yml
         gunicorn --bind 0.0.0.0:5000 pygeoapi.flask_app:APP
 
   elasticsearch-server:
@@ -83,6 +75,10 @@ services:
 
   teamengine:
     image: ogccite/teamengine-production:1.0-SNAPSHOT
-    extra_hosts:
-      - "host.docker.internal:host-gateway"
-    network_mode: bridge
+    ports:
+      - target: 8080
+        published: 8888
+    # use network_mode: host in order to allow teamengine to access pygeoapi
+    # at localhost:5001 - this is necessary in order to have teamengine be
+    # able to follow pygeoapi URLs
+    network_mode: host
