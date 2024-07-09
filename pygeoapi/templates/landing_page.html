@@ -40,6 +40,15 @@
               </div>
           </div>
         {% endif %}
+          <div class="row">
+              <div class="col-sm-4">
+                {% trans %}URL{% endtrans %}
+              </div>
+              <div class="col-sm-8">
+                  <a href="{{ config['metadata']['identification']['url'] }}">
+                    {{ config['metadata']['identification']['url'] | truncate( 70 ) }}</a>
+              </div>
+          </div>
       </div>
     </div>
   </section>

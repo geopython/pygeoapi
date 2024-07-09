@@ -714,6 +714,13 @@ class API:
         LOGGER.debug('Creating links')
         # TODO: put title text in config or translatable files?
         fcm['links'] = [{
+            'rel': 'about',
+            'type': 'text/html',
+            'title': l10n.translate(
+                self.config['metadata']['identification']['title'],
+                request.locale),
+            'href': self.config['metadata']['identification']['url']
+        }, {
             'rel': request.get_linkrel(F_JSON),
             'type': FORMAT_TYPES[F_JSON],
             'title': l10n.translate('This document as JSON', request.locale),

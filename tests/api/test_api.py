@@ -271,8 +271,9 @@ def test_apirules_active(config_with_rules, rules_api):
         assert response.status_code == 200
         assert response.is_json
         links = response.json['links']
+        assert links[0]['rel'] == 'about'
         assert all(
-            href.startswith(base_url) for href in (rel['href'] for rel in links)  # noqa
+            href.startswith(base_url) for href in (rel['href'] for rel in links[1:])  # noqa
         )
 
     # Test Starlette
@@ -303,8 +304,9 @@ def test_apirules_active(config_with_rules, rules_api):
         response = starlette_client.get(starlette_prefix, follow_redirects=True)  # noqa
         assert response.status_code == 200
         links = response.json()['links']
+        assert links[0]['rel'] == 'about'
         assert all(
-            href.startswith(base_url) for href in (rel['href'] for rel in links)  # noqa
+            href.startswith(base_url) for href in (rel['href'] for rel in links[1:])  # noqa
         )
 
 
@@ -510,14 +512,17 @@ def test_root(config, api_):
 
     assert isinstance(root, dict)
     assert 'links' in root
-    assert root['links'][0]['rel'] == 'self'
-    assert root['links'][0]['type'] == FORMAT_TYPES[F_JSON]
-    assert root['links'][0]['href'].endswith('?f=json')
+    assert root['links'][0]['rel'] == 'about'
+    assert root['links'][0]['type'] == 'text/html'
+    assert root['links'][0]['href'] == 'http://example.org'
+    assert root['links'][1]['rel'] == 'self'
+    assert root['links'][1]['type'] == FORMAT_TYPES[F_JSON]
+    assert root['links'][1]['href'].endswith('?f=json')
     assert any(link['href'].endswith('f=jsonld') and link['rel'] == 'alternate'
                for link in root['links'])
     assert any(link['href'].endswith('f=html') and link['rel'] == 'alternate'
                for link in root['links'])
-    assert len(root['links']) == 11
+    assert len(root['links']) == 12
     assert 'title' in root
     assert root['title'] == 'pygeoapi default instance'
     assert 'description' in root
