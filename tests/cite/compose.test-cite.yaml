@@ -3,6 +3,8 @@
 
 # initialization:
 #
+# 0 - Navigate to the root of the pygeoapi repo
+#
 # 1 - Stand up this stack:
 # docker compose -f tests/cite/compose.test-cite.yaml up --detach
 #
@@ -75,9 +77,6 @@ services:
 
   teamengine:
     image: ogccite/teamengine-production:1.0-SNAPSHOT
-    ports:
-      - target: 8080
-        published: 8888
     # use network_mode: host in order to allow teamengine to access pygeoapi
     # at localhost:5001 - this is necessary in order to have teamengine be
     # able to follow pygeoapi URLs

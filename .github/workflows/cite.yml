@@ -1,0 +1,24 @@
+name: 'Perform CITE tests against a local teamengine instance'
+
+on:
+  push:
+  pull_request:
+
+
+jobs:
+  perform-cite-testing:
+    runs-on: ubuntu:22.04
+    steps:
+
+      - name: grab code
+        uses: actions/checkout@v4
+
+      - name: start pygeoapi with suitable CITE data and config
+        run: >
+          docker compose -f tests/cite/cite.config.yml up --detach
+
+      - name: test ogcapi-features compliancy
+        uses: OSGEO/ogc-cite-action
+        with:
+          test-suite-identifier: ogcapi-features-1.0
+          test-session-arguments: iut=http://localhost:5001 noofcollections=-1
