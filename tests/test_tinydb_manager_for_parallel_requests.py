@@ -38,6 +38,7 @@ from tinydb import TinyDB, Query
 from werkzeug.wrappers import Request
 from werkzeug.test import create_environ
 
+import pygeoapi.api.processes as processes_api
 from pygeoapi.api import API, APIRequest
 from pygeoapi.util import yaml_load
 from .util import get_test_file_path
@@ -61,7 +62,8 @@ def api_(config, openapi):
 
 
 def _execute_process(api, request, process_id, index, processes_out):
-    headers, http_status, response = api.execute_process(request, process_id)
+    headers, http_status, response = processes_api.execute_process(
+        api, request, process_id)
     processes_out[index] = {"headers": headers, "http_status": http_status,
                             "response": response}
 
@@ -112,6 +114,7 @@ def test_async_hello_world_process_parallel(api_, config):
     # Test if jobs are registered and run correctly
     db = TinyDB(index_name)
     query = Query()
+    assert len(processes_out.values()) == NUM_PROCS
     for process_out in processes_out.values():
         try:
             assert process_out['http_status'] == 200
