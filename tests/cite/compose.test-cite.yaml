@@ -75,9 +75,9 @@ services:
         else echo "++++++++++ elasticsearch is not ready ++++++++++"; exit 1;
         fi
 
-  teamengine:
-    image: ogccite/teamengine-production:1.0-SNAPSHOT
-    # use network_mode: host in order to allow teamengine to access pygeoapi
-    # at localhost:5001 - this is necessary in order to have teamengine be
-    # able to follow pygeoapi URLs
-    network_mode: host
+#  teamengine:
+#    image: ogccite/teamengine-production:1.0-SNAPSHOT
+#    # use network_mode: host in order to allow teamengine to access pygeoapi
+#    # at localhost:5001 - this is necessary in order to have teamengine be
+#    # able to follow pygeoapi URLs
+#    network_mode: host
