@@ -15,7 +15,7 @@ jobs:
 
       - name: start pygeoapi with suitable CITE data and config
         run: >
-          docker compose -f tests/cite/cite.config.yml up --detach
+          docker compose -f tests/cite/compose.test-cite.yaml up --detach
 
       - name: test ogcapi-features compliancy
         uses: OSGEO/ogc-cite-action@main
