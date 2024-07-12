@@ -7,7 +7,7 @@ on:
 
 jobs:
   perform-cite-testing:
-    runs-on: ubuntu_22.04
+    runs-on: ubuntu-22.04
     steps:
 
       - name: grab code
