@@ -21,7 +21,14 @@ jobs:
         uses: raschmitt/wait-for-healthy-container@v1.0.1
         with:
           container-name: pygeoapi-cite-pygeoapi-1
-          timeout: 480
+          timeout: 120
+
+      - name: collect docker logs on failure
+        if: failure()
+        uses: jwalton/gh-docker-logs@v2.2.2
+        with:
+          images: pygeoapi
+          tail: 500
 
       - name: test ogcapi-features compliancy
         uses: OSGEO/ogc-cite-action@main
