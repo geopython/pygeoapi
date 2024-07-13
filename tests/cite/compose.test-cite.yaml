@@ -49,6 +49,7 @@ services:
         pip3 install 'elasticsearch-dsl>=8.0.0,<9.0.0'
         python3 tests/load_es_data.py tests/data/ne_110m_populated_places_simple.geojson geonameid
         python3 tests/load_es_data.py tests/cite/canada-hydat-daily-mean-02HC003.geojson IDENTIFIER
+        pip3 install -e .
         pygeoapi openapi generate /pygeoapi/tests/cite/cite.config.yml --output-file /pygeoapi/tests/cite/cite.openapi.yml
         gunicorn --bind 0.0.0.0:5000 pygeoapi.flask_app:APP
     healthcheck:
