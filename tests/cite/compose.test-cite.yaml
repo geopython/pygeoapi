@@ -50,6 +50,17 @@ services:
         python3 tests/load_es_data.py tests/cite/canada-hydat-daily-mean-02HC003.geojson IDENTIFIER
         pygeoapi openapi generate /pygeoapi/tests/cite/cite.config.yml --output-file /pygeoapi/tests/cite/cite.openapi.yml
         gunicorn --bind 0.0.0.0:5000 pygeoapi.flask_app:APP
+    healthcheck:
+      interval: 10s
+      timeout: 3s
+      start_period: 1m
+      retries: 10
+      test: |
+        response=$$(python3 -c 'import urllib.request; print(urllib.request.urlopen("http://localhost:5000").status)')
+        if [ $${response} = '200' ];
+        then exit 0;
+        else echo "++++++++++ pygeoapi is not ready ++++++++++"; exit 1;
+        fi
 
   elasticsearch-server:
     image: elasticsearch:8.12.2
