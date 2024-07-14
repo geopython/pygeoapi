@@ -6,7 +6,20 @@ on:
 
 
 jobs:
+
   perform-cite-testing:
+    strategy:
+      matrix:
+        test-suite:
+          - suite-id: ogcapi-features-1.0
+            arguments: >
+              --test-suite-input iut http://localhost:5001 
+              --test-suite-input noofcollections -1
+          - suite-id: ogcapi-processes-1.0
+            arguments: >
+              --test-suite-input iut http://localhost:5001 
+              --test-suite-input noofcollections -1
+
     runs-on: ubuntu-22.04
     steps:
 
@@ -33,7 +46,5 @@ jobs:
       - name: test ogcapi-features compliancy
         uses: OSGEO/ogc-cite-action@main
         with:
-          test-suite-identifier: ogcapi-features-1.0
-          test-session-arguments: >
-            --test-suite-input iut http://localhost:5001 
-            --test-suite-input noofcollections -1
+          test-suite-identifier: ${{ matrix.test-suite.suite-id }}
+          test-session-arguments: ${{ matrix.test-suite.arguments }}
