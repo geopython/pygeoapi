@@ -27,12 +27,12 @@
 #
 # =================================================================
 
-from dateutil.parser import parse as parse_date
 import logging
 import re  # noqa
 import os
 import uuid
 
+from dateutil.parser import parse as parse_date
 from shapely.geometry import shape
 from tinydb import TinyDB, Query, where
 
