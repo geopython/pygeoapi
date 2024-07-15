@@ -31,7 +31,7 @@ parameters.
    `SQLiteGPKG`_,✅/❌,results/hits,✅,❌,❌,✅,❌,❌,✅
    `SensorThings API`_,✅/✅,results/hits,✅,✅,✅,✅,❌,❌,✅
    `Socrata`_,✅/✅,results/hits,✅,✅,✅,✅,❌,❌,✅
-   `TinyDB`_,✅/✅,results/hits,✅,✅,✅,✅,,❌✅,❌
+   `TinyDB`_,✅/✅,results/hits,✅,✅,✅,✅,❌,✅,❌
 
 .. note::
 
