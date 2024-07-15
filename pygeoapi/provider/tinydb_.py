@@ -2,7 +2,7 @@
 #
 # Authors: Tom Kralidis <tomkralidis@gmail.com>
 #
-# Copyright (c) 2023 Tom Kralidis
+# Copyright (c) 2024 Tom Kralidis
 #
 # Permission is hereby granted, free of charge, to any person
 # obtaining a copy of this software and associated documentation
@@ -27,6 +27,7 @@
 #
 # =================================================================
 
+from dateutil.parser import parse as parse_date
 import logging
 import re  # noqa
 import os
@@ -37,12 +38,13 @@ from tinydb import TinyDB, Query, where
 
 from pygeoapi.provider.base import (BaseProvider, ProviderConnectionError,
                                     ProviderItemNotFoundError)
+from pygeoapi.util import get_typed_value
 
 LOGGER = logging.getLogger(__name__)
 
 
-class TinyDBCatalogueProvider(BaseProvider):
-    """TinyDB Catalogue Provider"""
+class TinyDBProvider(BaseProvider):
+    """TinyDB Provider"""
 
     def __init__(self, provider_def):
         """
@@ -50,14 +52,16 @@ class TinyDBCatalogueProvider(BaseProvider):
 
         :param provider_def: provider definition
 
-        :returns: pygeoapi.provider.tinydb_.TinyDBCatalogueProvider
+        :returns: pygeoapi.provider.tinydb_.TinyDBProvider
         """
 
-        self.excludes = [
-            '_metadata-anytext',
-        ]
-
         super().__init__(provider_def)
+
+        self._catalogue = provider_def['name'] == 'TinyDBCatalogue'
+        self._excludes = []
+
+        if self._catalogue:
+            self._excludes.append('_metadata-anytext')
 
         LOGGER.debug(f'Connecting to TinyDB db at {self.data}')
 
@@ -91,11 +95,31 @@ class TinyDBCatalogueProvider(BaseProvider):
             LOGGER.debug(err)
             return fields
 
-        for p in r['properties'].keys():
-            if p not in self.excludes:
-                fields[p] = {'type': 'string'}
+        for key, value in r['properties'].items():
+            if key not in self._excludes:
+                typed_value = get_typed_value(str(value))
+                if isinstance(typed_value, float):
+                    typed_value_type = 'number'
+                elif isinstance(typed_value, int):
+                    typed_value_type = 'integer'
+                else:
+                    typed_value_type = 'string'
 
-        fields['q'] = {'type': 'string'}
+                fields[key] = {'type': typed_value_type}
+
+                try:
+                    LOGGER.debug('Attempting to detect date types')
+                    _ = parse_date(value)
+                    if len(value) > 11:
+                        fields[key]['format'] = 'date-time'
+                    else:
+                        fields[key]['format'] = 'date'
+                except Exception:
+                    LOGGER.debug('No date types detected')
+                    pass
+
+        if self._catalogue:
+            fields['q'] = {'type': 'string'}
 
         return fields
 
@@ -164,11 +188,14 @@ class TinyDBCatalogueProvider(BaseProvider):
         if properties:
             LOGGER.debug('processing properties')
             for prop in properties:
-                QUERY.append(f"(Q.properties['{prop[0]}']=='{prop[1]}')")
+                QUERY.append(f"(Q.properties['{prop[0]}']=={prop[1]})")
 
-        if q is not None:
+        if q is not None and self._catalogue:
+            LOGGER.debug('catalogue q= query')
             for t in q.split():
                 QUERY.append(f"(Q.properties['_metadata-anytext'].search('{t}', flags=re.IGNORECASE))")  # noqa
+        else:
+            LOGGER.debug('Skipping catalogue q= query for feature provider')
 
         QUERY_STRING = '&'.join(QUERY)
         LOGGER.debug(f'QUERY_STRING: {QUERY_STRING}')
@@ -188,7 +215,7 @@ class TinyDBCatalogueProvider(BaseProvider):
             return feature_collection
 
         for r in results:
-            for e in self.excludes:
+            for e in self._excludes:
                 try:
                     del r['properties'][e]
                 except KeyError:
@@ -235,7 +262,7 @@ class TinyDBCatalogueProvider(BaseProvider):
         if record is None:
             raise ProviderItemNotFoundError('record does not exist')
 
-        for e in self.excludes:
+        for e in self._excludes:
             try:
                 del record['properties'][e]
             except KeyError:
@@ -259,14 +286,16 @@ class TinyDBCatalogueProvider(BaseProvider):
             identifier = str(uuid.uuid4())
             json_data["id"] = identifier
 
-        try:
-            json_data['properties']['_metadata-anytext'] = ''.join([
-                json_data['properties']['title'],
-                json_data['properties']['description']
-            ])
-        except KeyError:
-            LOGGER.debug('Missing title and description')
-            json_data['properties']['_metadata_anytext'] = ''
+        if self._catalogue:
+            LOGGER.debug('Adding catalogue anytext property')
+            try:
+                json_data['properties']['_metadata-anytext'] = ''.join([
+                    json_data['properties']['title'],
+                    json_data['properties']['description']
+                ])
+            except KeyError:
+                LOGGER.debug('Missing title and description')
+                json_data['properties']['_metadata_anytext'] = ''
 
         LOGGER.debug(f'Inserting data with identifier {identifier}')
         result = self.db.insert(json_data)
@@ -306,17 +335,15 @@ class TinyDBCatalogueProvider(BaseProvider):
 
         return True
 
-    def _bbox(input_bbox, record_bbox):
-        """
-        Test whether one bbox intersects another
+    def __repr__(self):
+        return f'<TinyDBProvider> {self.data}'
 
-        :param input_bbox: `list` of minx,miny,maxx,maxy
-        :param record_bbox: `list` of minx,miny,maxx,maxy
 
-        :returns: `bool` of result
-        """
+class TinyDBCatalogueProvider(TinyDBProvider):
+    """TinyDB Catalogue Provider"""
 
-        return True
+    def __init__(self, provider_def):
+        super().__init__(provider_def)
 
     def __repr__(self):
         return f'<TinyDBCatalogueProvider> {self.data}'
