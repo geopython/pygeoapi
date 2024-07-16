@@ -99,8 +99,8 @@ resources:
 
         providers:
             - type: feature
-              name: Elasticsearch
-              data: http://localhost:9200/canada-hydat-daily-mean-02hc003
+              name: TinyDB
+              data: ../data/canada-hydat-daily-mean-02hc003.tinydb
               id_field: IDENTIFIER
               time_field: DATE
 
