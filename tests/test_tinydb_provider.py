@@ -37,7 +37,7 @@ from pygeoapi.provider.tinydb_ import TinyDBProvider
 
 from .util import get_test_file_path
 
-path = get_test_file_path('tests/cite/canada-hydat-daily-mean-02HC003.tinydb')
+path = get_test_file_path('tests/data/canada-hydat-daily-mean-02HC003.tinydb')
 
 
 @pytest.fixture()
