@@ -38,7 +38,7 @@ from tinydb import TinyDB, Query, where
 
 from pygeoapi.provider.base import (BaseProvider, ProviderConnectionError,
                                     ProviderItemNotFoundError)
-from pygeoapi.util import get_typed_value, crs_transform
+from pygeoapi.util import crs_transform, get_typed_value
 
 LOGGER = logging.getLogger(__name__)
 
