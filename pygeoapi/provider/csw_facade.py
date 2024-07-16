@@ -69,7 +69,7 @@ class CSWFacadeProvider(BaseProvider):
             'language': ('dc:language', 'language')
         }
 
-        self.fields = self.get_fields()
+        self.get_fields()
 
     def get_fields(self):
         """

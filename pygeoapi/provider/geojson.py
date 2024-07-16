@@ -68,7 +68,7 @@ class GeoJSONProvider(BaseProvider):
         """initializer"""
 
         super().__init__(provider_def)
-        self.fields = self.get_fields()
+        self.get_fields()
 
     def get_fields(self):
         """
@@ -77,23 +77,24 @@ class GeoJSONProvider(BaseProvider):
         :returns: dict of fields
         """
 
-        fields = {}
-        LOGGER.debug('Treating all columns as string types')
-        if os.path.exists(self.data):
-            with open(self.data) as src:
-                data = json.loads(src.read())
-            for key, value in data['features'][0]['properties'].items():
-                if isinstance(value, float):
-                    type_ = 'number'
-                elif isinstance(value, int):
-                    type_ = 'integer'
-                else:
-                    type_ = 'string'
+        if not self.fields_:
+            LOGGER.debug('Treating all columns as string types')
+            if os.path.exists(self.data):
+                with open(self.data) as src:
+                    data = json.loads(src.read())
+                for key, value in data['features'][0]['properties'].items():
+                    if isinstance(value, float):
+                        type_ = 'number'
+                    elif isinstance(value, int):
+                        type_ = 'integer'
+                    else:
+                        type_ = 'string'
 
-                fields[key] = {'type': type_}
-        else:
-            LOGGER.warning(f'File {self.data} does not exist.')
-        return fields
+                    self.fields_[key] = {'type': type_}
+            else:
+                LOGGER.warning(f'File {self.data} does not exist.')
+
+        return self.fields_
 
     def _load(self, skip_geometry=None, properties=[], select_properties=[]):
         """Load and validate the source GeoJSON file

@@ -73,7 +73,7 @@ class BaseProvider:
         self.title_field = provider_def.get('title_field')
         self.properties = provider_def.get('properties', [])
         self.file_types = provider_def.get('file_types', [])
-        self.fields = {}
+        self.fields_ = {}
         self.filename = None
 
         # for coverage providers
@@ -91,6 +91,17 @@ class BaseProvider:
         """
 
         raise NotImplementedError()
+
+    @property
+    def fields(self):
+        """
+        Store provider field information (names, types)
+
+        Example response: {'field1': 'string', 'field2': 'number'}}
+
+        :returns: dict of field names and their associated JSON Schema types
+        """
+        return self.get_fields()
 
     def get_schema(self, schema_type: SchemaType = SchemaType.item):
         """

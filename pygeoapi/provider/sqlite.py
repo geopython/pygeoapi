@@ -88,7 +88,7 @@ class SQLiteGPKGProvider(BaseProvider):
         :returns: dict of fields
         """
 
-        if not self.fields:
+        if not self.fields_:
             results = self.cursor.execute(
                 f'PRAGMA table_info({self.table})').fetchall()
             for item in results:
@@ -102,7 +102,7 @@ class SQLiteGPKGProvider(BaseProvider):
                 if json_type is not None:
                     self.fields[item['name']] = {'type': json_type}
 
-        return self.fields
+        return self.fields_
 
     def __get_where_clauses(self, properties=[], bbox=[]):
         """
