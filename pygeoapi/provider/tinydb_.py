@@ -38,7 +38,7 @@ from tinydb import TinyDB, Query, where
 
 from pygeoapi.provider.base import (BaseProvider, ProviderConnectionError,
                                     ProviderItemNotFoundError)
-from pygeoapi.util import get_typed_value
+from pygeoapi.util import get_typed_value, crs_transform
 
 LOGGER = logging.getLogger(__name__)
 
@@ -116,6 +116,7 @@ class TinyDBProvider(BaseProvider):
 
         return fields
 
+    @crs_transform
     def query(self, offset=0, limit=10, resulttype='results',
               bbox=[], datetime_=None, properties=[], sortby=[],
               select_properties=[], skip_geometry=False, q=None, **kwargs):
@@ -234,6 +235,7 @@ class TinyDBProvider(BaseProvider):
 
         return feature_collection
 
+    @crs_transform
     def get(self, identifier, **kwargs):
         """
         Get TinyDB document by id
