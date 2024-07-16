@@ -74,7 +74,7 @@ class TinyDBProvider(BaseProvider):
         else:
             self.db = TinyDB(self.data)
 
-        self.fields = self.get_fields()
+        self.get_fields()
 
     def get_fields(self):
         """
@@ -83,38 +83,41 @@ class TinyDBProvider(BaseProvider):
         :returns: dict of fields
         """
 
-        fields = {}
+        if not self.fields_:
+            try:
+                r = self.db.all()[0]
+            except IndexError as err:
+                LOGGER.debug(err)
+                return {}
 
-        try:
-            r = self.db.all()[0]
-        except IndexError as err:
-            LOGGER.debug(err)
-            return fields
+            for p in r['properties'].keys():
+                if p not in self.excludes:
+                    self.fields_[p] = {'type': 'string'}
 
-        for key, value in r['properties'].items():
-            if key not in self._excludes:
-                typed_value = get_typed_value(str(value))
-                if isinstance(typed_value, float):
-                    typed_value_type = 'number'
-                elif isinstance(typed_value, int):
-                    typed_value_type = 'integer'
-                else:
-                    typed_value_type = 'string'
-
-                fields[key] = {'type': typed_value_type}
-
-                try:
-                    LOGGER.debug('Attempting to detect date types')
-                    _ = parse_date(value)
-                    if len(value) > 11:
-                        fields[key]['format'] = 'date-time'
+            for key, value in r['properties'].items():
+                if key not in self._excludes:
+                    typed_value = get_typed_value(str(value))
+                    if isinstance(typed_value, float):
+                        typed_value_type = 'number'
+                    elif isinstance(typed_value, int):
+                        typed_value_type = 'integer'
                     else:
-                        fields[key]['format'] = 'date'
-                except Exception:
-                    LOGGER.debug('No date types detected')
-                    pass
+                        typed_value_type = 'string'
 
-        return fields
+                    self.fields_[key] = {'type': typed_value_type}
+
+                    try:
+                        LOGGER.debug('Attempting to detect date types')
+                        _ = parse_date(value)
+                        if len(value) > 11:
+                            self.fields_[key]['format'] = 'date-time'
+                        else:
+                            self.fields_[key]['format'] = 'date'
+                    except Exception:
+                        LOGGER.debug('No date types detected')
+                        pass
+
+        return self.fields_
 
     @crs_transform
     def query(self, offset=0, limit=10, resulttype='results',
