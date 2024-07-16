@@ -6,7 +6,7 @@
 ## Test data
 
 ### OGC API - Features
-Test data used is a subset of the [Canadian National Water Data Archive](https://www.canada.ca/en/environment-climate-change/services/water-overview/quantity/monitoring/survey/data-products-services/national-archive-hydat.html) as extracted from the [MSC GeoMet OGC API](https://eccc-msc.github.io/open-data/msc-geomet/web-services_en/#ogc-api-features) service.
+Test data used is in `tests/data/canada-hydat-daily-mean-02HC003.tinydb`
 
 ### OGC API - Processes
 The `hello-world` test process that is provided with pygeoapi by default is used.

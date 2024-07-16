@@ -100,7 +100,7 @@ resources:
         providers:
             - type: feature
               name: TinyDB
-              data: canada-hydat-daily-mean-02hc003.tinydb
+              data: ../data/canada-hydat-daily-mean-02hc003.tinydb
               id_field: IDENTIFIER
               time_field: DATE
 
