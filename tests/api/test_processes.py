@@ -386,7 +386,10 @@ def test_delete_job(api_):
     job_id = _execute_a_job(api_)
     rsp_headers, code, response = delete_job(api_, mock_api_request(), job_id)
 
+    data = json.loads(response)
+
     assert code == HTTPStatus.OK
+    assert data['message'] == 'Job dismissed'
 
     rsp_headers, code, response = delete_job(api_, mock_api_request(), job_id)
     assert code == HTTPStatus.NOT_FOUND
