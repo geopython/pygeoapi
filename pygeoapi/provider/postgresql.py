@@ -246,7 +246,7 @@ class PostgreSQLProvider(BaseProvider):
                 LOGGER.debug('No string format detected')
                 return None
 
-        if not self.fields_
+        if not self.fields:
             for column in self.table_model.__table__.columns:
                 LOGGER.debug(f'Testing {column.name}')
                 if column.name == self.geom:

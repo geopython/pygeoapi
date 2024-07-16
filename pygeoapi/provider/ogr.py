@@ -285,7 +285,7 @@ class OGRProvider(BaseProvider):
                         }
 
                     # fieldWidth = layer_defn.GetFieldDefn(fld).GetWidth()
-                    # GetPrecision = layer_defn.GetFieldDefn(fld).GetPrecision()
+                    # GetPrecision = layer_defn.GetFieldDefn(fld).GetPrecision() # noqa
 
             except RuntimeError as err:
                 LOGGER.error(err)
