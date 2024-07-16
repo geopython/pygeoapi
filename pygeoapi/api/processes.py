@@ -512,9 +512,7 @@ def get_job_result(api: API, request: APIRequest,
     return headers, HTTPStatus.OK, content
 
 
-def delete_job(
-    api: API, request: APIRequest, job_id
-) -> Tuple[dict, int, str]:
+def delete_job(api: API, request: APIRequest, job_id) -> Tuple[dict, int, str]:
     """
     Delete a process job
 
@@ -522,6 +520,7 @@ def delete_job(
 
     :returns: tuple of headers, status code, content
     """
+
     response_headers = request.get_response_headers(
         SYSTEM_LOCALE, **api.api_headers)
     try:
@@ -555,7 +554,7 @@ def delete_job(
             )
     LOGGER.info(response)
     # TODO: this response does not have any headers
-    return {}, http_status, response
+    return {}, http_status, to_json(response, api.pretty_print)
 
 
 def get_oas_30(cfg: dict, locale: str) -> tuple[list[dict[str, str]], dict[str, dict]]:  # noqa
