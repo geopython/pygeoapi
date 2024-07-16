@@ -57,11 +57,7 @@ class TinyDBProvider(BaseProvider):
 
         super().__init__(provider_def)
 
-        self._catalogue = provider_def['name'] == 'TinyDBCatalogue'
         self._excludes = []
-
-        if self._catalogue:
-            self._excludes.append('_metadata-anytext')
 
         LOGGER.debug(f'Connecting to TinyDB db at {self.data}')
 
@@ -117,9 +113,6 @@ class TinyDBProvider(BaseProvider):
                 except Exception:
                     LOGGER.debug('No date types detected')
                     pass
-
-        if self._catalogue:
-            fields['q'] = {'type': 'string'}
 
         return fields
 
@@ -190,12 +183,7 @@ class TinyDBProvider(BaseProvider):
             for prop in properties:
                 QUERY.append(f"(Q.properties['{prop[0]}']=={prop[1]})")
 
-        if q is not None and self._catalogue:
-            LOGGER.debug('catalogue q= query')
-            for t in q.split():
-                QUERY.append(f"(Q.properties['_metadata-anytext'].search('{t}', flags=re.IGNORECASE))")  # noqa
-        else:
-            LOGGER.debug('Skipping catalogue q= query for feature provider')
+        QUERY = self._add_search_query(QUERY, q)
 
         QUERY_STRING = '&'.join(QUERY)
         LOGGER.debug(f'QUERY_STRING: {QUERY_STRING}')
@@ -286,16 +274,7 @@ class TinyDBProvider(BaseProvider):
             identifier = str(uuid.uuid4())
             json_data["id"] = identifier
 
-        if self._catalogue:
-            LOGGER.debug('Adding catalogue anytext property')
-            try:
-                json_data['properties']['_metadata-anytext'] = ''.join([
-                    json_data['properties']['title'],
-                    json_data['properties']['description']
-                ])
-            except KeyError:
-                LOGGER.debug('Missing title and description')
-                json_data['properties']['_metadata_anytext'] = ''
+        json_data = self._add_extra_fields(json_data)
 
         LOGGER.debug(f'Inserting data with identifier {identifier}')
         result = self.db.insert(json_data)
@@ -335,6 +314,29 @@ class TinyDBProvider(BaseProvider):
 
         return True
 
+    def _add_extra_fields(self, json_data: dict) -> dict:
+        """
+        Helper function to add extra fields to an item payload
+
+        :param json_data: `dict` of JSON data
+
+        :returns: `dict` of updated JSON data
+        """
+
+        return json_data
+
+    def _add_search_query(self, query: list, search_term: str = None) -> str:
+        """
+        Helper function to add extra query predicates
+
+        :param query: `list` of query predicates
+        :param search_term: `str` of search term
+
+        :returns: `list` of updated query predicates
+        """
+
+        return query
+
     def __repr__(self):
         return f'<TinyDBProvider> {self.data}'
 
@@ -344,6 +346,37 @@ class TinyDBCatalogueProvider(TinyDBProvider):
 
     def __init__(self, provider_def):
         super().__init__(provider_def)
+
+        self._excludes = ['_metadata-anytext']
+
+    def get_fields(self):
+        fields = super().get_fields()
+
+        fields['q'] = {'type': 'string'}
+
+        return fields
+
+    def _add_extra_fields(self, json_data: dict) -> dict:
+        LOGGER.debug('Adding catalogue anytext property')
+        try:
+            json_data['properties']['_metadata-anytext'] = ''.join([
+                json_data['properties']['title'],
+                json_data['properties']['description']
+            ])
+        except KeyError:
+            LOGGER.debug('Missing title and description')
+            json_data['properties']['_metadata_anytext'] = ''
+
+        return json_data
+
+    def _add_search_query(self, query: list, search_term: str = None) -> str:
+        if search_term is not None:
+            LOGGER.debug('catalogue q= query')
+            for t in search_term.split():
+                query.append(f"(Q.properties['_metadata-anytext'].search('{t}', flags=re.IGNORECASE))")  # noqa
+
+        print("QUERY", query)
+        return query
 
     def __repr__(self):
         return f'<TinyDBCatalogueProvider> {self.data}'
