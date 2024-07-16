@@ -100,7 +100,7 @@ class SQLiteGPKGProvider(BaseProvider):
                     json_type = 'string'
 
                 if json_type is not None:
-                    self.fields[item['name']] = {'type': json_type}
+                    self.fields_[item['name']] = {'type': json_type}
 
         return self.fields_
 
