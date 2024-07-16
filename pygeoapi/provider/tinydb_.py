@@ -375,7 +375,6 @@ class TinyDBCatalogueProvider(TinyDBProvider):
             for t in search_term.split():
                 query.append(f"(Q.properties['_metadata-anytext'].search('{t}', flags=re.IGNORECASE))")  # noqa
 
-        print("QUERY", query)
         return query
 
     def __repr__(self):
