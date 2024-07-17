@@ -34,20 +34,19 @@
 
 import json
 import logging
-import psycopg2
-import psycopg2.extras
-
-
 from pathlib import Path
 from typing import Any, Tuple
 
-from pygeoapi.util import JobStatus
+import psycopg2
+import psycopg2.extras
+
 from pygeoapi.process.manager.base import BaseManager
 from pygeoapi.process.base import (
     JobNotFoundError,
     JobResultNotFoundError,
     ProcessorGenericError,
 )
+from pygeoapi.util import JobStatus
 
 
 LOGGER = logging.getLogger(__name__)
