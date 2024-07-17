@@ -105,7 +105,7 @@ class PostgreSQLManager(BaseManager):
 
         with self.get_db_connection() as conn:
             with conn.cursor(cursor_factory=psycopg2.extras.DictCursor) as cur:
-                query_select = """SELECT * FROM job_info """
+                query_select = """SELECT * FROM jobs """
                 if status is not None:
                     query_select = query_select + "WHERE status = %s"
                     query_params = [status.value]
@@ -123,7 +123,7 @@ class PostgreSQLManager(BaseManager):
         :returns: identifier of added job
         """
 
-        query_insert = """INSERT INTO job_info(
+        query_insert = """INSERT INTO jobs(
             type, process_id, identifier, status, message,
             progress, job_start_datetime, job_end_datetime
             ) VALUES(%(type)s, %(process_id)s, %(identifier)s, %(status)s,
@@ -145,7 +145,7 @@ class PostgreSQLManager(BaseManager):
         :returns: `bool` of status result
         """
 
-        query_update = "UPDATE job_info SET ("
+        query_update = "UPDATE jobs SET ("
         keys_to_update = 0
         for key in update_dict.keys():
             if keys_to_update:
@@ -186,7 +186,7 @@ class PostgreSQLManager(BaseManager):
         with self.get_db_connection() as conn:
             with conn.cursor(cursor_factory=psycopg2.extras.DictCursor) as cur:
                 query_select = \
-                    """SELECT * FROM job_info WHERE identifier = %s"""
+                    """SELECT * FROM jobs WHERE identifier = %s"""
                 query_params = [job_id]
                 cur.execute(query_select, query_params)
                 found = cur.fetchone()
@@ -215,7 +215,7 @@ class PostgreSQLManager(BaseManager):
             except FileNotFoundError:
                 pass
 
-        query_delete = "DELETE FROM job_info WHERE identifier = %s"
+        query_delete = "DELETE FROM jobs WHERE identifier = %s"
         with self.get_db_connection() as conn:
             with conn.cursor() as cur:
                 cur.execute(query_delete, [job_id])

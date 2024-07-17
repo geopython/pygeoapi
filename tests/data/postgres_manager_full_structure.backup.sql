@@ -49,10 +49,10 @@ SET default_tablespace = '';
 SET default_table_access_method = heap;
 
 --
--- Name: job_info; Type: TABLE; Schema: public; Owner: postgres
+-- Name: jobs; Type: TABLE; Schema: public; Owner: postgres
 --
 
-CREATE TABLE public.job_info (
+CREATE TABLE public.jobs (
     type character varying DEFAULT 'process'::character varying NOT NULL,
     identifier character varying NOT NULL,
     process_id character varying NOT NULL,
@@ -66,14 +66,14 @@ CREATE TABLE public.job_info (
 );
 
 
-ALTER TABLE public.job_info OWNER TO postgres;
+ALTER TABLE public.jobs OWNER TO postgres;
 
 --
--- Name: job_info job_info_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+-- Name: jobs jobs_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
 --
 
-ALTER TABLE ONLY public.job_info
-    ADD CONSTRAINT job_info_pkey PRIMARY KEY (identifier);
+ALTER TABLE ONLY public.jobs
+    ADD CONSTRAINT jobs_pkey PRIMARY KEY (identifier);
 
 
 --
