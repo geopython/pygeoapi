@@ -90,10 +90,6 @@ class TinyDBProvider(BaseProvider):
                 LOGGER.debug(err)
                 return {}
 
-            for p in r['properties'].keys():
-                if p not in self.excludes:
-                    self.fields_[p] = {'type': 'string'}
-
             for key, value in r['properties'].items():
                 if key not in self._excludes:
                     typed_value = get_typed_value(str(value))
