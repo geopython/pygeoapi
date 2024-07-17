@@ -47,13 +47,15 @@ server:
         url: https://maps.wikimedia.org/osm-intl/{z}/{x}/{y}.png
         attribution: '<a href="https://wikimediafoundation.org/wiki/Maps_Terms_of_Use">Wikimedia maps</a> | Map data &copy; <a href="https://openstreetmap.org/copyright">OpenStreetMap contributors</a>'
     manager:
-        name: 'pygeoapi.process.manager.postgresdb_.PostgreSqlDBManager'
+        name: 'pygeoapi.process.manager.postgresql.PostgreSQLManager'
         connection:
           host: localhost
           port: 5432
           database: ogc_api
           user: postgres
           password: postgres
+        # Alternative accepted connection definition:
+        # connection: postgresql://postgres:postgres@localhost:5432/ogc_api
         output_dir: /tmp
 
 logging:

@@ -52,7 +52,7 @@ from pygeoapi.util import JobStatus
 LOGGER = logging.getLogger(__name__)
 
 
-class PostgreSqlDBManager(BaseManager):
+class PostgreSQLManager(BaseManager):
     """PostgreSql Manager"""
 
     def __init__(self, manager_def: dict):
@@ -61,7 +61,7 @@ class PostgreSqlDBManager(BaseManager):
 
         :param manager_def: manager definition
 
-        :returns: `pygeoapi.process.manager.postgresdb_.PostgreSqlDBManager`
+        :returns: `pygeoapi.process.manager.postgresqs.PostgreSQLManager`
         """
 
         super().__init__(manager_def)
@@ -76,17 +76,19 @@ class PostgreSqlDBManager(BaseManager):
                 with conn.cursor() as cur:
                     cur.execute(test_query)
                     cur.fetchone()
-        except (Exception) as ex:
-            LOGGER.fatal('Test connecting to DB failed: ' + str(ex))
-            raise ProcessorGenericError(
-                'Test connecting to DB failed.'
-            ) from ex
+        except Exception as ex:
+            LOGGER.error(f'Test connecting to DB failed: {ex}')
+            raise ProcessorGenericError('Test connecting to DB failed.')
 
     def get_db_connection(self):
         """
         Get and return a new connection to the DB.
         """
-        conn = psycopg2.connect(**self.__database_connection_parameters)
+        if isinstance(self.__database_connection_parameters, str):
+            conn = psycopg2.connect(self.__database_connection_parameters)
+        else:
+            conn = psycopg2.connect(**self.__database_connection_parameters)
+            
         return conn
 
     def get_jobs(self, status: JobStatus = None) -> list:
@@ -240,7 +242,7 @@ class PostgreSqlDBManager(BaseManager):
         mimetype = job_result.get('mimetype')
         job_status = JobStatus[job_result['status']]
 
-        if not job_status == JobStatus.successful:
+        if job_status != JobStatus.successful:
             # Job is incomplete
             return (None,)
         if not location:
@@ -249,7 +251,7 @@ class PostgreSqlDBManager(BaseManager):
         else:
             try:
                 location = Path(location)
-                with location.open('r', encoding='utf-8') as filehandler:
+                with location.open(encoding='utf-8') as filehandler:
                     result = json.load(filehandler)
             except (TypeError, FileNotFoundError, json.JSONDecodeError):
                 raise JobResultNotFoundError()
@@ -257,4 +259,4 @@ class PostgreSqlDBManager(BaseManager):
                 return mimetype, result
 
     def __repr__(self):
-        return f'<TinyDBManager> {self.name}'
+        return f'<PostgreSQLManager> {self.name}'
