@@ -76,8 +76,8 @@ class PostgreSQLManager(BaseManager):
                 with conn.cursor() as cur:
                     cur.execute(test_query)
                     cur.fetchone()
-        except Exception as ex:
-            LOGGER.error(f'Test connecting to DB failed: {ex}')
+        except Exception as err:
+            LOGGER.error(f'Test connecting to DB failed: {err}')
             raise ProcessorGenericError('Test connecting to DB failed.')
 
     def get_db_connection(self):
@@ -251,8 +251,8 @@ class PostgreSQLManager(BaseManager):
         else:
             try:
                 location = Path(location)
-                with location.open(encoding='utf-8') as filehandler:
-                    result = json.load(filehandler)
+                with location.open(encoding='utf-8') as fh:
+                    result = json.load(fh)
             except (TypeError, FileNotFoundError, json.JSONDecodeError):
                 raise JobResultNotFoundError()
             else:
