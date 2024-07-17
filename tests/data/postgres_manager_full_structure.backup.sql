@@ -20,12 +20,12 @@ SET row_security = off;
 -- Name: pygeoapi-manager; Type: DATABASE; Schema: -; Owner: postgres
 --
 
-CREATE DATABASE pygeoapi-manager WITH TEMPLATE = template0 ENCODING = 'UTF8' LOCALE = 'en_US.UTF-8';
+CREATE DATABASE "pygeoapi-manager" WITH TEMPLATE = template0 ENCODING = 'UTF8' LOCALE = 'en_US.UTF-8';
 
 
-ALTER DATABASE pygeoapi-manager OWNER TO postgres;
+ALTER DATABASE "pygeoapi-manager" OWNER TO postgres;
 
-\connect pygeoapi-manager
+\connect "pygeoapi-manager"
 
 SET statement_timeout = 0;
 SET lock_timeout = 0;
