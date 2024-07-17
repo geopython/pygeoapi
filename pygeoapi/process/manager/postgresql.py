@@ -88,7 +88,7 @@ class PostgreSQLManager(BaseManager):
             conn = psycopg2.connect(self.__database_connection_parameters)
         else:
             conn = psycopg2.connect(**self.__database_connection_parameters)
-            
+
         return conn
 
     def get_jobs(self, status: JobStatus = None) -> list:
