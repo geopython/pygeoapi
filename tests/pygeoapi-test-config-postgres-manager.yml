@@ -51,11 +51,11 @@ server:
         connection:
           host: localhost
           port: 5432
-          database: ogc_api
+          database: pygeoapi-manager
           user: postgres
           password: postgres
         # Alternative accepted connection definition:
-        # connection: postgresql://postgres:postgres@localhost:5432/ogc_api
+        # connection: postgresql://postgres:postgres@localhost:5432/pygeoapi-manager
         output_dir: /tmp
 
 logging:
