@@ -51,6 +51,7 @@ import requests
 
 from pygeoapi.provider.base import (
     BaseProvider, ProviderNotFoundError, ProviderQueryError)
+from pygeoapi.util import crs_transform
 
 LOGGER = logging.getLogger(__name__)
 
@@ -80,6 +81,7 @@ class TabledapProvider(BaseProvider):
 
         return properties
 
+    @crs_transform
     def query(self, offset=0, limit=10, resulttype='results',
               bbox=[], datetime_=None, properties=[], sortby=[],
               select_properties=[], skip_geometry=False, q=None,
@@ -164,6 +166,7 @@ class TabledapProvider(BaseProvider):
             'numberReturned': returned
         }
 
+    @crs_transform
     def get(self, identifier, **kwargs):
 
         query_params = []
