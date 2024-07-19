@@ -155,6 +155,7 @@ setup(
     maintainer='Tom Kralidis',
     maintainer_email='tomkralidis@gmail.com',
     url='https://pygeoapi.io',
+    python_requires='>=3.10',
     install_requires=read('requirements.txt').splitlines(),
     packages=find_packages(exclude=['pygeoapi.tests']),
     include_package_data=True,
