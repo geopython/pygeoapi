@@ -162,7 +162,7 @@ def describe_processes(api: API, request: APIRequest,
                 'type': FORMAT_TYPES[F_HTML],
                 'rel': 'http://www.opengis.net/def/rel/ogc/1.0/job-list',
                 'href': f'{jobs_url}?f={F_HTML}',
-                'title': l10n.translate('Jobs for this process as HTML', request.locale),  # noqa
+                'title': l10n.translate('Jobs list as HTML', request.locale),  # noqa
                 'hreflang': api.default_locale
             }
             p2['links'].append(link)
@@ -171,7 +171,7 @@ def describe_processes(api: API, request: APIRequest,
                 'type': FORMAT_TYPES[F_JSON],
                 'rel': 'http://www.opengis.net/def/rel/ogc/1.0/job-list',
                 'href': f'{jobs_url}?f={F_JSON}',
-                'title': l10n.translate('Jobs for this process as JSON', request.locale),  # noqa
+                'title': l10n.translate('Jobs list as JSON', request.locale),  # noqa
                 'hreflang': api.default_locale
             }
             p2['links'].append(link)
