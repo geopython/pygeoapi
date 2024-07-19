@@ -47,15 +47,15 @@ server:
         url: https://maps.wikimedia.org/osm-intl/{z}/{x}/{y}.png
         attribution: '<a href="https://wikimediafoundation.org/wiki/Maps_Terms_of_Use">Wikimedia maps</a> | Map data &copy; <a href="https://openstreetmap.org/copyright">OpenStreetMap contributors</a>'
     manager:
-        name: 'pygeoapi.process.manager.postgresql.PostgreSQLManager'
+        name: PostgreSQL
         connection:
           host: localhost
           port: 5432
-          database: pygeoapi-manager
+          database: test
           user: postgres
-          password: postgres
+          password: ${POSTGRESQL_PASSWORD:-postgres}
         # Alternative accepted connection definition:
-        # connection: postgresql://postgres:postgres@localhost:5432/pygeoapi-manager
+        # connection: postgresql://postgres:postgres@localhost:5432/test
         output_dir: /tmp
 
 logging:

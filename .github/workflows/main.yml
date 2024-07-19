@@ -91,6 +91,7 @@ jobs:
         pip3 install -r requirements-starlette.txt
         pip3 install -r requirements-dev.txt
         pip3 install -r requirements-provider.txt
+        pip3 install -r requirements-manager.txt
         pip3 install -r requirements-django.txt
         python3 setup.py install
         pip3 install --upgrade numpy elasticsearch
@@ -104,6 +105,7 @@ jobs:
         gunzip < tests/data/hotosm_bdi_waterways.sql.gz | psql postgresql://postgres:${{ secrets.DatabasePassword || 'postgres' }}@localhost:5432/test
         psql postgresql://postgres:${{ secrets.DatabasePassword || 'postgres' }}@localhost:5432/test -f tests/data/dummy_data.sql
         psql postgresql://postgres:${{ secrets.DatabasePassword || 'postgres' }}@localhost:5432/test -f tests/data/dummy_types_data.sql
+        psql postgresql://postgres:${{ secrets.DatabasePassword || 'postgres' }}@localhost:5432/test -f tests/data/postgres_manager_full_structure.backup.sql
         docker ps
         python3 tests/load_oracle_data.py
     - name: run unit tests ⚙️
@@ -127,6 +129,7 @@ jobs:
         pytest tests/test_ogr_shapefile_provider.py
         pytest tests/test_ogr_sqlite_provider.py
         pytest tests/test_ogr_wfs_provider.py
+        pytest tests/test_postgresql_manager.py
         # pytest tests/test_ogr_wfs_provider_live.py  # NOTE: these are skipped in the file but listed here for completeness
         pytest tests/test_openapi.py
         pytest tests/test_oracle_provider.py
