@@ -136,7 +136,7 @@ resources:
                 bounds: [[-124.953634,-16.536406],[109.929807,66.969298]]
                 zoom:
                     min: 0
-                    max: 11
+                    max: 5
               format:
                     name: pbf
                     mimetype: application/vnd.mapbox-vector-tile
