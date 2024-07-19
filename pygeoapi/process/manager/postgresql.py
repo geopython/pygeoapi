@@ -30,7 +30,10 @@
 # Requires postgresql database structure.
 # Create the database:
 # e.g.
-# CREATE DATABASE test WITH TEMPLATE = template0 ENCODING = 'UTF8' LOCALE = 'en_US.UTF-8';
+# CREATE DATABASE test
+#   WITH TEMPLATE = template0
+#   ENCODING = 'UTF8'
+#   LOCALE = 'en_US.UTF-8';
 # ALTER DATABASE test OWNER TO postgres;
 #
 # Import dump:
