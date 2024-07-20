@@ -55,7 +55,7 @@ server:
           user: postgres
           password: ${POSTGRESQL_PASSWORD:-postgres}
         # Alternative accepted connection definition:
-        # connection: postgresql://postgres:postgres@localhost:5432/test
+        # connection: postgresql://postgres:${POSTGRESQL_PASSWORD:-postgres}@localhost:5432/test
         output_dir: /tmp
 
 logging:

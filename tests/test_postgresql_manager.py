@@ -45,7 +45,7 @@ from pygeoapi.util import yaml_load
 @pytest.fixture()
 def config():
     with open(get_test_file_path(
-              'pygeoapi-test-config-postgres-manager.yml')
+              'pygeoapi-test-config-postgresql-manager.yml')
               ) as fh:
         return yaml_load(fh)
 
