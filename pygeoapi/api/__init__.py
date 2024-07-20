@@ -80,7 +80,7 @@ HEADERS = {
 
 CHARSET = ['utf-8']
 F_JSON = 'json'
-F_COVJSON= 'CoverageJSON'
+F_COVJSON = 'CoverageJSON'
 F_HTML = 'html'
 F_JSONLD = 'jsonld'
 F_GZIP = 'gzip'
@@ -983,7 +983,8 @@ class API:
                 if 'trs' in t_ext:
                     collection['extent']['temporal']['trs'] = t_ext['trs']
                 if 'values' in t_ext:
-                    collection['extent']['temporal']['values'] = t_ext['values']
+                    collection['extent']['temporal']['values'] = \
+                        t_ext['values']
 
             LOGGER.debug('Processing configured collection links')
             for link in l10n.translate(v.get('links', []), request.locale):
