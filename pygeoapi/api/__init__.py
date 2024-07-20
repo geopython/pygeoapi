@@ -80,6 +80,7 @@ HEADERS = {
 
 CHARSET = ['utf-8']
 F_JSON = 'json'
+F_COVJSON= 'CoverageJSON'
 F_HTML = 'html'
 F_JSONLD = 'jsonld'
 F_GZIP = 'gzip'
@@ -93,6 +94,7 @@ FORMAT_TYPES = OrderedDict((
     (F_HTML, 'text/html'),
     (F_JSONLD, 'application/ld+json'),
     (F_JSON, 'application/json'),
+    (F_COVJSON, 'application/json'),
     (F_PNG, 'image/png'),
     (F_JPEG, 'image/jpeg'),
     (F_MVT, 'application/vnd.mapbox-vector-tile'),
@@ -980,6 +982,8 @@ class API:
                 }
                 if 'trs' in t_ext:
                     collection['extent']['temporal']['trs'] = t_ext['trs']
+                if 'values' in t_ext:
+                    collection['extent']['temporal']['values'] = t_ext['values']
 
             LOGGER.debug('Processing configured collection links')
             for link in l10n.translate(v.get('links', []), request.locale):
@@ -1209,6 +1213,7 @@ class API:
             if edr:
                 # TODO: translate
                 LOGGER.debug('Adding EDR links')
+                collection['data_queries'] = {}
                 parameters = p.get_fields()
                 if parameters:
                     collection['parameter_names'] = {}
@@ -1225,10 +1230,33 @@ class API:
                                     'value': value['x-ogc-unit'],
                                     'type': 'http://www.opengis.net/def/uom/UCUM/'  # noqa
                                 }
+                            },
+                            'observedProperty': {
+                                'id': key,
+                                'label': value['title']
                             }
                         }
 
+                LOGGER.debug('Adding EDR query types')
                 for qt in p.get_query_types():
+                    collection['data_queries'][qt] = {
+                        'link': {
+                            'href': f'{self.get_collections_url()}/{k}/{qt}',
+                            'hreflang': 'en',
+                            'rel': 'data',
+                            'variables': {
+                                'title': f'{qt} query',
+                                'query_type': qt,
+                                'output_formats': ['CoverageJSON'],
+                                'default_output_format': 'CoverageJSON',
+                                'crs_details': [{
+                                    'crs': 'EPSG:4326',
+                                    'wkt': 'GEOGCS[\"WGS 84\",DATUM[\"WGS_1984\",SPHEROID[\"WGS 84\",6378137,298.257223563,AUTHORITY[\"EPSG\",\"7030\"]],AUTHORITY[\"EPSG\",\"6326\"]],PRIMEM[\"Greenwich\",0,AUTHORITY[\"EPSG\",\"8901\"]],UNIT[\"degree\",0.01745329251994328,AUTHORITY[\"EPSG\",\"9122\"]],AUTHORITY[\"EPSG\",\"4326\"]]' # noqa
+                                }]
+                            }
+                        }
+                    }
+
                     title1 = l10n.translate('query for this collection as JSON', request.locale)  # noqa
                     title1 = f'{qt} {title1}'
                     title2 = l10n.translate('query for this collection as HTML', request.locale)  # noqa

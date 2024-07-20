@@ -415,6 +415,12 @@ properties:
                                               type: string
                                               description: temporal reference system of features
                                               default: 'http://www.opengis.net/def/uom/ISO-8601/0/Gregorian'
+                                          values:
+                                              type: array
+                                              description: temporal reference period values
+                                              items:
+                                                  type: number
+                                              minItems: 0
                               required:
                                   - spatial
                           providers:
