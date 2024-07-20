@@ -94,7 +94,7 @@ FORMAT_TYPES = OrderedDict((
     (F_HTML, 'text/html'),
     (F_JSONLD, 'application/ld+json'),
     (F_JSON, 'application/json'),
-    (F_COVJSON, 'application/json'),
+    (F_COVJSON, 'application/prs.coverage+json'),
     (F_PNG, 'image/png'),
     (F_JPEG, 'image/jpeg'),
     (F_MVT, 'application/vnd.mapbox-vector-tile'),
