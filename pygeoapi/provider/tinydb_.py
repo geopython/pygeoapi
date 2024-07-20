@@ -348,7 +348,10 @@ class TinyDBCatalogueProvider(TinyDBProvider):
     def __init__(self, provider_def):
         super().__init__(provider_def)
 
+        LOGGER.debug('Refreshing fields')
         self._excludes = ['_metadata-anytext']
+        self.fields_ = {}
+        self.get_fields()
 
     def get_fields(self):
         fields = super().get_fields()
