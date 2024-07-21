@@ -206,6 +206,7 @@ default.
               temporal:  # optional
                   begin: 2000-10-30T18:24:39Z  # start datetime in RFC3339
                   end: 2007-10-30T08:57:29Z  # end datetime in RFC3339
+                  trs: http://www.opengis.net/def/uom/ISO-8601/0/Gregorian  # TRS
           providers:  # list of 1..n required connections information
               # provider name
               # see pygeoapi.plugin for supported providers
