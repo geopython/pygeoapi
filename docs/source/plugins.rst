@@ -244,12 +244,12 @@ The below template provides a minimal example (let's call the file ``mycoolraste
 
        def get_fields(self):
            # generate a JSON Schema of coverage band metadata
-           self.fields_ = {
+           self._fields = {
                'b1': {
                    'type': 'number'
                }
            }
-           return self.fields_
+           return self._fields
 
        def query(self, bands=[], subsets={}, format_='json', **kwargs):
            # process bands and subsets parameters

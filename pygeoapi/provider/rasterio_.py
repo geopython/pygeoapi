@@ -66,7 +66,7 @@ class RasterioProvider(BaseProvider):
             raise ProviderConnectionError(err)
 
     def get_fields(self):
-        if not self.fields_:
+        if not self._fields:
             for i, dtype in zip(self._data.indexes, self._data.dtypes):
                 LOGGER.debug(f'Adding field for band {i}')
                 i2 = str(i)
@@ -81,15 +81,15 @@ class RasterioProvider(BaseProvider):
                 if dtype.startswith('float'):
                     dtype2 = 'number'
 
-                self.fields_[i2] = {
+                self._fields[i2] = {
                     'title': name,
                     'type': dtype2,
                     '_meta': self._data.tags(i)
                 }
                 if units is not None:
-                    self.fields_[i2]['x-ogc-unit'] = units
+                    self._fields[i2]['x-ogc-unit'] = units
 
-        return self.fields_
+        return self._fields
 
     def query(self, properties=[], subsets={}, bbox=None, bbox_crs=4326,
               datetime_=None, format_='json', **kwargs):

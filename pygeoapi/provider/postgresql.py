@@ -246,18 +246,18 @@ class PostgreSQLProvider(BaseProvider):
                 LOGGER.debug('No string format detected')
                 return None
 
-        if not self.fields_:
+        if not self._fields:
             for column in self.table_model.__table__.columns:
                 LOGGER.debug(f'Testing {column.name}')
                 if column.name == self.geom:
                     continue
 
-                self.fields_[str(column.name)] = {
+                self._fields[str(column.name)] = {
                     'type': _column_type_to_json_schema_type(column.type),
                     'format': _column_format_to_json_schema_format(column.type)
                 }
 
-        return self.fields_
+        return self._fields
 
     def get(self, identifier, crs_transform_spec=None, **kwargs):
         """

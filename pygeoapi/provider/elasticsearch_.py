@@ -98,7 +98,7 @@ class ElasticsearchProvider(BaseProvider):
 
         :returns: dict of fields
         """
-        if not self.fields_:
+        if not self._fields:
             ii = self.es.indices.get(index=self.index_name,
                                      allow_no_indices=False)
 
@@ -122,16 +122,16 @@ class ElasticsearchProvider(BaseProvider):
             for k, v in p['properties'].items():
                 if 'type' in v:
                     if v['type'] == 'text':
-                        self.fields_[k] = {'type': 'string'}
+                        self._fields[k] = {'type': 'string'}
                     elif v['type'] == 'date':
-                        self.fields_[k] = {'type': 'string', 'format': 'date'}
+                        self._fields[k] = {'type': 'string', 'format': 'date'}
                     elif v['type'] in ('float', 'long'):
-                        self.fields_[k] = {'type': 'number',
+                        self._fields[k] = {'type': 'number',
                                            'format': v['type']}
                     else:
-                        self.fields_[k] = {'type': v['type']}
+                        self._fields[k] = {'type': v['type']}
 
-        return self.fields_
+        return self._fields
 
     @crs_transform
     def query(self, offset=0, limit=10, resulttype='results',

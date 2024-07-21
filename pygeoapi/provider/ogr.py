@@ -260,7 +260,7 @@ class OGRProvider(BaseProvider):
         :returns: dict of fields
         """
 
-        if not self.fields_:
+        if not self._fields:
             try:
                 layer_defn = self._get_layer().GetLayerDefn()
                 for fld in range(layer_defn.GetFieldCount()):
@@ -276,10 +276,10 @@ class OGRProvider(BaseProvider):
                     elif fieldName2 == 'real':
                         fieldName2 = 'number'
 
-                    self.fields_[fieldName] = {'type': fieldName2}
+                    self._fields[fieldName] = {'type': fieldName2}
 
                     if fieldName2 == 'datetime':
-                        self.fields_[fieldName] = {
+                        self._fields[fieldName] = {
                             'type': 'string',
                             'format': 'date-time'
                         }
@@ -296,7 +296,7 @@ class OGRProvider(BaseProvider):
             finally:
                 self._close()
 
-        return self.fields_
+        return self._fields
 
     def query(self, offset=0, limit=10, resulttype='results',
               bbox=[], datetime_=None, properties=[], sortby=[],

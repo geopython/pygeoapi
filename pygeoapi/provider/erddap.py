@@ -65,7 +65,7 @@ class TabledapProvider(BaseProvider):
         self.get_fields()
 
     def get_fields(self):
-        if not self.fields_:
+        if not self._fields:
             LOGGER.debug('Fetching one feature for field definitions')
             properties = self.query(limit=1)['features'][0]['properties']
 
@@ -78,9 +78,9 @@ class TabledapProvider(BaseProvider):
                     data_type = 'string'
                 if data_type == 'float':
                     data_type = 'number'
-            self.fields_[key] = {'type': data_type}
+            self._fields[key] = {'type': data_type}
 
-        return self.fields_
+        return self._fields
 
     @crs_transform
     def query(self, offset=0, limit=10, resulttype='results',

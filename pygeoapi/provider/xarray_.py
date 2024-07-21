@@ -94,7 +94,7 @@ class XarrayProvider(BaseProvider):
             raise ProviderConnectionError(err)
 
     def get_fields(self):
-        if not self.fields_:
+        if not self._fields:
             for key, value in self._data.variables.items():
                 if len(value.shape) >= 3:
                     LOGGER.debug('Adding variable')
@@ -102,13 +102,13 @@ class XarrayProvider(BaseProvider):
                     if dtype.name.startswith('float'):
                         dtype = 'number'
 
-                    self.fields_[key] = {
+                    self._fields[key] = {
                         'type': dtype,
                         'title': value.attrs['long_name'],
                         'x-ogc-unit': value.attrs.get('units')
                     }
 
-        return self.fields_
+        return self._fields
 
     def query(self, properties=[], subsets={}, bbox=[], bbox_crs=4326,
               datetime_=None, format_='json', **kwargs):

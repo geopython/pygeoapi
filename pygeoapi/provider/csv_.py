@@ -62,7 +62,7 @@ class CSVProvider(BaseProvider):
 
         :returns: dict of fields
         """
-        if not self.fields_:
+        if not self._fields:
             LOGGER.debug('Treating all columns as string types')
             with open(self.data) as ff:
                 LOGGER.debug('Serializing DictReader')
@@ -84,9 +84,9 @@ class CSVProvider(BaseProvider):
                     else:
                         type_ = 'string'
 
-                    self.fields_[key] = {'type': type_}
+                    self._fields[key] = {'type': type_}
 
-        return self.fields_
+        return self._fields
 
     def _load(self, offset=0, limit=10, resulttype='results',
               identifier=None, bbox=[], datetime_=None, properties=[],

@@ -83,7 +83,7 @@ class TinyDBProvider(BaseProvider):
         :returns: dict of fields
         """
 
-        if not self.fields_:
+        if not self._fields:
             try:
                 r = self.db.all()[0]
             except IndexError as err:
@@ -100,20 +100,20 @@ class TinyDBProvider(BaseProvider):
                     else:
                         typed_value_type = 'string'
 
-                    self.fields_[key] = {'type': typed_value_type}
+                    self._fields[key] = {'type': typed_value_type}
 
                     try:
                         LOGGER.debug('Attempting to detect date types')
                         _ = parse_date(value)
                         if len(value) > 11:
-                            self.fields_[key]['format'] = 'date-time'
+                            self._fields[key]['format'] = 'date-time'
                         else:
-                            self.fields_[key]['format'] = 'date'
+                            self._fields[key]['format'] = 'date'
                     except Exception:
                         LOGGER.debug('No date types detected')
                         pass
 
-        return self.fields_
+        return self._fields
 
     @crs_transform
     def query(self, offset=0, limit=10, resulttype='results',
@@ -350,7 +350,7 @@ class TinyDBCatalogueProvider(TinyDBProvider):
 
         LOGGER.debug('Refreshing fields')
         self._excludes = ['_metadata-anytext']
-        self.fields_ = {}
+        self._fields = {}
         self.get_fields()
 
     def get_fields(self):

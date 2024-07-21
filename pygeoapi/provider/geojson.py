@@ -77,7 +77,7 @@ class GeoJSONProvider(BaseProvider):
         :returns: dict of fields
         """
 
-        if not self.fields_:
+        if not self._fields:
             LOGGER.debug('Treating all columns as string types')
             if os.path.exists(self.data):
                 with open(self.data) as src:
@@ -90,11 +90,11 @@ class GeoJSONProvider(BaseProvider):
                     else:
                         type_ = 'string'
 
-                    self.fields_[key] = {'type': type_}
+                    self._fields[key] = {'type': type_}
             else:
                 LOGGER.warning(f'File {self.data} does not exist.')
 
-        return self.fields_
+        return self._fields
 
     def _load(self, skip_geometry=None, properties=[], select_properties=[]):
         """Load and validate the source GeoJSON file

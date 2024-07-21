@@ -75,7 +75,7 @@ class MongoProvider(BaseProvider):
         :returns: dict of fields
         """
 
-        if not self.fields_:
+        if not self._fields:
             pipeline = [
                 {"$project": {"properties": 1}},
                 {"$unwind": "$properties"},
@@ -90,9 +90,9 @@ class MongoProvider(BaseProvider):
             # by operating without a schema, mongo can query any data type.
             for i in result:
                 for key in result[0]['_id'].keys():
-                    self.fields_[key] = {'type': 'string'}
+                    self._fields[key] = {'type': 'string'}
 
-        return self.fields_
+        return self._fields
 
     def _get_feature_list(self, filterObj, sortList=[], skip=0, maxitems=1,
                           skip_geometry=False):
