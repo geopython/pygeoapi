@@ -1,12 +1,20 @@
 # CITE testing for OGC API capabilities
 
 - OGC API - Features
+- OGC API - Tiles
+- OGC API - Environmental Data Retrieval
 - OGC API - Processes
 
 ## Test data
 
 ### OGC API - Features
-Test data used is in `tests/data/canada-hydat-daily-mean-02HC003.tinydb`
+Test data used is in `tests/data/canada-hydat-daily-mean-02HC003.tinydb`.
+
+### OGC API - Tiles
+Test data used is in `tests/data/tiles/ne_110m_lakes`.
+
+### OGC API - Environmental Data Retrieval
+TODO
 
 ### OGC API - Processes
 The `hello-world` test process that is provided with pygeoapi by default is used.
