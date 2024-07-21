@@ -99,7 +99,8 @@ class BaseProvider:
 
         Example response: {'field1': {'type': 'string'}}
 
-        :returns: dict of dicts (field names and their associated JSON Schema definitions)
+        :returns: dict of dicts (field names and their
+                  associated JSON Schema definitions)
         """
 
         if hasattr(self, '_fields'):
