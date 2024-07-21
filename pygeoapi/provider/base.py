@@ -93,15 +93,19 @@ class BaseProvider:
         raise NotImplementedError()
 
     @property
-    def fields(self):
+    def fields(self) -> dict:
         """
         Store provider field information (names, types)
 
-        Example response: {'field1': 'string', 'field2': 'number'}}
+        Example response: {'field1': {'type': 'string'}}
 
-        :returns: dict of field names and their associated JSON Schema types
+        :returns: dict of dicts (field names and their associated JSON Schema definitions)
         """
-        return self.get_fields()
+
+        if hasattr(self, '_fields'):
+            return self._fields
+        else:
+            return self.get_fields()
 
     def get_schema(self, schema_type: SchemaType = SchemaType.item):
         """
