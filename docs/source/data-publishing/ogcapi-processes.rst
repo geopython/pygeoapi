@@ -67,6 +67,29 @@ job_manager_pygeoapi.
            output_dir: /tmp/
 
 
+PostgreSQL
+--------------------
+As another alternative to the default a manager employing `PostgreSQL`_ can be used.
+The connection to an installed `PostgreSQL`_ database must be provided in the configuration.
+`PostgreSQL`_ uses the localhost and port 5432 by default. Jobs are stored in a table named jobs.
+
+.. code-block:: yaml
+
+   server:
+       manager:
+           name: PostgreSQL
+           connection:
+               host: localhost
+               port: 5432
+               database: test
+               user: postgres
+               password: ${POSTGRESQL_PASSWORD:-postgres}
+           # Alternative accepted connection definition:
+           # connection: postgresql://postgres:postgres@localhost:5432/test
+           # connection: postgresql://postgres:${POSTGRESQL_PASSWORD:-postgres}@localhost:5432/test
+           output_dir: /tmp
+
+
 Putting it all together
 -----------------------
 
