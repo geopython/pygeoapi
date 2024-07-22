@@ -54,7 +54,7 @@ class CSVProvider(BaseProvider):
         super().__init__(provider_def)
         self.geometry_x = provider_def['geometry']['x_field']
         self.geometry_y = provider_def['geometry']['y_field']
-        self.fields = self.get_fields()
+        self.get_fields()
 
     def get_fields(self):
         """
@@ -62,32 +62,31 @@ class CSVProvider(BaseProvider):
 
         :returns: dict of fields
         """
+        if not self._fields:
+            LOGGER.debug('Treating all columns as string types')
+            with open(self.data) as ff:
+                LOGGER.debug('Serializing DictReader')
+                data_ = csv.DictReader(ff)
 
-        LOGGER.debug('Treating all columns as string types')
-        with open(self.data) as ff:
-            LOGGER.debug('Serializing DictReader')
-            data_ = csv.DictReader(ff)
-            fields = {}
+                row = next(data_)
 
-            row = next(data_)
+                for key, value in row.items():
+                    LOGGER.debug(f'key: {key}, value: {value}')
+                    value2 = get_typed_value(value)
+                    if key in [self.geometry_x, self.geometry_y]:
+                        continue
+                    if key == self.id_field:
+                        type_ = 'string'
+                    elif isinstance(value2, float):
+                        type_ = 'number'
+                    elif isinstance(value2, int):
+                        type_ = 'integer'
+                    else:
+                        type_ = 'string'
 
-            for key, value in row.items():
-                LOGGER.debug(f'key: {key}, value: {value}')
-                value2 = get_typed_value(value)
-                if key in [self.geometry_x, self.geometry_y]:
-                    continue
-                if key == self.id_field:
-                    type_ = 'string'
-                elif isinstance(value2, float):
-                    type_ = 'number'
-                elif isinstance(value2, int):
-                    type_ = 'integer'
-                else:
-                    type_ = 'string'
+                    self._fields[key] = {'type': type_}
 
-                fields[key] = {'type': type_}
-
-            return fields
+        return self._fields
 
     def _load(self, offset=0, limit=10, resulttype='results',
               identifier=None, bbox=[], datetime_=None, properties=[],

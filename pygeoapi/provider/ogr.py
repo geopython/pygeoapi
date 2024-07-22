@@ -188,7 +188,7 @@ class OGRProvider(BaseProvider):
         self.conn = None
 
         LOGGER.debug('Grabbing field information')
-        self.fields = self.get_fields()
+        self.get_fields()
 
     def _list_open_options(self):
         return [
@@ -260,43 +260,43 @@ class OGRProvider(BaseProvider):
         :returns: dict of fields
         """
 
-        fields = {}
-        try:
-            layer_defn = self._get_layer().GetLayerDefn()
-            for fld in range(layer_defn.GetFieldCount()):
-                field_defn = layer_defn.GetFieldDefn(fld)
-                fieldName = field_defn.GetName()
-                fieldTypeCode = field_defn.GetType()
-                fieldType = field_defn.GetFieldTypeName(fieldTypeCode)
+        if not self._fields:
+            try:
+                layer_defn = self._get_layer().GetLayerDefn()
+                for fld in range(layer_defn.GetFieldCount()):
+                    field_defn = layer_defn.GetFieldDefn(fld)
+                    fieldName = field_defn.GetName()
+                    fieldTypeCode = field_defn.GetType()
+                    fieldType = field_defn.GetFieldTypeName(fieldTypeCode)
 
-                fieldName2 = fieldType.lower()
+                    fieldName2 = fieldType.lower()
 
-                if fieldName2 == 'integer64':
-                    fieldName2 = 'integer'
-                elif fieldName2 == 'real':
-                    fieldName2 = 'number'
+                    if fieldName2 == 'integer64':
+                        fieldName2 = 'integer'
+                    elif fieldName2 == 'real':
+                        fieldName2 = 'number'
 
-                fields[fieldName] = {'type': fieldName2}
+                    self._fields[fieldName] = {'type': fieldName2}
 
-                if fieldName2 == 'datetime':
-                    fields[fieldName] = {
-                        'type': 'string',
-                        'format': 'date-time'
-                    }
+                    if fieldName2 == 'datetime':
+                        self._fields[fieldName] = {
+                            'type': 'string',
+                            'format': 'date-time'
+                        }
 
-                # fieldWidth = layer_defn.GetFieldDefn(fld).GetWidth()
-                # GetPrecision = layer_defn.GetFieldDefn(fld).GetPrecision()
+                    # fieldWidth = layer_defn.GetFieldDefn(fld).GetWidth()
+                    # GetPrecision = layer_defn.GetFieldDefn(fld).GetPrecision() # noqa
 
-        except RuntimeError as err:
-            LOGGER.error(err)
-            raise ProviderConnectionError(err)
-        except Exception as err:
-            LOGGER.error(err)
+            except RuntimeError as err:
+                LOGGER.error(err)
+                raise ProviderConnectionError(err)
+            except Exception as err:
+                LOGGER.error(err)
 
-        finally:
-            self._close()
+            finally:
+                self._close()
 
-        return fields
+        return self._fields
 
     def query(self, offset=0, limit=10, resulttype='results',
               bbox=[], datetime_=None, properties=[], sortby=[],

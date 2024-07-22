@@ -69,7 +69,8 @@ class CSWFacadeProvider(BaseProvider):
             'language': ('dc:language', 'language')
         }
 
-        self.fields = self.get_fields()
+        self._fields = {}
+        self.get_fields()
 
     def get_fields(self):
         """
@@ -78,17 +79,17 @@ class CSWFacadeProvider(BaseProvider):
         :returns: dict of fields
         """
 
-        fields = {}
-        date_fields = ['date', 'created', 'updated']
+        if not self._fields:
+            date_fields = ['date', 'created', 'updated']
 
-        for key in self.record_mappings.keys():
-            LOGGER.debug(f'key: {key}')
-            fields[key] = {'type': 'string'}
+            for key in self.record_mappings.keys():
+                LOGGER.debug(f'key: {key}')
+                self._fields[key] = {'type': 'string'}
 
-            if key in date_fields:
-                fields[key]['format'] = 'date-time'
+                if key in date_fields:
+                    self._fields[key]['format'] = 'date-time'
 
-        return fields
+        return self._fields
 
     @crs_transform
     def query(self, offset=0, limit=10, resulttype='results',

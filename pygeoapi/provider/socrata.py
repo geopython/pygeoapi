@@ -75,7 +75,7 @@ class SODAServiceProvider(BaseProvider):
         :returns: dict of fields
         """
 
-        if not self.fields:
+        if not self._fields:
 
             try:
                 [dataset] = self.client.datasets(ids=[self.resource_id])
@@ -87,9 +87,9 @@ class SODAServiceProvider(BaseProvider):
             fields = self.properties or resource[FIELD_NAME]
             for field in fields:
                 idx = resource[FIELD_NAME].index(field)
-                self.fields[field] = {'type': resource[DATA_TYPE][idx]}
+                self._fields[field] = {'type': resource[DATA_TYPE][idx]}
 
-        return self.fields
+        return self._fields
 
     @crs_transform
     def query(self, offset=0, limit=10, resulttype='results',

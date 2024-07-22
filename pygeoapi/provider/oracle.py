@@ -435,12 +435,12 @@ class OracleProvider(BaseProvider):
         """
         LOGGER.debug("Get available fields/properties")
 
-        if not self.fields:
+        if not self._fields:
             with DatabaseConnection(
                 self.conn_dic, self.table, properties=self.properties
             ) as db:
-                self.fields = db.fields
-        return self.fields
+                self._fields = db.fields
+        return self._fields
 
     def _get_where_clauses(
         self,

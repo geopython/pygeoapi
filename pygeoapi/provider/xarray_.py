@@ -88,28 +88,27 @@ class XarrayProvider(BaseProvider):
                          self._coverage_properties['y_axis_label'],
                          self._coverage_properties['time_axis_label']]
 
-            self.fields = self.get_fields()
+            self.get_fields()
         except Exception as err:
             LOGGER.warning(err)
             raise ProviderConnectionError(err)
 
     def get_fields(self):
-        fields = {}
+        if not self._fields:
+            for key, value in self._data.variables.items():
+                if len(value.shape) >= 3:
+                    LOGGER.debug('Adding variable')
+                    dtype = value.dtype
+                    if dtype.name.startswith('float'):
+                        dtype = 'number'
 
-        for key, value in self._data.variables.items():
-            if len(value.shape) >= 3:
-                LOGGER.debug('Adding variable')
-                dtype = value.dtype
-                if dtype.name.startswith('float'):
-                    dtype = 'number'
+                    self._fields[key] = {
+                        'type': dtype,
+                        'title': value.attrs['long_name'],
+                        'x-ogc-unit': value.attrs.get('units')
+                    }
 
-                fields[key] = {
-                    'type': dtype,
-                    'title': value.attrs['long_name'],
-                    'x-ogc-unit': value.attrs.get('units')
-                }
-
-        return fields
+        return self._fields
 
     def query(self, properties=[], subsets={}, bbox=[], bbox_crs=4326,
               datetime_=None, format_='json', **kwargs):

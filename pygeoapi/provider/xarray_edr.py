@@ -109,7 +109,7 @@ class XarrayEDRProvider(BaseEDRProvider, XarrayProvider):
 
         try:
             if select_properties:
-                self.fields = {k: v for k, v in self.fields.items() if k in select_properties}  # noqa
+                self._fields = {k: v for k, v in self._fields.items() if k in select_properties}  # noqa
                 data = self._data[[*select_properties]]
             else:
                 data = self._data
@@ -206,7 +206,7 @@ class XarrayEDRProvider(BaseEDRProvider, XarrayProvider):
         LOGGER.debug(f'query parameters: {query_params}')
         try:
             if select_properties:
-                self.fields = {k: v for k, v in self.fields.items() if k in select_properties}  # noqa
+                self._fields = {k: v for k, v in self._fields.items() if k in select_properties}  # noqa
                 data = self._data[[*select_properties]]
             else:
                 data = self._data

@@ -76,7 +76,7 @@ class ESRIServiceProvider(BaseProvider):
         :returns: `dict` of fields
         """
 
-        if not self.fields:
+        if not self._fields:
             # Load fields
             params = {'f': 'pjson'}
             resp = self.get_response(self.data, params=params)
@@ -102,9 +102,9 @@ class ESRIServiceProvider(BaseProvider):
                 raise ProviderTypeError(msg)
 
             for _ in resp['fields']:
-                self.fields.update({_['name']: {'type': _['type']}})
+                self._fields.update({_['name']: {'type': _['type']}})
 
-        return self.fields
+        return self._fields
 
     @crs_transform
     def query(self, offset=0, limit=10, resulttype='results',
