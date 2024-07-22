@@ -52,11 +52,11 @@ can be requested by including the ``Prefer: respond-async`` HTTP header in the r
            output_dir: /tmp/
 
 MongoDB
---------------------
-As an alternative to the default a manager employing `MongoDB`_ can be used. 
-The connection to an installed `MongoDB`_ instance must be provided in the configuration.
-`MongoDB`_ uses the localhost and port 27017 by default. Jobs are stored in a collection named
-job_manager_pygeoapi.
+-------
+As an alternative to the default, a manager employing `MongoDB`_ can be used. 
+The connection to a `MongoDB`_ instance must be provided in the configuration.
+`MongoDB`_ uses ``localhost`` and port ``27017`` by default. Jobs are stored in a collection named
+``job_manager_pygeoapi``.
 
 .. code-block:: yaml
 
@@ -68,10 +68,10 @@ job_manager_pygeoapi.
 
 
 PostgreSQL
---------------------
-As another alternative to the default a manager employing `PostgreSQL`_ can be used.
-The connection to an installed `PostgreSQL`_ database must be provided in the configuration.
-`PostgreSQL`_ uses the localhost and port 5432 by default. Jobs are stored in a table named jobs.
+----------
+As another alternative to the default, a manager employing `PostgreSQL`_ can be used.
+The connection to a `PostgreSQL`_ database must be provided in the configuration.
+`PostgreSQL`_ uses ``localhost`` and port ``5432`` by default. Jobs are stored in a table named ``jobs``.
 
 .. code-block:: yaml
 
@@ -93,7 +93,7 @@ The connection to an installed `PostgreSQL`_ database must be provided in the co
 Putting it all together
 -----------------------
 
-To summarize how pygeoapi processes and managers work together::
+To summarize how pygeoapi processes and managers work together:
 
 * process plugins implement the core processing / workflow functionality
 * manager plugins control and manage how processes are executed
