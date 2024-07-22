@@ -60,7 +60,7 @@ class BaseEDRProvider(BaseProvider):
         """
         Class method to register a query type with the provider class.
 
-        :param output_formats: List of supported output formats, default is ['CoverageJSON']
+        :param output_formats: List of supported output formats
         :param crs: Coordinate Reference System, default is 'EPSG:4326'
         :param wkt: Well-Known Text representation of the CRS
 
