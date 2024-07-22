@@ -48,6 +48,8 @@ from pygeoapi.provider.base import (
 from itertools import chain
 from dateutil.parser import isoparse
 
+from pygeoapi.util import crs_transform
+
 LOGGER = logging.getLogger(__name__)
 
 
@@ -183,6 +185,7 @@ class ParquetProvider(BaseProvider):
 
         return fields
 
+    @crs_transform
     def query(
         self,
         offset=0,
@@ -224,13 +227,6 @@ class ParquetProvider(BaseProvider):
                 if any(b is None for b in bbox):
                     msg = 'Dataset does not support bbox filtering'
                     raise ProviderQueryError(msg)
-
-                # Convert bbox to data CRS
-                bbox = (
-                    gpd.GeoSeries([box(*bbox)], crs='WGS84')
-                    .to_crs(self.crs)
-                    .total_bounds
-                )
 
                 minx, miny, maxx, maxy = [float(b) for b in bbox]
                 filter = (
@@ -304,6 +300,7 @@ class ParquetProvider(BaseProvider):
 
         return result
 
+    @crs_transform
     def get(self, identifier, **kwargs):
         """
         Get Feature by id
@@ -331,9 +328,7 @@ class ParquetProvider(BaseProvider):
                 raise ProviderItemNotFoundError(f'ID {identifier} not found')
 
             if self.has_geometry:
-                geom = gpd.GeoSeries.from_wkb(row['geometry'], crs=self.crs).to_crs(
-                    'WGS84'
-                )
+                geom = gpd.GeoSeries.from_wkb(row['geometry'], crs=self.crs)
             else:
                 geom = [None]
             gdf = gpd.GeoDataFrame(row, geometry=geom)
@@ -424,9 +419,7 @@ class ParquetProvider(BaseProvider):
                 rp['geometry'] = None
                 geom = gpd.GeoSeries.from_wkb(rp['geometry'])
             else:
-                geom = gpd.GeoSeries.from_wkb(rp['geometry'], crs=self.crs).to_crs(
-                    'WGS84'
-                )
+                geom = gpd.GeoSeries.from_wkb(rp['geometry'], crs=self.crs)
 
             gdf = gpd.GeoDataFrame(rp, geometry=geom)
             LOGGER.debug('results computed')
