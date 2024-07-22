@@ -29,14 +29,12 @@
 
 import json
 import logging
-import fsspec
 
 import geopandas as gpd
 import pyarrow
 import pyarrow.compute as pc
 import pyarrow.dataset
 import s3fs
-from shapely.geometry import box
 
 from pygeoapi.provider.base import (
     BaseProvider,
@@ -88,7 +86,8 @@ class ParquetProvider(BaseProvider):
         # Source url is required
         self.source = self.data.get('source')
         if not self.source:
-            msg = "Need explicit 'source' attr " "in data field of provider config"
+            msg = "Need explicit 'source' attr " \
+                    "in data field of provider config"
             LOGGER.error(msg)
             raise Exception(msg)
 
@@ -126,8 +125,9 @@ class ParquetProvider(BaseProvider):
             # Get the CRS of the data
             geo_metadata = json.loads(self.ds.schema.metadata[b'geo'])
             geom_column = geo_metadata['primary_column']
-            # if the CRS is not set, default to EPSG:4326 as per geoparquet spec
-            self.crs = geo_metadata['columns'][geom_column]['crs'] or 'EPSG:4326'
+            # if the CRS is not set default to EPSG:4326, per geoparquet spec
+            self.crs = geo_metadata['columns'][geom_column]['crs'] \
+                        or 'EPSG:4326'
 
     def _read_parquet(self, return_scanner=False, **kwargs):
         """
@@ -151,7 +151,8 @@ class ParquetProvider(BaseProvider):
 
         fields = dict()
 
-        for field_name, field_type in zip(self.ds.schema.names, self.ds.schema.types):
+        for field_name, field_type in zip(self.ds.schema.names,
+                                           self.ds.schema.types):
             # Geometry is managed as a special case by pygeoapi
             if field_name == 'geometry':
                 continue
@@ -312,9 +313,12 @@ class ParquetProvider(BaseProvider):
         result = None
         try:
             LOGGER.debug(f'Fetching identifier {identifier}')
-            id_type = arrow_to_pandas_type(self.ds.schema.field(self.id_field).type)
+            id_type = arrow_to_pandas_type(
+                self.ds.schema.field(self.id_field).type)
             batches = self._read_parquet(
-                filter=(pc.field(self.id_field) == pc.scalar(id_type(identifier)))
+                filter=(
+                    pc.field(self.id_field) == pc.scalar(id_type(identifier))
+                )
             )
 
             for batch in batches:
@@ -355,7 +359,8 @@ class ParquetProvider(BaseProvider):
     def __repr__(self):
         return f'<ParquetProvider> {self.data}'
 
-    def _response_feature_collection(self, filter, offset, limit, columns=None):
+    def _response_feature_collection(self, filter, offset, limit,
+                                      columns=None):
         """
         Assembles output from query as
         GeoJSON FeatureCollection structure.
@@ -442,7 +447,8 @@ class ParquetProvider(BaseProvider):
         """
 
         try:
-            scanner = pyarrow.dataset.Scanner.from_dataset(self.ds, filter=filter)
+            scanner = pyarrow.dataset.Scanner.from_dataset(self.ds, 
+                                                           filter=filter)
             return {
                 'type': 'FeatureCollection',
                 'numberMatched': scanner.count_rows(),
