@@ -1239,22 +1239,13 @@ class API:
                         }
 
                 LOGGER.debug('Adding EDR query types')
-                for qt in p.get_query_types():
+                for qt, variables in p.get_query_types().items():
                     collection['data_queries'][qt] = {
                         'link': {
                             'href': f'{self.get_collections_url()}/{k}/{qt}',
                             'hreflang': 'en',
                             'rel': 'data',
-                            'variables': {
-                                'title': f'{qt} query',
-                                'query_type': qt,
-                                'output_formats': ['CoverageJSON'],
-                                'default_output_format': 'CoverageJSON',
-                                'crs_details': [{
-                                    'crs': 'EPSG:4326',
-                                    'wkt': 'GEOGCS[\"WGS 84\",DATUM[\"WGS_1984\",SPHEROID[\"WGS 84\",6378137,298.257223563,AUTHORITY[\"EPSG\",\"7030\"]],AUTHORITY[\"EPSG\",\"6326\"]],PRIMEM[\"Greenwich\",0,AUTHORITY[\"EPSG\",\"8901\"]],UNIT[\"degree\",0.01745329251994328,AUTHORITY[\"EPSG\",\"9122\"]],AUTHORITY[\"EPSG\",\"4326\"]]' # noqa
-                                }]
-                            }
+                            'variables': variables
                         }
                     }
 

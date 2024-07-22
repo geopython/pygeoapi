@@ -33,11 +33,13 @@ from pygeoapi.provider.base import BaseProvider
 
 LOGGER = logging.getLogger(__name__)
 
+WKT = 'GEOGCS[\"WGS 84\",DATUM[\"WGS_1984\",SPHEROID[\"WGS 84\",6378137,298.257223563,AUTHORITY[\"EPSG\",\"7030\"]],AUTHORITY[\"EPSG\",\"6326\"]],PRIMEM[\"Greenwich\",0,AUTHORITY[\"EPSG\",\"8901\"]],UNIT[\"degree\",0.01745329251994328,AUTHORITY[\"EPSG\",\"9122\"]],AUTHORITY[\"EPSG\",\"4326\"]]' # noqa
+
 
 class BaseEDRProvider(BaseProvider):
     """Base EDR Provider"""
 
-    query_types = []
+    query_types = {}
 
     def __init__(self, provider_def):
         """
@@ -53,9 +55,29 @@ class BaseEDRProvider(BaseProvider):
         self.instances = []
 
     @classmethod
-    def register(cls):
+    def register(cls, output_formats=['CoverageJSON'],
+                 crs='EPSG:4326', wkt=WKT):
+        """
+        Class method to register a query type with the provider class.
+
+        :param output_formats: List of supported output formats, default is ['CoverageJSON']
+        :param crs: Coordinate Reference System, default is 'EPSG:4326'
+        :param wkt: Well-Known Text representation of the CRS
+
+        :returns: function
+        """
         def inner(fn):
-            cls.query_types.append(fn.__name__)
+            variables = {
+                'title': f'{fn.__name__} query',
+                'query_type': fn.__name__,
+                'output_formats': output_formats,
+                'default_output_format': output_formats[0],
+                'crs_details': [{
+                    'crs': crs,
+                    'wkt': wkt
+                }]
+            }
+            cls.query_types[fn.__name__] = variables
             return fn
         return inner
 
@@ -72,7 +94,7 @@ class BaseEDRProvider(BaseProvider):
         """
         Provide supported query types
 
-        :returns: `list` of EDR query types
+        :returns: `dict` of EDR query types
         """
 
         return self.query_types
