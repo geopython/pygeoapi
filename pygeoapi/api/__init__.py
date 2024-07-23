@@ -1241,7 +1241,7 @@ class API:
                         }
 
                 LOGGER.debug('Adding EDR query types')
-                for qt, variables in p.get_query_types().items():
+                for qt, variables in p.get_data_queries():
                     collection['data_queries'][qt] = {
                         'link': {
                             'href': f'{self.get_collections_url()}/{k}/{qt}',

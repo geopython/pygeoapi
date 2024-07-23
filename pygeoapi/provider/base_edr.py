@@ -39,7 +39,8 @@ WKT = 'GEOGCS[\"WGS 84\",DATUM[\"WGS_1984\",SPHEROID[\"WGS 84\",6378137,298.2572
 class BaseEDRProvider(BaseProvider):
     """Base EDR Provider"""
 
-    query_types = {}
+    query_types = []
+    data_queries = {}
 
     def __init__(self, provider_def):
         """
@@ -77,7 +78,8 @@ class BaseEDRProvider(BaseProvider):
                     'wkt': wkt
                 }]
             }
-            cls.query_types[fn.__name__] = variables
+            cls.data_queries[fn.__name__] = variables
+            cls.query_types.append(fn.__name__)
             return fn
         return inner
 
@@ -94,10 +96,19 @@ class BaseEDRProvider(BaseProvider):
         """
         Provide supported query types
 
-        :returns: `dict` of EDR query types
+        :returns: `list` of EDR query types
         """
 
         return self.query_types
+
+    def get_data_queries(self):
+        """
+        Provide supported data query types
+
+        :returns: `dict` of EDR query types
+        """
+
+        return self.data_queries.items()
 
     def query(self, **kwargs):
         """
