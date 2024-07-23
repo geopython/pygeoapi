@@ -103,6 +103,13 @@ def _create_delete_request(job_id, locales):
     return APIRequest.with_data(req, locales)
 
 
+def test_api_connection_rfc3986(config, openapi):
+    connection = config['server']['manager']['connection']
+    connectionString = f"postgresql://{connection['user']}:${connection['password']}@{connection['host']}:{connection['port']}/{connection['database']}"
+    config['server']['manager']['connection'] = connectionString
+    API(config, openapi)
+
+
 def test_job_sync_hello_world(api_, config):
     """
     Create a new job for hello-world,
