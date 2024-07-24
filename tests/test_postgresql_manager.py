@@ -105,7 +105,7 @@ def _create_delete_request(job_id, locales):
 
 def test_api_connection_rfc3986(config, openapi):
     connection = config['server']['manager']['connection']
-    connectionString = (
+    connection_string = (
         f"postgresql://{connection['user']}:${connection['password']}"
         "@{connection['host']}:{connection['port']}/{connection['database']}")
     config['server']['manager']['connection'] = connectionString
