@@ -1209,6 +1209,7 @@ class API:
             if edr:
                 # TODO: translate
                 LOGGER.debug('Adding EDR links')
+                collection['data_queries'] = {}
                 parameters = p.get_fields()
                 if parameters:
                     collection['parameter_names'] = {}
@@ -1229,6 +1230,14 @@ class API:
                         }
 
                 for qt in p.get_query_types():
+                    data_query = {
+                        'link': {
+                            'href': f'{self.get_collections_url()}/{k}/{qt}',
+                            'rel': 'data'
+                         }
+                    }
+                    collection['data_queries'][qt] = data_query
+
                     title1 = l10n.translate('query for this collection as JSON', request.locale)  # noqa
                     title1 = f'{qt} {title1}'
                     title2 = l10n.translate('query for this collection as HTML', request.locale)  # noqa
