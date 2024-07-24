@@ -746,6 +746,7 @@ if CONFIG['server'].get('cors', False):
         CORSMiddleware,
         allow_origins=['*'],
         allow_methods=['*'],
+        expose_headers=['*']
     )
 
 try:
