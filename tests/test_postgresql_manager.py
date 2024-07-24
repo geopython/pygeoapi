@@ -108,7 +108,7 @@ def test_api_connection_rfc3986(config, openapi):
     connection_string = (
         f"postgresql://{connection['user']}:${connection['password']}"
         "@{connection['host']}:{connection['port']}/{connection['database']}")
-    config['server']['manager']['connection'] = connectionString
+    config['server']['manager']['connection'] = connection_string
     API(config, openapi)
 
 
