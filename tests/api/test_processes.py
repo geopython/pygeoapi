@@ -198,6 +198,12 @@ def test_execute_process(config, api_):
             'failedUri': 'https://example.com/failed',
         }
     }
+    req_body_8 = {
+        'inputs': {
+            'name': 'Test document'
+        },
+        'response': 'document'
+    }
 
     cleanup_jobs = set()
 
@@ -345,6 +351,14 @@ def test_execute_process(config, api_):
 
     cleanup_jobs.add(tuple(['hello-world',
                             rsp_headers['Location'].split('/')[-1]]))
+
+    req = mock_api_request(data=req_body_8)
+    rsp_headers, code, response = execute_process(api_, req, 'hello-world')
+
+    response = json.loads(response)
+    assert code == HTTPStatus.OK
+    assert 'outputs' in response
+    assert isinstance(response['outputs'], list)
 
     # Cleanup
     time.sleep(2)  # Allow time for any outstanding async jobs

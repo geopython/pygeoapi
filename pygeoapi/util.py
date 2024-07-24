@@ -597,6 +597,11 @@ class RequestedProcessExecutionMode(Enum):
     respond_async = 'respond-async'
 
 
+class RequestedResponse(Enum):
+    raw = 'raw'
+    document = 'document'
+
+
 class JobStatus(Enum):
     """
     Enum for the job status options specified in the WPS 2.0 specification
