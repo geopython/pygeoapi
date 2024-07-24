@@ -19,19 +19,17 @@ The below configuration is an example of a process defined within the pygeoapi i
 .. code-block:: yaml
 
    processes:
-   
-    # enabled by default
+       # enabled by default
        hello-world:
            processor:
                name: HelloWorld
 
-The below configuration is an example of a process defined as part of cusotm Python process:
+The below configuration is an example of a process defined as part of a custom Python process:
 
 .. code-block:: yaml
 
    processes:
-   
-    # enabled by default
+       # enabled by default
        hello-world:
            processor:
                # refer to a process in the standard PYTHONPATH
@@ -39,12 +37,12 @@ The below configuration is an example of a process defined as part of cusotm Pyt
                # the MyProcess class must subclass from pygeoapi.process.base.BaseProcessor
                name: my_package.my_module.my_file.MyProcess
 
-See :ref:`example-custom-pygeoapi-processing-plugin` for processing plugin examples
+See :ref:`example-custom-pygeoapi-processing-plugin` for processing plugin examples.
 
 Processing and response handling
 --------------------------------
 
-pygeoapi processing plugins are required to return a tuple of media type and native outputs.  Multipart
+pygeoapi processing plugins must return a tuple of media type and native outputs.  Multipart
 responses are not supported at this time, and it is up to the process plugin implementor to return a single
 payload defining multiple artifacts (or references to them).
 
@@ -53,8 +51,8 @@ processing responses in their native encoding and media type, as defined by a gi
 plugin (which needs to set the response content type and payload accordingly).
 
 pygeoapi also supports a JSON-based response type (via the OGC API - Processes ``response: document``
-execution parameter).  When this mode is requested, the response will always be a JSON encoding embedding
-the resulting payload (which may be base64 encoded for binary data, for example).
+execution parameter).  When this mode is requested, the response will always be a JSON encoding, embedding
+the resulting payload (part of which may be Base64 encoded for binary data, for example).
 
 
 Asynchronous support
