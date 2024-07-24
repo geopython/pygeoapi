@@ -80,8 +80,6 @@ HEADERS = {
 
 CHARSET = ['utf-8']
 F_JSON = 'json'
-F_COVJSON = 'CoverageJSON'
-F_GEOJSON = 'GeoJSON'
 F_HTML = 'html'
 F_JSONLD = 'jsonld'
 F_GZIP = 'gzip'
@@ -95,8 +93,6 @@ FORMAT_TYPES = OrderedDict((
     (F_HTML, 'text/html'),
     (F_JSONLD, 'application/ld+json'),
     (F_JSON, 'application/json'),
-    (F_COVJSON, 'application/prs.coverage+json'),
-    (F_GEOJSON, 'application/geo+json'),
     (F_PNG, 'image/png'),
     (F_JPEG, 'image/jpeg'),
     (F_MVT, 'application/vnd.mapbox-vector-tile'),
@@ -984,9 +980,6 @@ class API:
                 }
                 if 'trs' in t_ext:
                     collection['extent']['temporal']['trs'] = t_ext['trs']
-                if 'values' in t_ext:
-                    collection['extent']['temporal']['values'] = \
-                        t_ext['values']
 
             LOGGER.debug('Processing configured collection links')
             for link in l10n.translate(v.get('links', []), request.locale):
@@ -1233,23 +1226,17 @@ class API:
                                     'value': value['x-ogc-unit'],
                                     'type': 'http://www.opengis.net/def/uom/UCUM/'  # noqa
                                 }
-                            },
-                            'observedProperty': {
-                                'id': key,
-                                'label': value['title']
                             }
                         }
 
-                LOGGER.debug('Adding EDR query types')
-                for qt, variables in p.get_data_queries():
-                    collection['data_queries'][qt] = {
+                for qt in p.get_query_types():
+                    data_query = {
                         'link': {
                             'href': f'{self.get_collections_url()}/{k}/{qt}',
-                            'hreflang': 'en',
-                            'rel': 'data',
-                            'variables': variables
-                        }
+                            'rel': 'data'
+                         }
                     }
+                    collection['data_queries'][qt] = data_query
 
                     title1 = l10n.translate('query for this collection as JSON', request.locale)  # noqa
                     title1 = f'{qt} {title1}'
