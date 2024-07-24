@@ -379,6 +379,8 @@ def execute_process(api: API, request: APIRequest,
     requested_outputs = data.get('outputs')
     LOGGER.debug(f'outputs: {requested_outputs}')
 
+    response_requested = data.get('response', 'raw')
+
     subscriber = None
     subscriber_dict = data.get('subscriber')
     if subscriber_dict:
@@ -420,7 +422,7 @@ def execute_process(api: API, request: APIRequest,
     if status == JobStatus.failed:
         response = outputs
 
-    if data.get('response', 'raw') == 'raw':
+    if response_requested == 'raw':
         headers['Content-Type'] = mime_type
         response = outputs
     elif status not in (JobStatus.failed, JobStatus.accepted):
@@ -433,7 +435,7 @@ def execute_process(api: API, request: APIRequest,
     else:
         http_status = HTTPStatus.OK
 
-    if mime_type == 'application/json':
+    if mime_type == 'application/json' or response_requested == 'document':
         response2 = to_json(response, api.pretty_print)
     else:
         response2 = response
