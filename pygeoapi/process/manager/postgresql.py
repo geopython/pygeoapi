@@ -84,7 +84,7 @@ class PostgreSQLManager(BaseManager):
             self.db_search_path = tuple(self.connection.get('search_path',
                                         ['public']))
         except Exception:
-            self.db_search_path = 'public'
+            self.db_search_path = ('public',)
 
         try:
             LOGGER.debug('Connecting to database')
