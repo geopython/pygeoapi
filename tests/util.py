@@ -54,6 +54,12 @@ def get_test_file_path(filename: str) -> str:
         return f'tests/{filename}'
 
 
+def get_link_by_value(links: list, key: str, value: str) -> dict:
+    """helper function to filter links based on property/value"""
+
+    return list(filter(lambda d: d.get(key, '') == value, links))
+
+
 def mock_request(params: dict = None, data=None, **headers) -> Request:
     """
     Mocks a Request object so the @pre_process decorator can inject it

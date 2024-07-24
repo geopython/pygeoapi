@@ -47,7 +47,7 @@ from pygeoapi.api.itemtypes import (
     get_collection_items, manage_collection_item)
 from pygeoapi.util import yaml_load, get_crs_from_uri
 
-from tests.util import get_test_file_path, mock_api_request
+from tests.util import get_link_by_value, get_test_file_path, mock_api_request
 
 
 @pytest.fixture()
@@ -205,6 +205,8 @@ def test_get_collection_items(config, api_):
     assert links[3]['rel'] == 'next'
     assert links[4]['rel'] == 'collection'
 
+    assert len(get_link_by_value(features['links'], 'rel', 'next')) == 1
+
     # Invalid offset
     req = mock_api_request({'offset': -1})
     rsp_headers, code, response = get_collection_items(api_, req, 'obs')
@@ -231,6 +233,8 @@ def test_get_collection_items(config, api_):
     assert links[3]['rel'] == 'prev'
     assert '/collections/obs' in links[4]['href']
     assert links[4]['rel'] == 'collection'
+
+    assert len(get_link_by_value(features['links'], 'rel', 'prev')) == 1
 
     req = mock_api_request({
         'offset': 1,
@@ -260,6 +264,8 @@ def test_get_collection_items(config, api_):
     assert links[3]['rel'] == 'prev'
     assert links[4]['rel'] == 'next'
     assert links[5]['rel'] == 'collection'
+
+    assert len(get_link_by_value(features['links'], 'rel', 'next')) == 1
 
     req = mock_api_request({
         'sortby': 'bad-property',
