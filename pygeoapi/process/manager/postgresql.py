@@ -46,6 +46,7 @@ from pathlib import Path
 from typing import Any, Tuple
 
 from sqlalchemy import insert, update, delete
+from sqlalchemy.engine import make_url
 from sqlalchemy.orm import Session
 
 from pygeoapi.process.base import (
@@ -83,12 +84,18 @@ class PostgreSQLManager(BaseManager):
             self.db_search_path = tuple(self.connection.get('search_path',
                                         ['public']))
         except Exception:
-            self.db_search_path = 'public'
+            self.db_search_path = ('public',)
 
         try:
             LOGGER.debug('Connecting to database')
             if isinstance(self.connection, str):
-                self._engine = get_engine(self.connection)
+                _url = make_url(self.connection)
+                self._engine = get_engine(
+                    _url.host,
+                    _url.port,
+                    _url.database,
+                    _url.username,
+                    _url.password)
             else:
                 self._engine = get_engine(**self.connection)
         except Exception as err:
