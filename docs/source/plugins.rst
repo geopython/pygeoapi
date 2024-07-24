@@ -273,6 +273,8 @@ implementation.
 
 Each base class documents the functions, arguments and return types required for implementation.
 
+.. _example-custom-pygeoapi-processing-plugin:
+
 Example: custom pygeoapi processing plugin
 ------------------------------------------
 
