@@ -62,6 +62,11 @@ def test_get_collection_queryables(config, api_):
         api_, req, 'notfound')
     assert code == HTTPStatus.NOT_FOUND
 
+    req = mock_api_request()
+    rsp_headers, code, response = get_collection_queryables(
+        api_, req, 'mapserver_world_map')
+    assert code == HTTPStatus.BAD_REQUEST
+
     req = mock_api_request({'f': 'html'})
     rsp_headers, code, response = get_collection_queryables(api_, req, 'obs')
     assert rsp_headers['Content-Type'] == FORMAT_TYPES[F_HTML]

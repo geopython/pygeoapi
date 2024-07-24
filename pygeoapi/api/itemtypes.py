@@ -134,6 +134,12 @@ def get_collection_queryables(api: API, request: Union[APIRequest, Any],
             LOGGER.debug('Loading record provider')
             p = load_plugin('provider', get_provider_by_type(
                 api.config['resources'][dataset]['providers'], 'record'))
+        finally:
+            msg = 'queryables not available for this collection'
+            return api.get_exception(
+                HTTPStatus.BAD_REQUEST, headers, request.format,
+                'NoApplicableError', msg)
+
     except ProviderGenericError as err:
         return api.get_exception(
             err.http_status_code, headers, request.format,
