@@ -95,7 +95,7 @@ class PostgreSQLManager(BaseManager):
                     _url.port,
                     _url.database,
                     _url.username,
-                    _url.password)                
+                    _url.password)
             else:
                 self._engine = get_engine(**self.connection)
         except Exception as err:
