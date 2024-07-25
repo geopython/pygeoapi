@@ -42,7 +42,7 @@ from http import HTTPStatus
 import logging
 from typing import Tuple
 
-from shapely.errors import WKTReadingError
+from shapely.errors import ShapelyError
 from shapely.wkt import loads as shapely_loads
 
 from pygeoapi.plugin import load_plugin, PLUGINS
@@ -124,7 +124,7 @@ def get_collection_edr_query(api: API, request: APIRequest,
     if wkt:
         try:
             wkt = shapely_loads(wkt)
-        except WKTReadingError:
+        except ShapelyError:
             msg = 'invalid coords parameter'
             return api.get_exception(
                 HTTPStatus.BAD_REQUEST, headers, request.format,
