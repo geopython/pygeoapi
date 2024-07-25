@@ -81,14 +81,14 @@ class XarrayEDRProvider(BaseEDRProvider, XarrayProvider):
         wkt = kwargs.get('wkt')
         if wkt is not None:
             LOGGER.debug('Processing WKT')
-            LOGGER.debug(f'Geometry type: {wkt.type}')
-            if wkt.type == 'Point':
+            LOGGER.debug(f'Geometry type: {wkt.geom_type}')
+            if wkt.geom_type == 'Point':
                 query_params[self._coverage_properties['x_axis_label']] = wkt.x
                 query_params[self._coverage_properties['y_axis_label']] = wkt.y
-            elif wkt.type == 'LineString':
+            elif wkt.geom_type == 'LineString':
                 query_params[self._coverage_properties['x_axis_label']] = wkt.xy[0]  # noqa
                 query_params[self._coverage_properties['y_axis_label']] = wkt.xy[1]  # noqa
-            elif wkt.type == 'Polygon':
+            elif wkt.geom_type == 'Polygon':
                 query_params[self._coverage_properties['x_axis_label']] = slice(wkt.bounds[0], wkt.bounds[2])  # noqa
                 query_params[self._coverage_properties['y_axis_label']] = slice(wkt.bounds[1], wkt.bounds[3])  # noqa
                 pass
