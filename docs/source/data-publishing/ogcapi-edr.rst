@@ -44,8 +44,8 @@ The `xarray-edr`_ provider plugin reads and extracts `NetCDF`_ and `Zarr`_ data 
          data: tests/data/coads_sst.nc
          # optionally specify x/y/time fields, else provider will attempt
          # to derive automagically
-         x_field: lat
          x_field: lon
+         y_field: lat
          time_field: time
          format:
             name: netcdf
