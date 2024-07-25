@@ -85,7 +85,15 @@ class XarrayProvider(BaseProvider):
             else:
                 data_to_open = self.data
 
-            self._data = open_func(data_to_open)
+            try:
+                self._data = open_func(data_to_open)
+            except ValueError as err:
+                # Manage non-cf-compliant time dimensions
+                if 'time' in str(err):
+                    self._data = open_func(self.data, decode_times=False)
+                else:
+                    raise err
+
             self.storage_crs = self._parse_storage_crs(provider_def)
             self._coverage_properties = self._get_coverage_properties()
 
