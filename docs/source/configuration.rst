@@ -241,7 +241,7 @@ default.
                     option_name: option_value
 
       hello-world:  # name of process
-          type: collection  # REQUIRED (collection, process, or stac-collection)
+          type: process  # REQUIRED (collection, process, or stac-collection)
           processor:
               name: HelloWorld  # Python path of process definition
 
