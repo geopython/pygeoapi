@@ -73,7 +73,7 @@ The `Xarray`_ provider plugin reads and extracts `NetCDF`_ and `Zarr`_ data.
          # optionally specify x/y/time fields, else provider will attempt
          # to derive automagically
          x_field: lat
-         x_field: lon
+         y_field: lon
          time_field: time
          format:
             name: netcdf
