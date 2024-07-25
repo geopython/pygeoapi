@@ -67,16 +67,31 @@ class DatabaseConnection:
            Lock is implemented before function call at __init__"""
         dsn = cls._make_dsn(conn_dict)
         # Create the pool
+        if conn_dict.get("external_auth") == "wallet":
+            # If Auth is via Wallet you need to save a wallet under
+            # the directory returned by this bash command if apache is used
+            # cat /etc/passwd |grep apache
+            # except another directory is specified in the sqlnet.ora file
+            LOGGER.debug("Connection pool from wallet.")
+            p = oracledb.create_pool(externalauth=True, 
+                                    dsn=dsn, 
+                                    min=oracle_pool_min, 
+                                    max=oracle_pool_max, 
+                                    increment=1, 
+                                    homogeneous=False)
+            LOGGER.debug("Connection pool created successfully from wallet.")
 
-        p = oracledb.create_pool(
-                    user=conn_dict["user"],
-                    password=conn_dict["password"],
-                    dsn=dsn,
-                    min=oracle_pool_min,
-                    max=oracle_pool_max,
-                    increment=1,
-                )
-        LOGGER.debug("Connection pool created successfully.")
+        else: 
+            LOGGER.debug("Connection pool from user and password.")   
+            p = oracledb.create_pool(
+                        user=conn_dict["user"],
+                        password=conn_dict["password"],
+                        dsn=dsn,
+                        min=oracle_pool_min,
+                        max=oracle_pool_max,
+                        increment=1,
+                    )
+            LOGGER.debug("Connection pool created successfully.")
 
         return p
 
