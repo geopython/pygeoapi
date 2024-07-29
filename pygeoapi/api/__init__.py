@@ -80,6 +80,7 @@ HEADERS = {
 
 CHARSET = ['utf-8']
 F_JSON = 'json'
+F_COVERAGEJSON = 'json'
 F_HTML = 'html'
 F_JSONLD = 'jsonld'
 F_GZIP = 'gzip'
@@ -93,6 +94,7 @@ FORMAT_TYPES = OrderedDict((
     (F_HTML, 'text/html'),
     (F_JSONLD, 'application/ld+json'),
     (F_JSON, 'application/json'),
+    (F_COVERAGEJSON, 'application/prs.coverage+json'),
     (F_PNG, 'image/png'),
     (F_JPEG, 'image/jpeg'),
     (F_MVT, 'application/vnd.mapbox-vector-tile'),
@@ -780,6 +782,7 @@ class API:
         }]
 
         headers = request.get_response_headers(**self.api_headers)
+
         if request.format == F_HTML:  # render
 
             fcm['processes'] = False
