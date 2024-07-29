@@ -782,7 +782,6 @@ class API:
         }]
 
         headers = request.get_response_headers(**self.api_headers)
-
         if request.format == F_HTML:  # render
 
             fcm['processes'] = False

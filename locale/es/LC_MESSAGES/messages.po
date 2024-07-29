@@ -521,3 +521,21 @@ msgstr ""
 
 msgid "not specified"
 msgstr ""
+
+msgid "Position"
+msgstr ""
+
+msgid "Cube"
+msgstr ""
+
+msgid "Area"
+msgstr ""
+
+msgid "Corridor"
+msgstr ""
+
+msgid "Trajectory"
+msgstr ""
+
+msgid "Radius"
+msgstr ""
