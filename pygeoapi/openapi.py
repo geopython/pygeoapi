@@ -903,6 +903,17 @@ def load_openapi_document() -> dict:
 
     pygeoapi_openapi = os.environ.get('PYGEOAPI_OPENAPI')
 
+    if pygeoapi_openapi is None:
+        msg = 'PYGEOAPI_OPENAPI environment not set'
+        LOGGER.error(msg)
+        raise RuntimeError(msg)
+
+    if not os.path.exists(pygeoapi_openapi):
+        msg = (f'OpenAPI document {pygeoapi_openapi} does not exist.  '
+               'Please generate before starting pygeoapi')
+        LOGGER.error(msg)
+        raise RuntimeError(msg)
+
     with open(pygeoapi_openapi, encoding='utf8') as ff:
         if pygeoapi_openapi.endswith(('.yaml', '.yml')):
             openapi_ = yaml_load(ff)

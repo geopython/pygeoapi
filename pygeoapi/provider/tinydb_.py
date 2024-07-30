@@ -2,7 +2,7 @@
 #
 # Authors: Tom Kralidis <tomkralidis@gmail.com>
 #
-# Copyright (c) 2023 Tom Kralidis
+# Copyright (c) 2024 Tom Kralidis
 #
 # Permission is hereby granted, free of charge, to any person
 # obtaining a copy of this software and associated documentation
@@ -32,17 +32,19 @@ import re  # noqa
 import os
 import uuid
 
+from dateutil.parser import parse as parse_date
 from shapely.geometry import shape
 from tinydb import TinyDB, Query, where
 
 from pygeoapi.provider.base import (BaseProvider, ProviderConnectionError,
                                     ProviderItemNotFoundError)
+from pygeoapi.util import crs_transform, get_typed_value
 
 LOGGER = logging.getLogger(__name__)
 
 
-class TinyDBCatalogueProvider(BaseProvider):
-    """TinyDB Catalogue Provider"""
+class TinyDBProvider(BaseProvider):
+    """TinyDB Provider"""
 
     def __init__(self, provider_def):
         """
@@ -50,14 +52,12 @@ class TinyDBCatalogueProvider(BaseProvider):
 
         :param provider_def: provider definition
 
-        :returns: pygeoapi.provider.tinydb_.TinyDBCatalogueProvider
+        :returns: pygeoapi.provider.tinydb_.TinyDBProvider
         """
 
-        self.excludes = [
-            '_metadata-anytext',
-        ]
-
         super().__init__(provider_def)
+
+        self._excludes = []
 
         LOGGER.debug(f'Connecting to TinyDB db at {self.data}')
 
@@ -74,7 +74,7 @@ class TinyDBCatalogueProvider(BaseProvider):
         else:
             self.db = TinyDB(self.data)
 
-        self.fields = self.get_fields()
+        self.get_fields()
 
     def get_fields(self):
         """
@@ -83,22 +83,39 @@ class TinyDBCatalogueProvider(BaseProvider):
         :returns: dict of fields
         """
 
-        fields = {}
+        if not self._fields:
+            try:
+                r = self.db.all()[0]
+            except IndexError as err:
+                LOGGER.debug(err)
+                return {}
 
-        try:
-            r = self.db.all()[0]
-        except IndexError as err:
-            LOGGER.debug(err)
-            return fields
+            for key, value in r['properties'].items():
+                if key not in self._excludes:
+                    typed_value = get_typed_value(str(value))
+                    if isinstance(typed_value, float):
+                        typed_value_type = 'number'
+                    elif isinstance(typed_value, int):
+                        typed_value_type = 'integer'
+                    else:
+                        typed_value_type = 'string'
 
-        for p in r['properties'].keys():
-            if p not in self.excludes:
-                fields[p] = {'type': 'string'}
+                    self._fields[key] = {'type': typed_value_type}
 
-        fields['q'] = {'type': 'string'}
+                    try:
+                        LOGGER.debug('Attempting to detect date types')
+                        _ = parse_date(value)
+                        if len(value) > 11:
+                            self._fields[key]['format'] = 'date-time'
+                        else:
+                            self._fields[key]['format'] = 'date'
+                    except Exception:
+                        LOGGER.debug('No date types detected')
+                        pass
 
-        return fields
+        return self._fields
 
+    @crs_transform
     def query(self, offset=0, limit=10, resulttype='results',
               bbox=[], datetime_=None, properties=[], sortby=[],
               select_properties=[], skip_geometry=False, q=None, **kwargs):
@@ -164,11 +181,9 @@ class TinyDBCatalogueProvider(BaseProvider):
         if properties:
             LOGGER.debug('processing properties')
             for prop in properties:
-                QUERY.append(f"(Q.properties['{prop[0]}']=='{prop[1]}')")
+                QUERY.append(f"(Q.properties['{prop[0]}']=={prop[1]})")
 
-        if q is not None:
-            for t in q.split():
-                QUERY.append(f"(Q.properties['_metadata-anytext'].search('{t}', flags=re.IGNORECASE))")  # noqa
+        QUERY = self._add_search_query(QUERY, q)
 
         QUERY_STRING = '&'.join(QUERY)
         LOGGER.debug(f'QUERY_STRING: {QUERY_STRING}')
@@ -188,7 +203,7 @@ class TinyDBCatalogueProvider(BaseProvider):
             return feature_collection
 
         for r in results:
-            for e in self.excludes:
+            for e in self._excludes:
                 try:
                     del r['properties'][e]
                 except KeyError:
@@ -219,6 +234,7 @@ class TinyDBCatalogueProvider(BaseProvider):
 
         return feature_collection
 
+    @crs_transform
     def get(self, identifier, **kwargs):
         """
         Get TinyDB document by id
@@ -235,7 +251,7 @@ class TinyDBCatalogueProvider(BaseProvider):
         if record is None:
             raise ProviderItemNotFoundError('record does not exist')
 
-        for e in self.excludes:
+        for e in self._excludes:
             try:
                 del record['properties'][e]
             except KeyError:
@@ -259,14 +275,7 @@ class TinyDBCatalogueProvider(BaseProvider):
             identifier = str(uuid.uuid4())
             json_data["id"] = identifier
 
-        try:
-            json_data['properties']['_metadata-anytext'] = ''.join([
-                json_data['properties']['title'],
-                json_data['properties']['description']
-            ])
-        except KeyError:
-            LOGGER.debug('Missing title and description')
-            json_data['properties']['_metadata_anytext'] = ''
+        json_data = self._add_extra_fields(json_data)
 
         LOGGER.debug(f'Inserting data with identifier {identifier}')
         result = self.db.insert(json_data)
@@ -306,17 +315,71 @@ class TinyDBCatalogueProvider(BaseProvider):
 
         return True
 
-    def _bbox(input_bbox, record_bbox):
+    def _add_extra_fields(self, json_data: dict) -> dict:
         """
-        Test whether one bbox intersects another
+        Helper function to add extra fields to an item payload
 
-        :param input_bbox: `list` of minx,miny,maxx,maxy
-        :param record_bbox: `list` of minx,miny,maxx,maxy
+        :param json_data: `dict` of JSON data
 
-        :returns: `bool` of result
+        :returns: `dict` of updated JSON data
         """
 
-        return True
+        return json_data
+
+    def _add_search_query(self, query: list, search_term: str = None) -> str:
+        """
+        Helper function to add extra query predicates
+
+        :param query: `list` of query predicates
+        :param search_term: `str` of search term
+
+        :returns: `list` of updated query predicates
+        """
+
+        return query
+
+    def __repr__(self):
+        return f'<TinyDBProvider> {self.data}'
+
+
+class TinyDBCatalogueProvider(TinyDBProvider):
+    """TinyDB Catalogue Provider"""
+
+    def __init__(self, provider_def):
+        super().__init__(provider_def)
+
+        LOGGER.debug('Refreshing fields')
+        self._excludes = ['_metadata-anytext']
+        self._fields = {}
+        self.get_fields()
+
+    def get_fields(self):
+        fields = super().get_fields()
+
+        fields['q'] = {'type': 'string'}
+
+        return fields
+
+    def _add_extra_fields(self, json_data: dict) -> dict:
+        LOGGER.debug('Adding catalogue anytext property')
+        try:
+            json_data['properties']['_metadata-anytext'] = ''.join([
+                json_data['properties']['title'],
+                json_data['properties']['description']
+            ])
+        except KeyError:
+            LOGGER.debug('Missing title and description')
+            json_data['properties']['_metadata_anytext'] = ''
+
+        return json_data
+
+    def _add_search_query(self, query: list, search_term: str = None) -> str:
+        if search_term is not None:
+            LOGGER.debug('catalogue q= query')
+            for t in search_term.split():
+                query.append(f"(Q.properties['_metadata-anytext'].search('{t}', flags=re.IGNORECASE))")  # noqa
+
+        return query
 
     def __repr__(self):
         return f'<TinyDBCatalogueProvider> {self.data}'

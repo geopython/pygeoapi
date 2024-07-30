@@ -240,15 +240,16 @@ The below template provides a minimal example (let's call the file ``mycoolraste
            super().__init__(provider_def)
            self.num_bands = 4
            self.axes = ['Lat', 'Long']
-           self.fields = self.get_fields()
+           self.get_fields()
 
        def get_fields(self):
            # generate a JSON Schema of coverage band metadata
-           return {
+           self._fields = {
                'b1': {
                    'type': 'number'
                }
            }
+           return self._fields
 
        def query(self, bands=[], subsets={}, format_='json', **kwargs):
            # process bands and subsets parameters
@@ -271,6 +272,8 @@ As long as the plugin implements the API contract of its base provider, all othe
 implementation.
 
 Each base class documents the functions, arguments and return types required for implementation.
+
+.. _example-custom-pygeoapi-processing-plugin:
 
 Example: custom pygeoapi processing plugin
 ------------------------------------------

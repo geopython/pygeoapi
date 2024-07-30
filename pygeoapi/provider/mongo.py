@@ -66,7 +66,7 @@ class MongoProvider(BaseProvider):
         self.featuredb = dbclient.get_default_database()
         self.collection = provider_def['collection']
         self.featuredb[self.collection].create_index([("geometry", GEOSPHERE)])
-        self.fields = self.get_fields()
+        self.get_fields()
 
     def get_fields(self):
         """
@@ -75,25 +75,24 @@ class MongoProvider(BaseProvider):
         :returns: dict of fields
         """
 
-        pipeline = [
-            {"$project": {"properties": 1}},
-            {"$unwind": "$properties"},
-            {"$group": {"_id": "$properties", "count": {"$sum": 1}}},
-            {"$project": {"_id": 1}}
-        ]
+        if not self._fields:
+            pipeline = [
+                {"$project": {"properties": 1}},
+                {"$unwind": "$properties"},
+                {"$group": {"_id": "$properties", "count": {"$sum": 1}}},
+                {"$project": {"_id": 1}}
+            ]
 
-        result = list(self.featuredb[self.collection].aggregate(pipeline))
+            result = list(self.featuredb[self.collection].aggregate(pipeline))
 
-        # prepare a dictionary with fields
-        # set the field type to 'string'.
-        # by operating without a schema, mongo can query any data type.
-        fields = {}
+            # prepare a dictionary with fields
+            # set the field type to 'string'.
+            # by operating without a schema, mongo can query any data type.
+            for i in result:
+                for key in result[0]['_id'].keys():
+                    self._fields[key] = {'type': 'string'}
 
-        for i in result:
-            for key in result[0]['_id'].keys():
-                fields[key] = {'type': 'string'}
-
-        return fields
+        return self._fields
 
     def _get_feature_list(self, filterObj, sortList=[], skip=0, maxitems=1,
                           skip_geometry=False):

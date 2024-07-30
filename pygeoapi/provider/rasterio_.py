@@ -59,38 +59,37 @@ class RasterioProvider(BaseProvider):
             self.axes = self._coverage_properties['axes']
             self.crs = self._coverage_properties['bbox_crs']
             self.num_bands = self._coverage_properties['num_bands']
-            self.fields = self.get_fields()
+            self.get_fields()
             self.native_format = provider_def['format']['name']
         except Exception as err:
             LOGGER.warning(err)
             raise ProviderConnectionError(err)
 
     def get_fields(self):
-        fields = {}
+        if not self._fields:
+            for i, dtype in zip(self._data.indexes, self._data.dtypes):
+                LOGGER.debug(f'Adding field for band {i}')
+                i2 = str(i)
 
-        for i, dtype in zip(self._data.indexes, self._data.dtypes):
-            LOGGER.debug(f'Adding field for band {i}')
-            i2 = str(i)
+                parameter = _get_parameter_metadata(
+                    self._data.profile['driver'], self._data.tags(i))
 
-            parameter = _get_parameter_metadata(
-                self._data.profile['driver'], self._data.tags(i))
+                name = parameter['description']
+                units = parameter.get('unit_label')
 
-            name = parameter['description']
-            units = parameter.get('unit_label')
+                dtype2 = dtype
+                if dtype.startswith('float'):
+                    dtype2 = 'number'
 
-            dtype2 = dtype
-            if dtype.startswith('float'):
-                dtype2 = 'number'
+                self._fields[i2] = {
+                    'title': name,
+                    'type': dtype2,
+                    '_meta': self._data.tags(i)
+                }
+                if units is not None:
+                    self._fields[i2]['x-ogc-unit'] = units
 
-            fields[i2] = {
-                'title': name,
-                'type': dtype2,
-                '_meta': self._data.tags(i)
-            }
-            if units is not None:
-                fields[i2]['x-ogc-unit'] = units
-
-        return fields
+        return self._fields
 
     def query(self, properties=[], subsets={}, bbox=None, bbox_crs=4326,
               datetime_=None, format_='json', **kwargs):

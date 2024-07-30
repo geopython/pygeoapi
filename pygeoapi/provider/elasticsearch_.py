@@ -87,7 +87,7 @@ class ElasticsearchProvider(BaseProvider):
 
         LOGGER.debug('Grabbing field information')
         try:
-            self.fields = self.get_fields()
+            self.get_fields()
         except exceptions.NotFoundError as err:
             LOGGER.error(err)
             raise ProviderQueryError(err)
@@ -98,38 +98,40 @@ class ElasticsearchProvider(BaseProvider):
 
         :returns: dict of fields
         """
+        if not self._fields:
+            ii = self.es.indices.get(index=self.index_name,
+                                     allow_no_indices=False)
 
-        fields_ = {}
-        ii = self.es.indices.get(index=self.index_name, allow_no_indices=False)
-
-        LOGGER.debug(f'Response: {ii}')
-        try:
-            if '*' not in self.index_name:
-                p = ii[self.index_name]['mappings']['properties']['properties']
-            else:
-                LOGGER.debug('Wildcard index; setting from first match')
-                index_name_ = list(ii.keys())[0]
-                p = ii[index_name_]['mappings']['properties']['properties']
-        except KeyError:
-            LOGGER.warning('Trying for alias')
-            alias_name = next(iter(ii))
-            p = ii[alias_name]['mappings']['properties']['properties']
-        except IndexError:
-            LOGGER.warning('could not get fields; returning empty set')
-            return {}
-
-        for k, v in p['properties'].items():
-            if 'type' in v:
-                if v['type'] == 'text':
-                    fields_[k] = {'type': 'string'}
-                elif v['type'] == 'date':
-                    fields_[k] = {'type': 'string', 'format': 'date'}
-                elif v['type'] in ('float', 'long'):
-                    fields_[k] = {'type': 'number', 'format': v['type']}
+            LOGGER.debug(f'Response: {ii}')
+            try:
+                if '*' not in self.index_name:
+                    mappings = ii[self.index_name]['mappings']
+                    p = mappings['properties']['properties']
                 else:
-                    fields_[k] = {'type': v['type']}
+                    LOGGER.debug('Wildcard index; setting from first match')
+                    index_name_ = list(ii.keys())[0]
+                    p = ii[index_name_]['mappings']['properties']['properties']
+            except KeyError:
+                LOGGER.warning('Trying for alias')
+                alias_name = next(iter(ii))
+                p = ii[alias_name]['mappings']['properties']['properties']
+            except IndexError:
+                LOGGER.warning('could not get fields; returning empty set')
+                return {}
 
-        return fields_
+            for k, v in p['properties'].items():
+                if 'type' in v:
+                    if v['type'] == 'text':
+                        self._fields[k] = {'type': 'string'}
+                    elif v['type'] == 'date':
+                        self._fields[k] = {'type': 'string', 'format': 'date'}
+                    elif v['type'] in ('float', 'long'):
+                        self._fields[k] = {'type': 'number',
+                                           'format': v['type']}
+                    else:
+                        self._fields[k] = {'type': v['type']}
+
+        return self._fields
 
     @crs_transform
     def query(self, offset=0, limit=10, resulttype='results',

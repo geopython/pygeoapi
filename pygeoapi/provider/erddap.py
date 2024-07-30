@@ -51,6 +51,7 @@ import requests
 
 from pygeoapi.provider.base import (
     BaseProvider, ProviderNotFoundError, ProviderQueryError)
+from pygeoapi.util import crs_transform
 
 LOGGER = logging.getLogger(__name__)
 
@@ -61,25 +62,27 @@ class TabledapProvider(BaseProvider):
 
         LOGGER.debug('Setting provider query filters')
         self.filters = self.options.get('filters')
-        self.fields = self.get_fields()
+        self.get_fields()
 
     def get_fields(self):
-        LOGGER.debug('Fetching one feature for field definitions')
-        properties = self.query(limit=1)['features'][0]['properties']
+        if not self._fields:
+            LOGGER.debug('Fetching one feature for field definitions')
+            properties = self.query(limit=1)['features'][0]['properties']
 
-        for key, value in properties.items():
-            LOGGER.debug(f'Field: {key}={value}')
+            for key, value in properties.items():
+                LOGGER.debug(f'Field: {key}={value}')
 
-            data_type = type(value).__name__
+                data_type = type(value).__name__
 
-            if data_type == 'str':
-                data_type = 'string'
-            if data_type == 'float':
-                data_type = 'number'
-            properties[key] = {'type': data_type}
+                if data_type == 'str':
+                    data_type = 'string'
+                if data_type == 'float':
+                    data_type = 'number'
+            self._fields[key] = {'type': data_type}
 
-        return properties
+        return self._fields
 
+    @crs_transform
     def query(self, offset=0, limit=10, resulttype='results',
               bbox=[], datetime_=None, properties=[], sortby=[],
               select_properties=[], skip_geometry=False, q=None,
@@ -164,6 +167,7 @@ class TabledapProvider(BaseProvider):
             'numberReturned': returned
         }
 
+    @crs_transform
     def get(self, identifier, **kwargs):
 
         query_params = []

@@ -124,7 +124,7 @@ class PostgreSQLProvider(BaseProvider):
         )
 
         LOGGER.debug(f'DB connection: {repr(self._engine.url)}')
-        self.fields = self.get_fields()
+        self.get_fields()
 
     def query(self, offset=0, limit=10, resulttype='results',
               bbox=[], datetime_=None, properties=[], sortby=[],
@@ -204,8 +204,6 @@ class PostgreSQLProvider(BaseProvider):
 
         LOGGER.debug('Get available fields/properties')
 
-        fields = {}
-
         # sql-schema only allows these types, so we need to map from sqlalchemy
         # string, number, integer, object, array, boolean, null,
         # https://json-schema.org/understanding-json-schema/reference/type.html
@@ -248,17 +246,18 @@ class PostgreSQLProvider(BaseProvider):
                 LOGGER.debug('No string format detected')
                 return None
 
-        for column in self.table_model.__table__.columns:
-            LOGGER.debug(f'Testing {column.name}')
-            if column.name == self.geom:
-                continue
+        if not self._fields:
+            for column in self.table_model.__table__.columns:
+                LOGGER.debug(f'Testing {column.name}')
+                if column.name == self.geom:
+                    continue
 
-            fields[str(column.name)] = {
-                'type': _column_type_to_json_schema_type(column.type),
-                'format': _column_format_to_json_schema_format(column.type)
-            }
+                self._fields[str(column.name)] = {
+                    'type': _column_type_to_json_schema_type(column.type),
+                    'format': _column_format_to_json_schema_format(column.type)
+                }
 
-        return fields
+        return self._fields
 
     def get(self, identifier, crs_transform_spec=None, **kwargs):
         """

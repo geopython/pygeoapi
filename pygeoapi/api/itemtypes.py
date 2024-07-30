@@ -134,6 +134,12 @@ def get_collection_queryables(api: API, request: Union[APIRequest, Any],
             LOGGER.debug('Loading record provider')
             p = load_plugin('provider', get_provider_by_type(
                 api.config['resources'][dataset]['providers'], 'record'))
+        finally:
+            msg = 'queryables not available for this collection'
+            return api.get_exception(
+                HTTPStatus.BAD_REQUEST, headers, request.format,
+                'NoApplicableError', msg)
+
     except ProviderGenericError as err:
         return api.get_exception(
             err.http_status_code, headers, request.format,
@@ -531,17 +537,23 @@ def get_collection_items(
                 'href': f'{uri}?offset={prev}{serialized_query_params}'
             })
 
-    if 'numberMatched' in content:
-        if content['numberMatched'] > (limit + offset):
-            next_ = offset + limit
-            next_href = f'{uri}?offset={next_}{serialized_query_params}'
-            content['links'].append(
-                {
-                    'type': 'application/geo+json',
-                    'rel': 'next',
-                    'title': l10n.translate('Items (next)', request.locale),
-                    'href': next_href
-                })
+    next_link = False
+
+    if content.get('numberMatched', -1) > (limit + offset):
+        next_link = True
+    elif len(content['features']) == limit:
+        next_link = True
+
+    if next_link:
+        next_ = offset + limit
+        next_href = f'{uri}?offset={next_}{serialized_query_params}'
+        content['links'].append(
+            {
+                'type': 'application/geo+json',
+                'rel': 'next',
+                'title': l10n.translate('Items (next)', request.locale),
+                'href': next_href
+            })
 
     content['links'].append(
         {

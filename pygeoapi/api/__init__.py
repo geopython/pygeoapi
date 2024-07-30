@@ -714,6 +714,13 @@ class API:
         LOGGER.debug('Creating links')
         # TODO: put title text in config or translatable files?
         fcm['links'] = [{
+            'rel': 'about',
+            'type': 'text/html',
+            'title': l10n.translate(
+                self.config['metadata']['identification']['title'],
+                request.locale),
+            'href': self.config['metadata']['identification']['url']
+        }, {
             'rel': request.get_linkrel(F_JSON),
             'type': FORMAT_TYPES[F_JSON],
             'title': l10n.translate('This document as JSON', request.locale),
@@ -1202,6 +1209,7 @@ class API:
             if edr:
                 # TODO: translate
                 LOGGER.debug('Adding EDR links')
+                collection['data_queries'] = {}
                 parameters = p.get_fields()
                 if parameters:
                     collection['parameter_names'] = {}
@@ -1222,6 +1230,14 @@ class API:
                         }
 
                 for qt in p.get_query_types():
+                    data_query = {
+                        'link': {
+                            'href': f'{self.get_collections_url()}/{k}/{qt}',
+                            'rel': 'data'
+                         }
+                    }
+                    collection['data_queries'][qt] = data_query
+
                     title1 = l10n.translate('query for this collection as JSON', request.locale)  # noqa
                     title1 = f'{qt} {title1}'
                     title2 = l10n.translate('query for this collection as HTML', request.locale)  # noqa

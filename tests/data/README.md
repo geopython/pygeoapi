@@ -101,3 +101,8 @@ This directory provides test data to demonstrate functionality.
 - Notes
   - `items.geojson` tests pygeoapi's capability to serialize all geometry types for individual collection items in [JSON-LD formats](https://docs.pygeoapi.io/en/latest/configuration.html#linked-data), including GeoSPARQL WKT and schema.org/geo
   - The features represent the range of GeoJSON geometry types, instead of real locations. Additionally, each feature has a uri defined in the properties block
+
+### `canada-hydat-daily-mean-02HC003.tinydb`
+- source: [Canadian National Water Data Archive](https://www.canada.ca/en/environment-climate-change/services/water-overview/quantity/monitoring/survey/data-products-services/national-archive-hydat.html) as extracted from the [MSC GeoMet OGC API](https://eccc-msc.github.io/open-data/msc-geomet/web-services_en/#ogc-api-features) service
+- URL: https://www.canada.ca/en/environment-climate-change/services/water-overview/quantity/monitoring/survey/data-products-services/national-archive-hydat.html
+- License: https://eccc-msc.github.io/open-data/licence/readme_en

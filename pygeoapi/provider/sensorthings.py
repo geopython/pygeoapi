@@ -150,7 +150,7 @@ class SensorThingsProvider(BaseProvider):
 
         :returns: dict of fields
         """
-        if not self.fields:
+        if not self._fields:
             r = self._get_response(self._url, {'$top': 1})
             try:
                 results = r['value'][0]
@@ -161,11 +161,11 @@ class SensorThingsProvider(BaseProvider):
             for (n, v) in results.items():
                 if isinstance(v, (int, float)) or \
                    (isinstance(v, (dict, list)) and n in ENTITY):
-                    self.fields[n] = {'type': 'number'}
+                    self._fields[n] = {'type': 'number'}
                 elif isinstance(v, str):
-                    self.fields[n] = {'type': 'string'}
+                    self._fields[n] = {'type': 'string'}
 
-        return self.fields
+        return self._fields
 
     @crs_transform
     def query(self, offset=0, limit=10, resulttype='results',

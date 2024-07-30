@@ -2,7 +2,7 @@
 #
 # Authors: Tom Kralidis <tomkralidis@gmail.com>
 #
-# Copyright (c) 2023 Tom Kralidis
+# Copyright (c) 2024 Tom Kralidis
 #
 # Permission is hereby granted, free of charge, to any person
 # obtaining a copy of this software and associated documentation
@@ -60,6 +60,7 @@ PLUGINS = {
         'SensorThings': 'pygeoapi.provider.sensorthings.SensorThingsProvider',
         'SQLiteGPKG': 'pygeoapi.provider.sqlite.SQLiteGPKGProvider',
         'Socrata': 'pygeoapi.provider.socrata.SODAServiceProvider',
+        'TinyDB': 'pygeoapi.provider.tinydb_.TinyDBProvider',
         'TinyDBCatalogue': 'pygeoapi.provider.tinydb_.TinyDBCatalogueProvider',
         'WMSFacade': 'pygeoapi.provider.wms_facade.WMSFacadeProvider',
         'WMTSFacade': 'pygeoapi.provider.wmts_facade.WMTSFacadeProvider',
@@ -77,7 +78,8 @@ PLUGINS = {
     'process_manager': {
         'Dummy': 'pygeoapi.process.manager.dummy.DummyManager',
         'MongoDB': 'pygeoapi.process.manager.mongodb_.MongoDBManager',
-        'TinyDB': 'pygeoapi.process.manager.tinydb_.TinyDBManager'
+        'TinyDB': 'pygeoapi.process.manager.tinydb_.TinyDBManager',
+        'PostgreSQL': 'pygeoapi.process.manager.postgresql.PostgreSQLManager'
     }
 }
 

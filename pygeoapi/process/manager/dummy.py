@@ -33,8 +33,9 @@ import uuid
 
 from pygeoapi.process.manager.base import BaseManager
 from pygeoapi.util import (
-    RequestedProcessExecutionMode,
     JobStatus,
+    RequestedProcessExecutionMode,
+    RequestedResponse,
     Subscriber
 )
 
@@ -73,7 +74,8 @@ class DummyManager(BaseManager):
             data_dict: dict,
             execution_mode: Optional[RequestedProcessExecutionMode] = None,
             requested_outputs: Optional[dict] = None,
-            subscriber: Optional[Subscriber] = None
+            subscriber: Optional[Subscriber] = None,
+            requested_response: Optional[RequestedResponse] = RequestedResponse.raw.value  # noqa
     ) -> Tuple[str, str, Any, JobStatus, Optional[Dict[str, str]]]:
         """
         Default process execution handler
@@ -81,9 +83,19 @@ class DummyManager(BaseManager):
         :param process_id: process identifier
         :param data_dict: `dict` of data parameters
         :param execution_mode: requested execution mode
+        :param requested_outputs: `dict` optionally specify the subset of
+            required outputs - defaults to all outputs.
+            The value of any key may be an object and include the property
+            `transmissionMode` - defaults to `value`.
+            Note: 'optional' is for backward compatibility.
+        :param subscriber: `Subscriber` optionally specifying callback urls
+        :param requested_response: `RequestedResponse` optionally specifying
+                                   raw or document (default is `raw`)
 
+        :raises UnknownProcessError: if the input process_id does not
+                                     correspond to a known process
         :returns: tuple of job_id, MIME type, response payload, status and
-                  optionally additional HTTP headers to include in the
+                  optionally additional HTTP headers to include in the final
                   response
         """
 
@@ -111,6 +123,12 @@ class DummyManager(BaseManager):
             current_status = JobStatus.failed
             LOGGER.exception(err)
             self._send_failed_notification(subscriber)
+
+        if requested_response == RequestedResponse.document.value:
+            outputs = {
+                'outputs': [outputs]
+            }
+
         job_id = str(uuid.uuid1())
         return job_id, jfmt, outputs, current_status, response_headers
 

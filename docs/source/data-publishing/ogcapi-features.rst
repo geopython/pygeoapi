@@ -21,7 +21,7 @@ parameters.
 
    `CSV`_,✅/✅,results/hits,❌,❌,❌,✅,❌,❌,✅
    `Elasticsearch`_,✅/✅,results/hits,✅,✅,✅,✅,✅,✅,✅
-   `ERDDAP Tabledap Service`_,❌/❌,results/hits,✅,✅,❌,❌,❌,❌,❌
+   `ERDDAP Tabledap Service`_,❌/❌,results/hits,✅,✅,❌,❌,❌,❌,✅
    `ESRI Feature Service`_,✅/✅,results/hits,✅,✅,✅,✅,❌,❌,✅
    `GeoJSON`_,✅/✅,results/hits,❌,❌,❌,✅,❌,❌,✅
    `MongoDB`_,✅/❌,results,✅,✅,✅,✅,❌,❌,✅
@@ -31,6 +31,7 @@ parameters.
    `SQLiteGPKG`_,✅/❌,results/hits,✅,❌,❌,✅,❌,❌,✅
    `SensorThings API`_,✅/✅,results/hits,✅,✅,✅,✅,❌,❌,✅
    `Socrata`_,✅/✅,results/hits,✅,✅,✅,✅,❌,❌,✅
+   `TinyDB`_,✅/✅,results/hits,✅,✅,✅,✅,❌,✅,✅
 
 .. note::
 
@@ -69,20 +70,6 @@ definition.
              - http://www.opengis.net/def/crs/OGC/1.3/CRS84
              - http://www.opengis.net/def/crs/EPSG/0/4326
          storage_crs: http://www.opengis.net/def/crs/EPSG/0/28992
-
-
-GeoJSON
-^^^^^^^
-
-To publish a GeoJSON file, the file must be a valid GeoJSON FeatureCollection.
-
-.. code-block:: yaml
-
-   providers:
-       - type: feature
-         name: GeoJSON
-         data: tests/data/file.json
-         id_field: id
 
 .. _Elasticsearch:
 
@@ -125,11 +112,35 @@ The ES provider also has the support for the CQL queries as indicated in the tab
 .. seealso::
   :ref:`cql` for more details on how to use Common Query Language (CQL) to filter the collection with specific queries.
 
+.. _ERDDAP Tabledap Service:
+
+ERDDAP Tabledap Service
+^^^^^^^^^^^^^^^^^^^^^^^
+
+.. note::
+   Requires Python package `requests`_
+
+To publish from an ERDDAP `Tabledap`_ service, the following are required in your index:
+
+.. code-block:: yaml
+
+   providers:
+       - type: feature
+         name: ERDDAPTabledap
+         data: http://osmc.noaa.gov/erddap/tabledap/OSMC_Points
+         id_field: PLATFORM_CODE
+         time_field: time
+         options:
+             filters: "&parameter=\"SLP\"&platform!=\"C-MAN%20WEATHER%20STATIONS\"&platform!=\"TIDE GAUGE STATIONS (GENERIC)\""
+             max_age_hours: 12
+
+.. note::
+   If the ``datetime`` parameter is passed by the client, this overrides the ``options.max_age_hours`` setting.
 
 ESRI Feature Service
 ^^^^^^^^^^^^^^^^^^^^
 
-To publish an `ESRI Feature Service`_ or `ESRI Map Service`_ specify the URL for the service layer in the ``data`` field.
+To publish an ESRI `Feature Service`_ or `Map Service`_ specify the URL for the service layer in the ``data`` field.
 
 * ``id_field`` will often be ``OBJECTID``, ``objectid``, or ``FID``.
 * If the map or feature service is not shared publicly, the ``username`` and ``password`` fields can be set in the
@@ -147,6 +158,45 @@ To publish an `ESRI Feature Service`_ or `ESRI Map Service`_ specify the URL for
          username: username # Optional ArcGIS username
          password: password # Optional ArcGIS password
 
+GeoJSON
+^^^^^^^
+
+To publish a GeoJSON file, the file must be a valid GeoJSON FeatureCollection.
+
+.. code-block:: yaml
+
+   providers:
+       - type: feature
+         name: GeoJSON
+         data: tests/data/file.json
+         id_field: id
+
+MongoDB
+^^^^^^^
+
+.. note::
+   Requires Python package pymongo
+
+.. note::
+   Mongo 5 or greater is supported.
+
+MongoDB (`website <https://www.mongodb.com/>`_) is a powerful and versatile NoSQL database that provides numerous advantages, making it a preferred choice for many applications. One of the main reasons to use MongoDB is its ability to handle large volumes of unstructured data, making it ideal for managing diverse data types such as text, geospatial, and multimedia data. Additionally, MongoDB's flexible document model allows for easy schema evolution, enabling developers to iterate quickly and adapt to changing requirements.
+
+`MongoDB GeoJSON <https://www.mongodb.com/docs/manual/reference/geojson/>`_ support is available, thus a GeoJSON file can be added to MongoDB using following command
+
+`mongoimport --db test -c points --file "path/to/file.geojson" --jsonArray`
+
+Here `test` is the name of database , `points` is the target collection name.
+
+* each document must be a GeoJSON Feature, with a valid geometry.
+
+.. code-block:: yaml
+
+   providers:
+       - type: feature
+         name: MongoDB
+         data: mongodb://localhost:27017/testdb
+         collection: testplaces
 
 OGR
 ^^^
@@ -249,34 +299,6 @@ The OGR provider requires a recent (3+) version of GDAL to be installed.
    The `crs` query parameter is used as follows:
    e.g. ``http://localhost:5000/collections/foo/items?crs=http%3A%2F%2Fwww.opengis.net%2Fdef%2Fcrs%2FEPSG%2F0%2F28992``.
 
-
-MongoDB
-^^^^^^^
-
-.. note::
-   Requires Python package pymongo
-
-.. note::
-   Mongo 5 or greater is supported.
-
-`MongoDB <https://www.mongodb.com/>`_ is a powerful and versatile NoSQL database that provides numerous advantages, making it a preferred choice for many applications. One of the main reasons to use MongoDB is its ability to handle large volumes of unstructured data, making it ideal for managing diverse data types such as text, geospatial, and multimedia data. Additionally, MongoDB's flexible document model allows for easy schema evolution, enabling developers to iterate quickly and adapt to changing requirements.
-
-`GeoJSON <https://www.mongodb.com/docs/manual/reference/geojson/>`_ support is available officially by MongoDB , thus a GeoJSON file can be added to MongoDB using following command
-
-`mongoimport --db test -c points --file "path/to/file.geojson" --jsonArray`
-
-Here `test` is the name of database , `points` is the target collection name.
-
-* each document must be a GeoJSON Feature, with a valid geometry.
-
-.. code-block:: yaml
-
-   providers:
-       - type: feature
-         name: MongoDB
-         data: mongodb://localhost:27017/testdb
-         collection: testplaces
-
 .. _Oracle:
 
 Oracle
@@ -365,7 +387,7 @@ configure mandatory properties. When this is activated, the provider throws an e
 is not in the query uri.
 
 Extra properties
-""""""""""""""""""""
+""""""""""""""""
 .. code-block:: yaml
 
   providers:
@@ -388,7 +410,7 @@ Extra properties is a list of strings which are added as fields for data retriev
 can be used to return expressions computed by the database.
 
 Session Pooling
-""""""""""""""""
+"""""""""""""""
 
 Configured using environment variables.
 
@@ -593,31 +615,25 @@ To publish a `Socrata Open Data API (SODA)`_ endpoint, pygeoapi heavily relies o
          token: my_token # Optional app token
 
 
-.. _ERDDAP Tabledap Service:
-
-ERDDAP Tabledap Service
-^^^^^^^^^^^^^^^^^^^^^^^
+TinyDB
+^^^^^^
 
 .. note::
-   Requires Python package `requests`_
+   Requires Python package tinydb
 
-To publish from an ERDDAP `Tabledap`_ service, the following are required in your index:
+To publish a TinyDB (`see website <https://tinydb.readthedocs.io>`_) index, the following are required in your index:
+
+* indexes must be documents of valid GeoJSON Features
 
 .. code-block:: yaml
 
    providers:
        - type: feature
-         name: ERDDAPTabledap
-         data: http://osmc.noaa.gov/erddap/tabledap/OSMC_Points
-         id_field: PLATFORM_CODE
-         time_field: time
-         options:
-             filters: "&parameter=\"SLP\"&platform!=\"C-MAN%20WEATHER%20STATIONS\"&platform!=\"TIDE GAUGE STATIONS (GENERIC)\""
-             max_age_hours: 12
-
-
-.. note::
-   If the ``datetime`` parameter is passed by the client, this overrides the ``options.max_age_hours`` setting.
+         editable: true|false  # optional, default is false
+         name: TinyDB
+         data: /path/to/file.db
+         id_field: identifier
+         time_field: datetimefield
 
 Controlling the order of properties
 -----------------------------------
@@ -636,36 +652,52 @@ Data access examples
 --------------------
 
 * list all collections
+
   * http://localhost:5000/collections
 * overview of dataset
+
   * http://localhost:5000/collections/foo
 * queryables
+
   * http://localhost:5000/collections/foo/queryables
 * browse features
+
   * http://localhost:5000/collections/foo/items
 * paging
+
   * http://localhost:5000/collections/foo/items?offset=10&limit=10
 * CSV outputs
+
   * http://localhost:5000/collections/foo/items?f=csv
 * query features (spatial)
+
   * http://localhost:5000/collections/foo/items?bbox=-180,-90,180,90
 * query features (spatial with bbox-crs)
+
   * http://localhost:5000/collections/foo/items?bbox=120000,450000,130000,460000&bbox-crs=http%3A%2F%2Fwww.opengis.net%2Fdef%2Fcrs%2FEPSG%2F0%2F28992
 * query features (attribute)
+
   * http://localhost:5000/collections/foo/items?propertyname=foo
 * query features (temporal)
+
   * http://localhost:5000/collections/foo/items?datetime=2020-04-10T14:11:00Z
 * query features (temporal) and sort ascending by a property (if no +/- indicated, + is assumed)
+
   * http://localhost:5000/collections/foo/items?datetime=2020-04-10T14:11:00Z&sortby=+datetime
 * query features (temporal) and sort descending by a property
+
   * http://localhost:5000/collections/foo/items?datetime=2020-04-10T14:11:00Z&sortby=-datetime
 * query features in a given (and supported) CRS
+
   * http://localhost:5000/collections/foo/items?crs=http%3A%2F%2Fwww.opengis.net%2Fdef%2Fcrs%2FEPSG%2F0%2F32633
 * query features in a given bounding BBOX and return in given CRS
+
   * http://localhost:5000/collections/foo/items?bbox=120000,450000,130000,460000&bbox-crs=http%3A%2F%2Fwww.opengis.net%2Fdef%2Fcrs%2FEPSG%2F0%2F28992&crs=http%3A%2F%2Fwww.opengis.net%2Fdef%2Fcrs%2FEPSG%2F0%2F32633
 * fetch a specific feature
+
   * http://localhost:5000/collections/foo/items/123
 * fetch a specific feature in a given (and supported) CRS
+
   * http://localhost:5000/collections/foo/items/123?crs=http%3A%2F%2Fwww.opengis.net%2Fdef%2Fcrs%2FEPSG%2F0%2F32633
 
 .. note::
@@ -682,8 +714,8 @@ Data access examples
    provider `id_field` values support slashes (i.e. ``my/cool/identifier``). The client request would then
    be responsible for encoding the identifier accordingly (i.e. ``http://localhost:5000/collections/foo/items/my%2Fcool%2Fidentifier``)
 
-.. _`ESRI Feature Service`: https://enterprise.arcgis.com/en/server/latest/publish-services/windows/what-is-a-feature-service-.htm
-.. _`ESRI Map Service`: https://enterprise.arcgis.com/en/server/latest/publish-services/windows/what-is-a-map-service.htm
+.. _`Feature Service`: https://enterprise.arcgis.com/en/server/latest/publish-services/windows/what-is-a-feature-service-.htm
+.. _`Map Service`: https://enterprise.arcgis.com/en/server/latest/publish-services/windows/what-is-a-map-service.htm
 .. _`Google Cloud SQL`: https://cloud.google.com/sql
 .. _`OGC API - Features`: https://www.ogc.org/standards/ogcapi-features
 .. _`Socrata Open Data API (SODA)`: https://dev.socrata.com
