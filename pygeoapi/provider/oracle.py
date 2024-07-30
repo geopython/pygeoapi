@@ -73,16 +73,16 @@ class DatabaseConnection:
             # cat /etc/passwd |grep apache
             # except another directory is specified in the sqlnet.ora file
             LOGGER.debug("Connection pool from wallet.")
-            p = oracledb.create_pool(externalauth=True, 
-                                    dsn=dsn, 
-                                    min=oracle_pool_min, 
-                                    max=oracle_pool_max, 
-                                    increment=1, 
-                                    homogeneous=False)
+            p = oracledb.create_pool(externalauth=True,
+                                     dsn=dsn,
+                                     min=oracle_pool_min,
+                                     max=oracle_pool_max,
+                                     increment=1,
+                                     homogeneous=False)
             LOGGER.debug("Connection pool created successfully from wallet.")
 
-        else: 
-            LOGGER.debug("Connection pool from user and password.")   
+        else:
+            LOGGER.debug("Connection pool from user and password.") 
             p = oracledb.create_pool(
                         user=conn_dict["user"],
                         password=conn_dict["password"],
