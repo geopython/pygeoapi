@@ -82,7 +82,7 @@ class DatabaseConnection:
             LOGGER.debug("Connection pool created successfully from wallet.")
 
         else:
-            LOGGER.debug("Connection pool from user and password.") 
+            LOGGER.debug("Connection pool from user and password.")
             p = oracledb.create_pool(
                         user=conn_dict["user"],
                         password=conn_dict["password"],
