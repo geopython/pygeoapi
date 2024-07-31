@@ -420,7 +420,7 @@ Configured using environment variables.
    export ORACLE_POOL_MAX=10
 
 
-The ``ORACLE_POOL_MIN`` and ``ORACLE_POOL_MAX`` environment variables are used to trigger session pool creation in the Oracle Provider and the ``DatabaseConnection`` class. See https://python-oracledb.readthedocs.io/en/latest/api_manual/module.html#oracledb.create_pool for documentation of the ``create_pool`` function.
+The ``ORACLE_POOL_MIN`` and ``ORACLE_POOL_MAX`` environment variables are used to trigger session pool creation in the Oracle Provider and the ``DatabaseConnection`` class. Supports auth via user + password or wallet. For an example of the configuration see above at Oracle - Connection. See https://python-oracledb.readthedocs.io/en/latest/api_manual/module.html#oracledb.create_pool for documentation of the ``create_pool`` function.
 
 If none or only one of the environment variables is set, session pooling will not be activated and standalone connections are established at every request.
 
