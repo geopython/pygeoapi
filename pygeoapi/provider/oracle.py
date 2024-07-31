@@ -74,7 +74,6 @@ class DatabaseConnection:
             'increment': 1
         }
 
-
         # Create the pool
         if conn_dict.get("external_auth") == "wallet":
             # If Auth is via Wallet you need to save a wallet under
