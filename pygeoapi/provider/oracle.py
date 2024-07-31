@@ -66,17 +66,31 @@ class DatabaseConnection:
         """Initialize the connection pool for the class
            Lock is implemented before function call at __init__"""
         dsn = cls._make_dsn(conn_dict)
-        # Create the pool
 
-        p = oracledb.create_pool(
-                    user=conn_dict["user"],
-                    password=conn_dict["password"],
-                    dsn=dsn,
-                    min=oracle_pool_min,
-                    max=oracle_pool_max,
-                    increment=1,
-                )
-        LOGGER.debug("Connection pool created successfully.")
+        connect_kwargs = {
+            'dsn': dsn,
+            'min': oracle_pool_min,
+            'max': oracle_pool_max,
+            'increment': 1
+        }
+
+        # Create the pool
+        if conn_dict.get("external_auth") == "wallet":
+            # If Auth is via Wallet you need to save a wallet under
+            # the directory returned by this bash command if apache is used
+            # cat /etc/passwd |grep apache
+            # except another directory is specified in the sqlnet.ora file
+            LOGGER.debug("Connection pool from wallet.")
+            connect_kwargs["externalauth"] = True
+            connect_kwargs["homogeneous"] = False
+
+        else:
+            LOGGER.debug("Connection pool from user and password.")
+            connect_kwargs["user"] = conn_dict["user"]
+            connect_kwargs["password"] = conn_dict["password"]
+
+        p = oracledb.create_pool(**connect_kwargs)
+        LOGGER.debug("Connection pool created successfully")
 
         return p
 
