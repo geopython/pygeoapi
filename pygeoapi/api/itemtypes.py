@@ -188,6 +188,7 @@ def get_collection_queryables(api: API, request: Union[APIRequest, Any],
             api.config['resources'][dataset]['title'], request.locale)
 
         queryables['collections_path'] = api.get_collections_url()
+        queryables['dataset_path'] = f'{api.get_collections_url()}/{dataset}'
 
         content = render_j2_template(api.tpl_config,
                                      'collections/queryables.html',

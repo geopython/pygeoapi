@@ -1382,6 +1382,7 @@ class API:
                 self.config['resources'][dataset]['title'], request.locale)
 
             schema['collections_path'] = self.get_collections_url()
+            schema['dataset_path'] = f'{self.get_collections_url()}/{dataset}'
 
             content = render_j2_template(self.tpl_config,
                                          'collections/schema.html',
