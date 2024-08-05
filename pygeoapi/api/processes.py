@@ -396,6 +396,7 @@ def get_jobs(api: API, request: APIRequest,
     if request.format == F_HTML:
         data = {
             'jobs': serialized_jobs,
+            'offset': offset,
             'now': datetime.now(timezone.utc).strftime(DATETIME_FORMAT)
         }
         response = render_j2_template(api.tpl_config, j2_template, data,
