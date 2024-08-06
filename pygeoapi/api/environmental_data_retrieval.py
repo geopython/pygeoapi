@@ -54,8 +54,8 @@ from pygeoapi.util import (
     to_json, filter_dict_by_key_value
 )
 
-from . import (APIRequest, API, F_COVERAGEJSON, F_HTML, validate_datetime,
-               validate_bbox)
+from . import (APIRequest, API, F_COVERAGEJSON, F_HTML, F_JSONLD,
+               validate_datetime, validate_bbox)
 
 LOGGER = logging.getLogger(__name__)
 
@@ -221,6 +221,11 @@ def get_collection_edr_query(api: API, request: APIRequest,
             'rel': request.get_linkrel(F_COVERAGEJSON),
             'title': l10n.translate('This document as CoverageJSON', request.locale),  # noqa
             'href': f'{uri}?f={F_COVERAGEJSON}{serialized_query_params}'
+        }, {
+            'type': 'application/ld+json',
+            'rel': 'alternate',
+            'title': l10n.translate('This document as JSON-LD', request.locale),  # noqa
+            'href': f'{uri}?f={F_JSONLD}{serialized_query_params}'
         }]
 
         content = render_j2_template(api.tpl_config,
