@@ -33,8 +33,8 @@ from pygeoapi.provider.base import BaseProvider, ProviderInvalidDataError
 
 LOGGER = logging.getLogger(__name__)
 
-EDR_QUERY_TYPES = ['Position', 'Radius', 'Area', 'Cube', 
-                   'Trajectory', 'Corridor', 'Items', 
+EDR_QUERY_TYPES = ['Position', 'Radius', 'Area', 'Cube',
+                   'Trajectory', 'Corridor', 'Items',
                    'Locations', 'Locations']
 
 
