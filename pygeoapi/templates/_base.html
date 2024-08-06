@@ -70,7 +70,7 @@
           {% set links_found = namespace(json=0, jsonld=0) %}
 
           {% for link in data['links'] %}
-          {% if link['rel'] == 'alternate' and link['type'] and link['type'] in ['application/json', 'application/geo+json'] %}
+          {% if link['rel'] == 'alternate' and link['type'] and link['type'] in ['application/json', 'application/geo+json', 'application/prs.coverage+json'] %}
           {% set links_found.json = 1 %}
           <a href="{{ link['href'] }}">{% trans %}json{% endtrans %}</a>
           {% elif link['rel'] == 'alternate' and link['type'] and link['type'] == 'application/ld+json' %}
