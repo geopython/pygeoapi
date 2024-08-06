@@ -29,9 +29,13 @@
 
 import logging
 
-from pygeoapi.provider.base import BaseProvider
+from pygeoapi.provider.base import BaseProvider, ProviderInvalidDataError
 
 LOGGER = logging.getLogger(__name__)
+
+EDR_QUERY_TYPES = ['Position', 'Radius', 'Area', 'Cube', 
+                   'Trajectory', 'Corridor', 'Items', 
+                   'Locations', 'Locations']
 
 
 class BaseEDRProvider(BaseProvider):
@@ -55,6 +59,11 @@ class BaseEDRProvider(BaseProvider):
     @classmethod
     def register(cls):
         def inner(fn):
+            if fn.__name__ not in EDR_QUERY_TYPES:
+                msg = 'Invalid EDR Query type'
+                LOGGER.error(msg)
+                raise ProviderInvalidDataError(msg)
+
             cls.query_types.append(fn.__name__)
             return fn
         return inner
