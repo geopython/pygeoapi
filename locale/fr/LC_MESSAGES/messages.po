@@ -733,3 +733,9 @@ msgstr ""
 
 msgid "Radius"
 msgstr ""
+
+msgid "Locations"
+msgstr ""
+
+msgid "Instances"
+msgstr ""
