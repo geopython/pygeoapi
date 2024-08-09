@@ -45,7 +45,7 @@ server:
     # templates: /path/to/templates
     map:
         url: https://tile.openstreetmap.org/{z}/{x}/{y}.png
-        attribution: '<a href="https://wikimediafoundation.org/wiki/Maps_Terms_of_Use">Wikimedia maps</a> | Map data &copy; <a href="https://openstreetmap.org/copyright">OpenStreetMap contributors</a>'
+        attribution: '&copy; <a href="https://openstreetmap.org/copyright">OpenStreetMap contributors</a>'
     manager:
         name: PostgreSQL
         connection:
