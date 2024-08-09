@@ -57,8 +57,8 @@ For more information related to API design rules (the ``api_rules`` property in 
       static: /path/to/static/folder # path to static folder containing css, js, images and other static files referenced by the template
 
     map:  # leaflet map setup for HTML pages
-        url: https://maps.wikimedia.org/osm-intl/{z}/{x}/{y}.png
-        attribution: '<a href="https://wikimediafoundation.org/wiki/Maps_Terms_of_Use">Wikimedia maps</a> | Map data &copy; <a href="https://openstreetmap.org/copyright">OpenStreetMap contributors</a>'
+        url: https://tile.openstreetmap.org/{z}/{x}/{y}.png
+        attribution: '&copy; <a href="https://openstreetmap.org/copyright">OpenStreetMap contributors</a>'
     ogc_schemas_location: /opt/schemas.opengis.net  # local copy of https://schemas.opengis.net
 
     manager:  # optional OGC API - Processes asynchronous job management
