@@ -243,22 +243,12 @@ class XarrayProvider(BaseProvider):
         """
 
         LOGGER.debug('Creating CoverageJSON domain')
-        minx, miny, maxx, maxy = metadata['bbox']
+        minx, maxx = metadata['bbox']
         mint, maxt = metadata['time']
-
-        try:
-            tmp_min = data.coords[self.y_field].values[0]
-        except IndexError:
-            tmp_min = data.coords[self.y_field].values
-        try:
-            tmp_max = data.coords[self.y_field].values[-1]
-        except IndexError:
-            tmp_max = data.coords[self.y_field].values
-
-        if tmp_min > tmp_max:
-            LOGGER.debug(f'Reversing direction of {self.y_field}')
-            miny = tmp_max
-            maxy = tmp_min
+        
+        starty = data.coords[self.y_field].values[0]
+        stopy = data.coords[self.y_field].values[-1]
+        
 
         cj = {
             'type': 'Coverage',
@@ -272,8 +262,8 @@ class XarrayProvider(BaseProvider):
                         'num': metadata['width']
                     },
                     'y': {
-                        'start': maxy,
-                        'stop': miny,
+                        'start': starty,
+                        'stop': stopy,
                         'num': metadata['height']
                     },
                     self.time_field: {
@@ -327,6 +317,7 @@ class XarrayProvider(BaseProvider):
                               metadata['time_steps']]
                 }
                 cj['ranges'][key]['values'] = data[key].values.flatten().tolist()  # noqa
+                #cj['ranges'][key]['values'] = data[key].transpose('lat','lon','time').values.flatten().tolist()  # noqa
         except IndexError as err:
             LOGGER.warning(err)
             raise ProviderQueryError('Invalid query parameter')
