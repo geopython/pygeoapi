@@ -317,7 +317,6 @@ class XarrayProvider(BaseProvider):
                               metadata['time_steps']]
                 }
                 cj['ranges'][key]['values'] = data[key].values.flatten().tolist()  # noqa
-                #cj['ranges'][key]['values'] = data[key].transpose('lat','lon','time').values.flatten().tolist()  # noqa
         except IndexError as err:
             LOGGER.warning(err)
             raise ProviderQueryError('Invalid query parameter')
