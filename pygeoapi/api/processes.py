@@ -278,6 +278,9 @@ def get_jobs(api: API, request: APIRequest,
 
     if job_id is None:
         jobs_data = api.manager.get_jobs(limit=limit, offset=offset)
+        # TODO: For pagination to work, the provider has to do the sorting.
+        #       Here we do sort again in case the provider doesn't support
+        #       pagination yet and always returns all jobs.
         jobs = sorted(jobs_data['jobs'],
                       key=lambda k: k['job_start_datetime'],
                       reverse=True)
