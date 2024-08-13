@@ -85,7 +85,7 @@ class BaseProvider:
         """
         Get provider field information (names, types)
 
-        Example response: {'field1': 'string', 'field2': 'number'}}
+        Example response: {'field1': {'type': 'string'}, 'field2': {'type': 'number'}}
 
         :returns: dict of field names and their associated JSON Schema types
         """
@@ -97,7 +97,7 @@ class BaseProvider:
         """
         Store provider field information (names, types)
 
-        Example response: {'field1': {'type': 'string'}}
+        Example response: {'field1': {'type': 'string'}, 'field2': {'type': 'number'}}
 
         :returns: dict of dicts (field names and their
                   associated JSON Schema definitions)
