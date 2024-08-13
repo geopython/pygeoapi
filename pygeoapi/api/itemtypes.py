@@ -62,7 +62,7 @@ from pygeoapi.util import (CrsTransformSpec, filter_providers_by_type,
 
 from . import (
     APIRequest, API, SYSTEM_LOCALE, F_JSON, FORMAT_TYPES, F_HTML, F_JSONLD,
-    validate_bbox, validate_datetime
+    validate_bbox, validate_datetime, pre_load_colls
 )
 
 LOGGER = logging.getLogger(__name__)
@@ -99,6 +99,7 @@ CONFORMANCE_CLASSES_RECORDS = [
 ]
 
 
+@pre_load_colls
 def get_collection_queryables(api: API, request: Union[APIRequest, Any],
                               dataset=None) -> Tuple[dict, int, str]:
     """
@@ -195,6 +196,7 @@ def get_collection_queryables(api: API, request: Union[APIRequest, Any],
     return headers, HTTPStatus.OK, to_json(queryables, api.pretty_print)
 
 
+@pre_load_colls
 def get_collection_items(
         api: API, request: Union[APIRequest, Any],
         dataset) -> Tuple[dict, int, str]:
@@ -654,6 +656,7 @@ def get_collection_items(
     return headers, HTTPStatus.OK, to_json(content, api.pretty_print)
 
 
+@pre_load_colls
 def manage_collection_item(
         api: API, request: APIRequest,
         action, dataset, identifier=None) -> Tuple[dict, int, str]:
@@ -765,6 +768,7 @@ def manage_collection_item(
         return headers, HTTPStatus.OK, ''
 
 
+@pre_load_colls
 def get_collection_item(api: API, request: APIRequest,
                         dataset, identifier) -> Tuple[dict, int, str]:
     """
