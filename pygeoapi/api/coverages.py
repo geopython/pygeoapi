@@ -51,7 +51,7 @@ from pygeoapi.util import (
 
 from . import (
     APIRequest, API, F_JSON, SYSTEM_LOCALE, validate_bbox, validate_datetime,
-    validate_subset
+    validate_subset, pre_load_colls
 )
 
 LOGGER = logging.getLogger(__name__)
@@ -68,6 +68,7 @@ CONFORMANCE_CLASSES = [
 ]
 
 
+@pre_load_colls
 def get_collection_coverage(
         api: API, request: APIRequest, dataset) -> Tuple[dict, int, str]:
     """
