@@ -51,7 +51,7 @@ from pygeoapi.util import (
     filter_dict_by_key_value
 )
 
-from . import APIRequest, API, validate_datetime
+from . import APIRequest, API, validate_datetime, pre_load_colls
 
 LOGGER = logging.getLogger(__name__)
 
@@ -60,6 +60,7 @@ CONFORMANCE_CLASSES = [
 ]
 
 
+@pre_load_colls
 def get_collection_map(api: API, request: APIRequest,
                        dataset, style=None) -> Tuple[dict, int, str]:
     """
