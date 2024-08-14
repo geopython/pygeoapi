@@ -125,7 +125,7 @@
     var map = L.map('items-map').setView([{{ 45 }}, {{ -75 }}], 10);
     map.addLayer(new L.TileLayer(
         '{{ config['server']['map']['url'] }}', {
-            maxZoom: 18,
+            maxZoom: 22,
             attribution: '{{ config['server']['map']['attribution'] | safe }}'
         }
     ));
@@ -133,6 +133,6 @@
     var items = new L.GeoJSON(geojson_data);
 
     map.addLayer(items);
-    map.fitBounds(items.getBounds(), {maxZoom: 15});
+    map.fitBounds(items.getBounds(), {maxZoom: 18});
     </script>
 {% endblock %}

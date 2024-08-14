@@ -1,0 +1,551 @@
+components:
+  parameters:
+    bbox:
+      description: Only features that have a geometry that intersects the bounding
+        box are selected.The bounding box is provided as four or six numbers, depending
+        on whether the coordinate reference system includes a vertical axis (height
+        or depth).
+      explode: false
+      in: query
+      name: bbox
+      required: false
+      schema:
+        items:
+          type: number
+        maxItems: 6
+        minItems: 4
+        type: array
+      style: form
+    bbox-crs:
+      description: Indicates the coordinate reference system for the given bbox coordinates.
+      explode: false
+      in: query
+      name: bbox-crs
+      required: false
+      schema:
+        format: uri
+        type: string
+      style: form
+    bbox-crs-epsg:
+      description: Indicates the EPSG for the given bbox coordinates.
+      explode: false
+      in: query
+      name: bbox-crs
+      required: false
+      schema:
+        default: 4326
+        type: integer
+      style: form
+    crs:
+      description: Indicates the coordinate reference system for the results.
+      explode: false
+      in: query
+      name: crs
+      required: false
+      schema:
+        format: uri
+        type: string
+      style: form
+    f:
+      description: The optional f parameter indicates the output format which the
+        server shall provide as part of the response document.  The default format
+        is GeoJSON.
+      explode: false
+      in: query
+      name: f
+      required: false
+      schema:
+        default: json
+        enum:
+        - json
+        - html
+        - jsonld
+        type: string
+      style: form
+    lang:
+      description: The optional lang parameter instructs the server return a response
+        in a certain language, if supported.  If the language is not among the available
+        values, the Accept-Language header language will be used if it is supported.
+        If the header is missing, the default server language is used. Note that providers
+        may only support a single language (or often no language at all), that can
+        be different from the server language.  Language strings can be written in
+        a complex (e.g. "fr-CA,fr;q=0.9,en-US;q=0.8,en;q=0.7"), simple (e.g. "de")
+        or locale-like (e.g. "de-CH" or "fr_BE") fashion.
+      in: query
+      name: lang
+      required: false
+      schema:
+        default: en-US
+        enum:
+        - en-US
+        - fr-CA
+        type: string
+    offset:
+      description: The optional offset parameter indicates the index within the result
+        set from which the server shall begin presenting results in the response document.  The
+        first element has an index of 0 (default).
+      explode: false
+      in: query
+      name: offset
+      required: false
+      schema:
+        default: 0
+        minimum: 0
+        type: integer
+      style: form
+    resourceId:
+      description: Configuration resource identifier
+      in: path
+      name: resourceId
+      required: true
+      schema:
+        type: string
+    skipGeometry:
+      description: This option can be used to skip response geometries for each feature.
+      explode: false
+      in: query
+      name: skipGeometry
+      required: false
+      schema:
+        default: false
+        type: boolean
+      style: form
+    vendorSpecificParameters:
+      description: Additional "free-form" parameters that are not explicitly defined
+      in: query
+      name: vendorSpecificParameters
+      schema:
+        additionalProperties: true
+        type: object
+      style: form
+  responses:
+    '200':
+      description: successful operation
+    '204':
+      description: no content
+    Queryables:
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/queryables'
+      description: successful queryables operation
+    Tiles:
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/tiles'
+      description: Retrieves the tiles description for this collection
+    default:
+      content:
+        application/json:
+          schema:
+            $ref: https://schemas.opengis.net/ogcapi/processes/part1/1.0/openapi/schemas/exception.yaml
+      description: Unexpected error
+  schemas:
+    queryable:
+      properties:
+        description:
+          description: a human-readable narrative describing the queryable
+          type: string
+        language:
+          default:
+          - en
+          description: the language used for the title and description
+          type: string
+        queryable:
+          description: the token that may be used in a CQL predicate
+          type: string
+        title:
+          description: a human readable title for the queryable
+          type: string
+        type:
+          description: the data type of the queryable
+          type: string
+        type-ref:
+          description: a reference to the formal definition of the type
+          format: url
+          type: string
+      required:
+      - queryable
+      - type
+      type: object
+    queryables:
+      properties:
+        queryables:
+          items:
+            $ref: '#/components/schemas/queryable'
+          type: array
+      required:
+      - queryables
+      type: object
+    tilematrixsetlink:
+      properties:
+        tileMatrixSet:
+          type: string
+        tileMatrixSetURI:
+          type: string
+      required:
+      - tileMatrixSet
+      type: object
+    tiles:
+      properties:
+        links:
+          items:
+            $ref: https://schemas.opengis.net/ogcapi/tiles/part1/1.0/openapi/ogcapi-tiles-1.yaml#/components/schemas/link
+          type: array
+        tileMatrixSetLinks:
+          items:
+            $ref: '#/components/schemas/tilematrixsetlink'
+          type: array
+      required:
+      - tileMatrixSetLinks
+      - links
+      type: object
+info:
+  contact:
+    email: you@example.org
+    name: Organization Name
+    url: https://pygeoapi.io
+  description: pygeoapi provides an API to geospatial data
+  license:
+    name: CC-BY 4.0 license
+    url: https://creativecommons.org/licenses/by/4.0/
+  termsOfService: https://creativecommons.org/licenses/by/4.0/
+  title: Speckle pygeoapi instance
+  version: 0.18.dev0
+  x-keywords:
+  - geospatial
+  - data
+  - api
+openapi: 3.0.2
+paths:
+  /:
+    get:
+      description: Landing page
+      operationId: getLandingPage
+      parameters:
+      - $ref: '#/components/parameters/f'
+      - $ref: '#/components/parameters/lang'
+      responses:
+        '200':
+          $ref: https://schemas.opengis.net\ogcapi/features/part1/1.0/openapi/ogcapi-features-1.yaml#/components/responses/LandingPage
+        '400':
+          $ref: https://schemas.opengis.net\ogcapi/features/part1/1.0/openapi/ogcapi-features-1.yaml#/components/responses/InvalidParameter
+        '500':
+          $ref: https://schemas.opengis.net\ogcapi/features/part1/1.0/openapi/ogcapi-features-1.yaml#/components/responses/ServerError
+      summary: Landing page
+      tags:
+      - server
+  /collections:
+    get:
+      description: Collections
+      operationId: getCollections
+      parameters:
+      - $ref: '#/components/parameters/f'
+      - $ref: '#/components/parameters/lang'
+      responses:
+        '200':
+          $ref: https://schemas.opengis.net\ogcapi/features/part1/1.0/openapi/ogcapi-features-1.yaml#/components/responses/LandingPage
+        '400':
+          $ref: https://schemas.opengis.net\ogcapi/features/part1/1.0/openapi/ogcapi-features-1.yaml#/components/responses/InvalidParameter
+        '500':
+          $ref: https://schemas.opengis.net\ogcapi/features/part1/1.0/openapi/ogcapi-features-1.yaml#/components/responses/ServerError
+      summary: Collections
+      tags:
+      - server
+  /collections/speckle:
+    get:
+      description: some random data
+      operationId: describeSpeckleCollection
+      parameters:
+      - $ref: '#/components/parameters/f'
+      - $ref: '#/components/parameters/lang'
+      responses:
+        '200':
+          $ref: https://schemas.opengis.net\ogcapi/features/part1/1.0/openapi/ogcapi-features-1.yaml#/components/responses/Collection
+        '400':
+          $ref: https://schemas.opengis.net\ogcapi/features/part1/1.0/openapi/ogcapi-features-1.yaml#/components/responses/InvalidParameter
+        '404':
+          $ref: https://schemas.opengis.net\ogcapi/features/part1/1.0/openapi/ogcapi-features-1.yaml#/components/responses/NotFound
+        '500':
+          $ref: https://schemas.opengis.net\ogcapi/features/part1/1.0/openapi/ogcapi-features-1.yaml#/components/responses/ServerError
+      summary: Get Speckle data metadata
+      tags:
+      - speckle
+  /collections/speckle/items:
+    get:
+      description: some random data
+      operationId: getSpeckleFeatures
+      parameters:
+      - $ref: '#/components/parameters/f'
+      - $ref: '#/components/parameters/lang'
+      - $ref: '#/components/parameters/bbox'
+      - $ref: https://schemas.opengis.net\ogcapi/features/part1/1.0/openapi/ogcapi-features-1.yaml#/components/parameters/limit
+      - $ref: '#/components/parameters/crs'
+      - $ref: '#/components/parameters/bbox-crs'
+      - description: The properties that should be included for each feature. The
+          parameter value is a comma-separated list of property names.
+        explode: false
+        in: query
+        name: properties
+        required: false
+        schema:
+          items:
+            enum: []
+            type: string
+          type: array
+        style: form
+      - $ref: '#/components/parameters/vendorSpecificParameters'
+      - $ref: '#/components/parameters/skipGeometry'
+      - $ref: https://raw.githubusercontent.com/opengeospatial/ogcapi-records/master/core/openapi/parameters/sortby.yaml
+      - $ref: '#/components/parameters/offset'
+      responses:
+        '200':
+          $ref: https://schemas.opengis.net\ogcapi/features/part1/1.0/openapi/ogcapi-features-1.yaml#/components/responses/Features
+        '400':
+          $ref: https://schemas.opengis.net\ogcapi/features/part1/1.0/openapi/ogcapi-features-1.yaml#/components/responses/InvalidParameter
+        '404':
+          $ref: https://schemas.opengis.net\ogcapi/features/part1/1.0/openapi/ogcapi-features-1.yaml#/components/responses/NotFound
+        '500':
+          $ref: https://schemas.opengis.net\ogcapi/features/part1/1.0/openapi/ogcapi-features-1.yaml#/components/responses/ServerError
+      summary: Get Speckle data items
+      tags:
+      - speckle
+    options:
+      description: some random data
+      operationId: optionsSpeckleFeatures
+      responses:
+        '200':
+          description: options response
+      summary: Options for Speckle data items
+      tags:
+      - speckle
+  /collections/speckle/items/{featureId}:
+    get:
+      description: some random data
+      operationId: getSpeckleFeature
+      parameters:
+      - $ref: https://schemas.opengis.net\ogcapi/features/part1/1.0/openapi/ogcapi-features-1.yaml#/components/parameters/featureId
+      - $ref: '#/components/parameters/crs'
+      - $ref: '#/components/parameters/f'
+      - $ref: '#/components/parameters/lang'
+      responses:
+        '200':
+          $ref: https://schemas.opengis.net\ogcapi/features/part1/1.0/openapi/ogcapi-features-1.yaml#/components/responses/Feature
+        '400':
+          $ref: https://schemas.opengis.net\ogcapi/features/part1/1.0/openapi/ogcapi-features-1.yaml#/components/responses/InvalidParameter
+        '404':
+          $ref: https://schemas.opengis.net\ogcapi/features/part1/1.0/openapi/ogcapi-features-1.yaml#/components/responses/NotFound
+        '500':
+          $ref: https://schemas.opengis.net\ogcapi/features/part1/1.0/openapi/ogcapi-features-1.yaml#/components/responses/ServerError
+      summary: Get Speckle data item by id
+      tags:
+      - speckle
+    options:
+      description: some random data
+      operationId: optionsSpeckleFeature
+      parameters:
+      - $ref: https://schemas.opengis.net\ogcapi/features/part1/1.0/openapi/ogcapi-features-1.yaml#/components/parameters/featureId
+      responses:
+        '200':
+          description: options response
+      summary: Options for Speckle data item by id
+      tags:
+      - speckle
+  /conformance:
+    get:
+      description: API conformance definition
+      operationId: getConformanceDeclaration
+      parameters:
+      - $ref: '#/components/parameters/f'
+      - $ref: '#/components/parameters/lang'
+      responses:
+        '200':
+          $ref: https://schemas.opengis.net\ogcapi/features/part1/1.0/openapi/ogcapi-features-1.yaml#/components/responses/LandingPage
+        '400':
+          $ref: https://schemas.opengis.net\ogcapi/features/part1/1.0/openapi/ogcapi-features-1.yaml#/components/responses/InvalidParameter
+        '500':
+          $ref: https://schemas.opengis.net\ogcapi/features/part1/1.0/openapi/ogcapi-features-1.yaml#/components/responses/ServerError
+      summary: API conformance definition
+      tags:
+      - server
+  /jobs:
+    get:
+      description: Retrieve a list of jobs
+      operationId: getJobs
+      responses:
+        '200':
+          $ref: '#/components/responses/200'
+        '404':
+          $ref: https://schemas.opengis.net/ogcapi/processes/part1/1.0/openapi/responses/NotFound.yaml
+        default:
+          $ref: '#/components/responses/default'
+      summary: Retrieve jobs list
+      tags:
+      - jobs
+  /jobs/{jobId}:
+    delete:
+      description: Cancel / delete job
+      operationId: deleteJob
+      parameters:
+      - &id001
+        description: job identifier
+        in: path
+        name: jobId
+        required: true
+        schema:
+          type: string
+      responses:
+        '204':
+          $ref: '#/components/responses/204'
+        '404':
+          $ref: https://schemas.opengis.net/ogcapi/processes/part1/1.0/openapi/responses/NotFound.yaml
+        default:
+          $ref: '#/components/responses/default'
+      summary: Cancel / delete job
+      tags:
+      - jobs
+    get:
+      description: Retrieve job details
+      operationId: getJob
+      parameters:
+      - *id001
+      - $ref: '#/components/parameters/f'
+      responses:
+        '200':
+          $ref: '#/components/responses/200'
+        '404':
+          $ref: https://schemas.opengis.net/ogcapi/processes/part1/1.0/openapi/responses/NotFound.yaml
+        default:
+          $ref: '#/components/responses/default'
+      summary: Retrieve job details
+      tags:
+      - jobs
+  /jobs/{jobId}/results:
+    get:
+      description: Retrieve job results
+      operationId: getJobResults
+      parameters:
+      - *id001
+      - $ref: '#/components/parameters/f'
+      responses:
+        '200':
+          $ref: '#/components/responses/200'
+        '404':
+          $ref: https://schemas.opengis.net/ogcapi/processes/part1/1.0/openapi/responses/NotFound.yaml
+        default:
+          $ref: '#/components/responses/default'
+      summary: Retrieve job results
+      tags:
+      - jobs
+  /openapi:
+    get:
+      description: This document
+      operationId: getOpenapi
+      parameters:
+      - $ref: '#/components/parameters/f'
+      - $ref: '#/components/parameters/lang'
+      - description: UI to render the OpenAPI document
+        explode: false
+        in: query
+        name: ui
+        required: false
+        schema:
+          default: swagger
+          enum:
+          - swagger
+          - redoc
+          type: string
+        style: form
+      responses:
+        '200':
+          $ref: '#/components/responses/200'
+        '400':
+          $ref: https://schemas.opengis.net\ogcapi/features/part1/1.0/openapi/ogcapi-features-1.yaml#/components/responses/InvalidParameter
+        default:
+          $ref: '#/components/responses/default'
+      summary: This document
+      tags:
+      - server
+  /processes:
+    get:
+      description: Processes
+      operationId: getProcesses
+      parameters:
+      - $ref: '#/components/parameters/f'
+      responses:
+        '200':
+          $ref: https://schemas.opengis.net/ogcapi/processes/part1/1.0/openapi/responses/ProcessList.yaml
+        default:
+          $ref: '#/components/responses/default'
+      summary: Processes
+      tags:
+      - server
+  /processes/hello-world:
+    get:
+      description: An example process that takes a name as input, and echoes it back
+        as output. Intended to demonstrate a simple process with a single literal
+        input.
+      operationId: describeHello-worldProcess
+      parameters:
+      - $ref: '#/components/parameters/f'
+      responses:
+        '200':
+          $ref: '#/components/responses/200'
+        default:
+          $ref: '#/components/responses/default'
+      summary: Get process metadata
+      tags:
+      - hello-world
+  /processes/hello-world/execution:
+    post:
+      description: An example process that takes a name as input, and echoes it back
+        as output. Intended to demonstrate a simple process with a single literal
+        input.
+      operationId: executeHello-worldJob
+      requestBody:
+        content:
+          application/json:
+            example:
+              inputs:
+                message: An optional message.
+                name: World
+            schema:
+              $ref: https://schemas.opengis.net/ogcapi/processes/part1/1.0/openapi/schemas/execute.yaml
+        description: Mandatory execute request JSON
+        required: true
+      responses:
+        '200':
+          $ref: '#/components/responses/200'
+        '201':
+          $ref: https://schemas.opengis.net/ogcapi/processes/part1/1.0/openapi/responses/ExecuteAsync.yaml
+        '404':
+          $ref: https://schemas.opengis.net/ogcapi/processes/part1/1.0/openapi/responses/NotFound.yaml
+        '500':
+          $ref: https://schemas.opengis.net/ogcapi/processes/part1/1.0/openapi/responses/ServerError.yaml
+        default:
+          $ref: '#/components/responses/default'
+      summary: Process Hello World execution
+      tags:
+      - hello-world
+servers:
+- description: pygeoapi provides an API to geospatial data
+  url: http://localhost:5000
+tags:
+- description: pygeoapi provides an API to geospatial data
+  externalDocs:
+    description: information
+    url: https://example.org
+  name: server
+- description: some random data
+  name: speckle
+- name: coverages
+- name: edr
+- name: records
+- name: features
+- name: maps
+- name: processes
+- name: jobs
+- name: tiles
+- name: stac
+

@@ -125,6 +125,7 @@ def get_collection_queryables(api: API, request: Union[APIRequest, Any],
         LOGGER.debug('Loading feature provider')
         p = load_plugin('provider', get_provider_by_type(
             api.config['resources'][dataset]['providers'], 'feature'))
+        p._load()
     except ProviderTypeError:
         try:
             LOGGER.debug('Loading coverage provider')
@@ -304,7 +305,18 @@ def get_collection_items(
         provider_type = 'feature'
         provider_def = get_provider_by_type(
             collections[dataset]['providers'], provider_type)
+
+        # clear data if no URL params
+        load_data = False
+        for item in request.params:
+            if item == 'speckleUrl' and len(request.params[item])>40 and ('speckleUrl=' + request.params[item]) in provider_def['data']:
+                load_data = True
+                break
+        if load_data is False:
+            provider_def['data'] = ""
+        
         p = load_plugin('provider', provider_def)
+
     except ProviderTypeError:
         try:
             provider_type = 'record'
@@ -554,6 +566,59 @@ def get_collection_items(
 
     content['timeStamp'] = datetime.utcnow().strftime(
         '%Y-%m-%dT%H:%M:%S.%fZ')
+    
+    # Save passed parameters
+    url_saved_as_data = collections[dataset]['providers'][0]['data']
+    url_props = []
+
+    if isinstance(url_saved_as_data, str):
+        url_props = url_saved_as_data.lower().split("&")
+    
+    content['missing_url'] = content['missing_url_href'] = ""
+    content['speckle_url'] = content['speckle_project_url'] = content['crs_authid'] = content['lat'] = content['lon'] = content['north_degrees'] = content['limit'] = "-"
+    crsauthid = False
+    for item in url_props:
+        # if CRS authid is found, rest will be ignored
+        if "speckleurl=" in item:
+            content['speckle_url'] = item.split("speckleurl=")[1]
+            if content['speckle_url'][-1] == "/":
+                content['speckle_url'] = content['speckle_url'][:-1]
+            content['speckle_project_url'] = content['speckle_url'].split("/models")[0]
+        elif "crsauthid=" in item:
+            content['crs_authid'] = item.split("crsauthid=")[1]
+            crsauthid = True
+        elif "lat=" in item:
+            try:
+                content['lat'] = float(item.split("lat=")[1])
+            except:
+                content['lat'] = f"Invalid input, must be numeric: {item.split('lat=')[1]}"
+        elif "lon=" in item:
+            try:
+                content['lon'] = float(item.split("lon=")[1])
+            except:
+                content['lon'] = f"Invalid input, must be numeric: {item.split('lon=')[1]}"
+        elif "northdegrees=" in item:
+            try:
+                content['north_degrees'] = float(item.split("northdegrees=")[1])
+            except:
+                content['north_degrees'] = f"Invalid input, must be numeric: {item.split('northdegrees=')[1]}"
+        elif "limit=" in item:
+            try:
+                content['limit'] = float(item.split("limit=")[1])
+            except:
+                content['limit'] = f"Invalid input, must be integer: {item.split('limit=')[1]}"
+    
+    if content['speckle_url'] == "-":
+        content['missing_url'] = "Provide Speckle project link as an argument to start exploring, e.g.: "
+        content['missing_url_href'] = "http://localhost:5000/?speckleUrl=https://app.speckle.systems/projects/5feae56049/models/9c43d7569c"
+
+    if crsauthid:
+        content['lat'] += " (not applied)"
+        content['lon'] += " (not applied)"
+        content['north_degrees'] += " (not applied)"
+    
+    if content['limit'] == "-":
+        content['limit'] = f"{api.config['server']['limit']} (default)"
 
     # Set response language to requested provider locale
     # (if it supports language) and/or otherwise the requested pygeoapi

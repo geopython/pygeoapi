@@ -29,6 +29,7 @@
 #
 # =================================================================
 
+import copy
 import click
 import json
 from jsonschema import validate as jsonschema_validate
@@ -36,12 +37,15 @@ import logging
 import os
 import yaml
 
+from flask import Request
+
 from pygeoapi.util import to_json, yaml_load, THISDIR
 
 LOGGER = logging.getLogger(__name__)
+CONFIG = {}
 
 
-def get_config(raw: bool = False) -> dict:
+def get_config(raw: bool = False, request: Request = None) -> dict:
     """
     Get pygeoapi configurations
 
@@ -50,22 +54,51 @@ def get_config(raw: bool = False) -> dict:
     :returns: `dict` of pygeoapi configuration
     """
 
-    if not os.environ.get('PYGEOAPI_CONFIG'):
-        raise RuntimeError('PYGEOAPI_CONFIG environment variable not set')
+    if not os.environ.get("PYGEOAPI_CONFIG"):
+        raise RuntimeError("PYGEOAPI_CONFIG environment variable not set")
 
-    with open(os.environ.get('PYGEOAPI_CONFIG'), encoding='utf8') as fh:
+    global CONFIG
+
+    config_file = os.environ.get("PYGEOAPI_CONFIG")
+    with open(config_file, encoding="utf8") as fh:
         if raw:
-            CONFIG = yaml.safe_load(fh)
+            config_yaml = yaml.safe_load(fh)
         else:
-            CONFIG = yaml_load(fh)
+            config_yaml = yaml_load(fh)
+
+    # assign valid dictionnaries to Speckle resources
+    speckle_collection_received = copy.deepcopy(config_yaml["resources"]["speckle"])
+
+    # for the first time only: assign YAML value to CONFIG. Otherwise, don't modify
+    if CONFIG == {}:
+        CONFIG = config_yaml
+
+    url_valid = False
+    speckle_url = ""
+    if request is not None:
+        url = request.url.split("?")[-1]
+        if "projects" in url and "models" in url:
+            url_valid = True
+            speckle_url = url
+
+    # once Speckle URL is found, set it as a provider
+    if url_valid:
+        # speckle_collection_pts["title"]["en"] = "Some Points"
+
+        # assign speckle url and get the data
+        speckle_collection_received["providers"][0]["data"] = speckle_url
+
+        CONFIG["resources"] = {
+            "speckle": speckle_collection_received,
+        }
 
     return CONFIG
 
 
 def load_schema() -> dict:
-    """ Reads the JSON schema YAML file. """
+    """Reads the JSON schema YAML file."""
 
-    schema_file = THISDIR / 'schemas' / 'config' / 'pygeoapi-config-0.x.yml'
+    schema_file = THISDIR / "schemas" / "config" / "pygeoapi-config-0.x.yml"
 
     with schema_file.open() as fh2:
         return yaml_load(fh2)
@@ -93,18 +126,18 @@ def config():
 
 @click.command()
 @click.pass_context
-@click.option('--config', '-c', 'config_file', help='configuration file')
+@click.option("--config", "-c", "config_file", help="configuration file")
 def validate(ctx, config_file):
     """Validate configuration"""
 
     if config_file is None:
-        raise click.ClickException('--config/-c required')
+        raise click.ClickException("--config/-c required")
 
     with open(config_file) as ff:
-        click.echo(f'Validating {config_file}')
+        click.echo(f"Validating {config_file}")
         instance = yaml_load(ff)
         validate_config(instance)
-        click.echo('Valid configuration')
+        click.echo("Valid configuration")
 
 
 config.add_command(validate)

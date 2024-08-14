@@ -150,6 +150,9 @@ def execute_from_flask(api_function, request: Request, *args,
     :returns: A Response instance
     """
 
+    CONFIG = get_config(request=request)
+    api_ = API(CONFIG, OPENAPI)
+    
     api_request = APIRequest.from_flask(request, api_.locales)
 
     content: Union[str, bytes]
@@ -171,8 +174,32 @@ def landing_page():
 
     :returns: HTTP response
     """
-    return get_response(api_.landing_page(request))
+    
+    collection_id = "speckle"
 
+    agent = request.headers.get('User-Agent')
+    # Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/127.0.0.0 Safari/537.36
+    # Mozilla/5.0 QGIS/32815/Windows 10 Version 2009
+    # ArcGIS Pro 3.3.0 (00000000000) - ArcGISPro
+
+    browser_agent = False
+    browser_list = ["Chrome", "Safari", "Firefox", "Edg/", "Trident/"]
+    print(agent)
+    
+    if "YaBrowser/" in agent:
+        raise ValueError("Your browser is not supported.")
+    for br in browser_list:
+        if br in agent:
+            browser_agent = True
+            break
+    
+    # if requested from the browser, return this, otherwise ignore IF statement
+    if request.method == 'GET' and browser_agent:  # list items
+        return execute_from_flask(itemtypes_api.get_collection_items,
+                                    request, collection_id,
+                                    skip_valid_check=True)
+
+    return get_response(api_.landing_page(request))
 
 @BLUEPRINT.route('/openapi')
 def openapi():
@@ -181,7 +208,8 @@ def openapi():
 
     :returns: HTTP response
     """
-
+    
+    # raise NotImplementedError()
     return get_response(api_.openapi_(request))
 
 
@@ -192,7 +220,8 @@ def conformance():
 
     :returns: HTTP response
     """
-
+    
+    # raise NotImplementedError()
     return get_response(api_.conformance(request))
 
 
@@ -206,6 +235,7 @@ def get_tilematrix_set(tileMatrixSetId=None):
     :returns: HTTP response
     """
 
+    raise NotImplementedError()
     return execute_from_flask(tiles_api.tilematrixset, request,
                               tileMatrixSetId)
 
@@ -218,6 +248,7 @@ def get_tilematrix_sets():
     :returns: HTTP response
     """
 
+    raise NotImplementedError()
     return execute_from_flask(tiles_api.tilematrixsets, request)
 
 
@@ -231,7 +262,8 @@ def collections(collection_id=None):
 
     :returns: HTTP response
     """
-
+    
+    # raise NotImplementedError()
     return get_response(api_.describe_collections(request, collection_id))
 
 
@@ -245,6 +277,7 @@ def collection_schema(collection_id):
     :returns: HTTP response
     """
 
+    # raise NotImplementedError()
     return get_response(api_.get_collection_schema(request, collection_id))
 
 
@@ -258,10 +291,12 @@ def collection_queryables(collection_id=None):
     :returns: HTTP response
     """
 
+    # raise NotImplementedError()
     return execute_from_flask(itemtypes_api.get_collection_queryables, request,
                               collection_id)
 
 
+# @BLUEPRINT.route('/')
 @BLUEPRINT.route('/collections/<path:collection_id>/items',
                  methods=['GET', 'POST', 'OPTIONS'],
                  provide_automatic_options=False)
@@ -277,6 +312,7 @@ def collection_items(collection_id, item_id=None):
 
     :returns: HTTP response
     """
+    collection_id = 'speckle'
 
     if item_id is None:
         if request.method == 'GET':  # list items
@@ -325,7 +361,7 @@ def collection_coverage(collection_id):
 
     :returns: HTTP response
     """
-
+    raise NotImplementedError()
     return execute_from_flask(coverages_api.get_collection_coverage, request,
                               collection_id, skip_valid_check=True)
 
@@ -340,6 +376,7 @@ def get_collection_tiles(collection_id=None):
     :returns: HTTP response
     """
 
+    raise NotImplementedError()
     return execute_from_flask(tiles_api.get_collection_tiles, request,
                               collection_id)
 
@@ -356,6 +393,7 @@ def get_collection_tiles_metadata(collection_id=None, tileMatrixSetId=None):
     :returns: HTTP response
     """
 
+    raise NotImplementedError()
     return execute_from_flask(tiles_api.get_collection_tiles_metadata,
                               request, collection_id, tileMatrixSetId,
                               skip_valid_check=True)
@@ -377,6 +415,7 @@ def get_collection_tiles_data(collection_id=None, tileMatrixSetId=None,
     :returns: HTTP response
     """
 
+    raise NotImplementedError()
     return execute_from_flask(
         tiles_api.get_collection_tiles_data,
         request, collection_id, tileMatrixSetId, tileMatrix, tileRow, tileCol,
@@ -396,6 +435,7 @@ def collection_map(collection_id, style_id=None):
     :returns: HTTP response
     """
 
+    raise NotImplementedError()
     return execute_from_flask(
         maps_api.get_collection_map, request, collection_id, style_id
     )
@@ -412,6 +452,7 @@ def get_processes(process_id=None):
     :returns: HTTP response
     """
 
+    raise NotImplementedError()
     return execute_from_flask(processes_api.describe_processes, request,
                               process_id)
 
@@ -428,6 +469,7 @@ def get_jobs(job_id=None):
     :returns: HTTP response
     """
 
+    raise NotImplementedError()
     if job_id is None:
         return execute_from_flask(processes_api.get_jobs, request)
     else:
@@ -448,6 +490,7 @@ def execute_process_jobs(process_id):
     :returns: HTTP response
     """
 
+    raise NotImplementedError()
     return execute_from_flask(processes_api.execute_process, request,
                               process_id)
 
@@ -463,6 +506,7 @@ def get_job_result(job_id=None):
     :returns: HTTP response
     """
 
+    raise NotImplementedError()
     return execute_from_flask(processes_api.get_job_result, request, job_id)
 
 
@@ -478,6 +522,7 @@ def get_job_result_resource(job_id, resource):
     :returns: HTTP response
     """
 
+    raise NotImplementedError()
     # TODO: this does not seem to exist?
     return get_response(api_.get_job_result_resource(
         request, job_id, resource))
@@ -531,6 +576,7 @@ def stac_catalog_root():
     :returns: HTTP response
     """
 
+    raise NotImplementedError()
     return execute_from_flask(stac_api.get_stac_root, request)
 
 
@@ -544,6 +590,7 @@ def stac_catalog_path(path):
     :returns: HTTP response
     """
 
+    raise NotImplementedError()
     return execute_from_flask(stac_api.get_stac_path, request, path)
 
 
@@ -555,6 +602,7 @@ def admin_config():
     :returns: HTTP response
     """
 
+    raise NotImplementedError()
     if request.method == 'GET':
         return get_response(admin_.get_config(request))
 
@@ -573,6 +621,7 @@ def admin_config_resources():
     :returns: HTTP response
     """
 
+    raise NotImplementedError()
     if request.method == 'GET':
         return get_response(admin_.get_resources(request))
 
@@ -590,6 +639,7 @@ def admin_config_resource(resource_id):
     :returns: HTTP response
     """
 
+    raise NotImplementedError()
     if request.method == 'GET':
         return get_response(admin_.get_resource(request, resource_id))
 

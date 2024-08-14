@@ -35,76 +35,57 @@
     {% endblock %}
   </head>
   <body>
-  <div class="bg-light sticky-top border-bottom">
-    <div class="container">
-      <header class="d-flex flex-wrap justify-content-center py-3">
-        <a href="{{ config['server']['url'] }}"
-          class="d-flex align-items-center mb-3 mb-md-0 me-md-auto text-dark text-decoration-none">
-          <img src="{{ config['server']['url'] }}/static/img/logo.png"
-            title="{{ config['metadata']['identification']['title'] }}" style="height:40px;vertical-align: middle;" /></a>
-        <ul class="nav nav-pills">
-          <li class="nav-item">
-            <a href="mailto:{{ config['metadata']['contact']['email'] }}" class="nav-link" aria-current="page">{% trans %}Contact{% endtrans%}</a>
-          </li>
-          {% if config['server']['admin'] %}
-          <li class="nav-item">
-            <a href="{{ config['server']['url'] }}/admin/config" class="nav-link" aria-current="page">{% trans %}Admin{% endtrans %}</a>
-          </li>
-         {% endif %}
-          <!--
-            Add additional menu items here
-            <a href="https://pygeoapi.io" class="nav-link">About</a>
-          -->
-        </ul>
+  <div class="bg-white sticky-top border-bottom" >
+    <div class="container" style="max-height:fit-content;max-width: fit-content;margin-left: 10px;">
+      <header class="d-flex flex-wrap justify-content-center py-2" style="text-align: left;">
+        <a href="{{ config['metadata']['contact']['url'] }}"
+          class="d-flex align-items-center mb-3 mb-md-0 me-md-auto text-dark text-decoration-none"
+          style="text-align:left;">
+            <img src="{{ config['server']['url'] }}/static/img/speckle_cube_32.png" alt="Speckle"
+              title="{{ config['metadata']['identification']['title'] }}" style="height:30px;vertical-align: middle;" /> 
+            <b style="text-align:left;padding-left: 10px;">Speckle</b> 
+        </a>
+        <p style="text-align:left;padding-left: 10px;" class="d-flex align-items-center mb-3 mb-md-0 me-md-auto text-dark text-decoration-none">
+            > Geolocating your data 
+        </p> 
+        {% if (data["model"] and data["model"]!="") %}
+        <a href="{{data['speckle_project_url']}}" style="text-align:left;padding-left: 10px;" class="d-flex align-items-center mb-3 mb-md-0 me-md-auto text-dark text-decoration-none">
+          > {{data["project"]}} >
+        </a>
+        <a href="{{data['speckle_url']}}" style="text-align:left;padding-left: 10px;color:rgb(10,132,255);" class="d-flex align-items-center mb-3 mb-md-0 me-md-auto text-decoration-none">
+          {{data["model"]}}
+        </a>
+        {% endif %}
+        
+        <ul class="nav nav-pills"> </ul>
       </header>
     </div>
   </div>
   <div class="crumbs">
+    
+  </div>
+
+  <main style="background-color:WhiteSmoke;">
+    <div style="margin-left: 20px;margin-right: 20px;">
+    {% block body_map %}
+    {% endblock %}
+    </div>
+
     <div class="container">
       <div class="row">
         <div class="col-sm-12">
-        {% block crumbs %}
-        <a href="{{ config['server']['url'] }}">{% trans %}Home{% endtrans %}</a>
-        {% endblock %}
-        <span style="float:right">
-          {% set links_found = namespace(json=0, jsonld=0) %}
-
-          {% for link in data['links'] %}
-          {% if link['rel'] == 'alternate' and link['type'] and link['type'] in ['application/json', 'application/geo+json'] %}
-          {% set links_found.json = 1 %}
-          <a href="{{ link['href'] }}">{% trans %}json{% endtrans %}</a>
-          {% elif link['rel'] == 'alternate' and link['type'] and link['type'] == 'application/ld+json' %}
-          {% set links_found.jsonld = 1 %}
-          <a href="{{ link['href'] }}">{% trans %}jsonld{% endtrans %}</a>
-          {% endif %}
-          {% endfor %}
-
-          {% if links_found.json == 0 %}
-          <a href="?f=json">{% trans %}json{% endtrans %}</a>
-          {% endif %}
-          {% if links_found.jsonld == 0 %}
-          <a href="?f=jsonld">{% trans %}jsonld{% endtrans %}</a>
-          {% endif %}
-
-        </span>
-        </div>
-      </div>
-    </div>
-    </div>
-    <main>
-    <div class="container">
-      <div class="row">
-        <div class="col-sm-12">
-          <br/>
           {% block body %}
           {% endblock %}
         </div>
       </div>
     </div>
-    </main>
-    <footer class="sticky-bottom bg-light d-flex flex-wrap py-3 px-3 border-top">{% trans %}Powered by {% endtrans %} <a title="pygeoapi" href="https://pygeoapi.io"><img
+  </main>
+
+  <footer class="sticky-bottom bg-white d-flex flex-wrap py-3 px-3 border-top">{% trans %}Powered by {% endtrans %} <a title="pygeoapi" href="https://pygeoapi.io"><img
         src="{{ config['server']['url'] }}/static/img/pygeoapi.png" class="mx-1" title="pygeoapi logo"
-        style="height:24px;vertical-align: middle;" /></a> {{ version }}</footer>
+        style="height:24px;vertical-align: middle;" /></a> {{ version }}
+  </footer>
+
     {% block extrafoot %}
     {% endblock %}
     <script>

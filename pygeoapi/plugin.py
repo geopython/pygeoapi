@@ -60,6 +60,7 @@ PLUGINS = {
         'SensorThings': 'pygeoapi.provider.sensorthings.SensorThingsProvider',
         'SQLiteGPKG': 'pygeoapi.provider.sqlite.SQLiteGPKGProvider',
         'Socrata': 'pygeoapi.provider.socrata.SODAServiceProvider',
+        'Speckle': 'pygeoapi.provider.speckle.SpeckleProvider',
         'TinyDB': 'pygeoapi.provider.tinydb_.TinyDBProvider',
         'TinyDBCatalogue': 'pygeoapi.provider.tinydb_.TinyDBCatalogueProvider',
         'WMSFacade': 'pygeoapi.provider.wms_facade.WMSFacadeProvider',

@@ -1,15 +1,4 @@
 {% extends "_base.html" %}
-{% block title %}{{ super() }} {{ data['title'] }} {% endblock %}
-{% block crumbs %}{{ super() }}
-/ <a href="{{ data['collections_path'] }}">{% trans %}Collections{% endtrans %}</a>
-{% for link in data['links'] %}
-  {% if link.rel == 'collection' %} /
-    <a href="{{ data['dataset_path'] }}">{{ link['title'] | string | truncate( 25 ) }}</a>
-    {% set col_title = link['title'] %}
-  {% endif %}
-{% endfor %}
-/ <a href="{{ data['items_path']}}">{% trans %}Items{% endtrans %}</a>
-{% endblock %}
 {% block extrahead %}
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.3.1/dist/leaflet.css"/>
     <script src="https://unpkg.com/leaflet@1.3.1/dist/leaflet.js"></script>
@@ -18,63 +7,97 @@
     <script src="https://unpkg.com/leaflet.markercluster/dist/leaflet.markercluster-src.js"></script>
 {% endblock %}
 
+{% block body_map %}
+
+  <div class="row">
+    <div id="items-map" style="min-height: 600px;"></div>
+  </div>
+
+{% endblock %}
+
 {% block body %}
-  <section id="items"></section>
+
   <section id="collection">
-    <h1>{% for l in data['links'] if l.rel == 'collection' %} {{ l['title'] }} {% endfor %}</h1>
-    <p>{% trans %}Items in this collection{% endtrans %}.</p>
+    <div class="row">
+      <p>{{ data['missing_url'] }} <a href = "{{ data['missing_url_href'] }}/">{{ data['missing_url_href'] }}</a></p>
+    </div>
+
+
+    <div class="row">
+      <p> </p>
+    </div>
+    <div class="row">
+      <p>{% trans %}If Speckle model location data is available, the relevant URL parameters will be ignored. If neither model nor URL parameters specify the location, model will be placed randomly. {% endtrans %}</p>
+    
+      <p>{% trans %}Available Model Coordinate Reference System:  {% endtrans %} {{ data['model_crs'] }}</p>
+    </div>
+
+    
   </section>
   <section id="items">
     {% if data['features'] %}
+    
     <div class="row">
-      <div class="col-sm-12 col-md-6">
-        <div class="row">
-          <div class="col-sm-12">
-            <div id="items-map"></div>
-          </div>
-          <div class="col-sm-12">
-            <div class="row">
-                <div class="col-sm-12">
-                  {% trans %}Warning: Higher limits not recommended!{% endtrans %}
-                </div>
-            </div>
-            <div class="row">
-                <div class="col-sm-12">
-                  {% trans %}Limit{% endtrans %}:
-                  <select id="limits">
-                    <option value="{{ config['server']['limit'] }}">{{ config['server']['limit'] }} ({% trans %}default{% endtrans %})</option>
-                    <option value="100">100</option>
-                    <option value="1000">1,000</option>
-                    <option value="2000">2,000</option>
-                  </select>
-                  <script>
-                    var select = document.getElementById('limits');
-                    var defaultValue = select.getElementsByTagName('option')[0].value;
-                    let params = (new URL(document.location)).searchParams;
-                    select.value = params.get('limit') || defaultValue;
-                    select.addEventListener('change', ev => {
-                      var limit = ev.target.value;
-                      document.location.search = `limit=${limit}`;
-                    });
-                  </script>
-                </div>
-            </div>
-            <div class="row">
-              <div class="col-sm-12">
-                {% for link in data['links'] %}
-                {% if link['rel'] == 'prev' and data['offset'] > 0 %}
-                <a role="button" href="{{ link['href'] }}">{% trans %}Prev{% endtrans %}</a>
-                {% elif link['rel'] == 'next' and data['features'] %}
-                <a role="button" href="{{ link['href'] }}">{% trans %}Next{% endtrans %}</a>
-                {% endif %}
-                {% endfor %}
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
+      <p> </p>
+    </div>
 
-      <div class="col-sm-12 col-md-6" style="overflow-x: scroll;">
+    <div class="row"></div>
+    
+    <div class="row">
+      <div style="overflow-x: scroll;">
+        <table class="table table-bordered">
+
+          <thead>
+
+            <tr>
+              <th scope="column">URL parameters</th>
+              <th></th>
+            </tr>
+
+          </thead>
+          <tbody>
+
+              <tr>
+                <td >Speckle URL ('speckleurl')</td>
+                  <td>
+                    <a href="{{ data['speckle_url'] }}">
+                      {{ data['speckle_url'] }}
+                    </a>
+                </td>
+              </tr>
+              <tr>
+                <td >Coordinate Reference System ID ('crsauthid')</td>
+                <td>{{ data['crs_authid'] }}</td>
+              </tr>
+              <tr>
+                <td>Latitide ('lat')</td>
+                <td>{{ data['lat'] }}</td>
+              </tr>
+              <tr>
+                <td>Longitude ('lon')</td>
+                <td>{{ data['lon'] }}</td>
+              </tr>
+              <tr>
+                <td >Angle to True North, in degrees ('northdegrees')</td>
+                <td>{{ data['north_degrees'] }}</td>
+              </tr>
+              <tr>
+                <td >Feature limit ('limit')</td>
+                <td>{{ data['limit'] }}</td>
+              </tr>
+
+          </tbody>
+          </table>
+      </div>
+    </div>
+    
+    <div class="row">
+      <p> </p>
+    </div>
+    
+
+    <div class="row">
+      <div style="overflow-x: scroll;">
         {% set props = [] %}
         <table class="table table-striped table-bordered">
           <thead>
@@ -103,20 +126,20 @@
                 {% if data.get('uri_field') %}
                   {% set uri_field = data.uri_field %}
                   <td data-label="{{ uri_field }}">
-                    <a href="{{ ft.properties.get(uri_field) }}" title="{{ ft.properties.get(uri_field) }}">
+                    <a title="{{ ft.properties.get(uri_field) }}">
                       {{ ft.properties.get(uri_field) }}
                     </a>
                   </td>
                 {% elif data.get('title_field') %}
                   {% set title_field = data.title_field %}
                   <td data-label="{{ title_field }}">
-                    <a href="{{ data.items_path }}/{{ ft['id'] }}" title="{{ ft.properties.get(title_field) }}">
+                    <a title="{{ ft.properties.get(title_field) }}" href="{{ data['speckle_project_url'] }}/models/{{ft.id}}">
                       {{ ft.properties.get(title_field) | string | truncate( 35 ) }}
                     </a>
                   </td>
                 {% else %}
                   <td data-label="id">
-                    <a href="{{ data.items_path }}/{{ ft.id }}" title="{{ ft.id }}">
+                    <a title="{{ ft.id }}">
                       {{ ft.id | string | truncate( 12 )  }}
                     </a>
                   </td>
@@ -135,7 +158,7 @@
       </div>
     </div>
     {% else %}
-    <div class="row col-sm-12">
+    <div class="row">
         <p>{% trans %}No items{% endtrans %}</p>
     </div>
     {% endif %}
@@ -148,32 +171,45 @@
     var map = L.map('items-map').setView([{{ 45 }}, {{ -75 }}], 5);
     map.addLayer(new L.TileLayer(
         '{{ config['server']['map']['url'] }}', {
-            maxZoom: 18,
+            maxZoom: 24,
             attribution: '{{ config['server']['map']['attribution'] | safe }}'
         }
     ));
+
     var geojson_data = {{ data['features'] | to_json | safe }};
 
     var items = new L.GeoJSON(geojson_data, {
+        // filter: (feature) => {
+        //   return feature['geometry']['type'] != 'Point' && feature['geometry']['type'] != 'MultiPoint'
+        // },
+        pointToLayer: (feature, latlng) => {
+            return new L.circleMarker(latlng)            
+        },
         onEachFeature: function (feature, layer) {
-            var url = '{{ data['items_path'] }}/' + feature.id + '?f=html';
+            var url = '{{ data['speckle_project_url'] }}/models/' + feature.id
             var html = '<span><a href="' + url + '">' + {% if data['title_field'] %} feature['properties']['{{ data['title_field'] }}'] {% else %} feature.id {% endif %} + '</a></span>';
             layer.bindPopup(html);
-        }
-    });
-    {% if data['features'][0]['geometry']['type'] == 'Point' %}
-    var markers = L.markerClusterGroup({
-        disableClusteringAtZoom: 9,
-        chunkedLoading: true,
-        chunkInterval: 500,
-    });
-    markers.clearLayers().addLayer(items);
-    map.addLayer(markers);
-    {% else %}
-    map.addLayer(items);
-    {% endif %}
 
-    map.fitBounds(items.getBounds());
+            var myFillColor = feature.displayProperties['color'];
+            var mylineWeight = feature.displayProperties['lineWidth'];
+            var myRadius = feature.displayProperties['radius'];
+
+            layer.setStyle({
+                fillColor: myFillColor,
+                color: myFillColor,
+                fillOpacity: 0.8,
+                weight: mylineWeight,
+                radius: myRadius
+            });
+        }
+    }); //.addTo(map);
+
+    var group = L.featureGroup([items])
+    .addTo(map);
+
+    //map.addLayer(lines);
+
+    map.fitBounds(group.getBounds());
     </script>
 {% endif %}
 {% endblock %}

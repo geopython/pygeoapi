@@ -104,7 +104,6 @@ ENV/
 *.openapi.yml
 
 # development setup examples
-example-config.yml
 example-openapi.yml 
 
 # misc
