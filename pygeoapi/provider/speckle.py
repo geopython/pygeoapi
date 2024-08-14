@@ -79,6 +79,7 @@ class SpeckleProvider(BaseProvider):
             # )
 
         from subprocess import run
+        from pygeoapi.provider.speckle_utils.patch_specklepy import patch_specklepy
 
         # path = str(self.connector_installation_path(_host_application))
 
@@ -86,8 +87,7 @@ class SpeckleProvider(BaseProvider):
             import specklepy
 
         except ModuleNotFoundError:
-            from pygeoapi.provider.speckle_utils.patch_specklepy import patch_credentials, copy_gis_feature, patch_transport
-
+            
             completed_process = run(
                 [
                     self.get_python_path(),
@@ -109,9 +109,6 @@ class SpeckleProvider(BaseProvider):
                 ],
                 capture_output=True,
             )
-            patch_credentials()
-            copy_gis_feature()
-            patch_transport()
 
             if completed_process.returncode != 0:
                 m = f"Failed to install dependenices through pip, got {completed_process.returncode} as return code. Full log: {completed_process}"
@@ -120,7 +117,7 @@ class SpeckleProvider(BaseProvider):
                 print(completed_process.stderr)
                 raise Exception(m)
 
-        # TODO: replace 1 line in specklepy
+        patch_specklepy()
         
         # assign global values
         self.url: str = self.data # to store the value and check if self.data has changed
@@ -390,7 +387,6 @@ class SpeckleProvider(BaseProvider):
 
         # set the Model name
         self.model_name = branch['name']
-        print(self.model_name)
 
         commit = branch["commits"]["items"][0]
         objId = commit["referencedObject"]
