@@ -1,12 +1,18 @@
 import sys 
 from pathlib import Path
 import shutil
+import specklepy
+import pygeoapi
+
 
 def get_specklepy_path():
-    root_path = Path(sys.executable).parent.parent
-    credentials_path = Path(root_path, "Lib", "site-packages", "specklepy")
 
-    return credentials_path
+    return Path(specklepy.__file__).parent
+
+def get_pygeoapi_path():
+
+    return Path(pygeoapi.__file__).parent
+
 
 def get_credentials_path():
     specklepy_path = get_specklepy_path()
@@ -21,14 +27,12 @@ def get_transport_path():
     return str(credentials_path)
 
 def get_transport_path_src():
-    specklepy_path = Path(sys.executable).parent.parent
-    credentials_path = Path(specklepy_path, "pygeoapi", "pygeoapi", "provider", "speckle_utils", "server.py")
+    credentials_path = Path(get_pygeoapi_path(), "provider", "speckle_utils", "server.py")
 
     return str(credentials_path)
 
 def get_gis_feature_path_src():
-    specklepy_path = Path(sys.executable).parent.parent
-    credentials_path = Path(specklepy_path, "pygeoapi", "pygeoapi", "provider", "speckle_utils", "GisFeature.py")
+    credentials_path = Path(get_pygeoapi_path(), "provider", "speckle_utils", "GisFeature.py")
 
     return str(credentials_path)
 
@@ -95,4 +99,3 @@ def patch_specklepy():
     patch_credentials()
     copy_gis_feature()
     patch_transport()
-    
