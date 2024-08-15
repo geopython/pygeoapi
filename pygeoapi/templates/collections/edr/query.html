@@ -30,7 +30,7 @@
 
 {% block body %}
   <section id="coverage">
-    {% if data.features or data.coverages %}
+    {% if data.features or data.coverages or data.ranges %}
     <div id="coverages-map"></div>
     {% else %}
     <div class="row col-sm-12">
