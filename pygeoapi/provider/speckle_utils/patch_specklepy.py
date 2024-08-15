@@ -1,11 +1,11 @@
 import sys 
 from pathlib import Path
 import shutil
-import specklepy
 import pygeoapi
 
 
 def get_specklepy_path():
+    import specklepy
 
     return Path(specklepy.__file__).parent
 
