@@ -165,7 +165,7 @@
         });
     }
 
-      function createLayer(cov, opts) {
+    function createLayer(cov, opts) {
       let layer = C.dataLayer(cov, opts).on('afterAdd', e => {
         let covLayer = e.target
                 
@@ -205,19 +205,6 @@
       }
         
       return layer
-    }
-    function removeLayers () {
-      for (let layer of layersInControl) {
-        layerControl.removeLayer(layer)
-        if (map.hasLayer(layer)) {
-          // FIXME leaflet's internal state breaks if layers or controls throw exceptions in onAdd()
-          // -> could be prevented by linting CovJSON before-hand
-          try {
-            map.removeLayer(layer)
-          } catch (e) {}
-        }
-      }
-      layersInControl = new Set()
     }
 
     function zoomToLayers (layers) {
