@@ -389,9 +389,9 @@ def get_collection_items(
     for k, v in request.params.items():
         if k not in reserved_fieldnames:
             if k in list(p.fields.keys()):
-                LOGGER.debug(f'Adding custom property filter {k}={v}')
+                LOGGER.debug(f'Adding property filter {k}={v}')
             else:
-                LOGGER.debug('Adding property filter {k}={v}')
+                LOGGER.debug(f'Adding additional property filter {k}={v}')
 
             properties.append((k, v))
 
