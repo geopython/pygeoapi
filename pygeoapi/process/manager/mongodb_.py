@@ -81,8 +81,8 @@ class MongoDBManager(BaseManager):
                 jobs = list(collection.find({}))
             LOGGER.info("JOBMANAGER - MongoDB jobs queried")
             return {
-                "jobs": jobs,
-                "numberMatched": len(jobs),
+                'jobs': jobs,
+                'numberMatched': len(jobs)
             }
         except Exception:
             LOGGER.error("JOBMANAGER - get_jobs error",

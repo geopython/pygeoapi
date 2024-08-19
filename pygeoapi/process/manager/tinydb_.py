@@ -108,8 +108,8 @@ class TinyDBManager(BaseManager):
             jobs_list = jobs_list[:limit]
 
         return {
-            "jobs": jobs_list,
-            "numberMatched": number_matched,
+            'jobs': jobs_list,
+            'numberMatched': number_matched
         }
 
     def add_job(self, job_metadata: dict) -> str:

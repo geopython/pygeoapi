@@ -360,7 +360,7 @@ def get_jobs(api: API, request: APIRequest,
             serialized_query_params += '='
             serialized_query_params += urllib.parse.quote(str(v), safe=',')
 
-    uri = f"{api.base_url}/jobs"
+    uri = f'{api.base_url}/jobs'
 
     if offset > 0:
         prev = max(0, offset - limit)

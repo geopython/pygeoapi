@@ -70,7 +70,7 @@ class DummyManager(BaseManager):
                   and numberMatched
         """
 
-        return {"jobs": [], "numberMatched": 0}
+        return {'jobs': [], 'numberMatched': 0}
 
     def execute_process(
             self,

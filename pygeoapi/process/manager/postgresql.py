@@ -139,8 +139,8 @@ class PostgreSQLManager(BaseManager):
 
             jobs = [r.__dict__ for r in results.all()]
             return {
-                "jobs": jobs,
-                "numberMatched": len(jobs),
+                'jobs': jobs,
+                'numberMatched': len(jobs)
             }
 
     def add_job(self, job_metadata: dict) -> str:
