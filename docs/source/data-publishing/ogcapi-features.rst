@@ -419,7 +419,7 @@ Parquet
 .. note::
    Requires Python package pyarrow
 
-To publish a GeoParquet file (with a geometry column) the `geopandas` package is also required.
+To publish a GeoParquet file (with a geometry column) the geopandas package is also required.
 
 .. note::
    Reading data directly from a public s3 bucket is also supported.

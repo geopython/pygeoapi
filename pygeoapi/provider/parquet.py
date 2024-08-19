@@ -27,9 +27,11 @@
 #
 # =================================================================
 
+from itertools import chain
 import json
 import logging
 
+from dateutil.parser import isoparse
 import geopandas as gpd
 import pyarrow
 import pyarrow.compute as pc
@@ -43,9 +45,6 @@ from pygeoapi.provider.base import (
     ProviderItemNotFoundError,
     ProviderQueryError,
 )
-from itertools import chain
-from dateutil.parser import isoparse
-
 from pygeoapi.util import crs_transform
 
 LOGGER = logging.getLogger(__name__)
@@ -105,7 +104,7 @@ class ParquetProvider(BaseProvider):
         self.fields = self.get_fields()  # Must be set to visualise queryables
 
         # Column names for bounding box data.
-        if self.x_field is None or self.y_field is None:
+        if None in [self.x_field, self.y_field]:
             self.has_geometry = False
         else:
             self.has_geometry = True
@@ -126,8 +125,8 @@ class ParquetProvider(BaseProvider):
             geo_metadata = json.loads(self.ds.schema.metadata[b'geo'])
             geom_column = geo_metadata['primary_column']
             # if the CRS is not set default to EPSG:4326, per geoparquet spec
-            self.crs = geo_metadata['columns'][geom_column]['crs'] \
-                        or 'EPSG:4326'
+            self.crs = (geo_metadata['columns'][geom_column]['crs']
+                        or 'EPSG:4326')
 
     def _read_parquet(self, return_scanner=False, **kwargs):
         """
@@ -152,7 +151,7 @@ class ParquetProvider(BaseProvider):
         fields = dict()
 
         for field_name, field_type in zip(self.ds.schema.names,
-                                           self.ds.schema.types):
+                                          self.ds.schema.types):
             # Geometry is managed as a special case by pygeoapi
             if field_name == 'geometry':
                 continue
@@ -160,7 +159,7 @@ class ParquetProvider(BaseProvider):
             field_type = str(field_type)
             converted_type = None
             converted_format = None
-            if field_type.startswith('int') or field_type.startswith('uint'):
+            if field_type.startswith(('int', 'uint')):
                 converted_type = 'integer'
                 converted_format = field_type
             elif field_type == 'double' or field_type.startswith('float'):
@@ -287,7 +286,7 @@ class ParquetProvider(BaseProvider):
                     filter, offset, limit, columns=select_properties
                 )
             else:
-                LOGGER.error('Invalid resulttype: %s' % resulttype)
+                LOGGER.error(f'Invalid resulttype: {resulttype}')
 
         except RuntimeError as err:
             LOGGER.error(err)
@@ -308,7 +307,7 @@ class ParquetProvider(BaseProvider):
 
         :param identifier: feature id
 
-        :returns: feature collection
+        :returns: a single feature
         """
         result = None
         try:
@@ -360,7 +359,7 @@ class ParquetProvider(BaseProvider):
         return f'<ParquetProvider> {self.data}'
 
     def _response_feature_collection(self, filter, offset, limit,
-                                      columns=None):
+                                     columns=None):
         """
         Assembles output from query as
         GeoJSON FeatureCollection structure.
@@ -447,7 +446,7 @@ class ParquetProvider(BaseProvider):
         """
 
         try:
-            scanner = pyarrow.dataset.Scanner.from_dataset(self.ds, 
+            scanner = pyarrow.dataset.Scanner.from_dataset(self.ds,
                                                            filter=filter)
             return {
                 'type': 'FeatureCollection',
