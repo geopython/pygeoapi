@@ -8,7 +8,7 @@ GDAL<=3.8.4
 geoalchemy2
 geopandas
 netCDF4
-numpy
+numpy==2.0.1
 oracledb
 pandas
 psycopg2
