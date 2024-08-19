@@ -636,10 +636,10 @@ def test_query_mandatory_properties_must_be_specified(config):
 
 
 def test_extra_params_are_passed_to_sql_manipulator(config_manipulator):
-    extra_params = {"custom-auth": "forbidden"}
+    extra_params = [("custom-auth", "forbidden")]
 
     p = OracleProvider(config_manipulator)
-    response = p.query(extra_params=extra_params)
+    response = p.query(properties=extra_params)
 
     assert not response['features']
 
