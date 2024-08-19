@@ -387,8 +387,12 @@ def get_collection_items(
 
     LOGGER.debug('processing property parameters')
     for k, v in request.params.items():
-        if k not in reserved_fieldnames and k in list(p.fields.keys()):
-            LOGGER.debug(f'Adding property filter {k}={v}')
+        if k not in reserved_fieldnames:
+            if k in list(p.fields.keys()):
+                LOGGER.debug(f'Adding property filter {k}={v}')
+            else:
+                LOGGER.debug(f'Adding additional property filter {k}={v}')
+
             properties.append((k, v))
 
     LOGGER.debug('processing sort parameter')
