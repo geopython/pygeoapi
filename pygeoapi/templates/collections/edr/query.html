@@ -8,13 +8,16 @@
     {% set col_title = link['title'] %}
   {% endif %}
 {% endfor %}
-/ <a href="{{ data['items_path']}}">{% trans %}Items{% endtrans %}</a>
+/ <a href="{{ data['query_path']}}">{% trans query_type=data.query_type %}{{ query_type }}{% endtrans %}</a>
 {% endblock %}
 {% block extrahead %}
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.3.1/dist/leaflet.css"/>
     <link rel="stylesheet" type="text/css" href="https://unpkg.com/leaflet-coverage@0.7/leaflet-coverage.css">
     <script src="https://unpkg.com/leaflet@1.3.1/dist/leaflet.js"></script>
     {% if data.type == "Coverage" or data.type == "CoverageCollection" %}
+    <link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/npm/c3@0.7.20/c3.css">
+    <script src="https://cdn.jsdelivr.net/npm/d3@5.16.0/dist/d3.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/c3@0.7.20/c3.js"></script>
     <script src="https://unpkg.com/covutils@0.6/covutils.min.js"></script>
     <script src="https://unpkg.com/covjson-reader@0.16/covjson-reader.src.js"></script>
     <script src="https://unpkg.com/leaflet-coverage@0.7/leaflet-coverage.min.js"></script>
@@ -27,42 +30,240 @@
 
 {% block body %}
   <section id="coverage">
-    <div id="items-map"></div>
+    {% if data.features or data.coverages or data.ranges or data.references %}
+    <div id="coverages-map"></div>
+    {% else %}
+    <div class="row col-sm-12">
+        <p>{% trans %}No items{% endtrans %}</p>
+    </div>
+    {% endif %}
   </section>
 {% endblock %}
 
 {% block extrafoot %}
 {% if data %}
     <script>
-    var map = L.map('items-map').setView([{{ 45 }}, {{ -75 }}], 5);
-    map.addLayer(new L.TileLayer(
+    var map = L.map('coverages-map').setView([40, -85], 3);
+    var baseLayers = {
+      'Map': new L.TileLayer(
         '{{ config['server']['map']['url'] }}', {
             maxZoom: 18,
             attribution: '{{ config['server']['map']['attribution'] | safe }}'
-        }
-    ));
+          }).addTo(map)
+    }
 
     {% if data.type == "Coverage" or data.type == "CoverageCollection" %}
-    var layers = L.control.layers(null, null, {collapsed: false}).addTo(map)
-
-    CovJSON.read(JSON.parse('{{ data | to_json | safe }}')).then(function (cov) {
-      cov.parameters.forEach((p) => {
-          var layer = C.dataLayer(cov, {parameter: p.key})
-            .on('afterAdd', function () {
-              C.legend(layer).addTo(map)
-              map.fitBounds(layer.getBounds())
-            })
-            .addTo(map)
-          layers.addOverlay(layer, p.observedProperty.label?.en)
-          map.setZoom(5)
+    let layerControl = L.control.layers(baseLayers, {}, {collapsed: false}).addTo(map)
+    let layersInControl = new Set()
+    let coverageLayersOnMap = new Set()
+    let paramSync = new C.ParameterSync({
+      syncProperties: {
+        palette: (p1, p2) => p1,
+        paletteExtent: (e1, e2) => e1 && e2 ? [Math.min(e1[0], e2[0]), Math.max(e1[1], e2[1])] : null
+      }
+    }).on('parameterAdd', e => {
+        // The virtual sync layer proxies the synced palette, paletteExtent, and parameter.
+        // The sync layer will fire a 'remove' event if all real layers for that parameter were removed.
+        let layer = e.syncLayer
+        if (layer.palette) {
+          C.legend(layer, {
+            position: 'bottomright'
+          }).addTo(map)
+        }
       })
 
+
+    displayCovJSON(JSON.parse('{{ data | to_json | safe }}'), {display: true})
+
+    const truncateString = (str, maxLength) => {
+      str = str.replace(/\+/g, ' ');
+      return str.length > maxLength ? `${str.slice(0, maxLength - 3)}...` : str;
+    };
+
+    function displayCovJSON(obj, options = {}) {
+      map.fire('dataloading');
+      var layer = CovJSON.read(obj)
+        .then(cov => {
+          if (CovUtils.isDomain(cov)) {
+            cov = CovUtils.fromDomain(cov);
+          }
+
+          map.fire('dataload');
+
+          // add each parameter as a layer
+          let firstLayer;
+
+          let layerClazz = C.dataLayerClass(cov);
+
+          if (cov.coverages && !layerClazz) {
+            // generic collection
+            if (!cov.parameters) {
+              throw new Error('only coverage collections with a "parameters" property are supported');
+            }
+
+            for (let key of cov.parameters.keys()) {
+              let layers = cov.coverages
+                .filter(coverage => coverage.parameters.has(key))
+                .map(coverage => createLayer(coverage, { keys: [key] }));
+              layers.forEach(layer => map.fire('covlayercreate', { layer }));
+              let layerGroup = L.layerGroup(layers);
+              layersInControl.add(layerGroup);
+              layerControl.addOverlay(layerGroup, truncateString(key, 50));
+              if (!firstLayer) {
+                firstLayer = layerGroup;
+                // the following piece of code should be easier
+                // TODO extend layer group class in leaflet-coverage (like PointCollection) to provide single 'add' event
+                let addCount = 0;
+                for (let l of layers) {
+                  l.on('afterAdd', () => {
+                    coverageLayersOnMap.add(l);
+                    ++addCount;
+                    if (addCount === layers.length) {
+                      zoomToLayers(layers);
+                      // FIXME is this the right place?? define event semantics!
+                      map.fire('covlayeradd', { layer: l });
+                    }
+                  });
+                }
+              }
+            }
+          } else if (layerClazz) {
+            // single coverage or a coverage collection of a specific domain type
+            for (let key of cov.parameters.keys()) {
+              let opts = { keys: [key] };
+              let layer = createLayer(cov, opts);
+              map.fire('covlayercreate', { layer });
+              layersInControl.add(layer);
+
+              layerControl.addOverlay(layer, truncateString(key, 50));
+              if (!firstLayer) {
+                firstLayer = layer;
+                layer.on('afterAdd', () => {
+                  zoomToLayers([layers])
+                  if (!cov.coverages) {
+                    if (isVerticalProfile(cov) || isTimeSeries(cov)) {
+                      layer.openPopup();
+                    }
+                  }
+                });
+              }
+              layer.on('afterAdd', () => {
+                coverageLayersOnMap.add(layer);
+                map.fire('covlayeradd', { layer });
+              });
+            }
+          } else {
+            throw new Error('unsupported or missing domain type');
+          }
+          if (options.display && firstLayer) {
+            map.addLayer(firstLayer);
+          }
+        })
+        .catch(e => {
+          map.fire('dataload');
+          console.log(e);
+        });
+    }
+
+    function createLayer(cov, opts) {
+      let layer = C.dataLayer(cov, opts).on('afterAdd', e => {
+        let covLayer = e.target
+                
+        // This registers the layer with the sync manager.
+        // By doing that, the palette and extent get unified (if existing)
+        // and an event gets fired if a new parameter was added.
+        // See the code above where ParameterSync gets instantiated.
+        paramSync.addLayer(covLayer)
+        
+        if (!cov.coverages) {
+          if (covLayer.time) {
+            new C.TimeAxis(covLayer).addTo(map)
+          }
+          if (covLayer.vertical) {
+            new C.VerticalAxis(covLayer).addTo(map)
+          }
+        }
+      }).on('dataLoad', () => map.fire('dataload'))
+        .on('dataLoading', () => map.fire('dataloading'))
+        .on('error', e => map.fire('error', { error: e.error }))
+      layer.on('axisChange', () => {
+        layer.paletteExtent = 'subset'
+      })
+      
+      if (cov.coverages) {
+        if (isVerticalProfile(cov)) {
+          layer.bindPopupEach(coverage => new C.VerticalProfilePlot(coverage))
+        } else if (isTimeSeries(cov)) {
+          layer.bindPopupEach(coverage => new C.TimeSeriesPlot(coverage))
+        }
+      } else {
+        if (isVerticalProfile(cov)) {
+          layer.bindPopup(new C.VerticalProfilePlot(cov))
+        } else if (isTimeSeries(cov)) {
+          layer.bindPopup(new C.TimeSeriesPlot(cov))
+        }
+      }
+        
+      return layer
+    }
+
+    function zoomToLayers (layers) {
+      let bnds = layers.map(l => l.getBounds())
+      let bounds = L.latLngBounds(bnds)
+      let opts = {
+        padding: L.point(10, 10)
+      }
+      if (bounds.getWest() === bounds.getEast() && bounds.getSouth() === bounds.getNorth()) {
+        opts.maxZoom = 5
+      } 
+      map.fitBounds(bounds, opts)
+    }
+
+    function isVerticalProfile (cov) {
+      return cov.domainType === C.COVJSON_VERTICALPROFILE
+    }
+
+    function isTimeSeries (cov) {
+      return cov.domainType === C.COVJSON_POINTSERIES || cov.domainType === C.COVJSON_POLYGONSERIES
+    }
+    window.api = {
+      map,
+      layers: coverageLayersOnMap
+    }
+
+    // Wire up coverage value popup
+    let valuePopup = new C.DraggableValuePopup({
+      className: 'leaflet-popup-draggable',
+      layers: [...coverageLayersOnMap]
     })
 
-    map.on('click', function (e) {
-      new C.DraggableValuePopup({
-        layers: [layer]
-      }).setLatLng(e.latlng).openOn(map)
+    function closeValuePopup () {
+      if (map.hasLayer(valuePopup)) {
+        map.closePopup(valuePopup)
+      }
+    }
+
+    // click event needed for Grid layer (can't use bindPopup there)
+    map.on('singleclick', e => {
+      valuePopup.setLatLng(e.latlng).openOn(map)
+    })
+    map.on('covlayercreate', e => {
+      // some layers already have a plot popup bound to it, ignore those
+      if (!e.layer.getPopup()) {
+        e.layer.bindPopup(valuePopup)
+      }
+    })
+    map.on('covlayeradd', e => {
+      valuePopup.addCoverageLayer(e.layer)
+    })
+    map.on('covlayerremove', e => {
+      valuePopup.removeCoverageLayer(e.layer)
+    })
+
+    map.on('error', e => {
+      if (e.error?.message) {
+        editor.setError(e.error.message)
+      }
     })
     {% elif data.type == "Feature" or data.type == "FeatureCollection" %}
     var geojson_data = {{ data | to_json | safe }};
@@ -73,7 +274,7 @@
             layer.bindPopup(html);
         }
     });
-    {% if data.type == "FeatureCollection" and data['features'][0]['geometry']['type'] == 'Point' %}
+    {% if data.type == "FeatureCollection" and data.features and data.features[0]['geometry']['type'] == 'Point' %}
     var markers = L.markerClusterGroup({
         disableClusteringAtZoom: 9,
         chunkedLoading: true,
@@ -81,8 +282,6 @@
     });
     markers.clearLayers().addLayer(items);
     map.addLayer(markers);
-    {% else %}
-    map.addLayer(items);
     {% endif %}
     map.fitBounds(items.getBounds(), {maxZoom: 15});
     {% endif %}

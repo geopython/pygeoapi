@@ -70,7 +70,7 @@
           {% set links_found = namespace(json=0, jsonld=0) %}
 
           {% for link in data['links'] %}
-          {% if link['rel'] == 'alternate' and link['type'] and link['type'] in ['application/json', 'application/geo+json'] %}
+          {% if link['rel'] == 'alternate' and link['type'] and link['type'] in ['application/json', 'application/geo+json', 'application/prs.coverage+json'] %}
           {% set links_found.json = 1 %}
           <a href="{{ link['href'] }}">{% trans %}json{% endtrans %}</a>
           {% elif link['rel'] == 'alternate' and link['type'] and link['type'] == 'application/ld+json' %}
@@ -102,9 +102,13 @@
       </div>
     </div>
     </main>
-    <footer class="sticky-bottom bg-light d-flex flex-wrap py-3 px-3 border-top">{% trans %}Powered by {% endtrans %} <a title="pygeoapi" href="https://pygeoapi.io"><img
-        src="{{ config['server']['url'] }}/static/img/pygeoapi.png" class="mx-1" title="pygeoapi logo"
-        style="height:24px;vertical-align: middle;" /></a> {{ version }}</footer>
+    <footer class="sticky-bottom bg-light d-flex justify-content-center align-items-center py-3 px-3 border-top">
+      <div class="text-center w-100">
+        {% trans %}Powered by {% endtrans %}
+        <a title="pygeoapi" href="https://pygeoapi.io"><img src="{{ config['server']['url'] }}/static/img/pygeoapi.png" class="mx-1" title="pygeoapi logo" style="height:24px;vertical-align: middle;" /></a>
+        {{ version }}
+      </div>
+    </footer> 
     {% block extrafoot %}
     {% endblock %}
     <script>

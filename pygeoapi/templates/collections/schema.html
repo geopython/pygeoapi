@@ -2,8 +2,8 @@
 {% block title %}{{ super() }} {{ data['title'] }} {% endblock %}
 {% block crumbs %}{{ super() }}
 / <a href="{{ data['collections_path'] }}">{% trans %}Collections{% endtrans %}</a>
-/ <a href="./{{ data['id'] }}">{{ data['title'] | truncate( 25 ) }}</a>
-/ <a href="./{{ data['id'] }}schema">{% trans %}Schema{% endtrans %}</a>
+/ <a href="{{ data['dataset_path'] }}">{{ data['title'] | truncate( 25 ) }}</a>
+/ <a href="{{ data['dataset_path'] }}/schema">{% trans %}Schema{% endtrans %}</a>
 {% endblock %}
 {% block body %}
     <section id="collection-schema">

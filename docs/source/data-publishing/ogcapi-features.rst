@@ -27,6 +27,7 @@ parameters.
    `MongoDB`_,✅/❌,results,✅,✅,✅,✅,❌,❌,✅
    `OGR`_,✅/❌,results/hits,✅,❌,❌,✅,❌,❌,✅
    `Oracle`_,✅/✅,results/hits,✅,❌,✅,✅,❌,❌,✅
+   `Parquet`_,✅/✅,results/hits,✅,✅,❌,✅,❌,❌,✅
    `PostgreSQL`_,✅/✅,results/hits,✅,✅,✅,✅,✅,❌,✅
    `SQLiteGPKG`_,✅/❌,results/hits,✅,❌,❌,✅,❌,❌,✅
    `SensorThings API`_,✅/✅,results/hits,✅,✅,✅,✅,❌,❌,✅
@@ -420,7 +421,7 @@ Configured using environment variables.
    export ORACLE_POOL_MAX=10
 
 
-The ``ORACLE_POOL_MIN`` and ``ORACLE_POOL_MAX`` environment variables are used to trigger session pool creation in the Oracle Provider and the ``DatabaseConnection`` class. See https://python-oracledb.readthedocs.io/en/latest/api_manual/module.html#oracledb.create_pool for documentation of the ``create_pool`` function.
+The ``ORACLE_POOL_MIN`` and ``ORACLE_POOL_MAX`` environment variables are used to trigger session pool creation in the Oracle Provider and the ``DatabaseConnection`` class. Supports auth via user + password or wallet. For an example of the configuration see above at Oracle - Connection. See https://python-oracledb.readthedocs.io/en/latest/api_manual/module.html#oracledb.create_pool for documentation of the ``create_pool`` function.
 
 If none or only one of the environment variables is set, session pooling will not be activated and standalone connections are established at every request.
 
@@ -431,6 +432,40 @@ The provider supports a SQL-Manipulator-Plugin class. With this, the SQL stateme
 useful e.g. for authorization at row level or manipulation of the explain plan with hints. 
 
 An example an more information about that feature you can find in the test class in tests/test_oracle_provider.py.
+
+.. _Parquet:
+
+Parquet
+^^^^^^^
+
+.. note::
+   Requires Python package pyarrow
+
+To publish a GeoParquet file (with a geometry column) the geopandas package is also required.
+
+.. note::
+   Reading data directly from a public s3 bucket is also supported.
+
+.. code-block:: yaml
+
+   providers:
+      - type: feature
+        name: Parquet
+        data: 
+          source: ./tests/data/parquet/random.parquet
+        id_field: id
+        time_field: time
+        x_field:
+          - minlon
+          - maxlon
+        y_field: 
+          - minlat
+          - maxlat
+
+For GeoParquet data, the `x_field` and `y_field` must be specified in the provider definition,
+and they must be arrays of two column names that contain the x and y coordinates of the
+bounding box of each geometry. If the geometries in the data are all points, the `x_field` and `y_field`
+can be strings instead of arrays and refer to a single column each.
 
 .. _PostgreSQL:
 

@@ -41,10 +41,12 @@
 from http import HTTPStatus
 import logging
 from typing import Tuple
+import urllib
 
 from shapely.errors import ShapelyError
 from shapely.wkt import loads as shapely_loads
 
+from pygeoapi import l10n
 from pygeoapi.plugin import load_plugin, PLUGINS
 from pygeoapi.provider.base import ProviderGenericError
 from pygeoapi.util import (
@@ -52,7 +54,8 @@ from pygeoapi.util import (
     to_json, filter_dict_by_key_value
 )
 
-from . import APIRequest, API, F_HTML, validate_datetime, validate_bbox
+from . import (APIRequest, API, F_COVERAGEJSON, F_HTML, F_JSONLD,
+               validate_datetime, validate_bbox)
 
 LOGGER = logging.getLogger(__name__)
 
@@ -195,6 +198,36 @@ def get_collection_edr_query(api: API, request: APIRequest,
             err.ogc_exception_code, err.message)
 
     if request.format == F_HTML:  # render
+        uri = f'{api.get_collections_url()}/{dataset}/{query_type}'
+        serialized_query_params = ''
+        for k, v in request.params.items():
+            if k != 'f':
+                serialized_query_params += '&'
+                serialized_query_params += urllib.parse.quote(k, safe='')
+                serialized_query_params += '='
+                serialized_query_params += urllib.parse.quote(str(v), safe=',')
+
+        data['query_type'] = query_type.capitalize()
+        data['query_path'] = uri
+        data['dataset_path'] = '/'.join(uri.split('/')[:-1])
+        data['collections_path'] = api.get_collections_url()
+
+        data['links'] = [{
+            'rel': 'collection',
+            'title': collections[dataset]['title'],
+            'href': data['dataset_path']
+        }, {
+            'type': 'application/prs.coverage+json',
+            'rel': request.get_linkrel(F_COVERAGEJSON),
+            'title': l10n.translate('This document as CoverageJSON', request.locale),  # noqa
+            'href': f'{uri}?f={F_COVERAGEJSON}{serialized_query_params}'
+        }, {
+            'type': 'application/ld+json',
+            'rel': 'alternate',
+            'title': l10n.translate('This document as JSON-LD', request.locale),  # noqa
+            'href': f'{uri}?f={F_JSONLD}{serialized_query_params}'
+        }]
+
         content = render_j2_template(api.tpl_config,
                                      'collections/edr/query.html', data,
                                      api.default_locale)
@@ -308,7 +341,6 @@ def get_oas_30(cfg: dict, locale: str) -> tuple[list[dict[str, str]], dict[str, 
                             {'$ref': f"{OPENAPI_YAML['oaedr']}/parameters/locationId.yaml"},  # noqa
                             {'$ref': f"{OPENAPI_YAML['oapif-1']}#/components/parameters/datetime"},  # noqa
                             {'$ref': f"{OPENAPI_YAML['oaedr']}/parameters/parameter-name.yaml"},  # noqa
-                            {'$ref': f"{OPENAPI_YAML['oaedr']}/parameters/z.yaml"},  # noqa
                             {'$ref': '#/components/parameters/f'}
                         ],
                         'responses': {

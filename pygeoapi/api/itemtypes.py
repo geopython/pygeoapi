@@ -188,6 +188,7 @@ def get_collection_queryables(api: API, request: Union[APIRequest, Any],
             api.config['resources'][dataset]['title'], request.locale)
 
         queryables['collections_path'] = api.get_collections_url()
+        queryables['dataset_path'] = f'{api.get_collections_url()}/{dataset}'
 
         content = render_j2_template(api.tpl_config,
                                      'collections/queryables.html',
@@ -454,7 +455,8 @@ def get_collection_items(
                 geometry_column_name=provider_def.get('geom_field'),
             )
         except Exception:
-            msg = f'Bad CQL string : {cql_text}'
+            msg = 'Bad CQL text'
+            LOGGER.error(f'{msg}: {cql_text}')
             return api.get_exception(
                 HTTPStatus.BAD_REQUEST, headers, request.format,
                 'InvalidParameterValue', msg)
@@ -852,7 +854,7 @@ def post_collection_items(
     if (request_headers.get(
         'Content-Type') or request_headers.get(
             'content-type')) != 'application/query-cql-json':
-        msg = ('Invalid body content-type')
+        msg = 'Invalid body content-type'
         return api.get_exception(
             HTTPStatus.BAD_REQUEST, headers, request.format,
             'InvalidHeaderValue', msg)
@@ -888,7 +890,8 @@ def post_collection_items(
                 geometry_column_name=provider_def.get('geom_field')
             )
         except Exception:
-            msg = f'Bad CQL string : {data}'
+            msg = 'Bad CQL text'
+            LOGGER.error(f'{msg}: {data}')
             return api.get_exception(
                 HTTPStatus.BAD_REQUEST, headers, request.format,
                 'InvalidParameterValue', msg)
@@ -897,7 +900,8 @@ def post_collection_items(
         try:
             filter_ = CQLModel.parse_raw(data)
         except Exception:
-            msg = f'Bad CQL string : {data}'
+            msg = 'Bad CQL text'
+            LOGGER.error(f'{msg}: {data}')
             return api.get_exception(
                 HTTPStatus.BAD_REQUEST, headers, request.format,
                 'InvalidParameterValue', msg)

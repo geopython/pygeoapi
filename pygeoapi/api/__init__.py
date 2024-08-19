@@ -80,6 +80,7 @@ HEADERS = {
 
 CHARSET = ['utf-8']
 F_JSON = 'json'
+F_COVERAGEJSON = 'json'
 F_HTML = 'html'
 F_JSONLD = 'jsonld'
 F_GZIP = 'gzip'
@@ -1382,6 +1383,7 @@ class API:
                 self.config['resources'][dataset]['title'], request.locale)
 
             schema['collections_path'] = self.get_collections_url()
+            schema['dataset_path'] = f'{self.get_collections_url()}/{dataset}'
 
             content = render_j2_template(self.tpl_config,
                                          'collections/schema.html',
@@ -1439,7 +1441,8 @@ class API:
         # Content-Language is in the system locale (ignore language settings)
         headers = request.get_response_headers(SYSTEM_LOCALE,
                                                **self.api_headers)
-        msg = f'Invalid format: {request.format}'
+        msg = 'Invalid format requested'
+        LOGGER.error(f'{msg}: {request.format}')
         return self.get_exception(
             HTTPStatus.BAD_REQUEST, headers,
             request.format, 'InvalidParameterValue', msg)
