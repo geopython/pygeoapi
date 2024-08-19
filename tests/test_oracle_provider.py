@@ -62,7 +62,7 @@ class SqlManipulator:
         q,
         language,
         filterq,
-        extra_params,
+        extra_params
     ):
         sql = "ID = 10 AND :foo != :bar"
         if extra_params.get("custom-auth") == "forbidden":
