@@ -66,7 +66,7 @@ class SqlManipulator:
     ):
         sql = "ID = 10 AND :foo != :bar"
         if extra_params.get("custom-auth") == "forbidden":
-            sql += " AND 'auth' = 'you arent allowed'"
+            sql += " AND 'auth' = 'you are not allowed'"
 
         if sql_query.find(" WHERE ") == -1:
             sql_query = sql_query.replace("#WHERE#", f" WHERE {sql}")
