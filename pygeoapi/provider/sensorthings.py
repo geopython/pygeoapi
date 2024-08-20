@@ -119,6 +119,11 @@ class SensorThingsProvider(BaseProvider):
 
             for (name, rs) in CONFIG['resources'].items():
                 pvs = rs.get('providers')
+
+                if pvs is None:
+                    LOGGER.debug(f'Skipping collection: {name}')
+                    continue
+
                 p = get_provider_default(pvs)
                 e = p.get('entity') or self._get_entity(p['data'])
                 if any([
