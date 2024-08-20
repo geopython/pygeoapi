@@ -90,7 +90,7 @@ def get_collection_edr_query(api: API, request: APIRequest,
         msg = 'Collection not found'
         return api.get_exception(
             HTTPStatus.NOT_FOUND, headers, request.format, 'NotFound', msg)
-    
+
     LOGGER.debug('Loading provider')
     try:
         p = load_plugin('provider', get_provider_by_type(
