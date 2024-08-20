@@ -106,8 +106,8 @@ Following block shows how to configure pygeoapi to read Mapbox vector tiles from
               zoom:
                 min: 0
                 max: 15
-             schemes:
-                 - WebMercatorQuad # this option is needed in the MVT-proxy provider
+              schemes:
+                - WebMercatorQuad # this option is needed in the MVT-proxy provider
          format:
              name: pbf
              mimetype: application/vnd.mapbox-vector-tile
@@ -124,8 +124,8 @@ Following code block shows how to configure pygeoapi to read Mapbox vector tiles
               zoom:
                 min: 0
                 max: 15
-             schemes:
-                 - WebMercatorQuad
+              schemes:
+                - WebMercatorQuad
          format:
              name: pbf
              mimetype: application/vnd.mapbox-vector-tile
