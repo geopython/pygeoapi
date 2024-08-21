@@ -220,7 +220,7 @@ msgstr "Objekte"
 
 #: build/lib/pygeoapi/templates/collections/items/index.html:22
 #: pygeoapi/templates/collections/items/index.html:22
-msgid "Items in this collection"
+msgid "items in this collection"
 msgstr "Objekte dieser Kollektion"
 
 #: build/lib/pygeoapi/templates/collections/items/index.html:35
