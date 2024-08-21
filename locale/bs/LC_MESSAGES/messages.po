@@ -311,7 +311,7 @@ msgid "Items"
 msgstr "Stavke"
 
 #: pygeoapi/templates/collections/items/index.html:25
-msgid "items in this collection"
+msgid "Items in this collection"
 msgstr "Stavke u ovoj kolekciji"
 
 #: pygeoapi/templates/collections/items/index.html:38

@@ -277,7 +277,7 @@ msgid "Items"
 msgstr "Objetos"
 
 #: pygeoapi/templates/collections/items/index.html:25
-msgid "items in this collection"
+msgid "Items in this collection"
 msgstr "Objetos en esta colección"
 
 #: pygeoapi/templates/collections/items/index.html:38
