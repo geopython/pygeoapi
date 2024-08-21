@@ -34,9 +34,12 @@
           <div class="col-sm-12">
             <div class="row">
                 <div class="col-sm-12">
-                  <p>
-                    {% if data['numberMatched'] %}{{ data['numberMatched'] }}{% endif %}
-                    {% trans %}items in this collection{% endtrans %}.</p>
+                    {% if data['numberMatched'] %}
+                    <p>
+                      {{ data['numberMatched'] }}
+                      {% trans %}items in this collection{% endtrans %}.
+                    </p>
+                    {% endif %}
                 </div>
             </div>
             <div class="row">
