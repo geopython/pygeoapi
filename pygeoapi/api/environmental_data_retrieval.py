@@ -91,6 +91,27 @@ def get_collection_edr_query(api: API, request: APIRequest,
         return api.get_exception(
             HTTPStatus.NOT_FOUND, headers, request.format, 'NotFound', msg)
 
+    LOGGER.debug('Loading provider')
+    try:
+        p = load_plugin('provider', get_provider_by_type(
+            collections[dataset]['providers'], 'edr'))
+    except ProviderGenericError as err:
+        return api.get_exception(
+            err.http_status_code, headers, request.format,
+            err.ogc_exception_code, err.message)
+
+    if instance is not None and not p.get_instance(instance):
+        msg = 'Invalid instance identifier'
+        return api.get_exception(
+            HTTPStatus.BAD_REQUEST, headers,
+            request.format, 'InvalidParameterValue', msg)
+
+    if query_type not in p.get_query_types():
+        msg = 'Unsupported query type'
+        return api.get_exception(
+            HTTPStatus.BAD_REQUEST, headers, request.format,
+            'InvalidParameterValue', msg)
+
     LOGGER.debug('Processing query parameters')
 
     LOGGER.debug('Processing datetime parameter')
@@ -146,27 +167,6 @@ def get_collection_edr_query(api: API, request: APIRequest,
 
     LOGGER.debug('Processing z parameter')
     z = request.params.get('z')
-
-    LOGGER.debug('Loading provider')
-    try:
-        p = load_plugin('provider', get_provider_by_type(
-            collections[dataset]['providers'], 'edr'))
-    except ProviderGenericError as err:
-        return api.get_exception(
-            err.http_status_code, headers, request.format,
-            err.ogc_exception_code, err.message)
-
-    if instance is not None and not p.get_instance(instance):
-        msg = 'Invalid instance identifier'
-        return api.get_exception(
-            HTTPStatus.BAD_REQUEST, headers,
-            request.format, 'InvalidParameterValue', msg)
-
-    if query_type not in p.get_query_types():
-        msg = 'Unsupported query type'
-        return api.get_exception(
-            HTTPStatus.BAD_REQUEST, headers, request.format,
-            'InvalidParameterValue', msg)
 
     if parameternames and not any((fld in parameternames)
                                   for fld in p.get_fields().keys()):
