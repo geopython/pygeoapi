@@ -237,7 +237,7 @@ class XarrayProvider(BaseProvider):
 
         :param metadata: coverage metadata
         :param data: rasterio DatasetReader object
-        :param fields: fields dict
+        :param fields: fields
 
         :returns: dict of CoverageJSON representation
         """
@@ -245,6 +245,11 @@ class XarrayProvider(BaseProvider):
         LOGGER.debug('Creating CoverageJSON domain')
         minx, miny, maxx, maxy = metadata['bbox']
         mint, maxt = metadata['time']
+
+        selected_fields = {
+            key: value for key, value in self.fields.items()
+            if key in fields
+        }
 
         try:
             tmp_min = data.coords[self.y_field].values[0]
@@ -294,7 +299,7 @@ class XarrayProvider(BaseProvider):
             'ranges': {}
         }
 
-        for key, value in self.fields.items():
+        for key, value in selected_fields.items():
             parameter = {
                 'type': 'Parameter',
                 'description': value['title'],
@@ -315,7 +320,7 @@ class XarrayProvider(BaseProvider):
         data = _convert_float32_to_float64(data)
 
         try:
-            for key, value in self.fields.items():
+            for key, value in selected_fields.items():
                 cj['ranges'][key] = {
                     'type': 'NdArray',
                     'dataType': value['type'],
