@@ -274,7 +274,6 @@
             layer.bindPopup(html);
         }
     });
-    {% if data.type == "FeatureCollection" and data.features and data.features[0]['geometry']['type'] == 'Point' %}
     var markers = L.markerClusterGroup({
         disableClusteringAtZoom: 9,
         chunkedLoading: true,
@@ -282,7 +281,6 @@
     });
     markers.clearLayers().addLayer(items);
     map.addLayer(markers);
-    {% endif %}
     map.fitBounds(items.getBounds(), {maxZoom: 15});
     {% endif %}
 </script>
