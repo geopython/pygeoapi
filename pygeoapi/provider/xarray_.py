@@ -571,7 +571,7 @@ class XarrayProvider(BaseProvider):
     def _parse_storage_crs(
         self,
         provider_def: dict
-    ) -> pyproj.CRS
+    ) -> pyproj.CRS:
         """
         Parse the storage CRS from an xarray dataset.
         :param provider_def: provider definition
