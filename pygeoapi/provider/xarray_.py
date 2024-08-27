@@ -115,7 +115,7 @@ class XarrayProvider(BaseProvider):
 
                     self._fields[key] = {
                         'type': dtype,
-                        'title': value.attrs['long_name'],
+                        'title': value.attrs.get('long_name'),
                         'x-ogc-unit': value.attrs.get('units')
                     }
 
