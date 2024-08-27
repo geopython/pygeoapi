@@ -172,10 +172,20 @@ class XarrayProvider(BaseProvider):
                     LOGGER.error(msg)
                     raise ProviderQueryError(msg)
                 else:
-                    query_params[self._coverage_properties['x_axis_label']] = \
-                        slice(bbox[0], bbox[2])
-                    query_params[self._coverage_properties['y_axis_label']] = \
-                        slice(bbox[1], bbox[3])
+                    x_axis_label = self._coverage_properties['x_axis_label']
+                    x_coords = data.coords[x_axis_label]
+                    if x_coords.values[0] > x_coords.values[-1]:
+                        LOGGER.debug('Reversing slicing of x axis from high to low')
+                        query_params[x_axis_label] = slice(bbox[2], bbox[0])
+                    else:
+                        query_params[x_axis_label] = slice(bbox[0], bbox[2])
+                    y_axis_label = self._coverage_properties['y_axis_label']
+                    y_coords = data.coords[y_axis_label]
+                    if y_coords.values[0] > y_coords.values[-1]:
+                        LOGGER.debug('Reversing slicing of y axis from high to low')
+                        query_params[y_axis_label] = slice(bbox[3], bbox[1])
+                    else:
+                        query_params[y_axis_label] = slice(bbox[1], bbox[3])
 
                 LOGGER.debug('bbox_crs is not currently handled')
 
