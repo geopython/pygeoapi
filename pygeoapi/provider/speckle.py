@@ -444,11 +444,13 @@ class SpeckleProvider(BaseProvider):
         #heights_array = np.array(data['heights'])
         #inds = heights_array.argsort()
         #sorted = feat_array[inds].tolist()
-
+        time1 = datetime.now()
         sorted_list = sorted(data['features'], key=lambda d: d['max_height'])
         for i, _ in enumerate(sorted_list):
             sorted_list[i]["properties"]["FID"] = i+1 
         data['features'] = sorted_list
+        time2 = datetime.now()
+        print(f"Sorting time: {(time2-time1).total_seconds()}")
 
         return data
     
