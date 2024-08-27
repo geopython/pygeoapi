@@ -446,6 +446,8 @@ class SpeckleProvider(BaseProvider):
         #sorted = feat_array[inds].tolist()
 
         sorted_list = sorted(data['features'], key=lambda d: d['max_height'])
+        for i, _ in enumerate(sorted_list):
+            sorted_list[i]["properties"]["FID"] = i+1 
         data['features'] = sorted_list
 
         return data
