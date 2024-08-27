@@ -221,6 +221,10 @@ class XarrayProvider(BaseProvider):
             LOGGER.warning(msg)
             raise ProviderNoDataError(msg)
 
+        if format_ == 'json':
+            # json does not support float32
+            data = _convert_float32_to_float64(data)
+
         out_meta = {
             'bbox': [
                 data.coords[self.x_field].values[0],
@@ -344,7 +348,6 @@ class XarrayProvider(BaseProvider):
             cj['parameters'][key] = parameter
 
         data = data.fillna(None)
-        data = _convert_float32_to_float64(data)
 
         try:
             for key, value in selected_fields.items():
