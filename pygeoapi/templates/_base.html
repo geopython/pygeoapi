@@ -38,7 +38,7 @@
   <div class="bg-white sticky-top border-bottom" >
     <div class="container" style="max-height:fit-content;max-width: fit-content;margin-left: 10px;">
       <header class="d-flex flex-wrap justify-content-center py-2" style="text-align: left;">
-        <a href="{{ config['metadata']['contact']['url'] }}"
+        <a href="{{ config['metadata']['contact']['url'] }}" target="_blank"
           class="d-flex align-items-center mb-3 mb-md-0 me-md-auto text-dark text-decoration-none"
           style="text-align:left;">
             <img src="{{ config['server']['url'] }}/static/img/speckle_cube_32.png" alt="Speckle"
@@ -46,15 +46,15 @@
             <b style="text-align:left;padding-left: 10px;">Speckle</b> 
         </a>
         <p style="text-align:left;padding-left: 10px;" class="d-flex align-items-center mb-3 mb-md-0 me-md-auto text-dark text-decoration-none">
-          <a href="https://geo.speckle.systems/" style="text-align:left;padding-left: 10px;" class="d-flex align-items-center mb-3 mb-md-0 me-md-auto text-dark text-decoration-none">
+          <a href="https://geo.speckle.systems/" target="_blank" style="text-align:left;padding-left: 10px;" class="d-flex align-items-center mb-3 mb-md-0 me-md-auto text-dark text-decoration-none">
             > Geolocating your data 
             </a>
         </p> 
         {% if (data["model"] and data["model"]!="") %}
-        <a href="{{data['speckle_project_url']}}" style="text-align:left;padding-left: 10px;" class="d-flex align-items-center mb-3 mb-md-0 me-md-auto text-dark text-decoration-none">
+        <a href="{{data['speckle_project_url']}}" target="_blank" style="text-align:left;padding-left: 10px;" class="d-flex align-items-center mb-3 mb-md-0 me-md-auto text-dark text-decoration-none">
           > {{data["project"]}} >
         </a>
-        <a href="{{data['speckle_url']}}" style="text-align:left;padding-left: 10px;color:rgb(10,132,255);" class="d-flex align-items-center mb-3 mb-md-0 me-md-auto text-decoration-none">
+        <a href="{{data['speckle_url']}}" target="_blank" style="text-align:left;padding-left: 10px;color:rgb(10,132,255);" class="d-flex align-items-center mb-3 mb-md-0 me-md-auto text-decoration-none">
           {{data["model"]}}
         </a>
         {% endif %}
