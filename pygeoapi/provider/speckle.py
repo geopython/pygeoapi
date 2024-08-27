@@ -127,8 +127,8 @@ class SpeckleProvider(BaseProvider):
         self.requested_data_type: str = "polygons (default)" # points, lines, polygons, projectcomments
         self.preserve_attributes: str = "false (default)"
 
-        self.lat: float = 51.52486388756923
-        self.lon: float = 0.1621445437168942
+        self.lat: float = 48.76755913928929 #51.52486388756923
+        self.lon: float = 11.408741923664028 #0.1621445437168942
         self.north_degrees: float = 0
         self.extent = [-180,-90,180,90]
 
