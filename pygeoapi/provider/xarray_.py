@@ -282,7 +282,6 @@ class XarrayProvider(BaseProvider):
 
         LOGGER.debug('Creating CoverageJSON domain')
         minx, miny, maxx, maxy = metadata['bbox']
-        mint, maxt = metadata['time']
 
         selected_fields = {
             key: value for key, value in self.fields.items()
@@ -333,6 +332,7 @@ class XarrayProvider(BaseProvider):
         }
 
         if self.time_field is not None:
+            mint, maxt = metadata['time']
             cj['domain']['axes'][self.time_field] = {
                 'start': mint,
                 'stop': maxt,
