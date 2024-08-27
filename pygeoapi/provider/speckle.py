@@ -75,8 +75,8 @@ class SpeckleProvider(BaseProvider):
             # )
 
         from subprocess import run
-        #from pygeoapi.provider.speckle_utils.patch.patch_specklepy import patch_specklepy
-        r'''
+        from pygeoapi.provider.speckle_utils.patch.patch_specklepy import patch_specklepy
+
         try:
             import specklepy
 
@@ -111,8 +111,8 @@ class SpeckleProvider(BaseProvider):
                 print(completed_process.stderr)
                 raise Exception(m)
 
-        #patch_specklepy()
-        '''
+        patch_specklepy()
+
         
         # assign global values
         self.url: str = self.data # to store the value and check if self.data has changed
