@@ -673,7 +673,7 @@ def _convert_float32_to_float64(data):
     for var_name in data.variables:
         if data[var_name].dtype == 'float32':
             og_attrs = data[var_name].attrs
-            data[var_name] = data[var_name].astype('float64')
+            data[var_name] = data[var_name].astype('float64', copy=False)
             data[var_name].attrs = og_attrs
 
     return data
