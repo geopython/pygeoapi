@@ -97,9 +97,7 @@ class XarrayProvider(BaseProvider):
             self.storage_crs = self._parse_storage_crs(provider_def)
             self._coverage_properties = self._get_coverage_properties()
 
-            self.axes = [self._coverage_properties['x_axis_label'],
-                         self._coverage_properties['y_axis_label'],
-                         self._coverage_properties['time_axis_label']]
+            self.axes = self._coverage_properties['axes']
 
             self.get_fields()
         except Exception as err:
@@ -109,7 +107,7 @@ class XarrayProvider(BaseProvider):
     def get_fields(self):
         if not self._fields:
             for key, value in self._data.variables.items():
-                if len(value.shape) >= 3:
+                if key not in self._data.coords:
                     LOGGER.debug('Adding variable')
                     dtype = value.dtype
                     if dtype.name.startswith('float'):
@@ -150,9 +148,9 @@ class XarrayProvider(BaseProvider):
 
         data = self._data[[*properties]]
 
-        if any([self._coverage_properties['x_axis_label'] in subsets,
-                self._coverage_properties['y_axis_label'] in subsets,
-                self._coverage_properties['time_axis_label'] in subsets,
+        if any([self._coverage_properties.get('x_axis_label') in subsets,
+                self._coverage_properties.get('y_axis_label') in subsets,
+                self._coverage_properties.get('time_axis_label') in subsets,
                 datetime_ is not None]):
 
             LOGGER.debug('Creating spatio-temporal subset')
@@ -171,7 +169,7 @@ class XarrayProvider(BaseProvider):
                         self._coverage_properties['y_axis_label'] in subsets,
                         len(bbox) > 0]):
                     msg = 'bbox and subsetting by coordinates are exclusive'
-                    LOGGER.warning(msg)
+                    LOGGER.error(msg)
                     raise ProviderQueryError(msg)
                 else:
                     query_params[self._coverage_properties['x_axis_label']] = \
@@ -182,7 +180,11 @@ class XarrayProvider(BaseProvider):
                 LOGGER.debug('bbox_crs is not currently handled')
 
             if datetime_ is not None:
-                if self._coverage_properties['time_axis_label'] in subsets:
+                if self._coverage_properties['time_axis_label'] is None:
+                    msg = 'Dataset does not contain a time axis'
+                    LOGGER.error(msg)
+                    raise ProviderQueryError(msg)
+                elif self._coverage_properties['time_axis_label'] in subsets:
                     msg = 'datetime and temporal subsetting are exclusive'
                     LOGGER.error(msg)
                     raise ProviderQueryError(msg)
@@ -204,9 +206,7 @@ class XarrayProvider(BaseProvider):
                 LOGGER.warning(err)
                 raise ProviderQueryError(err)
 
-        if (any([data.coords[self.x_field].size == 0,
-                 data.coords[self.y_field].size == 0,
-                 data.coords[self.time_field].size == 0])):
+        if any(size == 0 for size in data.sizes.values()):
             msg = 'No data found'
             LOGGER.warning(msg)
             raise ProviderNoDataError(msg)
@@ -218,17 +218,19 @@ class XarrayProvider(BaseProvider):
                 data.coords[self.x_field].values[-1],
                 data.coords[self.y_field].values[-1]
             ],
-            "time": [
-                _to_datetime_string(data.coords[self.time_field].values[0]),
-                _to_datetime_string(data.coords[self.time_field].values[-1])
-            ],
             "driver": "xarray",
             "height": data.sizes[self.y_field],
             "width": data.sizes[self.x_field],
-            "time_steps": data.sizes[self.time_field],
             "variables": {var_name: var.attrs
                           for var_name, var in data.variables.items()}
         }
+
+        if self.time_field is not None:
+            out_meta['time'] = [
+                _to_datetime_string(data.coords[self.time_field].values[0]),
+                _to_datetime_string(data.coords[self.time_field].values[-1]),
+            ]
+            out_meta["time_steps"] = data.dims[self.time_field]
 
         LOGGER.debug('Serializing data in memory')
         if format_ == 'json':
@@ -293,11 +295,6 @@ class XarrayProvider(BaseProvider):
                         'start': maxy,
                         'stop': miny,
                         'num': metadata['height']
-                    },
-                    self.time_field: {
-                        'start': mint,
-                        'stop': maxt,
-                        'num': metadata['time_steps']
                     }
                 },
                 'referencing': [{
@@ -311,6 +308,13 @@ class XarrayProvider(BaseProvider):
             'parameters': {},
             'ranges': {}
         }
+
+        if self.time_field is not None:
+            cj['domain']['axes'][self.time_field] = {
+                'start': mint,
+                'stop': maxt,
+                'num': metadata['time_steps'],
+            }
 
         for key, value in selected_fields.items():
             parameter = {
@@ -338,13 +342,18 @@ class XarrayProvider(BaseProvider):
                     'type': 'NdArray',
                     'dataType': value['type'],
                     'axisNames': [
-                        'y', 'x', self._coverage_properties['time_axis_label']
+                        'y', 'x'
                     ],
                     'shape': [metadata['height'],
-                              metadata['width'],
-                              metadata['time_steps']]
+                              metadata['width']]
                 }
                 cj['ranges'][key]['values'] = data[key].values.flatten().tolist()  # noqa
+
+                if self.time_field is not None:
+                    cj['ranges'][key]['axisNames'].append(
+                        self._coverage_properties['time_axis_label']
+                    )
+                    cj['ranges'][key]['shape'].append(metadata['time_steps'])
         except IndexError as err:
             LOGGER.warning(err)
             raise ProviderQueryError('Invalid query parameter')
@@ -390,30 +399,32 @@ class XarrayProvider(BaseProvider):
                 self._data.coords[self.x_field].values[-1],
                 self._data.coords[self.y_field].values[-1],
             ],
-            'time_range': [
-                _to_datetime_string(
-                    self._data.coords[self.time_field].values[0]
-                ),
-                _to_datetime_string(
-                    self._data.coords[self.time_field].values[-1]
-                )
-            ],
             'bbox_crs': 'http://www.opengis.net/def/crs/OGC/1.3/CRS84',
             'crs_type': 'GeographicCRS',
             'x_axis_label': self.x_field,
             'y_axis_label': self.y_field,
-            'time_axis_label': self.time_field,
             'width': self._data.sizes[self.x_field],
             'height': self._data.sizes[self.y_field],
-            'time': self._data.sizes[self.time_field],
-            'time_duration': self.get_time_coverage_duration(),
             'bbox_units': 'degrees',
-            'resx': np.abs(self._data.coords[self.x_field].values[1]
-                           - self._data.coords[self.x_field].values[0]),
-            'resy': np.abs(self._data.coords[self.y_field].values[1]
-                           - self._data.coords[self.y_field].values[0]),
-            'restime': self.get_time_resolution()
+            'resx': np.abs(
+                self._data.coords[self.x_field].values[1]
+                - self._data.coords[self.x_field].values[0]
+            ),
+            'resy': np.abs(
+                self._data.coords[self.y_field].values[1]
+                - self._data.coords[self.y_field].values[0]
+            ),
         }
+
+        if self.time_field is not None:
+            properties['time_axis_label'] = self.time_field
+            properties['time_range'] = [
+                _to_datetime_string(self._data.coords[self.time_field].values[0]),
+                _to_datetime_string(self._data.coords[self.time_field].values[-1]),
+            ]
+            properties['time'] = self._data.dims[self.time_field]
+            properties['time_duration'] = self.get_time_coverage_duration()
+            properties['restime'] = self.get_time_resolution()
 
         # Update properties based on the xarray's CRS
         epsg_code = self.storage_crs.to_epsg()
@@ -433,9 +444,11 @@ class XarrayProvider(BaseProvider):
 
         properties['axes'] = [
             properties['x_axis_label'],
-            properties['y_axis_label'],
-            properties['time_axis_label']
+            properties['y_axis_label']
         ]
+
+        if self.time_field is not None:
+            properties['axes'].append(properties['time_axis_label'])
 
         return properties
 
@@ -463,7 +476,7 @@ class XarrayProvider(BaseProvider):
         :returns: time resolution string
         """
 
-        if self._data[self.time_field].size > 1:
+        if self.time_field is not None and self._data[self.time_field].size > 1:
             time_diff = (self._data[self.time_field][1] -
                          self._data[self.time_field][0])
 
@@ -479,6 +492,9 @@ class XarrayProvider(BaseProvider):
         Helper function to derive time coverage duration
         :returns: time coverage duration string
         """
+
+        if self.time_field is None:
+            return None
 
         dur = self._data[self.time_field][-1] - self._data[self.time_field][0]
         ms_difference = dur.values.astype('timedelta64[ms]').astype(np.double)
