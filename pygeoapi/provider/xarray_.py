@@ -63,10 +63,13 @@ class XarrayProvider(BaseProvider):
 
         super().__init__(provider_def)
 
+        self.native_format = None
         try:
             if provider_def['data'].endswith('.zarr'):
+                self.native_format = 'zarr'
                 open_func = xarray.open_zarr
             else:
+                self.native_format = 'netcdf'
                 if '*' in self.data:
                     LOGGER.debug('Detected multi file dataset')
                     open_func = xarray.open_mfdataset
@@ -255,19 +258,15 @@ class XarrayProvider(BaseProvider):
             LOGGER.debug('Creating output in CoverageJSON')
             return self.gen_covjson(out_meta, data, properties)
         elif format_ == 'zarr':
-            LOGGER.debug('Returning data in native zarr format')
+            LOGGER.debug('Returning data in zarr format')
             return _get_zarr_data(data)
         elif format_ == 'netcdf':
             LOGGER.debug('Returning data in netcdf format')
             return _get_netcdf_data(data)
-        else:  # return data in native format
-            with tempfile.NamedTemporaryFile() as fp:
-                LOGGER.debug('Returning data in native NetCDF format')
-                data.to_netcdf(
-                    fp.name
-                )  # we need to pass a string to be able to use the "netcdf4" engine  # noqa
-                fp.seek(0)
-                return fp.read()
+        else:
+            msg = f'Unsupported format: {format_}'
+            LOGGER.error(msg)
+            raise ProviderQueryError(msg)
 
     def gen_covjson(self, metadata, data, fields):
         """
