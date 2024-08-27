@@ -254,9 +254,11 @@ class XarrayProvider(BaseProvider):
             LOGGER.debug('Returning data in native zarr format')
             return _get_zarr_data(data)
         else:  # return data in native format
-            with tempfile.TemporaryFile() as fp:
+            with tempfile.NamedTemporaryFile() as fp:
                 LOGGER.debug('Returning data in native NetCDF format')
-                fp.write(data.to_netcdf())
+                data.to_netcdf(
+                    fp.name
+                )  # we need to pass a string to be able to use the "netcdf4" engine  # noqa
                 fp.seek(0)
                 return fp.read()
 
