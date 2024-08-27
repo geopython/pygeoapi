@@ -248,7 +248,7 @@ class XarrayProvider(BaseProvider):
                 _to_datetime_string(data.coords[self.time_field].values[0]),
                 _to_datetime_string(data.coords[self.time_field].values[-1]),
             ]
-            out_meta["time_steps"] = data.dims[self.time_field]
+            out_meta["time_steps"] = data.sizes[self.time_field]
 
         LOGGER.debug('Serializing data in memory')
         if format_ == 'json':
@@ -448,7 +448,7 @@ class XarrayProvider(BaseProvider):
                     self._data.coords[self.time_field].values[-1]
                     ),
             ]
-            properties['time'] = self._data.dims[self.time_field]
+            properties['time'] = self._data.sizes[self.time_field]
             properties['time_duration'] = self.get_time_coverage_duration()
             properties['restime'] = self.get_time_resolution()
 
