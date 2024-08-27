@@ -111,7 +111,7 @@ class SpeckleProvider(BaseProvider):
                 print(completed_process.stderr)
                 raise Exception(m)
 
-        patch_specklepy()
+            patch_specklepy()
 
         
         # assign global values
