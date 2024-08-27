@@ -43,7 +43,7 @@ Check out the examples in 'speckle_demos' folder for Leaflet and OpenLayers impl
 
 ![image](https://github.com/user-attachments/assets/ea168853-dc97-43bf-b9f2-4d0244addb01)
 
-2. Create New connection, specify the name and URL with mandatory "speckleUrl" parameter pointing to the Speckle Model. Then click Detect, and the WFS Version should display "OGC API Features". Click OK.
+2. Create New connection, specify the name and URL with mandatory "speckleUrl" parameter pointing to the Speckle Model. Preferably add the URL parameter with the custom feature limit (e.g. '&limit=10000'). Then click Detect, and the WFS Version should display "OGC API Features". Click OK.
 
 ![image](https://github.com/user-attachments/assets/8bf9f164-bdb1-455e-8298-f0c1d5dd324d)
 
@@ -58,7 +58,17 @@ Check out the examples in 'speckle_demos' folder for Leaflet and OpenLayers impl
 
 ### Add Speckle OGC API layer in ArcGIS
 
-TODO
+1. Add new OGC API Connection
+
+![image](https://github.com/user-attachments/assets/8ae33828-93de-428d-81f8-c6115bf05d72)
+
+2. Add URL, preferably add the URL parameter with the custom feature limit (e.g. '&limit=10000')
+
+![image](https://github.com/user-attachments/assets/37f52ad5-b312-4292-b760-fb8c4091a45f)
+
+3. Find Speckle Pygeoapi server in Catalog, add SpeckleData layer to Map
+
+![image](https://github.com/user-attachments/assets/9e8461c6-a3f3-4d4c-8777-1e17f2a2f528)
 
 
 ### Add Speckle WFS layer in Civil3D
