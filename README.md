@@ -13,11 +13,12 @@ Please read the docs at [https://docs.pygeoapi.io](https://docs.pygeoapi.io) for
 
 ## How to use Speckle data through OGC API Features
 
-Description: TODO
+This is the test deployment of the OGC API server for public Speckle projects. It allows you to share your Speckle model as geospatial data in the format of OGC API Features / Web Feature Service, so it can be natively added to a QGIS, ArcGIS or Civil3D project, or embedded into a web map using Leaflet, OpenLayers or other libraries. 
+
 Demo page: https://geo.speckle.systems/ 
 
 ### How to construct a valid URL to get georeferenced Speckle layer
-URL should start with 'https://geo.speckle.systems/?' followed by required and optional parameters. Parameters should be separated with '&' symbol. 
+URL should start with 'https://geo.speckle.systems/?' followed by required and optional parameters. Parameters should be separated with '&' symbol. You can use the generated link to access OGC API dataset in your preferred software, as well as explore the data in the browser and share with others. 
 
 Use the following URL parameters to construct a link that provides Speckle data with your preferred settings::
  - speckleUrl (text), required, should contain path to a specific Model in Speckle Project, e.g. 'https://app.speckle.systems/projects/55a29f3e9d/models/2d497a381d'
