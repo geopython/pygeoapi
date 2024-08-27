@@ -175,14 +175,18 @@ class XarrayProvider(BaseProvider):
                     x_axis_label = self._coverage_properties['x_axis_label']
                     x_coords = data.coords[x_axis_label]
                     if x_coords.values[0] > x_coords.values[-1]:
-                        LOGGER.debug('Reversing slicing of x axis from high to low')
+                        LOGGER.debug(
+                            'Reversing slicing of x axis from high to low'
+                            )
                         query_params[x_axis_label] = slice(bbox[2], bbox[0])
                     else:
                         query_params[x_axis_label] = slice(bbox[0], bbox[2])
                     y_axis_label = self._coverage_properties['y_axis_label']
                     y_coords = data.coords[y_axis_label]
                     if y_coords.values[0] > y_coords.values[-1]:
-                        LOGGER.debug('Reversing slicing of y axis from high to low')
+                        LOGGER.debug(
+                            'Reversing slicing of y axis from high to low'
+                            )
                         query_params[y_axis_label] = slice(bbox[3], bbox[1])
                     else:
                         query_params[y_axis_label] = slice(bbox[1], bbox[3])
@@ -437,8 +441,12 @@ class XarrayProvider(BaseProvider):
         if self.time_field is not None:
             properties['time_axis_label'] = self.time_field
             properties['time_range'] = [
-                _to_datetime_string(self._data.coords[self.time_field].values[0]),
-                _to_datetime_string(self._data.coords[self.time_field].values[-1]),
+                _to_datetime_string(
+                    self._data.coords[self.time_field].values[0]
+                    ),
+                _to_datetime_string(
+                    self._data.coords[self.time_field].values[-1]
+                    ),
             ]
             properties['time'] = self._data.dims[self.time_field]
             properties['time_duration'] = self.get_time_coverage_duration()
@@ -494,7 +502,8 @@ class XarrayProvider(BaseProvider):
         :returns: time resolution string
         """
 
-        if self.time_field is not None and self._data[self.time_field].size > 1:
+        if self.time_field is not None \
+           and self._data[self.time_field].size > 1:
             time_diff = (self._data[self.time_field][1] -
                          self._data[self.time_field][0])
 
