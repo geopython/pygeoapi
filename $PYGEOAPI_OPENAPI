@@ -255,7 +255,7 @@ paths:
       - server
   /collections/speckle:
     get:
-      description: some random data
+      description: Latest version of Speckle Model data
       operationId: describeSpeckleCollection
       parameters:
       - $ref: '#/components/parameters/f'
@@ -274,7 +274,7 @@ paths:
       - speckle
   /collections/speckle/items:
     get:
-      description: some random data
+      description: Latest version of Speckle Model data
       operationId: getSpeckleFeatures
       parameters:
       - $ref: '#/components/parameters/f'
@@ -312,7 +312,7 @@ paths:
       tags:
       - speckle
     options:
-      description: some random data
+      description: Latest version of Speckle Model data
       operationId: optionsSpeckleFeatures
       responses:
         '200':
@@ -322,7 +322,7 @@ paths:
       - speckle
   /collections/speckle/items/{featureId}:
     get:
-      description: some random data
+      description: Latest version of Speckle Model data
       operationId: getSpeckleFeature
       parameters:
       - $ref: https://schemas.opengis.net\ogcapi/features/part1/1.0/openapi/ogcapi-features-1.yaml#/components/parameters/featureId
@@ -342,7 +342,7 @@ paths:
       tags:
       - speckle
     options:
-      description: some random data
+      description: Latest version of Speckle Model data
       operationId: optionsSpeckleFeature
       parameters:
       - $ref: https://schemas.opengis.net\ogcapi/features/part1/1.0/openapi/ogcapi-features-1.yaml#/components/parameters/featureId
@@ -537,7 +537,7 @@ tags:
     description: information
     url: https://example.org
   name: server
-- description: some random data
+- description: Latest version of Speckle Model data
   name: speckle
 - name: coverages
 - name: edr

@@ -410,6 +410,7 @@ def set_response_language(headers: dict, *locale_: Locale):
 
     LOGGER.debug(f'Setting Content-Language to {loc_str}')
     headers['Content-Language'] = loc_str
+    headers['Access-Control-Allow-Origin'] = "*"
 
 
 def add_locale(url, locale_) -> str:

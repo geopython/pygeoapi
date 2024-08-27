@@ -27,12 +27,23 @@ def get_transport_path():
     return str(credentials_path)
 
 def get_transport_path_src():
-    credentials_path = Path(get_pygeoapi_path(), "provider", "speckle_utils", "server.py")
+    credentials_path = Path(get_pygeoapi_path(), "provider", "speckle_utils", "patch", "server.py")
+
+    return str(credentials_path)
+
+def get_serializer_path():
+    specklepy_path = get_specklepy_path()
+    credentials_path = Path(specklepy_path, "serialization", "base_object_serializer.py")
+
+    return str(credentials_path)
+
+def get_serializer_path_src():
+    credentials_path = Path(get_pygeoapi_path(), "provider", "speckle_utils", "patch", "base_object_serializer.py")
 
     return str(credentials_path)
 
 def get_gis_feature_path_src():
-    credentials_path = Path(get_pygeoapi_path(), "provider", "speckle_utils", "GisFeature.py")
+    credentials_path = Path(get_pygeoapi_path(), "provider", "speckle_utils", "patch", "GisFeature.py")
 
     return str(credentials_path)
 
@@ -74,18 +85,41 @@ def patch_transport():
         file.writelines(lines)
     file.close()
     
-def complete_transport():
+def patch_serializer():
     """Patches the installer with the correct connector version and specklepy version"""
     
-    file_path = get_transport_path()
+    server_data = get_serializer_path_src()
+    file_path = get_serializer_path()
 
+    with open(server_data, "r") as file:
+        lines = file.readlines()
+    file.close()
+
+    with open(file_path, "w") as file:
+        file.writelines(lines)
+    file.close()
+    
+def complete_patch():
+    """Patches the installer with the correct connector version and specklepy version"""
+    
+    # check file 1
+    file_path = get_transport_path()
     with open(file_path, "r") as file:
         lines = file.readlines()
     file.close()
 
-    print(len(lines))
     if len(lines) < 184:
         return False
+    
+    # check file 1
+    file_path = get_serializer_path()
+    with open(file_path, "r") as file:
+        lines = file.readlines()
+    file.close()
+
+    if len(lines) < 443:
+        return False
+    
     return True
     
 def copy_gis_feature():
@@ -93,9 +127,14 @@ def copy_gis_feature():
 
 def patch_specklepy():
 
-    if complete_transport():
-        return
+    #if complete_patch():
+    #    return
     
     patch_credentials()
     copy_gis_feature()
     patch_transport()
+    patch_serializer()
+
+if __name__ == "__main__":
+    patch_specklepy()
+    

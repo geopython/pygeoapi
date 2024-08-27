@@ -575,6 +575,8 @@ def get_collection_items(
         url_props = url_saved_as_data.lower().split("&")
     
     content['missing_url'] = content['missing_url_href'] = ""
+    content['requested_data_type'] = "polygons (default)"
+    content['preserve_attributes'] = "false (default)"
     content['speckle_url'] = content['speckle_project_url'] = content['crs_authid'] = content['lat'] = content['lon'] = content['north_degrees'] = content['limit'] = "-"
     crsauthid = False
     for item in url_props:
@@ -584,6 +586,14 @@ def get_collection_items(
             if content['speckle_url'][-1] == "/":
                 content['speckle_url'] = content['speckle_url'][:-1]
             content['speckle_project_url'] = content['speckle_url'].split("/models")[0]
+        elif "datatype=" in item:
+            content['requested_data_type'] = item.split("datatype=")[1]
+            if content['requested_data_type'] not in ["points", "lines", "polygons", "projectcomments"]:
+                content['requested_data_type'] = "polygons (default)"
+        elif "preserveattributes=" in item:
+            content['preserve_attributes'] = item.split("preserveattributes=")[1]
+            if content['preserve_attributes'] not in ["true", "false"]:
+                content['preserve_attributes'] = "false (default)"
         elif "crsauthid=" in item:
             content['crs_authid'] = item.split("crsauthid=")[1]
             crsauthid = True
@@ -609,8 +619,7 @@ def get_collection_items(
                 content['limit'] = f"Invalid input, must be integer: {item.split('limit=')[1]}"
     
     if content['speckle_url'] == "-":
-        content['missing_url'] = "Provide Speckle project link as an argument to start exploring, e.g.: "
-        content['missing_url_href'] = "http://localhost:5000/?speckleUrl=https://app.speckle.systems/projects/5feae56049/models/9c43d7569c"
+        content['missing_url'] = "true"
 
     if crsauthid:
         content['lat'] += " (not applied)"
