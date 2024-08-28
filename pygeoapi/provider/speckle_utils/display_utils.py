@@ -6,10 +6,6 @@ DEFAULT_COLOR = (255 << 24) + (150 << 16) + (150 << 8) + 150
 
 def find_list_of_display_obj(obj) -> List[Tuple["Base", "Base"]]:
     """Get displayable object."""
-
-    # for Features, return original convertible object and a first item from displayValue
-    if obj.speckle_type.endswith("Feature"):
-        return([(obj, obj.geometry)])
     
     list_of_display_obj_colors: List = []
 
@@ -22,7 +18,14 @@ def find_list_of_display_obj(obj) -> List[Tuple["Base", "Base"]]:
     # return List of displayValues
     if not isinstance(displayValue, List):
         displayValue = [displayValue]
-    #print(displayValue)
+    
+    # for Features, return original convertible object and a first item from displayValue
+    if obj.speckle_type.endswith("Feature"):
+        if len(displayValue)==0:
+            return ([(obj, obj)])
+        else:
+            return([(obj, displayValue[0])])
+    
     separated_display_values: List[Tuple] = separate_display_vals(displayValue)
     for item, item_original in separated_display_values:
         if item is None:
