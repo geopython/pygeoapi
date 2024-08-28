@@ -280,6 +280,7 @@ def assign_display_properties(feature: Dict, f_base: "Base",  obj_display: "Base
     from specklepy.objects.geometry import Mesh, Brep    
 
     assign_color(obj_display, feature["displayProperties"])
+    feature["properties"]["color"] = feature["displayProperties"]["color"]
 
     # other properties for rendering 
     if isinstance(f_base, Mesh) or isinstance(f_base, Brep):
