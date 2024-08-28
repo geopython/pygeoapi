@@ -34,6 +34,21 @@ If GIS-originated Speckle model is loaded, no location arguments are needed.
 Example: [https://geo.speckle.systems/?speckleUrl=https://app.speckle.systems/projects/64753f52b7/models/338b386787&lat=-0.031405&lon=109.335828](https://geo.speckle.systems/?speckleUrl=https://app.speckle.systems/projects/64753f52b7/models/338b386787&lat=-0.031405&lon=109.335828)
 
 
+### Troubleshooting
+
+List of possible issues you can experience and solutions to them:
+
+- Page or Map stays blank and Developer Tools Console shows "net::ERR_QUIC_PROTOCOL_ERROR 200 (OK)"
+Solution: Try reloading the page. Otherwise, if in Google Chrome, navigate to chrome://flags/#enable-quic in and change Experimental QUIC Protocol dropdown to Disabled.
+
+- Model seems to be loaded incomplete
+Solution: Check the message "feature count limited to ..." next to the Model name on the top of the page. If the message is present, try increasing the feature limit using "&limit=10000" URL parameter
+
+- Attribute table doesn't have original feature attributes and properties
+Enable the URL parameter "&preserveAttributes=true". It is disabled by default due to the faulty display of the 3-dimentional multiPolygons overlapping themselves in 2d space, when viweving in the browser on 2d map. Enabling this parameter might make the multipolygons appear "transparent" due to self-overlap. 
+
+Report any other issues here or on our [Community Forum](https://speckle.community/).
+
 ### Add Speckle Feature Layer to a web-based map
 
 Check out the examples in 'speckle_demos' folder for Leaflet and OpenLayers implementation.
