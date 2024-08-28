@@ -47,7 +47,7 @@ Solution: Check the message "feature count limited to ..." next to the Model nam
 - Attribute table doesn't have original feature attributes and properties
 Enable the URL parameter "&preserveAttributes=true". It is disabled by default due to the faulty display of the 3-dimentional multiPolygons overlapping themselves in 2d space, when viweving in the browser on 2d map. Enabling this parameter might make the multipolygons appear "transparent" due to self-overlap. 
 
-Report any other issues here or on our [Community Forum](https://speckle.community/).
+Report any other issues here or on our [Community Forum](https://speckle.community/invites/qxEmQb1QcM).
 
 ### Add Speckle Feature Layer to a web-based map
 
