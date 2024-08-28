@@ -32,6 +32,12 @@ def get_set_url_parameters(self: "SpeckleProvider"):
                         self.preserve_attributes = "false (default)"
                 except:
                     pass
+
+            elif "limit=" in item:
+                try:
+                    self.limit = int(item.split("limit=")[1])
+                except:
+                    pass
                 
             elif "crsauthid=" in item:
                 crs_authid = item.split("crsauthid=")[1]

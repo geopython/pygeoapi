@@ -131,6 +131,8 @@ class SpeckleProvider(BaseProvider):
         self.lon: float = 11.408741923664028 #0.1621445437168942
         self.north_degrees: float = 0
         self.extent = [-180,-90,180,90]
+        self.limit = 10000
+        self.limit_message = ""
 
 
     def get_fields(self):
@@ -383,6 +385,7 @@ class SpeckleProvider(BaseProvider):
         speckle_data["model_last_version_date"] = datetime.strptime(commit['createdAt'].replace("T", " ").replace("Z","").split(".")[0], '%Y-%m-%d %H:%M:%S')
         speckle_data["model_id"] = wrapper.model_id
         speckle_data["extent"] = self.extent
+        speckle_data["limit_message"] = self.limit_message
 
         return speckle_data
 

@@ -14,13 +14,18 @@ def initialize_features(self: "SpeckleProvider", all_coords, all_coord_counts, d
     time1 = datetime.now()
     
     all_props = []
+    feature_count = 0
 
     if self.requested_data_type != "projectcomments":
         for item in context_list:
+
+            if feature_count >= self.limit:
+                self.limit_message = f" (feature count limited to {self.limit})"
+                break
             
             f_base = item.current
             f_id = item.current.id
-            f_fid = len(data["features"]) + 1
+            f_fid = feature_count + 1
 
             # initialize feature
             feature: Dict = {
@@ -65,6 +70,7 @@ def initialize_features(self: "SpeckleProvider", all_coords, all_coord_counts, d
                     assign_display_properties(feature, f_base,  obj_get_color)
                     feature["max_height"] = max([c[2] for c in coords])
                     data["features"].append(feature)
+                    feature_count += 1
                 
             else:
                 list_of_display_obj = find_list_of_display_obj(f_base)
@@ -72,7 +78,7 @@ def initialize_features(self: "SpeckleProvider", all_coords, all_coord_counts, d
                 for k, vals in enumerate(list_of_display_obj):
                     obj_display, obj_get_color = vals
                     
-                    f_fid = len(data["features"]) + 1
+                    f_fid = feature_count + 1
                     feature_new: Dict = {
                         "type": "Feature",
                         # "bbox": [-180.0, -90.0, 180.0, 90.0],
@@ -104,11 +110,17 @@ def initialize_features(self: "SpeckleProvider", all_coords, all_coord_counts, d
                         assign_display_properties(feature_new, f_base,  obj_get_color)
                         feature_new["max_height"] = max([c[2] for c in coords])
                         data["features"].append(feature_new)
+                        feature_count +=1
   
         assign_missing_props(data["features"], all_props)
     else:
         ####################### create comment features
         for comm_id, comment in comments.items():
+            
+            if len(data["comments"]) >= self.limit:
+                self.limit_message = f" (feature count limited to {self.limit})"
+                break
+
             # initialize comment
             feature: Dict = {
                 "type": "Feature",
