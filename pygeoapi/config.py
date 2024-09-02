@@ -88,13 +88,16 @@ def get_config(raw: bool = False, request: Request = None) -> dict:
         # make sure to restrict the usage for the key
         if ".speckle.systems" in request.url.split("?")[0] and map_api_key_speckle and len(map_api_key_speckle)>=20:
             CONFIG["server"]["map"]["url"] = r'https://api.maptiler.com/maps/dataviz/{z}/{x}/{y}.png' + f'?key={map_api_key_speckle}'
+            CONFIG["server"]["map"]["key"] = f'{map_api_key_speckle}'
             CONFIG["server"]["map"]["attribution"] = r'<a href="https://www.maptiler.com/copyright/" target="_blank">&copy; MapTiler</a> <a href="https://www.openstreetmap.org/copyright" target="_blank">&copy; OpenStreetMap contributors</a>'
 
         elif map_api_key_local and len(map_api_key_local)>=20:
             CONFIG["server"]["map"]["url"] = r'https://api.maptiler.com/maps/dataviz/{z}/{x}/{y}.png' + f'?key={map_api_key_local}'
+            CONFIG["server"]["map"]["key"] = f'{map_api_key_local}'
             CONFIG["server"]["map"]["attribution"] = r'<a href="https://www.maptiler.com/copyright/" target="_blank">&copy; MapTiler</a> <a href="https://www.openstreetmap.org/copyright" target="_blank">&copy; OpenStreetMap contributors</a>'
         else:
             CONFIG["server"]["map"]["url"] = r'https://tile.openstreetmap.org/{z}/{x}/{y}.png'
+            CONFIG["server"]["map"]["key"] = ""
             CONFIG["server"]["map"]["attribution"] = r'&copy; <a href="https://openstreetmap.org/copyright">OpenStreetMap contributors</a>'
     
 

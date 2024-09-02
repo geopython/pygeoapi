@@ -1,0 +1,287 @@
+<!DOCTYPE html>
+<html>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Maptalks demo</title>
+  <style type="text/css">
+    html,body{margin:0px;height:100%;width:100%}
+    .container{width:100%;height:100%}
+  </style>
+  <link rel="stylesheet" href="https://unpkg.com/maptalks/dist/maptalks.css">
+  <script type="text/javascript" src="https://unpkg.com/maptalks/dist/maptalks.min.js"></script>
+  <body>
+
+    <div class="row">
+        <h3>Speckle pygeoapi demo: display comments</h3>
+    </div>
+    <div id="map" class="container"></div>
+
+    <script>
+      var map = new maptalks.Map('map', {
+        center: [-0.113049, 51.498568],
+        zoom: 14,
+        pitch : 56,
+        bearing : 60,
+        baseLayer: new maptalks.TileLayer('base', {
+          urlTemplate: 'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png',
+          subdomains: ["a","b","c","d"],
+          attribution: '&copy; <a href="http://osm.org">OpenStreetMap</a> contributors, &copy; <a href="https://carto.com/">CARTO</a>'
+        })
+      });
+      
+      
+             
+      (async () => {
+                const speckle_data2 = await fetch('https://geo.speckle.systems/?speckleUrl=https://app.speckle.systems/projects/344f803f81/models/37d93c5d32&preserveAttributes=true', {
+                //const speckle_data = await fetch('http://localhost:5000/?speckleUrl=https://app.speckle.systems/projects/64753f52b7/models/338b386787&limit=1000000&lat=-0.031405&lon=109.335828&preserveAttributes=true', {
+                   headers: {
+                     'Accept': 'application/geo+json'
+                   }
+                }).then(response => response.json());
+                console.log(speckle_data2)
+
+                var speckle_features = []
+                for (let i = 0; i < speckle_data2.features.length; i++) {
+                    feature = speckle_data2.features[i];
+                    coords = feature.geometry.coordinates;
+
+                    if (feature.geometry.type.includes("Polygon")) {
+
+                        // check orientation of each PolygonPart
+                        for (let c = 0; c < coords[0].length; c++) {
+
+                            sum_orientation = 0;
+                            polygon_pts = coords[0][c]; // usually 3 for Mesh faces
+                            for (let k = 0; k < polygon_pts.length; k++){
+                                index = k + 1
+                                if (k == polygon_pts.length - 1){index = 0}
+                                pt = polygon_pts[k]
+                                pt2 = polygon_pts[index]
+                                sum_orientation += (pt2[0] - pt[0]) * (pt2[1] + pt[1]) 
+                            };
+                            if (sum_orientation <0.01 ){
+                                coords[0][c][0][0] += 0.000001;
+                                coords[0][c][0][1] += 0.000001;
+                            };
+                        };
+
+                        speckle_features.push(
+                            new maptalks.MultiPolygon(coords, {
+                                visible : true,
+                                cursor : null,
+                                symbol: {
+                                'lineColor' : 'rgb(200,200,200)',
+                                'lineOpacity' : 0.9,
+                                'lineWidth' : 1.5,
+                                'polygonFill' : feature.displayProperties.color,
+                                'polygonOpacity' : 1
+                                }
+                            })
+                        );
+                    } else if (feature.geometry.type.includes("MultiLineString")){
+                        
+                        speckle_features.push(
+                            new maptalks.MultiLineString(coords, {
+                                visible : true,
+                                cursor : null,
+                                symbol: {
+                                'lineColor' : feature.displayProperties.color,
+                                'lineOpacity' : 1,
+                                'lineWidth' : 2
+                                }
+                            })
+                        );
+                    } else if (feature.geometry.type.includes("LineString")){
+                        
+                        speckle_features.push(
+                            new maptalks.LineString(coords, {
+                                visible : true,
+                                cursor : null,
+                                symbol: {
+                                    'lineColor' : feature.displayProperties.color,
+                                    'lineOpacity' : 1,
+                                    'lineWidth' : 2
+                                }
+                            })
+                        );
+                    } else if (feature.geometry.type.includes("MultiPoint")){
+                        symbol= {
+                            'markerType': 'ellipse',
+                            'markerFill': speckle_data.features[i].displayProperties.color,
+                            'markerFillOpacity': 0.7,
+                            'markerLineColor': speckle_data.features[i].displayProperties.color,
+                            'markerLineWidth': 0,
+                            'markerLineOpacity': 1,
+                            'markerLineDasharray':[],
+                            'markerWidth': 10,
+                            'markerHeight': 10,
+                            'markerDx': -10,
+                            'markerDy': 0,
+                            'markerOpacity' : 1,
+                            'textFaceName' : 'sans-serif',
+                            'textName' : speckle_data.features[i].properties["FID"],
+                            'textFill' : '#34495e',
+                            'textHorizontalAlignment' : 'right',
+                            'textSize' : 20
+                        };
+                        if (feature.displayProperties["object_type"] == "comment"){
+                            var strippedHtml = feature.properties.text_html.replaceAll('&emsp;', '    ').replaceAll('<br>', '\n').replace(/<[^>]+>/g, '');
+                            symbol.textName = strippedHtml;
+                            symbol.textSize = 10;
+                        };
+
+                        speckle_features.push(
+                            new maptalks.MultiPoint(coords, {
+                                visible : true,
+                                cursor : null,
+                                cursor : 'pointer',
+                                symbol: symbol
+                            })
+                        );
+                    }
+                }
+                
+                speckle_layer2 = new maptalks.VectorLayer('vector2', speckle_features, { enableAltitude : true
+                    , drawAltitude : {
+                    //polygonFill : '#1bbc9b',
+                    //polygonOpacity : 0.3,
+                    //lineWidth : 0
+                    }
+                }
+                );
+
+                speckle_layer2.addTo(map);
+                map.fitExtent(speckle_layer2.getExtent(), 0);
+                
+                //map.fitBounds(speckle_layer.getBounds())
+
+                const speckle_data = await fetch('https://geo.speckle.systems/?speckleUrl=https://app.speckle.systems/projects/344f803f81/models/5582ab673e&datatype=projectcomments', {
+                //const speckle_data = await fetch('http://localhost:5000/?speckleUrl=https://app.speckle.systems/projects/64753f52b7/models/338b386787&limit=1000000&lat=-0.031405&lon=109.335828&preserveAttributes=true', {
+                   headers: {
+                     'Accept': 'application/geo+json'
+                   }
+                }).then(response => response.json());
+                console.log(speckle_data)
+
+                var speckle_features = []
+                for (let i = 0; i < speckle_data.features.length; i++) {
+                    feature = speckle_data.features[i];
+                    coords = feature.geometry.coordinates;
+
+                    if (feature.geometry.type.includes("Polygon")) {
+
+                        // check orientation of each PolygonPart
+                        for (let c = 0; c < coords[0].length; c++) {
+
+                            sum_orientation = 0;
+                            polygon_pts = coords[0][c]; // usually 3 for Mesh faces
+                            for (let k = 0; k < polygon_pts.length; k++){
+                                index = k + 1
+                                if (k == polygon_pts.length - 1){index = 0}
+                                pt = polygon_pts[k]
+                                pt2 = polygon_pts[index]
+                                sum_orientation += (pt2[0] - pt[0]) * (pt2[1] + pt[1]) 
+                            };
+                            if (sum_orientation <0.01 ){
+                                coords[0][c][0][0] += 0.000001;
+                                coords[0][c][0][1] += 0.000001;
+                            };
+                        };
+
+                        speckle_features.push(
+                            new maptalks.MultiPolygon(coords, {
+                                visible : true,
+                                cursor : null,
+                                symbol: {
+                                'lineColor' : 'rgb(200,200,200)',
+                                'lineOpacity' : 0.3,
+                                'lineWidth' : 0.5,
+                                'polygonFill' : feature.displayProperties.color,
+                                'polygonOpacity' : 1
+                                }
+                            })
+                        );
+                    } else if (feature.geometry.type.includes("MultiLineString")){
+                        
+                        speckle_features.push(
+                            new maptalks.MultiLineString(coords, {
+                                visible : true,
+                                cursor : null,
+                                symbol: {
+                                'lineColor' : feature.displayProperties.color,
+                                'lineOpacity' : 1,
+                                'lineWidth' : 2
+                                }
+                            })
+                        );
+                    } else if (feature.geometry.type.includes("LineString")){
+                        
+                        speckle_features.push(
+                            new maptalks.LineString(coords, {
+                                visible : true,
+                                cursor : null,
+                                symbol: {
+                                    'lineColor' : feature.displayProperties.color,
+                                    'lineOpacity' : 1,
+                                    'lineWidth' : 2
+                                }
+                            })
+                        );
+                    } else if (feature.geometry.type.includes("MultiPoint")){
+                        symbol= {
+                            'markerType': 'ellipse',
+                            'markerFill': speckle_data.features[i].displayProperties.color,
+                            'markerFillOpacity': 0.7,
+                            'markerLineColor': speckle_data.features[i].displayProperties.color,
+                            'markerLineWidth': 0,
+                            'markerLineOpacity': 1,
+                            'markerLineDasharray':[],
+                            'markerWidth': 10,
+                            'markerHeight': 10,
+                            'markerDx': -10,
+                            'markerDy': 0,
+                            'markerOpacity' : 1,
+                            'textFaceName' : 'sans-serif',
+                            'textName' : speckle_data.features[i].properties["FID"],
+                            'textFill' : '#34495e',
+                            'textHorizontalAlignment' : 'right',
+                            'textSize' : 20
+                        };
+                        if (feature.displayProperties["object_type"] == "comment"){
+                            var strippedHtml = feature.properties.text_html.replaceAll('&emsp;', '    ').replaceAll('<br>', '\n').replace(/<[^>]+>/g, '');
+                            symbol.textName = strippedHtml;
+                            symbol.textSize = 10;
+                        };
+
+                        speckle_features.push(
+                            new maptalks.MultiPoint(coords, {
+                                visible : true,
+                                cursor : null,
+                                cursor : 'pointer',
+                                symbol: symbol
+                            })
+                        );
+                    }
+                }
+                
+                speckle_layer = new maptalks.VectorLayer('vector', speckle_features, { enableAltitude : true
+                    , drawAltitude : {
+                    //polygonFill : '#1bbc9b',
+                    //polygonOpacity : 0.3,
+                    //lineWidth : 0
+                    }
+                }
+                );
+
+                speckle_layer.addTo(map);
+                map.fitExtent(speckle_layer.getExtent(), 0);
+                
+                //map.fitBounds(speckle_layer.getBounds())
+             })();
+
+
+
+
+    </script>
+  </body>
+</html>

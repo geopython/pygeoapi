@@ -1,0 +1,175 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <title>Leaflet demo</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.3.1/dist/leaflet.css"/>
+    <script src="https://unpkg.com/leaflet@1.3.1/dist/leaflet.js"></script>
+
+  </head>
+  <body>
+
+    <main style="margin-left: 20px;margin-right: 20px;">
+        
+        <div class="row">
+            <h3>Speckle pygeoapi demo: construct URL</h3>
+            <div class="form-group" ><label style="min-width: 10vw;display:inline-block">Speckle Model URL: </label>
+                <input value="https://app.speckle.systems/projects/64753f52b7/models/338b386787" id="speckle_model" type="text" maxlength="512" style="min-width: 55vw;" class="searchField"/></div>
+            <div class="form-group"><label style="min-width: 10vw;display:inline-block">Data type: </label>
+                <select id="data_type" style="min-width: 55vw;">
+                    <option value="polygons">polygons</option>
+                    <option value="points">points</option>
+                    <option value="lines">lines</option>
+                    <option value="projectcomments">projectcomments</option>
+                </select>
+            </div>
+            <div class="form-group"><label style="min-width: 10vw;display:inline-block">Preserve attributes: </label>
+                <select id="preserve_attributes" style="min-width: 55vw;">
+                    <option value="false">false</option>
+                    <option value="true">true</option>
+                </select>
+            </div>
+
+            <div class="form-group"><label style="min-width: 10vw;display:inline-block">Feature limit: </label>
+                <input value="100000" id="limit" type="text" maxlength="512" style="min-width: 55vw;" class="searchField"/></div>
+            
+            <div class="form-group"><label style="min-width: 10vw;display:inline-block">Lat: </label>
+                <input value="-0.031405" id="lat" type="text" maxlength="512" style="min-width: 55vw;" class="searchField"/></div>
+            <div class="form-group"><label style="min-width: 10vw;display:inline-block">Lon: </label>
+                <input value="109.335828" id="lon" type="text" maxlength="512" style="min-width: 55vw;" class="searchField"/></div>
+            <div class="form-group"><label style="min-width: 10vw;display:inline-block">North (degrees): </label>
+                <input value="" id="north_degrees" type="text" maxlength="512" style="min-width: 55vw;" class="searchField"/></div>
+            
+            <div class="form-group"><label style="min-width: 10vw;display:inline-block">Final URL: </label>
+                <input value="" id="link" type="text" maxlength="512" style="min-width: 55vw;" class="searchField"/></div>
+        
+            <input id="clickMe" type="button" value="Refresh map" onclick="doFunction();" />
+        </div>
+        <div>
+            <div class="row"><p></p></div>
+            <div class="row">
+                <div id="items-map" style="min-height: 60vh;"></div>
+            </div>
+        </div>
+    </main>
+
+    
+    <script>
+        // attach event to a button click
+        document.getElementById("clickMe").onclick = doFunction;
+        var el = document.getElementById("clickMe");
+        if (el.addEventListener)
+            el.addEventListener("click", doFunction, false);
+        else if (el.attachEvent)
+            el.attachEvent('onclick', doFunction);
+
+        // create map
+        var map = L.map('items-map').setView([ 45 ,  -75 ], 5);
+        map.addLayer(new L.TileLayer(
+            'https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                maxZoom: 22,
+                attribution: '&copy; <a href="https://openstreetmap.org/copyright">OpenStreetMap contributors</a> &copy; Data: <a href="https://speckle.systems/">Speckle Systems</a>'
+            }
+        ));
+
+        // load Speckle data
+        document.getElementById('link').disabled=true;
+        doFunction();
+        
+        async function doFunction() {
+            map.eachLayer(function (layer) {
+                if (!(layer instanceof L.TileLayer)){
+                    map.removeLayer(layer);
+                }
+            });
+
+            // construnt data URL
+            var link = "https://geo.speckle.systems/?speckleUrl=";
+            if (document.getElementById("speckle_model").value!=""){
+                link += document.getElementById("speckle_model").value.replace(" ", "")
+            }
+            if (document.getElementById("data_type").value!=""){
+                link += "&datatype=" + document.getElementById("data_type").value.replace(" ", "")
+            }
+            if (document.getElementById("limit").value!=""){
+                link += "&limit=" + document.getElementById("limit").value.replace(" ", "")
+            }
+            if (document.getElementById("preserve_attributes").value!=""){
+                link += "&preserveAttributes=" + document.getElementById("preserve_attributes").value.replace(" ", "")
+            }
+
+            
+            if (document.getElementById("lon").value!=""){
+                link += "&lon=" + document.getElementById("lon").value.replace(" ", "")
+            }
+            if (document.getElementById("lat").value!=""){
+                link += "&lat=" + document.getElementById("lat").value.replace(" ", "")
+            }
+            if (document.getElementById("north_degrees").value!=""){
+                link += "&northDegrees=" + document.getElementById("north_degrees").value.replace(" ", "")
+            }
+
+            // set URL value to the text field
+            document.getElementById("link").value = link;
+
+            // get Speckle data
+            const speckle_data = await fetch(link, {
+                headers: {
+                    'Accept': 'application/geo+json'
+                }
+            }).then(response => response.json());
+            
+            // add data to map
+            speckle_layer = L.geoJSON(speckle_data, {
+                filter: (feature) => {
+                return feature.displayProperties["object_type"] == "comment"
+                },
+                pointToLayer: (feature, latlng) => {
+                    return new L.marker(latlng)            
+                },
+                onEachFeature: function (feature, layer) {
+                    var html = '<span><td><p>' + feature['properties']['text_html'] + '</p></td>  </span>';
+                    layer.bindPopup(html);
+                }
+            });
+            speckle_layer.addTo(map);
+            
+            speckle_layer2 = L.geoJSON(speckle_data, {
+                filter: (feature) => {
+                return feature.displayProperties["object_type"] == "geometry"
+                },
+                pointToLayer: (feature, latlng) => {
+                    return new L.circleMarker(latlng)            
+                },
+                onEachFeature: function (feature, layer) {
+                    var html = '<span><td><p>' + feature['properties']['speckle_type'] + '</p></td></span>';
+                    layer.bindPopup(html);
+
+                    var myFillColor = feature.displayProperties['color'];
+                    var mylineWeight = feature.displayProperties['lineWidth'];
+                    var myRadius = feature.displayProperties['radius'];
+
+                    layer.setStyle({
+                        fillColor: myFillColor,
+                        color: myFillColor,
+                        fillOpacity: 0.8,
+                        weight: mylineWeight,
+                        radius: myRadius
+                    });
+                }
+            });
+            speckle_layer2.addTo(map);
+
+            if (document.getElementById("data_type").value.replace(" ","").toLowerCase() == "projectcomments"){
+                map.fitBounds(speckle_layer.getBounds())
+            }else{
+                map.fitBounds(speckle_layer2.getBounds())
+            }
+
+        };
+        </script>
+
+  </body>
+</html>

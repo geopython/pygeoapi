@@ -5,15 +5,37 @@
     <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster/dist/MarkerCluster.css"/>
     <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster/dist/MarkerCluster.Default.css"/>
     <script src="https://unpkg.com/leaflet.markercluster/dist/leaflet.markercluster-src.js"></script>
+    
+    <script src="https://unpkg.com/deck.gl@latest/dist.min.js"></script>
+    <script src="https://cdn.maptiler.com/maptiler-sdk-js/v2.2.2/maptiler-sdk.umd.js"></script>
+    <link href="https://cdn.maptiler.com/maptiler-sdk-js/v2.2.2/maptiler-sdk.css" rel="stylesheet" />
 {% endblock %}
 
 {% block body_map %}
+  
 
   <div class="row">
     {% if not data['missing_url'] %}
-    <div id="items-map" style="min-height: 80vh;"></div>
+    
+    <div class="form-group" >
+      <label class="switch">3D
+        <input id="modeSwitch" type="checkbox">
+        <span class="slider round"></span>
+      </label>
+    </div>
+
+    <div id="map2d" style="height: 80vh;"></div>
+    <div id="map3d" style="height: 0vh;"></div>
     {% else %}
-    <div id="items-map" style="min-height: 40vh;"></div>
+
+    <div class="form-group" >
+      <label class="switch">3D
+        <input id="modeSwitch" type="checkbox" disabled="true">
+        <span class="slider round"></span>
+      </label>
+    </div>
+    
+    <div id="map2d" style="height: 40vh;"></div>
     {% endif %}
   </div>
 
@@ -290,7 +312,12 @@
       </tr>
       <tr>
         <p>
-          4. Speckle project comments: <a href = "https://geo.speckle.systems/?speckleUrl=https://app.speckle.systems/projects/344f803f81/models/5582ab673e&datatype=projectcomments">https://geo.speckle.systems/?speckleUrl=https://app.speckle.systems/projects/344f803f81/models/5582ab673e&datatype=projectcomments</a>
+          4. Rhino detailed building: <a href = "https://geo.speckle.systems/?speckleUrl=https://app.speckle.systems/projects/5feae56049/models/9c43d7569c&limit=100000&northDegrees=-117">https://geo.speckle.systems/?speckleUrl=https://app.speckle.systems/projects/5feae56049/models/9c43d7569c&limit=100000&northDegrees=-117</a>
+        </p>
+      </tr>
+      <tr>
+        <p>
+          5. Speckle project comments: <a href = "https://geo.speckle.systems/?speckleUrl=https://app.speckle.systems/projects/344f803f81/models/5582ab673e&datatype=projectcomments">https://geo.speckle.systems/?speckleUrl=https://app.speckle.systems/projects/344f803f81/models/5582ab673e&datatype=projectcomments</a>
         </p>
       </tr>
       
@@ -314,64 +341,204 @@
 {% block extrafoot %}
 
     <script>
-    var map = L.map('items-map').setView([45, 0], 2);
-    map.addLayer(new L.TileLayer(
-        '{{ config['server']['map']['url'] }}', {
-            maxZoom: 22,
-            attribution: '{{ config['server']['map']['attribution'] | safe }}  &copy; Data: <a href="https://speckle.systems/">Speckle Systems</a>'
+      // attach even to modeSwitch btn
+      document.getElementById("modeSwitch").onclick = switchMode;
+      var el = document.getElementById("modeSwitch");
+      if (el.addEventListener)
+          el.addEventListener("click", switchMode, false);
+      else if (el.attachEvent)
+          el.attachEvent('onclick', switchMode);
+
+      function switchMode() {
+        btn = document.getElementById('modeSwitch');
+        if (btn.checked){
+          document.getElementById('map2d').style.height = '0vh';
+          document.getElementById('map3d').style.height = '80vh';
         }
-    ));
-
-    var geojson_data = {{ data['features'] | to_json | safe }};
-    // var geojson_comments = {{ data['comments'] | to_json | safe }};
-
-    var items = new L.GeoJSON(geojson_data, {
-        filter: (feature) => {
-          return feature.displayProperties["object_type"] == "geometry"
-        },
-        pointToLayer: (feature, latlng) => {
-            return new L.circleMarker(latlng)            
-        },
-        onEachFeature: function (feature, layer) {
-            var url = '{{ data['speckle_project_url'] }}/models/' + feature.id.split("_")[0]
-            var html = '<span><td><p>' + feature['properties']['speckle_type'] + '</p></td><a href="' + url + '" target="_blank">' + feature['properties']['id'].split("_")[0] + '</a></span>';
-            layer.bindPopup(html);
-
-            var myFillColor = feature.displayProperties['color'];
-            var mylineWeight = feature.displayProperties['lineWidth'];
-            var myRadius = feature.displayProperties['radius'];
-
-            layer.setStyle({
-                fillColor: myFillColor,
-                color: myFillColor,
-                fillOpacity: 0.8,
-                weight: mylineWeight,
-                radius: myRadius
-            });
+        else {
+          document.getElementById('map2d').style.height = '80vh';
+          document.getElementById('map3d').style.height = '0vh';
         }
-    }); //.addTo(map);
-    
-    var comments = new L.GeoJSON(geojson_data, {
-        filter: (feature) => {
-          return feature.displayProperties["object_type"] == "comment"
-        },
-        pointToLayer: (feature, latlng) => {
-            return new L.marker(latlng)            
-        },
-        onEachFeature: function (feature, layer) {
-            var url = '{{ data['speckle_project_url'] }}/models/' + feature.properties.resource_id + '#threadId=' + feature.id; 
-            var html = '<span><td><a href="' + url + '" target="_blank">Go to thread</a></td> <td><p>' + feature['properties']['text_html'] + '</p></td>  </span>';
-            layer.bindPopup(html);
-        }
-    }); //.addTo(map);
+      }
 
-    var group = L.featureGroup([items, comments])
-    .addTo(map);
 
-    //map.addLayer(lines);
+      var data = {{ data | to_json | safe }};
+      var geojson_data = {{ data['features'] | to_json | safe }};
 
-    map.fitBounds(group.getBounds());
-    // map.setZoom(19); // in order for the tiles to load
+      // Leaflet 2d map 
+      function initialize2d() {
+        var map = L.map('map2d').setView([45, 0], 2);
+        map.addLayer(new L.TileLayer(
+            '{{ config['server']['map']['url'] }}', {
+                maxZoom: 22,
+                attribution: '{{ config['server']['map']['attribution'] | safe }}  &copy; Data: <a href="https://speckle.systems/">Speckle Systems</a>'
+            }
+        ));
+
+        var items = new L.GeoJSON(geojson_data, {
+            filter: (feature) => {
+              return feature.displayProperties["object_type"] == "geometry"
+            },
+            pointToLayer: (feature, latlng) => {
+                return new L.circleMarker(latlng)            
+            },
+            onEachFeature: function (feature, layer) {
+                var url = '{{ data['speckle_project_url'] }}/models/' + feature.id.split("_")[0]
+                var html = '<span><td><p>' + feature['properties']['speckle_type'] + '</p></td><a href="' + url + '" target="_blank">' + feature['properties']['id'].split("_")[0] + '</a></span>';
+                layer.bindPopup(html);
+
+                var myFillColor = feature.displayProperties['color'];
+                var mylineWeight = feature.displayProperties['lineWidth'];
+                var myRadius = feature.displayProperties['radius'];
+
+                layer.setStyle({
+                    fillColor: myFillColor,
+                    color: myFillColor,
+                    fillOpacity: 0.8,
+                    weight: mylineWeight,
+                    radius: myRadius
+                });
+            }
+        }); //.addTo(map);
+        
+        var comments = new L.GeoJSON(geojson_data, {
+            filter: (feature) => {
+              return feature.displayProperties["object_type"] == "comment"
+            },
+            pointToLayer: (feature, latlng) => {
+                return new L.marker(latlng)            
+            },
+            onEachFeature: function (feature, layer) {
+                var url = '{{ data['speckle_project_url'] }}/models/' + feature.properties.resource_id + '#threadId=' + feature.id; 
+                var html = '<span><td><a href="' + url + '" target="_blank">Go to thread</a></td> <td><p>' + feature['properties']['text_html'] + '</p></td>  </span>';
+                layer.bindPopup(html);
+            }
+        }); //.addTo(map);
+
+        var group = L.featureGroup([items, comments])
+        .addTo(map);
+
+        //map.addLayer(lines);
+
+        map.fitBounds(group.getBounds());
+        // map.setZoom(19); // in order for the tiles to load
+      };
+
+
+      // MapTiler 3d map
+      function hexToRgb(hex) {
+          var result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+          return result ? [parseInt(result[1], 16), parseInt(result[2], 16), parseInt(result[3], 16), parseInt(result[0], 16)] : null;
+          };
+      function  rgbaToArgbList(color) {
+          col = color.replace('rgba(','').replace(')','').split(',',4);
+          value = [ parseInt(col[0]), parseInt(col[1]), parseInt(col[2]), parseInt(col[3]) ];
+          return value;
+          }
+      function  rgbaToArgbListDarker(color) {
+          col = color.replace('rgba(','').replace(')','').split(',',4);
+          value = [ parseInt(col[0])*0.95, parseInt(col[1])*0.95, parseInt(col[2])*0.95, parseInt(col[3]) ];
+          return value;
+          }
+
+      function initialize3d() {
+          maptilersdk.config.apiKey = '{{ config["server"]["map"]["key"] }}'; 
+          speckle_data = JSON.parse(JSON.stringify(data))
+
+          var speckle_features = []
+          for (let i = 0; i < speckle_data.features.length; i++) {
+              feature = speckle_data.features[i];
+              coords = feature.geometry.coordinates;
+
+              if (feature.geometry.type.includes("Polygon")) {
+
+                  // check orientation of each PolygonPart, if vertical - shift points slightly
+                  for (let p = 0; p < coords.length; p++) {
+                      for (let c = 0; c < coords[p].length; c++) {
+
+                          sum_orientation = 0;
+                          polygon_pts = coords[p][c]; // usually 3 for Mesh faces
+                          for (let k = 0; k < polygon_pts.length; k++){
+                              index = k + 1
+                              if (k == polygon_pts.length - 1){index = 0}
+                              pt = polygon_pts[k]
+                              pt2 = polygon_pts[index]
+                              sum_orientation += (pt2[0] - pt[0]) * (pt2[1] + pt[1]) 
+                          };
+
+                          createdPolygon = false;
+                          if (-0.01 < sum_orientation && sum_orientation <0.01){
+                              coords[p][c][0][0] += 0.0000001;
+                              coords[p][c][0][1] += 0.0000001;
+                              coords[p][c][1][0] -= 0.0000001;
+                              coords[p][c][1][1] -= 0.0000001;
+                              if(polygon_pts.length==3) {
+                                createdPolygon = true;
+
+                                multipolygon_coords = [coords[p][c]];
+                                speckle_features.push({"id": speckle_features.length, "type":"Feature", 
+                                    "geometry": {"type": "MultiPolygon", "coordinates":[multipolygon_coords]}, 
+                                    "properties": speckle_data.features[i].properties });
+                                          
+                              }
+                              else if (polygon_pts.length==4) {
+                                  createdPolygon = true;
+
+                                  multipolygon_coords = [coords[p][c].slice(0,3)];
+                                  speckle_features.push({"id": speckle_features.length, "type":"Feature", 
+                                      "geometry": {"type": "MultiPolygon", "coordinates":[multipolygon_coords]}, 
+                                      "properties": speckle_data.features[i].properties });
+
+                                  multipolygon_coords = [[coords[p][c][2], coords[p][c][3], coords[p][c][0]]];
+                                  speckle_features.push({"id": speckle_features.length, "type":"Feature", "geometry": {"type": "MultiPolygon", "coordinates":[multipolygon_coords]}, "properties": speckle_data.features[i].properties });
+                              };
+                          };
+                          if (createdPolygon == false){
+                              multipolygon_coords = [coords[p][c]];
+                              speckle_features.push({"id": speckle_features.length, "type":"Feature", 
+                                  "geometry": {"type": "MultiPolygon", "coordinates":[multipolygon_coords]}, 
+                                  "properties": speckle_data.features[i].properties });
+                          }
+                          
+                      };
+                  };
+
+              } 
+          }
+          
+          var extent = speckle_data["extent"];
+          speckle_data.features = speckle_features;
+
+          // Create deck.gl map
+          const deckgl = new deck.DeckGL({
+              container: 'map3d',
+              map: maptilersdk,
+              mapStyle: maptilersdk.MapStyle.STREETS.PASTEL,
+              initialViewState: {
+                longitude: extent[0] + (extent[2]-extent[0])/2,
+                latitude: extent[1] + (extent[3]-extent[1])/2,
+                zoom: 22,
+                pitch: 60,
+                bearing: 1.469387755102039
+              },
+              controller: true,
+
+              layers: [
+              new deck.GeoJsonLayer({
+                  id: 'speckle_data',
+                  data: speckle_data,
+                  // Styles
+                  filled: true,
+                  getFillColor: f => rgbaToArgbList(f.properties.color),
+                  getLineWidth: 0.05,
+                  getLineColor: f => rgbaToArgbListDarker(f.properties.color),
+              })
+              ]
+          });
+    }
+
+    initialize2d();
+    initialize3d();
 
     </script>
 

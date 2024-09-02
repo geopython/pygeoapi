@@ -39,19 +39,72 @@ Example: [https://geo.speckle.systems/?speckleUrl=https://app.speckle.systems/pr
 List of possible issues you can experience and solutions to them:
 
 - Page or Map stays blank and Developer Tools Console shows "net::ERR_QUIC_PROTOCOL_ERROR 200 (OK)"
+
 Solution: Try reloading the page. Otherwise, if in Google Chrome, navigate to chrome://flags/#enable-quic in and change Experimental QUIC Protocol dropdown to Disabled.
 
 - Model seems to be loaded incomplete
+
 Solution: Check the message "feature count limited to ..." next to the Model name on the top of the page. If the message is present, try increasing the feature limit using "&limit=10000" URL parameter
 
 - Attribute table doesn't have original feature attributes and properties
-Enable the URL parameter "&preserveAttributes=true". It is disabled by default due to the faulty display of the 3-dimentional multiPolygons overlapping themselves in 2d space, when viweving in the browser on 2d map. Enabling this parameter might make the multipolygons appear "transparent" due to self-overlap. 
 
-Report any other issues here or on our [Community Forum](https://speckle.community/invites/qxEmQb1QcM).
+Solution: Enable the URL parameter "&preserveAttributes=true". It is disabled by default due to the faulty display of the 3-dimentional multiPolygons overlapping themselves in 2d space, when viweving in the browser on 2d map. Enabling this parameter might make the multipolygons appear "transparent" due to self-overlap. 
 
-### Add Speckle Feature Layer to a web-based map
+Report any other issues here or on our [Community Forum](https://speckle.community/).
 
-Check out the examples in 'speckle_demos' folder for Leaflet and OpenLayers implementation.
+## Add Speckle Feature Layers to web-based maps and desktop apps
+
+### Add Speckle layer in Javascript
+
+Javascript-based mapping libraries can load speckle data as JSON using the following function: 
+
+```javascript
+    async function loadSpeckleData() => {
+        var speckle_model_url = 'https://geo.speckle.systems/?speckleUrl=https://app.speckle.systems/projects/344f803f81/models/5582ab673e&datatype=polygons';
+        const speckle_data = await fetch(speckle_model_url, {
+            headers: {'Accept': 'application/geo+json'}
+        }).then(response => response.json());
+    }
+```
+
+Then you can add it to the base map (e.g. using Leaflet and OpenStreetMap basemap tiles). The following example assumes an html div element with id="items-map":
+
+```html
+    <script>
+        var map = L.map('items-map').setView([ 45 ,  -75 ], 5);
+        map.addLayer(new L.TileLayer(
+            'https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                maxZoom: 22,
+                attribution: '&copy; <a href="https://openstreetmap.org/copyright">OpenStreetMap contributors</a> &copy; Data: <a href="https://speckle.systems/">Speckle Systems</a>'
+            }
+        ));
+        loadSpeckleData();
+
+        async function loadSpeckleData() => {
+            var speckle_model_url = 'https://geo.speckle.systems/?speckleUrl=https://app.speckle.systems/projects/344f803f81/models/5582ab673e&datatype=polygons';
+            const speckle_data = await fetch(speckle_model_url, {
+                headers: {'Accept': 'application/geo+json'}
+            }).then(response => response.json());
+            
+            speckle_layer = L.geoJSON(speckle_data, {
+                onEachFeature: function (feature, layer) {
+                    layer.setStyle({
+                        fillColor: feature.displayProperties['color'],
+                        color: myFillColor,
+                        fillOpacity: 0.8,
+                        weight: feature.displayProperties['lineWidth'],
+                        radius: feature.displayProperties['radius']
+                    });
+                }
+            });
+
+            speckle_layer.addTo(map);
+            map.fitBounds(speckle_layer.getBounds())
+        };
+    </script>
+```
+
+Check out 'speckle_demos' folder for more Leaflet and OpenLayers implementation.
 
 ### Add Speckle WFS layer in QGIS
 1. Add new WFS Layer

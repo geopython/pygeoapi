@@ -51,10 +51,11 @@ def separate_display_vals(displayValue: List) -> List[Tuple["Base"]]:
     
     for i, item in enumerate(displayValue):
         if isinstance(item, Mesh):
-
             count = 0
+            all_count = len(item.faces)
+
             for _ in item.faces:
-                try:
+                if count < all_count:
                     faces = []
                     verts = []
                     colors = []
@@ -71,20 +72,16 @@ def separate_display_vals(displayValue: List) -> List[Tuple["Base"]]:
                         new_vert = item.vertices[3*vert_index : 3*vert_index + 3]
                         verts.extend(new_vert)
 
-                        if isinstance(item.colors, List) and len(item.colors)>2:
-                            
+                        if isinstance(item.colors, List) and len(item.colors) > vert_index:
                             color = item.colors[vert_index]
                             colors.append(color)
                     
                     count += vert_num+1
-                except IndexError:
-                    continue
-                
-                if len(colors)>0:
-                    mesh = Mesh.create(faces= faces, vertices=verts, colors=colors)
-                else:
-                    mesh = Mesh.create(faces= faces, vertices=verts)
-                display_objs.append((mesh, item))
+                    if len(colors)>0:
+                        mesh = Mesh.create(faces= faces, vertices=verts, colors=colors)
+                    else:
+                        mesh = Mesh.create(faces= faces, vertices=verts)
+                    display_objs.append((mesh, item))
 
         elif item is not None:
             display_objs.append((item, item))
@@ -225,6 +222,7 @@ def assign_color(obj_display, props) -> None:
 
     # initialize Speckle Blue color
     color = DEFAULT_COLOR
+    opacity = None
 
     try:
         # prioritize renderMaterials for Meshes & Brep
@@ -232,8 +230,10 @@ def assign_color(obj_display, props) -> None:
             # print(obj_display.get_member_names())
             if hasattr(obj_display, 'renderMaterial'):
                 color = obj_display['renderMaterial']['diffuse']
+                opacity = obj_display['renderMaterial']['opacity']
             elif hasattr(obj_display, '@renderMaterial'):
                 color = obj_display['@renderMaterial']['diffuse']
+                opacity = obj_display['@renderMaterial']['opacity']
 
             elif isinstance(obj_display, Mesh) and isinstance(obj_display.colors, List) and len(obj_display.colors)>1:
                 sameColors = True
@@ -256,26 +256,35 @@ def assign_color(obj_display, props) -> None:
             color = obj_display['@displayStyle']['color']
         elif hasattr(obj_display, 'renderMaterial'):
             color = obj_display['renderMaterial']['diffuse']
+            opacity = obj_display['renderMaterial']['opacity']
         elif hasattr(obj_display, '@renderMaterial'):
             color = obj_display['@renderMaterial']['diffuse']
+            opacity = obj_display['@renderMaterial']['opacity']
     except Exception as e:
         print(e)
     
-    r, g, b = get_r_g_b(color)
-    hex_color = '#%02x%02x%02x' % (r, g, b)
-    props['color'] = hex_color
+    a, r, g, b = get_r_g_b(color)
+    if opacity is not None and isinstance(opacity, float):
+        a_test = int(255* opacity)
+        if 0 <= a_test <= 255:
+            a = a_test
+    # hex_color = '#%02x%02x%02x' % (r, g, b)
+    props['color'] = f'rgba({r},{g},{b},{a})'
 
 def get_r_g_b(rgb: int) -> Tuple[int, int, int]:
     """Get R, G, B values from int."""
 
     r = g = b = 0
+    a = 255
     try:
+        a = (rgb & 0xFF000000) >> 24
         r = (rgb & 0xFF0000) >> 16
         g = (rgb & 0xFF00) >> 8
         b = rgb & 0xFF
     except Exception as e:
         r = g = b = 150
-    return r, g, b
+        a = 255
+    return a, r, g, b
 
 def assign_display_properties(feature: Dict, f_base: "Base",  obj_display: "Base") -> None:
     """Assign displayProperties to the feature."""
