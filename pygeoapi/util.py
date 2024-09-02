@@ -888,7 +888,7 @@ class UrlPrefetcher:
         keyword argument is set), or the response has a bad status code,
         an empty dictionary is returned.
         """
-        kwargs.setdefault('timeout', 100)
+        kwargs.setdefault('timeout', 1)
         kwargs.setdefault('allow_redirects', True)
         try:
             response = self._session.head(url, **kwargs)
