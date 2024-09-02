@@ -179,7 +179,6 @@ jobs:
         gunicorn --bind 0.0.0.0:5000 \
                  --reload \
                  --reload-extra-file ${PYGEOAPI_CONFIG} \
-                 --timeout 120 \
                  pygeoapi.flask_app:APP &
     - name: run integration tests ⚙️
       run: |
