@@ -40,7 +40,7 @@ def initialize_features(self: "SpeckleProvider", all_coords, all_coord_counts, d
 
             feature: Dict = {
                 "type": "Feature",
-                # "bbox": [-180.0, -90.0, 180.0, 90.0],
+                "bbox": [-180.0, -90.0, 180.0, 90.0],
                 "geometry": {},
                 "displayProperties":{
                     "object_type": "geometry",
@@ -81,6 +81,7 @@ def initialize_features(self: "SpeckleProvider", all_coords, all_coord_counts, d
 
                     assign_display_properties(self, feature, f_base,  obj_get_color_tc)
                     feature["max_height"] = max([c[2] for c in coords])
+                    feature["bbox"] = get_feature_bbox(coords)
                     data["features"].append(feature)
                     feature_count += 1
                 
@@ -93,7 +94,7 @@ def initialize_features(self: "SpeckleProvider", all_coords, all_coord_counts, d
                     f_fid = feature_count + 1
                     feature_new: Dict = {
                         "type": "Feature",
-                        # "bbox": [-180.0, -90.0, 180.0, 90.0],
+                        "bbox": [-180.0, -90.0, 180.0, 90.0],
                         "geometry": {},
                         "displayProperties":{
                             "object_type": "geometry",
@@ -123,6 +124,7 @@ def initialize_features(self: "SpeckleProvider", all_coords, all_coord_counts, d
 
                         assign_display_properties(self, feature_new, f_base,  obj_get_color_tc)
                         feature_new["max_height"] = max([c[2] for c in coords])
+                        feature_new["bbox"] = get_feature_bbox(coords)
                         data["features"].append(feature_new)
                         feature_count +=1
 
@@ -171,6 +173,16 @@ def initialize_features(self: "SpeckleProvider", all_coords, all_coord_counts, d
     
     time2 = datetime.now()
     print(f"Creating features time: {(time2-time1).total_seconds()}")
+
+def get_feature_bbox(coords) -> List[float]:
+    """Get min max coordinates of the feature."""
+    
+    x0 = min([c[0] for c in coords])
+    x1 = max([c[0] for c in coords])
+    y0 = min([c[1] for c in coords])
+    y1 = max([c[1] for c in coords])
+
+    return [x0, y0, x1, y1]
 
 def assign_comment_data(comments, properties):
     """Create html text to display for the thread."""
