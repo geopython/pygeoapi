@@ -533,6 +533,7 @@
                           createdPolygon = false;
                           
                           if (-0.000000001 < sum_orientation && sum_orientation <0.000000001){
+
                               coords[p][c][0][0] += 0.0000001;
                               coords[p][c][0][1] += 0.0000001;
 
@@ -541,19 +542,15 @@
 
                               coords[p][c][2][0] += 0.0000001;
                               coords[p][c][2][1] += 0.0000001;
+
                               if(polygon_pts.length==3) {
                                 createdPolygon = true;
 
                                 multipolygon_coords = coords[p][c];
                                 polygon_part_loop = multipolygon_coords;
 
-                                if (inner == false){ 
-                                      polygon_part = [polygon_part_loop];
-                                      polygon_all_parts.push(polygon_part);
-                                    }
-                                else{ 
-                                    polygon_all_parts[polygon_all_parts.length-1].push(polygon_part_loop);
-                                }
+                                polygon_part = [polygon_part_loop];
+                                polygon_all_parts.push(polygon_part);                                
                                           
                               }
                               else if (polygon_pts.length==4) {
@@ -562,28 +559,20 @@
                                   multipolygon_coords = coords[p][c].slice(0,3);
                                   polygon_part_loop = multipolygon_coords;
 
-                                  if (inner == false){ 
-                                      polygon_part = [polygon_part_loop];
-                                      polygon_all_parts.push(polygon_part);
-                                    }
-                                  else{ 
-                                      polygon_all_parts[polygon_all_parts.length-1].push(polygon_part_loop);
-                                  }
+                                  polygon_part = [polygon_part_loop];
+                                  polygon_all_parts.push(polygon_part);
 
                                   /////////
                                   multipolygon_coords = [coords[p][c][2], coords[p][c][3], coords[p][c][0]];
                                   polygon_part_loop = multipolygon_coords;
 
-                                  if (inner == false){ 
-                                      polygon_part = [polygon_part_loop];
-                                      polygon_all_parts.push(polygon_part);
-                                    }
-                                  else{ 
-                                      polygon_all_parts[polygon_all_parts.length-1].push(polygon_part_loop);
-                                  }
+                                  polygon_part = [polygon_part_loop];
+                                  polygon_all_parts.push(polygon_part);
                               };
+                              
                           };
                           if (createdPolygon == false){ // if non-vertical, or vertical with more than 4 vertices
+                              
                               multipolygon_coords = coords[p][c];
                               polygon_part_loop = multipolygon_coords;
 
@@ -598,15 +587,16 @@
                           
                       };
                       
-                      polygons.push({"id": speckle_features.length, "type":"Feature", 
+                  };
+                  
+                  new_polygon = {"id": speckle_features.length, "type":"Feature", 
                           "geometry": {"type": "MultiPolygon", "coordinates":polygon_all_parts}, 
                           "properties": speckle_data.features[i].properties,
-                          "displayProperties": speckle_data.features[i].displayProperties });
-                  };
-                  polygons.forEach((element, index, array) => {
-                    element.displayProperties.lineWidth = 0.05
-                    speckle_features.push(element);
-                  });
+                          "displayProperties": speckle_data.features[i].displayProperties };
+
+                  new_polygon.displayProperties.lineWidth = 0.05
+                  polygons.push(new_polygon);
+                  speckle_features.push(new_polygon);
 
               } 
               else if (speckle_data.features[i].displayProperties.object_type == "comment")
