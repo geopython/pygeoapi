@@ -335,7 +335,7 @@
 {% block extrafoot %}
 
     <script>
-      document.getElementById("loading_screen").style.height = '0px';
+      document.getElementById("loading_screen").remove();
 
       // attach even to modeSwitch btn
       document.getElementById("modeSwitch").onclick = switchMode;
@@ -524,8 +524,12 @@
                           if (-0.01 < sum_orientation && sum_orientation <0.01){
                               coords[p][c][0][0] += 0.0000001;
                               coords[p][c][0][1] += 0.0000001;
+
                               coords[p][c][1][0] -= 0.0000001;
                               coords[p][c][1][1] -= 0.0000001;
+
+                              coords[p][c][2][0] += 0.0000001;
+                              coords[p][c][2][1] += 0.0000001;
                               if(polygon_pts.length==3) {
                                 createdPolygon = true;
 

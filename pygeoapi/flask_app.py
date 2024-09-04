@@ -199,14 +199,28 @@ def landing_page():
         
         def generate():
             yield loading_screen().data
-            browser_response = execute_from_flask(itemtypes_api.get_collection_items,
+            try:
+                browser_response = execute_from_flask(itemtypes_api.get_collection_items,
                                     request, collection_id,
                                     skip_valid_check=True)
+                yield browser_response.data
 
-            yield browser_response.data
+            except Exception as ex:
+                yield error_screen(ex).data
+
         return Response(stream_with_context(generate()))
     
     return get_response(api_.landing_page(request))
+
+def error_screen(ex: Exception):
+    """
+    Loading empty page
+
+    :returns: HTTP response
+    """
+    content = render_j2_template(api_.tpl_config, 'error_screen.html',{"exception": ex})
+
+    return get_response((request.headers, HTTPStatus.OK, content))
 
 def loading_screen():
     """
