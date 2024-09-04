@@ -10,6 +10,9 @@ def initialize_features(self: "SpeckleProvider", all_coords, all_coord_counts, d
     from pygeoapi.provider.speckle_utils.converter_utils import assign_geometry
     from pygeoapi.provider.speckle_utils.display_utils import find_display_obj, assign_display_properties, find_list_of_display_obj
 
+    from specklepy.objects.graph_traversal.traversal import TraversalContext
+    from specklepy.objects.other import Collection
+
     print(f"Creating features..")
     time1 = datetime.now()
     
@@ -18,6 +21,9 @@ def initialize_features(self: "SpeckleProvider", all_coords, all_coord_counts, d
 
     if self.requested_data_type != "projectcomments":
         for item in context_list:
+
+            if item.current.speckle_type.endswith("Collection") or item.current.speckle_type.endswith("Layer") or item.current.speckle_type.endswith("Proxy"):
+                continue
 
             if feature_count >= self.limit:
                 self.limit_message = f" (feature count limited to {self.limit})"
@@ -28,6 +34,10 @@ def initialize_features(self: "SpeckleProvider", all_coords, all_coord_counts, d
             f_fid = feature_count + 1
 
             # initialize feature
+            speckle_type = item.current.speckle_type
+            if ":" in speckle_type:
+                speckle_type = speckle_type.split(":")[-1]
+
             feature: Dict = {
                 "type": "Feature",
                 # "bbox": [-180.0, -90.0, 180.0, 90.0],
@@ -38,7 +48,7 @@ def initialize_features(self: "SpeckleProvider", all_coords, all_coord_counts, d
                 "properties": {
                     "id": f_id,
                     "FID": f_fid,
-                    "speckle_type": item.current.speckle_type.split(":")[-1],
+                    "speckle_type": speckle_type,
                 },
             }
 
@@ -67,7 +77,9 @@ def initialize_features(self: "SpeckleProvider", all_coords, all_coord_counts, d
                         if prop not in all_props:
                             all_props.append(prop)
                     
-                    assign_display_properties(self, feature, f_base,  obj_get_color)
+                    obj_get_color_tc = TraversalContext(obj_get_color, "", item)
+
+                    assign_display_properties(self, feature, f_base,  obj_get_color_tc)
                     feature["max_height"] = max([c[2] for c in coords])
                     data["features"].append(feature)
                     feature_count += 1
@@ -107,11 +119,13 @@ def initialize_features(self: "SpeckleProvider", all_coords, all_coord_counts, d
                         all_coords.extend(coords)
                         all_coord_counts.append(coord_counts)
 
-                        assign_display_properties(self, feature_new, f_base,  obj_get_color)
+                        obj_get_color_tc = TraversalContext(obj_get_color, "", item)
+
+                        assign_display_properties(self, feature_new, f_base,  obj_get_color_tc)
                         feature_new["max_height"] = max([c[2] for c in coords])
                         data["features"].append(feature_new)
                         feature_count +=1
-  
+
         assign_missing_props(data["features"], all_props)
     else:
         ####################### create comment features

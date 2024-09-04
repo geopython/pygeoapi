@@ -168,9 +168,11 @@ def get_single_display_object(displayValForColor: List) -> "Base":
             displayValForColor = item
 
     mesh = Mesh.create(faces= faces, vertices=verts, colors=colors)
-    for prop in displayValForColor[0].get_member_names():
-        if prop not in ["colors", "vertices", "faces"]:
-            mesh[prop] = getattr(displayValForColor[0], prop)
+
+    if len(displayValForColor)>0:
+        for prop in displayValForColor[0].get_member_names():
+            if prop not in ["colors", "vertices", "faces"]:
+                mesh[prop] = getattr(displayValForColor[0], prop)
 
     displayValForColor = mesh
     return displayValForColor
@@ -258,21 +260,41 @@ def set_default_color(context_list: List["TraversalContext"]) -> None:
             DEFAULT_COLOR = (255 << 24) + (10 << 16) + (132 << 8) + 255
             break
 
-def assign_color(self: "SpeckleProvider", obj_display, props) -> None:
+def getAllParents(tc: "TraversalContext"):
+
+    all_tc = [tc]
+    while True:
+        try:
+            parent = tc.parent
+            if parent:
+                all_tc.append(parent)
+                tc = parent
+            else:
+                break
+        except:
+            break
+
+    return all_tc
+
+def assign_color(self: "SpeckleProvider", obj_display_tc: "TraversalContext", props: Dict) -> None:
     """Get and assign color to feature displayProperties."""
 
-    from specklepy.objects.geometry import Base, Mesh, Brep
-
-    try:
-        color = self.material_color_proxies[obj_display.applicationId]
-        props['color'] = color
-        return
-    except:
-        pass
+    from specklepy.objects.geometry import Mesh, Brep
+    
+    for tc in getAllParents(obj_display_tc):
+        
+        try:
+            color = self.material_color_proxies[tc.current.applicationId]
+            props['color'] = color
+            return
+        except:
+            pass
 
     # initialize Speckle Blue color
     color = DEFAULT_COLOR
     opacity = None
+
+    obj_display = obj_display_tc.current
 
     try:
         # prioritize renderMaterials for Meshes & Brep
@@ -336,12 +358,12 @@ def get_r_g_b(rgb: int) -> Tuple[int, int, int]:
         a = 255
     return a, r, g, b
 
-def assign_display_properties(self: "SpeckleProvider", feature: Dict, f_base: "Base",  obj_display: "Base") -> None:
+def assign_display_properties(self: "SpeckleProvider", feature: Dict, f_base: "Base",  obj_display_tc: "TraversalContext") -> None:
     """Assign displayProperties to the feature."""
     
     from specklepy.objects.geometry import Mesh, Brep    
 
-    assign_color(self, obj_display, feature["displayProperties"])
+    assign_color(self, obj_display_tc, feature["displayProperties"])
     feature["properties"]["color"] = feature["displayProperties"]["color"]
 
     # other properties for rendering 
