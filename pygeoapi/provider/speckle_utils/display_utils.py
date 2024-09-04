@@ -290,6 +290,13 @@ def assign_color(self: "SpeckleProvider", obj_display_tc: "TraversalContext", pr
         except:
             pass
 
+    try:
+        color = self.material_color_proxies[obj_display.applicationId]
+        props['color'] = color
+        return
+    except:
+        pass
+
     # initialize Speckle Blue color
     color = DEFAULT_COLOR
     opacity = None
