@@ -357,67 +357,110 @@
         }
       }
 
+      function split_polygons(geojson_data){
+          features = []
+          geojson_data.forEach((element, index) => {
+              if (element.geometry.type == "MultiPolygon"){
+                  // mesh faces are stored as parts, so most buildings might have hundreds of parts with just 1 loop or 3-4pts
+                  all_parts = element.geometry.coordinates;
+                  has_parts_with_loops = false;
+                  
+                  // loops are usually simple (3-4 vertices), and usually only loop
+                  for (polyPart of all_parts){
+                      if (polyPart.length>1){
+                          has_parts_with_loops = true;
+                          break;
+                      }
+                  };
+
+                  
+                  if (has_parts_with_loops == true){
+                      features.push(element)
+                      }
+                  else {
+                    // only split those without loops
+                    for (polyPart of all_parts) {
+                          new_coordinates = [polyPart];
+                          new_element = {"id": element.properties.id, "type":"Feature", 
+                              "geometry": {"type": "MultiPolygon", "coordinates": new_coordinates}, 
+                              "properties": element.properties,
+                              "displayProperties": element.displayProperties };
+
+                          features.push(new_element)
+                      };
+                  }
+
+              }
+              else {
+                  features.push(element)
+              }
+          });  
+
+          return features
+      }
 
       var data = {{ data | to_json | safe }};
-      var geojson_data = {{ data['features'] | to_json | safe }};
-
+      var geojson_data_original = {{ data['features'] | to_json | safe }};
+      
       // Leaflet 2d map 
       function initialize2d() {
-        var map = L.map('map2d').setView([45, 0], 2);
-        map.addLayer(new L.TileLayer(
-            '{{ config['server']['map']['url'] }}', {
-                maxZoom: 22,
-                attribution: '{{ config['server']['map']['attribution'] | safe }}  &copy; Data: <a href="https://speckle.systems/">Speckle Systems</a>'
-            }
-        ));
+          var map = L.map('map2d').setView([45, 0], 2);
+          map.addLayer(new L.TileLayer(
+              '{{ config['server']['map']['url'] }}', {
+                  maxZoom: 22,
+                  attribution: '{{ config['server']['map']['attribution'] | safe }}  &copy; Data: <a href="https://speckle.systems/">Speckle Systems</a>'
+              }
+          ));
 
-        var items = new L.GeoJSON(geojson_data, {
-            filter: (feature) => {
-              return feature.displayProperties["object_type"] == "geometry"
-            },
-            pointToLayer: (feature, latlng) => {
-                return new L.circleMarker(latlng)            
-            },
-            onEachFeature: function (feature, layer) {
-                var url = '{{ data['speckle_project_url'] }}/models/' + feature.id.split("_")[0]
-                var html = '<span><td><p>' + feature['properties']['speckle_type'] + '</p></td><a href="' + url + '" target="_blank">' + feature['properties']['id'].split("_")[0] + '</a></span>';
-                layer.bindPopup(html);
+          geojson_data = split_polygons(geojson_data_original);
 
-                var myFillColor = feature.displayProperties['color'];
-                var mylineWeight = feature.displayProperties['lineWidth'];
-                var myRadius = feature.displayProperties['radius'];
+          var items = new L.GeoJSON(geojson_data, {
+              filter: (feature) => {
+                return feature.displayProperties["object_type"] == "geometry"
+              },
+              pointToLayer: (feature, latlng) => {
+                  return new L.circleMarker(latlng)            
+              },
+              onEachFeature: function (feature, layer) {
+                  var url = '{{ data['speckle_project_url'] }}/models/' + feature.id.split("_")[0]
+                  var html = '<span><td><p>' + feature['properties']['speckle_type'] + '</p></td><a href="' + url + '" target="_blank">' + feature['properties']['id'].split("_")[0] + '</a></span>';
+                  layer.bindPopup(html);
 
-                layer.setStyle({
-                    fillColor: myFillColor,
-                    color: myFillColor,
-                    fillOpacity: 0.8,
-                    weight: mylineWeight,
-                    radius: myRadius
-                });
-            }
-        }); //.addTo(map);
-        
-        var comments = new L.GeoJSON(geojson_data, {
-            filter: (feature) => {
-              return feature.displayProperties["object_type"] == "comment"
-            },
-            pointToLayer: (feature, latlng) => {
-                return new L.marker(latlng)            
-            },
-            onEachFeature: function (feature, layer) {
-                var url = '{{ data['speckle_project_url'] }}/models/' + feature.properties.resource_id + '#threadId=' + feature.id; 
-                var html = '<span><td><a href="' + url + '" target="_blank">Go to thread</a></td> <td><p>' + feature['properties']['text_html'] + '</p></td>  </span>';
-                layer.bindPopup(html);
-            }
-        }); //.addTo(map);
+                  var myFillColor = feature.displayProperties['color'];
+                  var mylineWeight = feature.displayProperties['lineWidth'];
+                  var myRadius = feature.displayProperties['radius'];
 
-        var group = L.featureGroup([items, comments])
-        .addTo(map);
+                  layer.setStyle({
+                      fillColor: myFillColor,
+                      color: myFillColor,
+                      fillOpacity: 0.8,
+                      weight: mylineWeight,
+                      radius: myRadius
+                  });
+              }
+          }); //.addTo(map);
+          
+          var comments = new L.GeoJSON(geojson_data, {
+              filter: (feature) => {
+                return feature.displayProperties["object_type"] == "comment"
+              },
+              pointToLayer: (feature, latlng) => {
+                  return new L.marker(latlng)            
+              },
+              onEachFeature: function (feature, layer) {
+                  var url = '{{ data['speckle_project_url'] }}/models/' + feature.properties.resource_id + '#threadId=' + feature.id; 
+                  var html = '<span><td><a href="' + url + '" target="_blank">Go to thread</a></td> <td><p>' + feature['properties']['text_html'] + '</p></td>  </span>';
+                  layer.bindPopup(html);
+              }
+          }); //.addTo(map);
 
-        //map.addLayer(lines);
+          var group = L.featureGroup([items, comments])
+          .addTo(map);
 
-        map.fitBounds(group.getBounds());
-        // map.setZoom(19); // in order for the tiles to load
+          //map.addLayer(lines);
+
+          map.fitBounds(group.getBounds());
+          // map.setZoom(19); // in order for the tiles to load
       };
 
 
@@ -504,7 +547,6 @@
               coords = feature.geometry.coordinates;
 
               if (feature.geometry.type.includes("Polygon")) {
-                  polygons = []
 
                   polygon_all_parts = []
                   // iterate through Polygon Parts
@@ -595,7 +637,6 @@
                           "displayProperties": speckle_data.features[i].displayProperties };
 
                   new_polygon.displayProperties.lineWidth = 0.05
-                  polygons.push(new_polygon);
                   speckle_features.push(new_polygon);
 
               } 
