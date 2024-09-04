@@ -126,14 +126,16 @@ class SpeckleProvider(BaseProvider):
 
         self.requested_data_type: str = "polygons (default)" # points, lines, polygons, projectcomments
         self.preserve_attributes: str = "true (default)"
-
         self.lat: float = 48.76755913928929 #51.52486388756923
         self.lon: float = 11.408741923664028 #0.1621445437168942
         self.north_degrees: float = 0
-        self.extent = [-180,-90,180,90]
+        self.crs_authid = ""
         self.limit = 10000
+
+        self.missing_url = ""
         self.limit_message = ""
 
+        self.extent = [-180,-90,180,90]
         self.material_color_proxies = {}
 
 
@@ -173,7 +175,7 @@ class SpeckleProvider(BaseProvider):
         if self.data == "":
             return 
 
-        get_set_url_parameters(self)
+        get_set_url_parameters(self) # possible ValueError
 
         # check if it's a new request (self.data was updated and doesn't match self.url)
         new_request = False
@@ -265,6 +267,18 @@ class SpeckleProvider(BaseProvider):
         )
         if data is None:
             return {"features":[], "comments":[], "extent": [-180,-90,180,90]}
+
+        # add URL parameters
+        data['speckle_url'] = self.speckle_url
+        data['requested_data_type'] = self.requested_data_type
+        data['preserve_attributes'] = self.preserve_attributes
+        data['crs_authid'] = self.crs_authid
+        data['lat'] = self.lat
+        data['lon'] = self.lon
+        data['north_degrees'] = self.north_degrees
+        data['limit'] = self.limit
+        data['missing_url'] = self.missing_url
+
 
         data["numberMatched"] = len(data["features"])
 
