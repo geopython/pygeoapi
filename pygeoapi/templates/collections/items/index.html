@@ -17,12 +17,6 @@
   <div class="row">
     {% if not data['missing_url'] %}
     
-    <div class="form-group" >
-      <label class="switch">3D
-        <input id="modeSwitch" type="checkbox">
-        <span class="slider round"></span>
-      </label>
-    </div>
 
     <div id="map2d" style="height: 80vh;"></div>
     <div id="map3d" style="height: 0vh;"></div>
@@ -329,7 +323,7 @@
           <b>Note: this is not a production server.</b> It is still work in progress, 
           and we are very curious 
           to <a href = "https://speckle.community/invites/qxEmQb1QcM" target="_blank">hear about your use case and your feedback</a>
-          so we can make it better.
+          so we can make it better!
         </p>
       </tr>
     </div>
@@ -341,6 +335,8 @@
 {% block extrafoot %}
 
     <script>
+      document.getElementById("loading_screen").style.height = '0px';
+
       // attach even to modeSwitch btn
       document.getElementById("modeSwitch").onclick = switchMode;
       var el = document.getElementById("modeSwitch");
@@ -431,15 +427,72 @@
           return result ? [parseInt(result[1], 16), parseInt(result[2], 16), parseInt(result[3], 16), parseInt(result[0], 16)] : null;
           };
       function  rgbaToArgbList(color) {
+          if (color == null){
+            return [10,132,255,255];
+          }
           col = color.replace('rgba(','').replace(')','').split(',',4);
           value = [ parseInt(col[0]), parseInt(col[1]), parseInt(col[2]), parseInt(col[3]) ];
           return value;
           }
       function  rgbaToArgbListDarker(color) {
+          if (color == null){
+            return [7,120,235,255];
+          }
           col = color.replace('rgba(','').replace(')','').split(',',4);
           value = [ parseInt(col[0])*0.95, parseInt(col[1])*0.95, parseInt(col[2])*0.95, parseInt(col[3]) ];
           return value;
           }
+      function getMessagesNumber(properties)
+        { 
+          if (properties == null || properties.messages == null) {return 1}
+          else 
+          {
+            return properties.messages.length
+          }
+        }
+      function getDisplayText(properties)
+      {
+        if (properties != null && properties.text_html != null){
+          return properties.text_html
+        }
+        else if (properties != null && properties.speckle_type != null && properties.id != null){
+          return `${properties.speckle_type}: ${properties.id.split("_")[0]}`
+        }
+        else{
+          return ``
+        }
+      }
+      // Callback to populate the default tooltip with content
+      function getTooltip({object}) {
+        return object && {
+          html: getDisplayText(object.properties),
+          style: {
+            backgroundColor: 'rgb(255,255,255)',
+            color: 'rgb(0,0,0)',
+            fontSize: '0.9em'
+          }
+        };
+      }
+      function createSVGIcon(n) {
+        const label = n < 10 ? n.toString() : '10+';
+        return `\
+        <svg width="100" height="100" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+          <circle cx="12" cy="12" r="10" fill="rgb(10,132,255)" stroke="rgb(200,200,200)" stroke-width="2"/>
+          <text x="12" y="12" fill="#fff" text-anchor="middle" alignment-baseline="middle" font-family="verdana" font-size="8">${label}</text>
+        </svg>`;
+      }
+
+      // Note that a xml string cannot be directly embedded in a data URL
+      // it has to be either escaped or converted to base64.
+      function svgToDataUrl(svg) {
+        return `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}`;
+      }
+
+      // You may need base64 encoding if the SVG contains certain special characters
+      function svgToDataUrlBase64(svg) {
+        return `data:image/svg+xml;base64,${btoa(svg)}`;
+      }
+
 
       function initialize3d() {
           maptilersdk.config.apiKey = '{{ config["server"]["map"]["key"] }}'; 
@@ -451,6 +504,7 @@
               coords = feature.geometry.coordinates;
 
               if (feature.geometry.type.includes("Polygon")) {
+                  polygons = []
 
                   // check orientation of each PolygonPart, if vertical - shift points slightly
                   for (let p = 0; p < coords.length; p++) {
@@ -476,38 +530,82 @@
                                 createdPolygon = true;
 
                                 multipolygon_coords = [coords[p][c]];
-                                speckle_features.push({"id": speckle_features.length, "type":"Feature", 
+                                polygons.push({"id": speckle_features.length, "type":"Feature", 
                                     "geometry": {"type": "MultiPolygon", "coordinates":[multipolygon_coords]}, 
-                                    "properties": speckle_data.features[i].properties });
+                                    "properties": speckle_data.features[i].properties,
+                                    "displayProperties": speckle_data.features[i].displayProperties });
                                           
                               }
                               else if (polygon_pts.length==4) {
                                   createdPolygon = true;
 
                                   multipolygon_coords = [coords[p][c].slice(0,3)];
-                                  speckle_features.push({"id": speckle_features.length, "type":"Feature", 
+                                  polygons.push({"id": speckle_features.length, "type":"Feature", 
                                       "geometry": {"type": "MultiPolygon", "coordinates":[multipolygon_coords]}, 
-                                      "properties": speckle_data.features[i].properties });
+                                      "properties": speckle_data.features[i].properties,
+                                      "displayProperties": speckle_data.features[i].displayProperties });
 
                                   multipolygon_coords = [[coords[p][c][2], coords[p][c][3], coords[p][c][0]]];
-                                  speckle_features.push({"id": speckle_features.length, "type":"Feature", "geometry": {"type": "MultiPolygon", "coordinates":[multipolygon_coords]}, "properties": speckle_data.features[i].properties });
+                                  polygons.push({"id": speckle_features.length, "type":"Feature", 
+                                      "geometry": {"type": "MultiPolygon", "coordinates":[multipolygon_coords]}, 
+                                      "properties": speckle_data.features[i].properties ,
+                                      "displayProperties": speckle_data.features[i].displayProperties });
                               };
                           };
                           if (createdPolygon == false){
                               multipolygon_coords = [coords[p][c]];
-                              speckle_features.push({"id": speckle_features.length, "type":"Feature", 
+                              polygons.push({"id": speckle_features.length, "type":"Feature", 
                                   "geometry": {"type": "MultiPolygon", "coordinates":[multipolygon_coords]}, 
-                                  "properties": speckle_data.features[i].properties });
+                                  "properties": speckle_data.features[i].properties,
+                                  "displayProperties": speckle_data.features[i].displayProperties });
                           }
                           
                       };
                   };
+                  polygons.forEach((element, index, array) => {
+                    element.displayProperties.lineWidth = 0.05
+                    speckle_features.push(element);
+                  });
 
               } 
+              else if (speckle_data.features[i].displayProperties.object_type == "comment")
+              {   
+                  speckle_features.push({"id": speckle_features.length, "type":"Feature", 
+                      "geometry": {"type": speckle_data.features[i].geometry.type, "coordinates":speckle_data.features[i].geometry.coordinates}, 
+                      "properties": speckle_data.features[i].properties,
+                      "displayProperties": 
+                        {
+                          "color": 'rgba(10,132,255,255)',
+                          "lineWidth": 2,
+                          "radius": 10,
+                          "object_type": "comments",
+                        } 
+                      });
+              }
+              else
+              {   
+                  speckle_features.push({"id": speckle_features.length, "type":"Feature", 
+                      "geometry": {"type": speckle_data.features[i].geometry.type, "coordinates":speckle_data.features[i].geometry.coordinates}, 
+                      "properties": speckle_data.features[i].properties,
+                      "displayProperties": speckle_data.features[i].displayProperties });
+              }
           }
           
           var extent = speckle_data["extent"];
-          speckle_data.features = speckle_features;
+
+          speckle_data.features = [];
+          speckle_features.forEach((element, index, array) => {
+            if (element.displayProperties.object_type != "comments"){
+              speckle_data.features.push(element);
+            }
+          });  
+
+          speckle_comments = [];
+          speckle_features.forEach((element, index, array) => {
+            if (element.displayProperties.object_type == "comments"){
+              speckle_comments.push(element);
+            }
+          });
 
           // Create deck.gl map
           const deckgl = new deck.DeckGL({
@@ -524,16 +622,38 @@
               controller: true,
 
               layers: [
+              
               new deck.GeoJsonLayer({
                   id: 'speckle_data',
                   data: speckle_data,
                   // Styles
                   filled: true,
-                  getFillColor: f => rgbaToArgbList(f.properties.color),
-                  getLineWidth: 0.05,
-                  getLineColor: f => rgbaToArgbListDarker(f.properties.color),
+                  getFillColor: f => rgbaToArgbList(f.displayProperties.color),
+                  getLineWidth: f => f.displayProperties.lineWidth,
+                  getLineColor: f => rgbaToArgbListDarker(f.displayProperties.color),
+                  getPointRadius: f => f.displayProperties.radius / 2,
+
+                  // Interactive props
+                  pickable: true,
+                  autoHighlight: true,
+              }),
+              
+              new deck.IconLayer({
+                id: 'IconLayer',
+                data: speckle_comments,
+                // getColor: d => [Math.sqrt(getMessagesNumber(d.properties)), 140, 0],
+                
+                getIcon: d => ({
+                  url: svgToDataUrl(createSVGIcon( getMessagesNumber(d.properties).toString() )), //'https://raw.githubusercontent.com/visgl/deck.gl-data/master/website/icon-atlas.png',
+                  width: 128,
+                  height: 128
+                }),
+                getPosition: d => d.geometry.coordinates[0],
+                getSize: f => 50 * Math.pow(getMessagesNumber(f.properties),0.3),
+                pickable: true
               })
-              ]
+              ],
+              getTooltip
           });
     }
 

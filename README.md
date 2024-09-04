@@ -40,7 +40,7 @@ List of possible issues you can experience and solutions to them:
 
 - Page or Map stays blank and Developer Tools Console shows "net::ERR_QUIC_PROTOCOL_ERROR 200 (OK)"
 
-Solution: Try reloading the page. Otherwise, if in Google Chrome, navigate to chrome://flags/#enable-quic in and change Experimental QUIC Protocol dropdown to Disabled.
+Solution: Try reloading the page. Otherwise, if in Google Chrome, navigate to chrome://flags/#enable-quic and change Experimental QUIC Protocol dropdown to Disabled.
 
 - Model seems to be loaded incomplete
 
@@ -170,9 +170,6 @@ Repeated launch:
 cd pygeoapi_venv
 Scripts\activate
 cd pygeoapi
-python -m pip install --upgrade specklepy==2.19.6
-python -m pip install pydantic==1.10.17
-python pygeoapi\provider\speckle_utils\patch\patch_specklepy.py
 python setup.py install
 set PYGEOAPI_CONFIG=example-config.yml
 set PYGEOAPI_OPENAPI=example-config.yml

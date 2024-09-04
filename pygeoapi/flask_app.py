@@ -35,7 +35,8 @@ from typing import Union
 
 import click
 from flask import (Flask, Blueprint, make_response, request,
-                   send_from_directory, Response, Request)
+                   send_from_directory, Response, Request, stream_with_context)
+from http import HTTPStatus
 
 from pygeoapi.api import API, APIRequest, apply_gzip
 import pygeoapi.api.coverages as coverages_api
@@ -47,7 +48,7 @@ import pygeoapi.api.stac as stac_api
 import pygeoapi.api.tiles as tiles_api
 from pygeoapi.openapi import load_openapi_document
 from pygeoapi.config import get_config
-from pygeoapi.util import get_mimetype, get_api_rules
+from pygeoapi.util import get_mimetype, get_api_rules, render_j2_template
 
 
 CONFIG = get_config()
@@ -195,11 +196,28 @@ def landing_page():
     
     # if requested from the browser, return this, otherwise ignore IF statement
     if request.method == 'GET' and browser_agent:  # list items
-        return execute_from_flask(itemtypes_api.get_collection_items,
+        
+        def generate():
+            yield loading_screen().data
+            browser_response = execute_from_flask(itemtypes_api.get_collection_items,
                                     request, collection_id,
                                     skip_valid_check=True)
 
+            yield browser_response.data
+        return Response(stream_with_context(generate()))
+    
     return get_response(api_.landing_page(request))
+
+def loading_screen():
+    """
+    Loading empty page
+
+    :returns: HTTP response
+    """
+    
+    content = render_j2_template(api_.tpl_config, 'loading_screen.html',{})
+
+    return get_response((request.headers, HTTPStatus.OK, content))
 
 @BLUEPRINT.route('/openapi')
 def openapi():
