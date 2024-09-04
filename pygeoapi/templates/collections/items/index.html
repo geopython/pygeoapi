@@ -363,33 +363,17 @@
               if (element.geometry.type == "MultiPolygon"){
                   // mesh faces are stored as parts, so most buildings might have hundreds of parts with just 1 loop or 3-4pts
                   all_parts = element.geometry.coordinates;
-                  has_parts_with_loops = false;
                   
                   // loops are usually simple (3-4 vertices), and usually only loop
                   for (polyPart of all_parts){
-                      if (polyPart.length>1){
-                          has_parts_with_loops = true;
-                          break;
+                      new_coordinates = [polyPart];
+                      new_element = {"id": element.properties.id, "type":"Feature", 
+                          "geometry": {"type": "MultiPolygon", "coordinates": new_coordinates}, 
+                          "properties": element.properties,
+                          "displayProperties": element.displayProperties };
+
+                      features.push(new_element)
                       }
-                  };
-
-                  
-                  if (has_parts_with_loops == true){
-                      features.push(element)
-                      }
-                  else {
-                    // only split those without loops
-                    for (polyPart of all_parts) {
-                          new_coordinates = [polyPart];
-                          new_element = {"id": element.properties.id, "type":"Feature", 
-                              "geometry": {"type": "MultiPolygon", "coordinates": new_coordinates}, 
-                              "properties": element.properties,
-                              "displayProperties": element.displayProperties };
-
-                          features.push(new_element)
-                      };
-                  }
-
               }
               else {
                   features.push(element)
