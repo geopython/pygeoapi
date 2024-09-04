@@ -214,8 +214,7 @@ def loading_screen():
 
     :returns: HTTP response
     """
-    
-    content = render_j2_template(api_.tpl_config, 'loading_screen.html',{})
+    content = render_j2_template(api_.tpl_config, 'loading_screen.html',{'url': CONFIG["server"]["url"]})
 
     return get_response((request.headers, HTTPStatus.OK, content))
 
