@@ -506,9 +506,19 @@
               if (feature.geometry.type.includes("Polygon")) {
                   polygons = []
 
-                  // check orientation of each PolygonPart, if vertical - shift points slightly
+                  polygon_all_parts = []
+                  // iterate through Polygon Parts
                   for (let p = 0; p < coords.length; p++) {
+
+                      // check orientation of each PolygonPart, if vertical - shift points slightly
+                      polygon_part = [];
+                      inner = false;
+
                       for (let c = 0; c < coords[p].length; c++) {
+                          polygon_part_loop = [];
+                          if (c>0){
+                            inner = true;
+                          }
 
                           sum_orientation = 0;
                           polygon_pts = coords[p][c]; // usually 3 for Mesh faces
@@ -521,7 +531,8 @@
                           };
 
                           createdPolygon = false;
-                          if (-0.01 < sum_orientation && sum_orientation <0.01){
+                          
+                          if (-0.000000001 < sum_orientation && sum_orientation <0.000000001){
                               coords[p][c][0][0] += 0.0000001;
                               coords[p][c][0][1] += 0.0000001;
 
@@ -533,38 +544,64 @@
                               if(polygon_pts.length==3) {
                                 createdPolygon = true;
 
-                                multipolygon_coords = [coords[p][c]];
-                                polygons.push({"id": speckle_features.length, "type":"Feature", 
-                                    "geometry": {"type": "MultiPolygon", "coordinates":[multipolygon_coords]}, 
-                                    "properties": speckle_data.features[i].properties,
-                                    "displayProperties": speckle_data.features[i].displayProperties });
+                                multipolygon_coords = coords[p][c];
+                                polygon_part_loop = multipolygon_coords;
+
+                                if (inner == false){ 
+                                      polygon_part = [polygon_part_loop];
+                                      polygon_all_parts.push(polygon_part);
+                                    }
+                                else{ 
+                                    polygon_all_parts[polygon_all_parts.length-1].push(polygon_part_loop);
+                                }
                                           
                               }
                               else if (polygon_pts.length==4) {
                                   createdPolygon = true;
 
-                                  multipolygon_coords = [coords[p][c].slice(0,3)];
-                                  polygons.push({"id": speckle_features.length, "type":"Feature", 
-                                      "geometry": {"type": "MultiPolygon", "coordinates":[multipolygon_coords]}, 
-                                      "properties": speckle_data.features[i].properties,
-                                      "displayProperties": speckle_data.features[i].displayProperties });
+                                  multipolygon_coords = coords[p][c].slice(0,3);
+                                  polygon_part_loop = multipolygon_coords;
 
-                                  multipolygon_coords = [[coords[p][c][2], coords[p][c][3], coords[p][c][0]]];
-                                  polygons.push({"id": speckle_features.length, "type":"Feature", 
-                                      "geometry": {"type": "MultiPolygon", "coordinates":[multipolygon_coords]}, 
-                                      "properties": speckle_data.features[i].properties ,
-                                      "displayProperties": speckle_data.features[i].displayProperties });
+                                  if (inner == false){ 
+                                      polygon_part = [polygon_part_loop];
+                                      polygon_all_parts.push(polygon_part);
+                                    }
+                                  else{ 
+                                      polygon_all_parts[polygon_all_parts.length-1].push(polygon_part_loop);
+                                  }
+
+                                  /////////
+                                  multipolygon_coords = [coords[p][c][2], coords[p][c][3], coords[p][c][0]];
+                                  polygon_part_loop = multipolygon_coords;
+
+                                  if (inner == false){ 
+                                      polygon_part = [polygon_part_loop];
+                                      polygon_all_parts.push(polygon_part);
+                                    }
+                                  else{ 
+                                      polygon_all_parts[polygon_all_parts.length-1].push(polygon_part_loop);
+                                  }
                               };
                           };
-                          if (createdPolygon == false){
-                              multipolygon_coords = [coords[p][c]];
-                              polygons.push({"id": speckle_features.length, "type":"Feature", 
-                                  "geometry": {"type": "MultiPolygon", "coordinates":[multipolygon_coords]}, 
-                                  "properties": speckle_data.features[i].properties,
-                                  "displayProperties": speckle_data.features[i].displayProperties });
+                          if (createdPolygon == false){ // if non-vertical, or vertical with more than 4 vertices
+                              multipolygon_coords = coords[p][c];
+                              polygon_part_loop = multipolygon_coords;
+
+                              if (inner == false){ 
+                                  polygon_part = [polygon_part_loop];
+                                  polygon_all_parts.push(polygon_part);
+                                }
+                              else{ 
+                                  polygon_all_parts[polygon_all_parts.length-1].push(polygon_part_loop);
+                              }
                           }
                           
                       };
+                      
+                      polygons.push({"id": speckle_features.length, "type":"Feature", 
+                          "geometry": {"type": "MultiPolygon", "coordinates":polygon_all_parts}, 
+                          "properties": speckle_data.features[i].properties,
+                          "displayProperties": speckle_data.features[i].displayProperties });
                   };
                   polygons.forEach((element, index, array) => {
                     element.displayProperties.lineWidth = 0.05
