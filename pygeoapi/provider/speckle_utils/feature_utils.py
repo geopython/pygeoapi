@@ -40,7 +40,7 @@ def initialize_features(self: "SpeckleProvider", all_coords, all_coord_counts, d
 
             feature: Dict = {
                 "type": "Feature",
-                "bbox": [-180.0, -90.0, 180.0, 90.0],
+                #"bbox": [-180.0, -90.0, 180.0, 90.0], should not be in degrees
                 "geometry": {},
                 "displayProperties":{
                     "object_type": "geometry",
@@ -94,7 +94,7 @@ def initialize_features(self: "SpeckleProvider", all_coords, all_coord_counts, d
                     f_fid = feature_count + 1
                     feature_new: Dict = {
                         "type": "Feature",
-                        "bbox": [-180.0, -90.0, 180.0, 90.0],
+                        #"bbox": [-180.0, -90.0, 180.0, 90.0], should not be in degrees
                         "geometry": {},
                         "displayProperties":{
                             "object_type": "geometry",

@@ -388,7 +388,10 @@
       
       // Leaflet 2d map 
       function initialize2d() {
-          var map = L.map('map2d').setView([45, 0], 2);
+          var map = L.map('map2d', {zoomControl: false}).setView([45, 0], 2);
+          L.control.zoom({
+              position: 'topright'
+          }).addTo(map);
           map.addLayer(new L.TileLayer(
               '{{ config['server']['map']['url'] }}', {
                   maxZoom: 22,
