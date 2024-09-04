@@ -29,7 +29,7 @@ def get_set_url_parameters(self: "SpeckleProvider"):
                 try:
                     self.preserve_attributes = item.split("preserveattributes=")[1]
                     if self.preserve_attributes not in ["true", "false"]:
-                        self.preserve_attributes = "false (default)"
+                        self.preserve_attributes = "true (default)"
                 except:
                     pass
 

@@ -125,7 +125,7 @@ class SpeckleProvider(BaseProvider):
         self.crs_dict = None
 
         self.requested_data_type: str = "polygons (default)" # points, lines, polygons, projectcomments
-        self.preserve_attributes: str = "false (default)"
+        self.preserve_attributes: str = "true (default)"
 
         self.lat: float = 48.76755913928929 #51.52486388756923
         self.lon: float = 11.408741923664028 #0.1621445437168942
