@@ -15,7 +15,7 @@
   
 
   <div class="row">
-    {% if not data['missing_url'] %}
+    {% if data['speckle_url'] %}
     
 
     <div id="map2d" style="height: 80vh;"></div>
@@ -53,7 +53,7 @@
         </p>
       </tr>
       
-      {% if data['missing_url'] %}
+      {% if not data['speckle_url'] %}
       <tr>
         <p>
           <div  style="height: fit-content;">
