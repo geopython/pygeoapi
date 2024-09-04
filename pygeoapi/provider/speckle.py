@@ -134,6 +134,8 @@ class SpeckleProvider(BaseProvider):
         self.limit = 10000
         self.limit_message = ""
 
+        self.material_color_proxies = {}
+
 
     def get_fields(self):
         """
@@ -377,6 +379,8 @@ class SpeckleProvider(BaseProvider):
 
         print(f"Rendering model '{branch['name']}' of the project '{stream['name']}'")
         speckle_data = self.traverse_data(commit_obj, comments)
+
+
         speckle_data["features"].extend(speckle_data["comments"])
         speckle_data["comments"] = []
 
@@ -402,7 +406,7 @@ class SpeckleProvider(BaseProvider):
         )
         from pygeoapi.provider.speckle_utils.crs_utils import get_set_crs_settings
         from pygeoapi.provider.speckle_utils.feature_utils import create_features
-        from pygeoapi.provider.speckle_utils.display_utils import set_default_color
+        from pygeoapi.provider.speckle_utils.display_utils import set_default_color, get_material_color_proxies
 
         supported_classes = [GisFeature, GisPolygonElement, Mesh, Brep, Point, Line, Polyline, Curve, Arc, Circle, Ellipse, Polycurve]
         supported_types = [y().speckle_type for y in supported_classes]
@@ -436,7 +440,9 @@ class SpeckleProvider(BaseProvider):
         context_list = [x for x in GraphTraversal([rule]).traverse(commit_obj)]
 
         get_set_crs_settings(self, commit_obj, context_list, data)
+
         set_default_color(context_list)
+        self.material_color_proxies: dict = get_material_color_proxies(commit_obj)
 
         create_features(self, context_list, comments, data)
 
