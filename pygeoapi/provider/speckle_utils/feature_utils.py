@@ -67,7 +67,7 @@ def initialize_features(self: "SpeckleProvider", all_coords, all_coord_counts, d
                         if prop not in all_props:
                             all_props.append(prop)
                     
-                    assign_display_properties(feature, f_base,  obj_get_color)
+                    assign_display_properties(self, feature, f_base,  obj_get_color)
                     feature["max_height"] = max([c[2] for c in coords])
                     data["features"].append(feature)
                     feature_count += 1
@@ -107,7 +107,7 @@ def initialize_features(self: "SpeckleProvider", all_coords, all_coord_counts, d
                         all_coords.extend(coords)
                         all_coord_counts.append(coord_counts)
 
-                        assign_display_properties(feature_new, f_base,  obj_get_color)
+                        assign_display_properties(self, feature_new, f_base,  obj_get_color)
                         feature_new["max_height"] = max([c[2] for c in coords])
                         data["features"].append(feature_new)
                         feature_count +=1

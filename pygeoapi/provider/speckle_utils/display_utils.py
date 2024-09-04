@@ -201,6 +201,49 @@ def get_display_units(context_list: List["TraversalContext"]) -> None | str:
 
     return displayUnits
 
+def get_material_color_proxies(root_obj) -> Dict:
+    """Get colors and object IDs using ColorProxies and renderMaterialProxies."""
+    obj_colors = {}
+
+    # first, get colors
+    try:
+        colorProxies = root_obj["colorProxies"]
+        if isinstance(colorProxies, List):
+            for proxy in colorProxies:
+                color = proxy.value
+                a, r, g, b = get_r_g_b(color)
+                color = f'rgba({r},{g},{b},{a})'
+
+                for obj in proxy.objects:
+                    obj_colors[obj] = color
+    except:
+        pass
+
+    # overwrite with materials if available
+    try:
+        materialProxies = root_obj["renderMaterialProxies"]
+        if isinstance(materialProxies, List):
+            for proxy in materialProxies:
+                material = proxy.value
+                color = material['diffuse']
+                opacity = material['opacity']
+                
+                a, r, g, b = get_r_g_b(color)
+                if opacity is not None and isinstance(opacity, float):
+                    a_test = int(255* opacity)
+                    if 0 <= a_test <= 255:
+                        a = a_test
+                color = f'rgba({r},{g},{b},{a})'
+
+                for obj in proxy.objects:
+                    obj_colors[obj] = color
+
+    except:
+        pass
+
+
+    return obj_colors
+
 def set_default_color(context_list: List["TraversalContext"]) -> None:
     """Get and set the default color."""
 
@@ -215,10 +258,17 @@ def set_default_color(context_list: List["TraversalContext"]) -> None:
             DEFAULT_COLOR = (255 << 24) + (10 << 16) + (132 << 8) + 255
             break
 
-def assign_color(obj_display, props) -> None:
+def assign_color(self: "SpeckleProvider", obj_display, props) -> None:
     """Get and assign color to feature displayProperties."""
 
     from specklepy.objects.geometry import Base, Mesh, Brep
+
+    try:
+        color = self.material_color_proxies[obj_display.applicationId]
+        props['color'] = color
+        return
+    except:
+        pass
 
     # initialize Speckle Blue color
     color = DEFAULT_COLOR
@@ -286,12 +336,12 @@ def get_r_g_b(rgb: int) -> Tuple[int, int, int]:
         a = 255
     return a, r, g, b
 
-def assign_display_properties(feature: Dict, f_base: "Base",  obj_display: "Base") -> None:
+def assign_display_properties(self: "SpeckleProvider", feature: Dict, f_base: "Base",  obj_display: "Base") -> None:
     """Assign displayProperties to the feature."""
     
     from specklepy.objects.geometry import Mesh, Brep    
 
-    assign_color(obj_display, feature["displayProperties"])
+    assign_color(self, obj_display, feature["displayProperties"])
     feature["properties"]["color"] = feature["displayProperties"]["color"]
 
     # other properties for rendering 
