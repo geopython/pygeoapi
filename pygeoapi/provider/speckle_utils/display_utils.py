@@ -165,11 +165,11 @@ def get_single_display_object(displayValForColor: List) -> "Base":
                 except IndexError:
                     break
         elif item is not None:
-            displayValForColor = item
+            return item
 
     mesh = Mesh.create(faces= faces, vertices=verts, colors=colors)
 
-    if len(displayValForColor)>0:
+    if isinstance(displayValForColor, List) and len(displayValForColor)>0:
         for prop in displayValForColor[0].get_member_names():
             if prop not in ["colors", "vertices", "faces"]:
                 mesh[prop] = getattr(displayValForColor[0], prop)
