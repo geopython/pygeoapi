@@ -578,6 +578,13 @@ def test_get_collection_item(config, api_):
     assert 'prev' not in feature['links']
     assert 'next' not in feature['links']
 
+    req = mock_api_request()
+    rsp_headers, code, response = get_collection_item(api_, req, 'norway_pop',
+                                                      '790')
+    feature = json.loads(response)
+
+    assert feature['properties']['name'] == 'Ålesund'
+
 
 def test_get_collection_item_json_ld(config, api_):
     req = mock_api_request({'f': 'jsonld'})
