@@ -89,54 +89,6 @@ class SensorThingsProvider(BaseProvider):
         self._generate_mappings(provider_def)
         LOGGER.debug(f'STA endpoint: {self.data}, Entity: {self.entity}')
 
-        # Default id
-        if self.id_field:
-            LOGGER.debug(f'Using id field: {self.id_field}')
-        else:
-            LOGGER.debug('Using default @iot.id for id field')
-            self.id_field = '@iot.id'
-
-        # Create intra-links
-        self.links = {}
-        self.intralink = provider_def.get('intralink', False)
-        if self.intralink and provider_def.get('rel_link'):
-            # For pytest
-            self.rel_link = provider_def['rel_link']
-
-        elif self.intralink:
-            # Read from pygeoapi config
-            with open(os.getenv('PYGEOAPI_CONFIG'), encoding='utf8') as fh:
-                CONFIG = yaml_load(fh)
-                self.rel_link = get_base_url(CONFIG)
-
-            for (name, rs) in CONFIG['resources'].items():
-                pvs = rs.get('providers')
-
-                if pvs is None:
-                    LOGGER.debug(f'Skipping collection: {name}')
-                    continue
-
-                p = get_provider_default(pvs)
-                e = p.get('entity') or self._get_entity(p['data'])
-                if any([
-                    not pvs,  # No providers in resource
-                    not p.get('intralink'),  # No configuration for intralinks
-                    not e,  # No STA entity found
-                    self.data not in p.get('data')  # No common STA endpoint
-                ]):
-                    continue
-
-                if p.get('uri_field'):
-                    LOGGER.debug(f'Linking {e} with field: {p["uri_field"]}')
-                else:
-                    LOGGER.debug(f'Linking {e} with collection: {name}')
-
-                self.links[e] = {
-                    'cnm': name,  # OAPI collection name,
-                    'cid': p.get('id_field', '@iot.id'),  # OAPI id_field
-                    'uri': p.get('uri_field')  # STA uri_field
-                }
-
         # Start session
         self.http = Session()
         self.get_fields()
