@@ -51,7 +51,7 @@ Currently supported style files (`options.style`):
 .. code-block:: yaml
 
    providers:
-       - type: map 
+       - type: map
          name: MapScript
          data: /path/to/data.shp
          options:
@@ -59,7 +59,7 @@ Currently supported style files (`options.style`):
              layer: foo_name
              style: ./foo.sld
          format:
-            name: png 
+            name: png
             mimetype: image/png
 
 WMSFacade
@@ -71,14 +71,15 @@ required.  An optional style name can be defined via `options.style`.
 .. code-block:: yaml
 
    providers:
-       - type: map 
+       - type: map
          name: WMSFacade
          data: https://demo.mapserver.org/cgi-bin/msautotest
          options:
              layer: world_latlong
              style: default
+             version: 1.3.0
          format:
-               name: png 
+               name: png
                mimetype: image/png
 
 
