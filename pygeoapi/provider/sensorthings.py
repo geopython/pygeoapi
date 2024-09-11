@@ -33,10 +33,11 @@ from json.decoder import JSONDecodeError
 import logging
 from requests import Session
 
+from pygeoapi.config import get_config
 from pygeoapi.provider.base import (
     BaseProvider, ProviderQueryError, ProviderConnectionError)
 from pygeoapi.util import (
-    yaml_load, url_join, get_provider_default, crs_transform, get_base_url)
+    url_join, get_provider_default, crs_transform, get_base_url)
 
 LOGGER = logging.getLogger(__name__)
 
@@ -525,9 +526,8 @@ class SensorThingsProvider(BaseProvider):
 
         elif self.intralink:
             # Read from pygeoapi config
-            with open(os.getenv('PYGEOAPI_CONFIG'), encoding='utf8') as fh:
-                CONFIG = yaml_load(fh)
-                self.rel_link = get_base_url(CONFIG)
+            CONFIG = get_config()
+            self.rel_link = get_base_url(CONFIG)
 
             for name, rs in CONFIG['resources'].items():
                 pvs = rs.get('providers')
