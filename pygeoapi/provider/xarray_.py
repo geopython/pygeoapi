@@ -545,8 +545,8 @@ class XarrayProvider(BaseProvider):
         LOGGER.debug(f'Parsing CRS {storage_crs} with {crs_function}')
         try:
             crs = crs_function(storage_crs)
-        except CRSError as e:
-            LOGGER.debug(f'Unable to parse projection with pyproj: {e}')
+        except CRSError as err:
+            LOGGER.debug(f'Unable to parse projection with pyproj: {err}')
             LOGGER.debug('Assuming default WGS84.')
             crs = get_crs_from_uri(DEFAULT_STORAGE_CRS)
 
