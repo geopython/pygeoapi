@@ -412,7 +412,7 @@ class XarrayProvider(BaseProvider):
         self.storage_crs = self._parse_storage_crs(provider_def)
         epsg_code = self.storage_crs.to_epsg()
         LOGGER.debug(f'{epsg_code}')
-        if (epsg_code == 4326) | (self.storage_crs == 'OGC:CRS84'):
+        if epsg_code == 4326 or self.storage_crs == 'OGC:CRS84':
             pass
             LOGGER.debug('Confirmed default of WGS 84')
         else:
