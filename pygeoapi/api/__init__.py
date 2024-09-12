@@ -143,7 +143,7 @@ def all_apis() -> dict:
         'process': processes,
         'style': styles,
         'tile': tiles,
-        'stac': stac,        
+        'stac': stac,
     }
 
 

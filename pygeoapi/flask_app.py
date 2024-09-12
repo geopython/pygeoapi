@@ -523,6 +523,7 @@ def get_collection_edr_query(collection_id, instance_id=None,
         skip_valid_check=True,
     )
 
+
 @BLUEPRINT.route('/styles')
 def styles_api_my_function():
     """
@@ -531,6 +532,7 @@ def styles_api_my_function():
     """
 
     return execute_from_flask(styles_api.get_styles, request)
+
 
 @BLUEPRINT.route('/stac')
 def stac_catalog_root():

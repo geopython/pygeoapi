@@ -47,9 +47,9 @@ CONFORMANCE_CLASSES = [
 
 def get_styles(api: API, request: APIRequest) -> Tuple[dict, int, str]:
     """
-    Fetches the set of styles available. 
-    For each style it returns the id, a title, links to the stylesheet of the style in each supported encoding, 
-    and the link to the metadata.
+    Fetches the set of styles available.
+    For each style it returns the id, a title, links to the stylesheet of the style # noqa 
+    in each supported encoding, and the link to the metadata.
 
     :param request: A request object
 
@@ -89,12 +89,12 @@ def get_oas_30(cfg: dict, locale: str) -> tuple[list[dict[str, str]], dict[str, 
     paths['/styles'] = {
         'get': {
             'summary': 'lists the available styles',
-            'description': 'This operation fetches the set of styles available.',
+            'description': 'This operation fetches the set of styles available.', # noqa
             'tags': ['Discover and fetch styles'],
             'operationId': 'getStyles',
-            'externalDocs': { 
-                'description': 'The specification that describes this operation: OGC API - Styles (DRAFT)',
-                 'url': 'https://docs.ogc.org/DRAFTS/20-009.html'
+            'externalDocs': {
+                'description': 'The specification that describes this operation: OGC API - Styles (DRAFT)', # noqa
+                'url': 'https://docs.ogc.org/DRAFTS/20-009.html'
                 },
             'parameters': [
                 {'$ref': '#/components/parameters/access_token'},
