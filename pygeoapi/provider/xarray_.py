@@ -46,10 +46,7 @@ from pygeoapi.provider.base import (BaseProvider,
                                     ProviderConnectionError,
                                     ProviderNoDataError,
                                     ProviderQueryError)
-from pygeoapi.util import (
-    read_data,
-    get_crs_from_uri
-)
+from pygeoapi.util import get_crs_from_uri, read_data
 
 LOGGER = logging.getLogger(__name__)
 
