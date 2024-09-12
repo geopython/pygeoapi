@@ -86,9 +86,8 @@ class XarrayProvider(BaseProvider):
                 data_to_open = self.data
 
             self._data = open_func(data_to_open)
-            self._coverage_properties = self._get_coverage_properties(
-                provider_def
-            )
+            self.storage_crs = self._parse_storage_crs(provider_def)
+            self._coverage_properties = self._get_coverage_properties()
 
             self.axes = [self._coverage_properties['x_axis_label'],
                          self._coverage_properties['y_axis_label'],
@@ -344,7 +343,7 @@ class XarrayProvider(BaseProvider):
 
         return cj
 
-    def _get_coverage_properties(self, provider_def: dict):
+    def _get_coverage_properties(self):
         """
         Helper function to normalize coverage properties
         :param provider_def: provider definition
@@ -409,7 +408,6 @@ class XarrayProvider(BaseProvider):
         }
 
         # Update properties based on the xarray's CRS
-        self.storage_crs = self._parse_storage_crs(provider_def)
         epsg_code = self.storage_crs.to_epsg()
         LOGGER.debug(f'{epsg_code}')
         if epsg_code == 4326 or self.storage_crs == 'OGC:CRS84':
