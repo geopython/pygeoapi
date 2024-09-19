@@ -47,6 +47,9 @@ The `xarray-edr`_ provider plugin reads and extracts `NetCDF`_ and `Zarr`_ data 
          x_field: lon
          y_field: lat
          time_field: time
+         # optionally specify the coordinate reference system of your dataset
+         # else pygeoapi assumes it is WGS84 (EPSG:4326).
+         storage_crs: 4326
          format:
             name: netcdf
             mimetype: application/x-netcdf
@@ -81,6 +84,11 @@ The `xarray-edr`_ provider plugin reads and extracts `NetCDF`_ and `Zarr`_ data 
    S3 URL. Any parameters required to open the dataset using fsspec can be added
    to the config file under `options` and `s3`, as shown above.
 
+.. note::
+   When providing a `storage_crs` value in the EDR configuration, specify the 
+   coordinate reference system using any valid input for 
+   `pyproj.CRS.from_user_input`_. 
+
 
 Data access examples
 --------------------
@@ -105,6 +113,7 @@ Data access examples
 .. _`xarray`: https://docs.xarray.dev/en/stable/
 .. _`NetCDF`: https://en.wikipedia.org/wiki/NetCDF
 .. _`Zarr`: https://zarr.readthedocs.io/en/stable
+.. _`pyproj.CRS.from_user_input`: https://pyproj4.github.io/pyproj/stable/api/crs/coordinate_system.html#pyproj.crs.CoordinateSystem.from_user_input
 
 
 .. _`OGC Environmental Data Retrieval (EDR) (API)`: https://github.com/opengeospatial/ogcapi-coverages

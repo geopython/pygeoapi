@@ -1441,7 +1441,8 @@ class API:
         # Content-Language is in the system locale (ignore language settings)
         headers = request.get_response_headers(SYSTEM_LOCALE,
                                                **self.api_headers)
-        msg = f'Invalid format: {request.format}'
+        msg = 'Invalid format requested'
+        LOGGER.error(f'{msg}: {request.format}')
         return self.get_exception(
             HTTPStatus.BAD_REQUEST, headers,
             request.format, 'InvalidParameterValue', msg)

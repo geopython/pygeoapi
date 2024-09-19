@@ -27,10 +27,9 @@
 #
 # =================================================================
 
+import csv
 import io
 import logging
-
-import unicodecsv as csv
 
 from pygeoapi.formatter.base import BaseFormatter, FormatterSerializationError
 
@@ -83,10 +82,11 @@ class CSVFormatter(BaseFormatter):
                 # TODO: implement wkt geometry serialization
                 LOGGER.debug('not a point geometry, skipping')
 
+        print("JJJ", fields)
         LOGGER.debug(f'CSV fields: {fields}')
 
         try:
-            output = io.BytesIO()
+            output = io.StringIO()
             writer = csv.DictWriter(output, fields)
             writer.writeheader()
 
@@ -101,7 +101,7 @@ class CSVFormatter(BaseFormatter):
             LOGGER.error(err)
             raise FormatterSerializationError('Error writing CSV output')
 
-        return output.getvalue()
+        return output.getvalue().encode('utf-8')
 
     def __repr__(self):
         return f'<CSVFormatter> {self.name}'

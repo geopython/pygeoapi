@@ -98,7 +98,6 @@ ENV TZ=${TZ} \
     python3-greenlet \
     python3-pip \
     python3-tz \
-    python3-unicodecsv \
     python3-yaml \
     ${ADD_DEB_PACKAGES}"
 

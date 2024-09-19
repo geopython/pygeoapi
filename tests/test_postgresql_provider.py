@@ -556,7 +556,7 @@ def test_get_collection_items_postgresql_cql_bad_cql(pg_api_, bad_cql):
     assert code == HTTPStatus.BAD_REQUEST
     error_response = json.loads(response)
     assert error_response['code'] == 'InvalidParameterValue'
-    assert error_response['description'] == f'Bad CQL string : {bad_cql}'
+    assert error_response['description'] == 'Bad CQL text'
 
 
 def test_post_collection_items_postgresql_cql(pg_api_):
@@ -642,7 +642,7 @@ def test_post_collection_items_postgresql_cql_bad_cql(pg_api_, bad_cql):
     assert code == HTTPStatus.BAD_REQUEST
     error_response = json.loads(response)
     assert error_response['code'] == 'InvalidParameterValue'
-    assert error_response['description'].startswith('Bad CQL string')
+    assert error_response['description'] == 'Bad CQL text'
 
 
 def test_get_collection_items_postgresql_crs(pg_api_):

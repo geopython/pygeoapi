@@ -387,8 +387,12 @@ def get_collection_items(
 
     LOGGER.debug('processing property parameters')
     for k, v in request.params.items():
-        if k not in reserved_fieldnames and k in list(p.fields.keys()):
-            LOGGER.debug(f'Adding property filter {k}={v}')
+        if k not in reserved_fieldnames:
+            if k in list(p.fields.keys()):
+                LOGGER.debug(f'Adding property filter {k}={v}')
+            else:
+                LOGGER.debug(f'Adding additional property filter {k}={v}')
+
             properties.append((k, v))
 
     LOGGER.debug('processing sort parameter')
@@ -451,7 +455,8 @@ def get_collection_items(
                 geometry_column_name=provider_def.get('geom_field'),
             )
         except Exception:
-            msg = f'Bad CQL string : {cql_text}'
+            msg = 'Bad CQL text'
+            LOGGER.error(f'{msg}: {cql_text}')
             return api.get_exception(
                 HTTPStatus.BAD_REQUEST, headers, request.format,
                 'InvalidParameterValue', msg)
@@ -849,7 +854,7 @@ def post_collection_items(
     if (request_headers.get(
         'Content-Type') or request_headers.get(
             'content-type')) != 'application/query-cql-json':
-        msg = ('Invalid body content-type')
+        msg = 'Invalid body content-type'
         return api.get_exception(
             HTTPStatus.BAD_REQUEST, headers, request.format,
             'InvalidHeaderValue', msg)
@@ -885,7 +890,8 @@ def post_collection_items(
                 geometry_column_name=provider_def.get('geom_field')
             )
         except Exception:
-            msg = f'Bad CQL string : {data}'
+            msg = 'Bad CQL text'
+            LOGGER.error(f'{msg}: {data}')
             return api.get_exception(
                 HTTPStatus.BAD_REQUEST, headers, request.format,
                 'InvalidParameterValue', msg)
@@ -894,7 +900,8 @@ def post_collection_items(
         try:
             filter_ = CQLModel.parse_raw(data)
         except Exception:
-            msg = f'Bad CQL string : {data}'
+            msg = 'Bad CQL text'
+            LOGGER.error(f'{msg}: {data}')
             return api.get_exception(
                 HTTPStatus.BAD_REQUEST, headers, request.format,
                 'InvalidParameterValue', msg)

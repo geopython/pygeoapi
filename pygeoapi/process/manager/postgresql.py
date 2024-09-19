@@ -116,16 +116,18 @@ class PostgreSQLManager(BaseManager):
             LOGGER.error(f'{msg}: {err}')
             raise ProcessorGenericError(msg)
 
-    def get_jobs(self, status: JobStatus = None) -> list:
+    def get_jobs(self, status: JobStatus = None, limit=None, offset=None
+                 ) -> dict:
         """
         Get jobs
 
         :param status: job status (accepted, running, successful,
                         failed, results) (default is all)
+        :param limit: number of jobs to return
+        :param offset: pagination offset
 
-        :returns: 'list` of jobs (type (default='process'), identifier,
-            status, process_id, job_start_datetime, job_end_datetime, location,
-            mimetype, message, progress)
+        :returns: dict of list of jobs (identifier, status, process identifier)
+                  and numberMatched
         """
 
         LOGGER.debug('Querying for jobs')
@@ -135,7 +137,11 @@ class PostgreSQLManager(BaseManager):
                 column = getattr(self.table_model, 'status')
                 results = results.filter(column == status.value)
 
-            return [r.__dict__ for r in results.all()]
+            jobs = [r.__dict__ for r in results.all()]
+            return {
+                'jobs': jobs,
+                'numberMatched': len(jobs)
+            }
 
     def add_job(self, job_metadata: dict) -> str:
         """

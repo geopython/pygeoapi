@@ -84,7 +84,9 @@ class WMSFacadeProvider(BaseProvider):
 
         self._transparent = 'TRUE'
 
-        if crs in [4326, 'CRS;84']:
+        version = self.options.get('version', '1.3.0')
+
+        if crs in [4326, 'CRS;84'] and version == '1.3.0':
             LOGGER.debug('Swapping 4326 axis order to WMS 1.3 mode (yx)')
             bbox2 = ','.join(str(c) for c in
                              [bbox[1], bbox[0], bbox[3], bbox[2]])
@@ -106,12 +108,14 @@ class WMSFacadeProvider(BaseProvider):
         if not transparent:
             self._transparent = 'FALSE'
 
+        crs_param = 'crs' if version == '1.3.0' else 'srs'
+
         params = {
-            'version': '1.3.0',
+            'version': version,
             'service': 'WMS',
             'request': 'GetMap',
             'bbox': bbox2,
-            'crs': CRS_CODES[crs],
+            crs_param: CRS_CODES[crs],
             'layers': self.options['layer'],
             'styles': self.options.get('style', 'default'),
             'width': width,
@@ -128,7 +132,7 @@ class WMSFacadeProvider(BaseProvider):
         else:
             request_url = '?'.join([self.data, urlencode(params)])
 
-        LOGGER.debug(f'WMS 1.3.0 request url: {request_url}')
+        LOGGER.debug(f'WMS {version} request url: {request_url}')
 
         response = requests.get(request_url)
 
