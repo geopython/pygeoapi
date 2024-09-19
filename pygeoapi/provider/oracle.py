@@ -647,6 +647,19 @@ class OracleProvider(BaseProvider):
 
         :returns: GeoJSON FeaturesCollection
         """
+        LOGGER.debug(f"properties contains: {properties}")
+
+        # NOTE: properties contains field keys plus extra params
+        #       need to split them up here
+        filtered_properties = []
+        extra_params = {}
+        for (key, value) in properties:
+            if key in self.fields.keys():
+                filtered_properties.append((key, value))
+            else:
+                extra_params[key] = value
+
+        properties = filtered_properties
 
         # Check mandatory filter properties
         property_dict = dict(properties)
@@ -804,6 +817,7 @@ class OracleProvider(BaseProvider):
                     q,
                     language,
                     filterq,
+                    extra_params=extra_params
                 )
 
             # Clean up placeholders that aren't used by the

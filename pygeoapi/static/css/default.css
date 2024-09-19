@@ -27,6 +27,15 @@ main {
     height: 400px;
 }
 
+#coverages-map {
+    width: 100%;
+    height: 80vh;
+}
+
+.c3-tooltip-container {
+    z-index: 300;
+}
+
 /* cancel mini-css header>button uppercase */
 header button, header [type="button"], header .button, header [role="button"] {
     text-transform: none;

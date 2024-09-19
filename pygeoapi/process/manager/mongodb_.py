@@ -70,7 +70,7 @@ class MongoDBManager(BaseManager):
                          exc_info=(traceback))
             return False
 
-    def get_jobs(self, status=None):
+    def get_jobs(self, status=None, limit=None, offset=None):
         try:
             self._connect()
             database = self.db.job_manager_pygeoapi
@@ -80,7 +80,10 @@ class MongoDBManager(BaseManager):
             else:
                 jobs = list(collection.find({}))
             LOGGER.info("JOBMANAGER - MongoDB jobs queried")
-            return jobs
+            return {
+                'jobs': jobs,
+                'numberMatched': len(jobs)
+            }
         except Exception:
             LOGGER.error("JOBMANAGER - get_jobs error",
                          exc_info=(traceback))
