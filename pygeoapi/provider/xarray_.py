@@ -92,6 +92,7 @@ class XarrayProvider(BaseProvider):
             self.axes = [self._coverage_properties['x_axis_label'],
                          self._coverage_properties['y_axis_label'],
                          self._coverage_properties['time_axis_label']]
+            self.time_axis_covjson = provider_def.get('time_axis_covjson') or self.time_field
 
             self.get_fields()
         except Exception as err:
@@ -286,10 +287,11 @@ class XarrayProvider(BaseProvider):
                         'stop': miny,
                         'num': metadata['height']
                     },
-                    self.time_field: {
-                        'start': mint,
-                        'stop': maxt,
-                        'num': metadata['time_steps']
+                    self.time_axis_covjson: {
+                        'values': [str(i) for i in data.coords[self.time_field].values]
+                        #'start': mint,
+                        #'stop': maxt,
+                        #'num': metadata['time_steps']
                     }
                 },
                 'referencing': [{
@@ -330,7 +332,7 @@ class XarrayProvider(BaseProvider):
                     'type': 'NdArray',
                     'dataType': value['type'],
                     'axisNames': [
-                        'y', 'x', self._coverage_properties['time_axis_label']
+                        'y', 'x', self.time_axis_covjson
                     ],
                     'shape': [metadata['height'],
                               metadata['width'],
@@ -370,6 +372,7 @@ class XarrayProvider(BaseProvider):
             self.y_field = y_var
         if self.time_field is None:
             self.time_field = time_var
+        
 
         # It would be preferable to use CF attributes to get width
         # resolution etc but for now a generic approach is used to assess
