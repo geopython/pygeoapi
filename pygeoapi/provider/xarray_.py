@@ -248,27 +248,13 @@ class XarrayProvider(BaseProvider):
         """
 
         LOGGER.debug('Creating CoverageJSON domain')
-        minx, miny, maxx, maxy = metadata['bbox']
+        startx, starty, stopx, stopy = metadata['bbox']
         mint, maxt = metadata['time']
 
         selected_fields = {
             key: value for key, value in self.fields.items()
             if key in fields
         }
-
-        try:
-            tmp_min = data.coords[self.y_field].values[0]
-        except IndexError:
-            tmp_min = data.coords[self.y_field].values
-        try:
-            tmp_max = data.coords[self.y_field].values[-1]
-        except IndexError:
-            tmp_max = data.coords[self.y_field].values
-
-        if tmp_min > tmp_max:
-            LOGGER.debug(f'Reversing direction of {self.y_field}')
-            miny = tmp_max
-            maxy = tmp_min
 
         cj = {
             'type': 'Coverage',
@@ -277,13 +263,13 @@ class XarrayProvider(BaseProvider):
                 'domainType': 'Grid',
                 'axes': {
                     'x': {
-                        'start': minx,
-                        'stop': maxx,
+                        'start': startx,
+                        'stop': stopx,
                         'num': metadata['width']
                     },
                     'y': {
-                        'start': maxy,
-                        'stop': miny,
+                        'start': starty,
+                        'stop': stopy,
                         'num': metadata['height']
                     },
                     self.time_field: {
