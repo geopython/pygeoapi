@@ -250,12 +250,12 @@ class XarrayProvider(BaseProvider):
         LOGGER.debug('Creating CoverageJSON domain')
         startx, starty, stopx, stopy = metadata['bbox']
         mint, maxt = metadata['time']
-        
+
         selected_fields = {
             key: value for key, value in self.fields.items()
             if key in fields
         }
-        
+
         cj = {
             'type': 'Coverage',
             'domain': {
