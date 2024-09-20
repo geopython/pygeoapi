@@ -250,7 +250,7 @@ class XarrayProvider(BaseProvider):
         """
 
         LOGGER.debug('Creating CoverageJSON domain')
-        minx, miny, maxx, maxy = metadata['bbox']
+        startx, starty, stopx, stopy = metadata['bbox']
         mint, maxt = metadata['time']
 
         selected_fields = {
@@ -265,13 +265,13 @@ class XarrayProvider(BaseProvider):
                 'domainType': 'Grid',
                 'axes': {
                     'x': {
-                        'start': minx,
-                        'stop': maxx,
+                        'start': startx,
+                        'stop': stopx,
                         'num': metadata['width']
                     },
                     'y': {
-                        'start': miny,
-                        'stop': maxy,
+                        'start': starty,
+                        'stop': stopy,
                         'num': metadata['height']
                     },
                     self.time_axis_covjson: {
