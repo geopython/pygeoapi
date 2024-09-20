@@ -106,7 +106,7 @@ class XarrayProvider(BaseProvider):
                     LOGGER.debug('Adding variable')
                     dtype = value.dtype
                     if dtype.name.startswith('float'):
-                        dtype = 'number'
+                        dtype = 'float'
 
                     self._fields[key] = {
                         'type': dtype,
@@ -257,20 +257,6 @@ class XarrayProvider(BaseProvider):
             if key in fields
         }
 
-        try:
-            tmp_min = data.coords[self.y_field].values[0]
-        except IndexError:
-            tmp_min = data.coords[self.y_field].values
-        try:
-            tmp_max = data.coords[self.y_field].values[-1]
-        except IndexError:
-            tmp_max = data.coords[self.y_field].values
-
-        if tmp_min > tmp_max:
-            LOGGER.debug(f'Reversing direction of {self.y_field}')
-            miny = tmp_max
-            maxy = tmp_min
-
         cj = {
             'type': 'Coverage',
             'domain': {
@@ -283,8 +269,8 @@ class XarrayProvider(BaseProvider):
                         'num': metadata['width']
                     },
                     'y': {
-                        'start': maxy,
-                        'stop': miny,
+                        'start': miny,
+                        'stop': maxy,
                         'num': metadata['height']
                     },
                     self.time_axis_covjson: {
@@ -309,7 +295,7 @@ class XarrayProvider(BaseProvider):
         for key, value in selected_fields.items():
             parameter = {
                 'type': 'Parameter',
-                'description': value['title'],
+                'description': {'en':value['title']},
                 'unit': {
                     'symbol': value['x-ogc-unit']
                 },
@@ -332,11 +318,12 @@ class XarrayProvider(BaseProvider):
                     'type': 'NdArray',
                     'dataType': value['type'],
                     'axisNames': [
-                        'y', 'x', self.time_axis_covjson
+                        self.time_axis_covjson,'y', 'x'
                     ],
-                    'shape': [metadata['height'],
-                              metadata['width'],
-                              metadata['time_steps']]
+                    'shape': [metadata['time_steps'],
+                              metadata['height'],
+                              metadata['width']
+                              ]
                 }
                 cj['ranges'][key]['values'] = data[key].values.flatten().tolist()  # noqa
         except IndexError as err:
