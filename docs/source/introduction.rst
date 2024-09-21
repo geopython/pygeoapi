@@ -14,12 +14,12 @@ Features
   * OGC API - Features
   * OGC API - Environmental Data Retrieval
   * OGC API - Tiles
+  * OGC API - Processes
 
 * additionally implements
 
   * OGC API - Coverages
   * OGC API - Maps
-  * OGC API - Processes
   * OGC API - Records
   * SpatioTemporal Asset Library
   
@@ -52,7 +52,7 @@ Standards are at the core of pygeoapi.  Below is the project's standards support
    `OGC API - Coverages`_,Implementing
    `OGC API - Maps`_,Implementing
    `OGC API - Tiles`_,Reference Implementation
-   `OGC API - Processes`_,Implementing
+   `OGC API - Processes`_,Compliant
    `OGC API - Records`_,Implementing
    `OGC API - Environmental Data Retrieval`_,Reference Implementation
    `SpatioTemporal Asset Catalog`_,Implementing
