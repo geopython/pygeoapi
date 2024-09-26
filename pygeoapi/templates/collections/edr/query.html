@@ -139,7 +139,7 @@
               if (!firstLayer) {
                 firstLayer = layer;
                 layer.on('afterAdd', () => {
-                  zoomToLayers([layers])
+                  zoomToLayers([layer])
                   if (!cov.coverages) {
                     if (isVerticalProfile(cov) || isTimeSeries(cov)) {
                       layer.openPopup();
