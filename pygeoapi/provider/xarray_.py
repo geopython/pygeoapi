@@ -92,6 +92,7 @@ class XarrayProvider(BaseProvider):
             self.axes = [self._coverage_properties['x_axis_label'],
                          self._coverage_properties['y_axis_label'],
                          self._coverage_properties['time_axis_label']]
+            self.time_axis_covjson = provider_def.get('time_axis_covjson') or self.time_field
 
             self.get_fields()
         except Exception as err:
@@ -105,7 +106,7 @@ class XarrayProvider(BaseProvider):
                     LOGGER.debug('Adding variable')
                     dtype = value.dtype
                     if dtype.name.startswith('float'):
-                        dtype = 'number'
+                        dtype = 'float'
 
                     self._fields[key] = {
                         'type': dtype,
@@ -248,27 +249,13 @@ class XarrayProvider(BaseProvider):
         """
 
         LOGGER.debug('Creating CoverageJSON domain')
-        minx, miny, maxx, maxy = metadata['bbox']
+        startx, starty, stopx, stopy = metadata['bbox']
         mint, maxt = metadata['time']
 
         selected_fields = {
             key: value for key, value in self.fields.items()
             if key in fields
         }
-
-        try:
-            tmp_min = data.coords[self.y_field].values[0]
-        except IndexError:
-            tmp_min = data.coords[self.y_field].values
-        try:
-            tmp_max = data.coords[self.y_field].values[-1]
-        except IndexError:
-            tmp_max = data.coords[self.y_field].values
-
-        if tmp_min > tmp_max:
-            LOGGER.debug(f'Reversing direction of {self.y_field}')
-            miny = tmp_max
-            maxy = tmp_min
 
         cj = {
             'type': 'Coverage',
@@ -277,19 +264,20 @@ class XarrayProvider(BaseProvider):
                 'domainType': 'Grid',
                 'axes': {
                     'x': {
-                        'start': minx,
-                        'stop': maxx,
+                        'start': startx,
+                        'stop': stopx,
                         'num': metadata['width']
                     },
                     'y': {
-                        'start': maxy,
-                        'stop': miny,
+                        'start': starty,
+                        'stop': stopy,
                         'num': metadata['height']
                     },
-                    self.time_field: {
-                        'start': mint,
-                        'stop': maxt,
-                        'num': metadata['time_steps']
+                    self.time_axis_covjson: {
+                        'values': [str(i) for i in data.coords[self.time_field].values]
+                        #'start': mint,
+                        #'stop': maxt,
+                        #'num': metadata['time_steps']
                     }
                 },
                 'referencing': [{
@@ -307,7 +295,7 @@ class XarrayProvider(BaseProvider):
         for key, value in selected_fields.items():
             parameter = {
                 'type': 'Parameter',
-                'description': value['title'],
+                'description': {'en':value['title']},
                 'unit': {
                     'symbol': value['x-ogc-unit']
                 },
@@ -330,11 +318,12 @@ class XarrayProvider(BaseProvider):
                     'type': 'NdArray',
                     'dataType': value['type'],
                     'axisNames': [
-                        'y', 'x', self._coverage_properties['time_axis_label']
+                        self.time_axis_covjson,'y', 'x'
                     ],
-                    'shape': [metadata['height'],
-                              metadata['width'],
-                              metadata['time_steps']]
+                    'shape': [metadata['time_steps'],
+                              metadata['height'],
+                              metadata['width']
+                              ]
                 }
                 cj['ranges'][key]['values'] = data[key].values.flatten().tolist()  # noqa
         except IndexError as err:
@@ -370,6 +359,7 @@ class XarrayProvider(BaseProvider):
             self.y_field = y_var
         if self.time_field is None:
             self.time_field = time_var
+        
 
         # It would be preferable to use CF attributes to get width
         # resolution etc but for now a generic approach is used to assess
