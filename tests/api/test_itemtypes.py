@@ -79,6 +79,14 @@ def test_get_collection_queryables(config, api_):
     assert 'properties' in queryables
     assert len(queryables['properties']) == 5
 
+    req = mock_api_request({'f': 'json'})
+    rsp_headers, code, response = get_collection_queryables(api_, req, 'canada-metadata')  # noqa
+    assert rsp_headers['Content-Type'] == 'application/schema+json'
+    queryables = json.loads(response)
+
+    assert 'properties' in queryables
+    assert len(queryables['properties']) == 10
+
     # test with provider filtered properties
     api_.config['resources']['obs']['providers'][0]['properties'] = ['stn_id']
 

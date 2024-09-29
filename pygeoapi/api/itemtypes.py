@@ -121,29 +121,22 @@ def get_collection_queryables(api: API, request: Union[APIRequest, Any],
             HTTPStatus.NOT_FOUND, headers, request.format, 'NotFound', msg)
 
     LOGGER.debug('Creating collection queryables')
-    try:
-        LOGGER.debug('Loading feature provider')
-        p = load_plugin('provider', get_provider_by_type(
-            api.config['resources'][dataset]['providers'], 'feature'))
-    except ProviderTypeError:
-        try:
-            LOGGER.debug('Loading coverage provider')
-            p = load_plugin('provider', get_provider_by_type(
-                api.config['resources'][dataset]['providers'], 'coverage'))  # noqa
-        except ProviderTypeError:
-            LOGGER.debug('Loading record provider')
-            p = load_plugin('provider', get_provider_by_type(
-                api.config['resources'][dataset]['providers'], 'record'))
-        finally:
-            msg = 'queryables not available for this collection'
-            return api.get_exception(
-                HTTPStatus.BAD_REQUEST, headers, request.format,
-                'NoApplicableError', msg)
 
-    except ProviderGenericError as err:
+    p = None
+    for pt in ['feature', 'coverage', 'record']:
+        try:
+            LOGGER.debug(f'Loading {pt} provider')
+            p = load_plugin('provider', get_provider_by_type(
+                api.config['resources'][dataset]['providers'], pt))
+            break
+        except ProviderTypeError:
+            LOGGER.debug(f'Providing type {pt} not found')
+
+    if p is None:
+        msg = 'queryables not available for this collection'
         return api.get_exception(
-            err.http_status_code, headers, request.format,
-            err.ogc_exception_code, err.message)
+            HTTPStatus.BAD_REQUEST, headers, request.format,
+            'NoApplicableError', msg)
 
     queryables = {
         'type': 'object',
