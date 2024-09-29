@@ -398,6 +398,44 @@ resources:
                     name: png
                     mimetype: image/png
 
+    canada-metadata:
+        type: collection
+        title:
+            en: Open Canada sample data
+            fr: Exemple de donn\u00e9es Canada Ouvert
+        description:
+            en: Sample metadata records from open.canada.ca
+            fr: Exemples d'enregistrements de m\u00e9tadonn\u00e9es sur ouvert.canada.ca
+        keywords:
+            en:
+                - canada
+                - open data
+            fr:
+                - canada
+                - donn\u00e9es ouvertes
+        links:
+            - type: text/html
+              rel: canonical
+              title: information
+              href: https://open.canada.ca/en/open-data
+              hreflang: en-CA
+            - type: text/html
+              rel: alternate
+              title: informations
+              href: https://ouvert.canada.ca/fr/donnees-ouvertes
+              hreflang: fr-CA
+        extents:
+            spatial:
+                bbox: [-180,-90,180,90]
+                crs: http://www.opengis.net/def/crs/OGC/1.3/CRS84
+        providers:
+            - type: record
+              name: TinyDBCatalogue
+              data: tests/data/open.canada.ca/sample-records.tinydb
+              id_field: externalId
+              time_field: created
+              title_field: title
+
     hello-world:
         type: process
         processor:

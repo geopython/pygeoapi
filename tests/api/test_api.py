@@ -575,7 +575,7 @@ def test_conformance(config, api_):
 
     assert isinstance(root, dict)
     assert 'conformsTo' in root
-    assert len(root['conformsTo']) == 37
+    assert len(root['conformsTo']) == 42
     assert 'http://www.opengis.net/spec/ogcapi-features-2/1.0/conf/crs' \
            in root['conformsTo']
 
@@ -604,7 +604,7 @@ def test_describe_collections(config, api_):
     collections = json.loads(response)
 
     assert len(collections) == 2
-    assert len(collections['collections']) == 9
+    assert len(collections['collections']) == 10
     assert len(collections['links']) == 3
 
     rsp_headers, code, response = api_.describe_collections(req, 'foo')
