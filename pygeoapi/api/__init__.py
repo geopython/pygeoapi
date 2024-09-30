@@ -88,7 +88,6 @@ F_PNG = 'png'
 F_JPEG = 'jpeg'
 F_MVT = 'mvt'
 F_NETCDF = 'NetCDF'
-F_ZARR = 'zarr'
 
 #: Formats allowed for ?f= requests (order matters for complex MIME types)
 FORMAT_TYPES = OrderedDict((
@@ -99,7 +98,6 @@ FORMAT_TYPES = OrderedDict((
     (F_JPEG, 'image/jpeg'),
     (F_MVT, 'application/vnd.mapbox-vector-tile'),
     (F_NETCDF, 'application/x-netcdf'),
-    (F_ZARR, 'application/zip+zarr'),
 ))
 
 #: Locale used for system responses (e.g. exceptions)
@@ -1115,28 +1113,27 @@ class API:
                     'title': l10n.translate('Coverage data', request.locale),
                     'href': f'{self.get_collections_url()}/{k}/coverage?f={F_JSON}'  # noqa
                 })
-                # Hardcode netcdf format for xarray provider
-                if collection_data['name'] == 'xarray':
-                    data_formats = [
-                        {'name': F_NETCDF, 'mimetype': FORMAT_TYPES[F_NETCDF]},
-                        {'name': F_ZARR, 'mimetype': FORMAT_TYPES[F_ZARR]}
-                    ]
-                elif collection_data_format is not None:
-                    data_formats = [collection_data_format]
-                else:
-                    data_formats = []
-
-                for data_format in data_formats:
+                if collection_data_format is not None:
                     title_ = l10n.translate('Coverage data as', request.locale)  # noqa
-                    title_ = f"{title_} {data_format['name']}"
-                    collection['links'].append(
-                        {
-                            'type': data_format['mimetype'],
-                            'rel': f'{OGC_RELTYPES_BASE}/coverage',
-                            'title': title_,
-                            'href': f"{self.get_collections_url()}/{k}/coverage?f={data_format['name']}",  # noqa
-                        }
-                    )
+                    title_ = f"{title_} {collection_data_format['name']}"
+                    collection['links'].append({
+                        'type': collection_data_format['mimetype'],
+                        'rel': f'{OGC_RELTYPES_BASE}/coverage',
+                        'title': title_,
+                        'href': f"{self.get_collections_url()}/{k}/coverage?f={collection_data_format['name']}"  # noqa
+                    })
+
+                # Hardcode netcdf format for xarray provider
+                if (collection_data['name'] == 'xarray' and
+                   collection_data_format['name'] == 'zarr'):
+                    title_ = l10n.translate('Coverage data as', request.locale)
+                    title_ = f"{title_} {F_NETCDF}"
+                    collection['links'].append({
+                        'type': FORMAT_TYPES[F_NETCDF],
+                        'rel': f'{OGC_RELTYPES_BASE}/coverage',
+                        'title': title_,
+                        'href': f"{self.get_collections_url()}/{k}/coverage?f={F_NETCDF}"  # noqa
+                    })
 
                 if dataset is not None:
                     LOGGER.debug('Creating extended coverage metadata')
