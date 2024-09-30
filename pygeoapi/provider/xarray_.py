@@ -257,9 +257,6 @@ class XarrayProvider(BaseProvider):
         elif format_ == 'zarr':
             LOGGER.debug('Returning data in native zarr format')
             return _get_zarr_data(data)
-        elif format_ == 'netcdf':
-            LOGGER.debug('Returning data in netcdf format')
-            return _get_netcdf_data(data)
         else:  # return data in native format
             with tempfile.NamedTemporaryFile() as fp:
                 LOGGER.debug('Returning data in native NetCDF format')
@@ -672,22 +669,6 @@ def _get_zarr_data(data):
 
     with open(zarr_zip_filename, 'rb') as fh:
         return fh.read()
-
-
-def _get_netcdf_data(data: xarray.Dataset):
-    """
-    Returns bytes to read from netcdf file
-    :param data: Xarray dataset of coverage data
-
-    :returns: byte array of netcdf data
-    """
-
-    with tempfile.NamedTemporaryFile() as fp:
-        data.to_netcdf(
-            fp.name
-        )  # we need to pass a string to be able to use the "netcdf4" engine
-        fp.seek(0)
-        return fp.read()
 
 
 def _convert_float32_to_float64(data):

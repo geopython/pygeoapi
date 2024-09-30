@@ -1122,19 +1122,6 @@ class API:
                         'title': title_,
                         'href': f"{self.get_collections_url()}/{k}/coverage?f={collection_data_format['name']}"  # noqa
                     })
-
-                # Hardcode netcdf format for xarray provider
-                if (collection_data['name'] == 'xarray' and
-                   collection_data_format['name'] == 'zarr'):
-                    title_ = l10n.translate('Coverage data as', request.locale)
-                    title_ = f"{title_} {F_NETCDF}"
-                    collection['links'].append({
-                        'type': FORMAT_TYPES[F_NETCDF],
-                        'rel': f'{OGC_RELTYPES_BASE}/coverage',
-                        'title': title_,
-                        'href': f"{self.get_collections_url()}/{k}/coverage?f={F_NETCDF}"  # noqa
-                    })
-
                 if dataset is not None:
                     LOGGER.debug('Creating extended coverage metadata')
                     try:
