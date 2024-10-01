@@ -168,7 +168,7 @@ def yaml_load(fh: IO) -> dict:
     # # https://stackoverflow.com/a/55301129
 
     env_matcher = re.compile(
-        r'.*?\$\{(?P<varname>\w+)(:-(?P<default>[^}]+))?\}')
+        r'.*?\$\{(?P<varname>\w+)(:-(?P<default>[^}]*))?\}')
 
     def env_constructor(loader, node):
         result = ""
