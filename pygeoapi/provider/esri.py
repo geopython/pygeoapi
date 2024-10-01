@@ -203,7 +203,7 @@ class ESRIServiceProvider(BaseProvider):
             }
 
             LOGGER.debug('Logging in')
-            with self.session.post((GENERATE_TOKEN_URL if self.token_url is None else self.token_url), data=params) as r:
+            with self.session.post(self.token_url, data=params) as r:
                 self.token = r.json().get('token')
                 # https://enterprise.arcgis.com/en/server/latest/administer/windows/about-arcgis-tokens.htm
                 self.session.headers.update({
