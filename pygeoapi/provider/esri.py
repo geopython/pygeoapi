@@ -199,7 +199,7 @@ class ESRIServiceProvider(BaseProvider):
                 'f': 'pjson',
                 'username': self.username,
                 'password': self.password,
-                'referer': (ARCGIS_URL if self.token_referer is None else self.token_referer)
+                'referer': self.token_referer
             }
 
             LOGGER.debug('Logging in')
