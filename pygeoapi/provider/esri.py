@@ -62,8 +62,8 @@ class ESRIServiceProvider(BaseProvider):
         self.crs = provider_def.get('crs', '4326')
         self.username = provider_def.get('username')
         self.password = provider_def.get('password')
-        self.token_url = provider_def.get('token_service')
-        self.token_referer = provider_def.get('referer')
+        self.token_url = provider_def.get('token_service', ARCGIS_URL)
+        self.token_referer = provider_def.get('referer', GENERATE_TOKEN_URL)
         self.token = None
             
         self.session = Session()
