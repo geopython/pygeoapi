@@ -389,6 +389,9 @@ def test_api(config, api_, openapi):
     assert rsp_headers['Content-Language'] == 'en-US'
     assert code == HTTPStatus.BAD_REQUEST
 
+    response = json.loads(response)
+    assert response['description'] == 'Invalid format requested'
+
     assert api_.get_collections_url() == 'http://localhost:5000/collections'
 
 

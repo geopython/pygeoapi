@@ -108,14 +108,21 @@ class BaseManager:
         else:
             return load_plugin('process', process_conf['processor'])
 
-    def get_jobs(self, status: JobStatus = None) -> list:
+    def get_jobs(self,
+                 status: JobStatus = None,
+                 limit: Optional[int] = None,
+                 offset: Optional[int] = None
+                 ) -> dict:
         """
         Get process jobs, optionally filtered by status
 
         :param status: job status (accepted, running, successful,
                        failed, results) (default is all)
+        :param limit: number of jobs to return
+        :param offset: pagination offset
 
-        :returns: `list` of jobs (identifier, status, process identifier)
+        :returns: dict of list of jobs (identifier, status, process identifier)
+                  and numberMatched
         """
 
         raise NotImplementedError()

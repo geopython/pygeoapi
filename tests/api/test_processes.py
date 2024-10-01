@@ -39,7 +39,7 @@ from unittest import mock
 
 from pygeoapi.api import FORMAT_TYPES, F_HTML, F_JSON
 from pygeoapi.api.processes import (
-    describe_processes, execute_process, delete_job, get_job_result,
+    describe_processes, execute_process, delete_job, get_job_result, get_jobs
 )
 
 from tests.util import mock_api_request
@@ -442,4 +442,51 @@ def test_get_job_result(api_):
     )
     assert code == HTTPStatus.OK
     assert rsp_headers['Content-Type'] == 'application/json'
-    assert json.loads(response)['value'] == "Hello Sync Test!"
+    assert json.loads(response)['value'] == 'Hello Sync Test!'
+
+
+def test_get_jobs_single(api_):
+    job_id = _execute_a_job(api_)
+    headers, code, response = get_jobs(api_, mock_api_request(), job_id=job_id)
+    assert code == HTTPStatus.OK
+
+    job = json.loads(response)
+    assert job['jobID'] == job_id
+    assert job['status'] == 'successful'
+
+
+def test_get_jobs_pagination(api_):
+    # generate test jobs for querying
+    for _ in range(11):
+        _execute_a_job(api_)
+
+    # test default pagination limit
+    headers, code, response = get_jobs(api_, mock_api_request(), job_id=None)
+    job_response = json.loads(response)
+    assert len(job_response['jobs']) == 10
+    assert next(
+        link for link in job_response['links'] if link['rel'] == 'next'
+    )['href'].endswith('/jobs?offset=10')
+
+    headers, code, response = get_jobs(
+        api_,
+        mock_api_request({'limit': 10, 'offset': 9}),
+        job_id=None)
+    job_response_offset = json.loads(response)
+    # check to get 1 same job id with an offset of 9 and limit of 10
+    same_job_ids = {job['jobID'] for job in job_response['jobs']}.intersection(
+        {job['jobID'] for job in job_response_offset['jobs']}
+    )
+    assert len(same_job_ids) == 1
+    assert next(
+        link for link in job_response_offset['links'] if link['rel'] == 'prev'
+    )['href'].endswith('/jobs?offset=0&limit=10')
+
+    # test custom limit
+    headers, code, response = get_jobs(
+        api_,
+        mock_api_request({'limit': 20}),
+        job_id=None)
+    job_response = json.loads(response)
+    # might be more than 11 due to test interaction
+    assert len(job_response['jobs']) > 10

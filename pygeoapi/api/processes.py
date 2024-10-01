@@ -46,6 +46,7 @@ from http import HTTPStatus
 import json
 import logging
 from typing import Tuple
+import urllib.parse
 
 from pygeoapi import l10n
 from pygeoapi.util import (
@@ -240,10 +241,51 @@ def get_jobs(api: API, request: APIRequest,
 
     headers = request.get_response_headers(SYSTEM_LOCALE,
                                            **api.api_headers)
+    LOGGER.debug('Processing limit parameter')
+    try:
+        limit = int(request.params.get('limit'))
+
+        if limit <= 0:
+            msg = 'limit value should be strictly positive'
+            return api.get_exception(
+                HTTPStatus.BAD_REQUEST, headers, request.format,
+                'InvalidParameterValue', msg)
+    except TypeError:
+        limit = int(api.config['server']['limit'])
+        LOGGER.debug('returning all jobs')
+    except ValueError:
+        msg = 'limit value should be an integer'
+        return api.get_exception(
+            HTTPStatus.BAD_REQUEST, headers, request.format,
+            'InvalidParameterValue', msg)
+
+    LOGGER.debug('Processing offset parameter')
+    try:
+        offset = int(request.params.get('offset'))
+        if offset < 0:
+            msg = 'offset value should be positive or zero'
+            return api.get_exception(
+                HTTPStatus.BAD_REQUEST, headers, request.format,
+                'InvalidParameterValue', msg)
+    except TypeError as err:
+        LOGGER.warning(err)
+        offset = 0
+    except ValueError:
+        msg = 'offset value should be an integer'
+        return api.get_exception(
+            HTTPStatus.BAD_REQUEST, headers, request.format,
+            'InvalidParameterValue', msg)
+
     if job_id is None:
-        jobs = sorted(api.manager.get_jobs(),
+        jobs_data = api.manager.get_jobs(limit=limit, offset=offset)
+        # TODO: For pagination to work, the provider has to do the sorting.
+        #       Here we do sort again in case the provider doesn't support
+        #       pagination yet and always returns all jobs.
+        jobs = sorted(jobs_data['jobs'],
                       key=lambda k: k['job_start_datetime'],
                       reverse=True)
+        numberMatched = jobs_data['numberMatched']
+
     else:
         try:
             jobs = [api.manager.get_job(job_id)]
@@ -251,6 +293,7 @@ def get_jobs(api: API, request: APIRequest,
             return api.get_exception(
                 HTTPStatus.NOT_FOUND, headers, request.format,
                 'InvalidParameterValue', job_id)
+        numberMatched = 1
 
     serialized_jobs = {
         'jobs': [],
@@ -309,6 +352,44 @@ def get_jobs(api: API, request: APIRequest,
 
         serialized_jobs['jobs'].append(job2)
 
+    serialized_query_params = ''
+    for k, v in request.params.items():
+        if k not in ('f', 'offset'):
+            serialized_query_params += '&'
+            serialized_query_params += urllib.parse.quote(k, safe='')
+            serialized_query_params += '='
+            serialized_query_params += urllib.parse.quote(str(v), safe=',')
+
+    uri = f'{api.base_url}/jobs'
+
+    if offset > 0:
+        prev = max(0, offset - limit)
+        serialized_jobs['links'].append(
+            {
+                'href': f'{uri}?offset={prev}{serialized_query_params}',
+                'type': FORMAT_TYPES[F_JSON],
+                'rel': 'prev',
+                'title': l10n.translate('Items (prev)', request.locale),
+            })
+
+    next_link = False
+
+    if numberMatched > (limit + offset):
+        next_link = True
+    elif len(jobs) == limit:
+        next_link = True
+
+    if next_link:
+        next_ = offset + limit
+        next_href = f'{uri}?offset={next_}{serialized_query_params}'
+        serialized_jobs['links'].append(
+            {
+                'href': next_href,
+                'rel': 'next',
+                'type': FORMAT_TYPES[F_JSON],
+                'title': l10n.translate('Items (next)', request.locale),
+            })
+
     if job_id is None:
         j2_template = 'jobs/index.html'
     else:
@@ -318,6 +399,7 @@ def get_jobs(api: API, request: APIRequest,
     if request.format == F_HTML:
         data = {
             'jobs': serialized_jobs,
+            'offset': offset,
             'now': datetime.now(timezone.utc).strftime(DATETIME_FORMAT)
         }
         response = render_j2_template(api.tpl_config, j2_template, data,

@@ -55,6 +55,7 @@ PLUGINS = {
         'MVT-proxy': 'pygeoapi.provider.mvt_proxy.MVTProxyProvider',  # noqa: E501
         'OracleDB': 'pygeoapi.provider.oracle.OracleProvider',
         'OGR': 'pygeoapi.provider.ogr.OGRProvider',
+        'Parquet': 'pygeoapi.provider.parquet.ParquetProvider',
         'PostgreSQL': 'pygeoapi.provider.postgresql.PostgreSQLProvider',
         'rasterio': 'pygeoapi.provider.rasterio_.RasterioProvider',
         'SensorThings': 'pygeoapi.provider.sensorthings.SensorThingsProvider',

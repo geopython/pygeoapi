@@ -48,5 +48,38 @@
           </table>
         </div>
       </div>
+      <div class="row">
+        <div class="col-sm-12">
+          {% trans %}Limit{% endtrans %}:
+          <select id="limits">
+            <option value="{{ config['server']['limit'] }}">{{ config['server']['limit'] }} ({% trans %}default{% endtrans %})</option>
+            <option value="100">100</option>
+            <option value="1000">1,000</option>
+            <option value="2000">2,000</option>
+          </select>
+          <script>
+            var select = document.getElementById('limits');
+            var defaultValue = select.getElementsByTagName('option')[0].value;
+            let params = (new URL(document.location)).searchParams;
+            select.value = params.get('limit') || defaultValue;
+            select.addEventListener('change', ev => {
+              var limit = ev.target.value;
+              document.location.search = `limit=${limit}`;
+            });
+          </script>
+        </div>
+      </div>
+      <div class="row">
+        <div class="col-sm-12">
+          {% for link in data['jobs']['links'] %}
+          {% if link['rel'] == 'prev' and data['offset'] > 0 %}
+          <a role="button" href="{{ link['href'] }}">{% trans %}Prev{% endtrans %}</a>
+          {% elif link['rel'] == 'next' and data['jobs']['jobs'] %}
+          <a role="button" href="{{ link['href'] }}">{% trans %}Next{% endtrans %}</a>
+          {% endif %}
+          {% endfor %}
+        </div>
+      </div>
+
     </section>
 {% endblock %}
