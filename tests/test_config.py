@@ -57,13 +57,16 @@ def test_config_envvars():
     assert config['server']['url'] == 'http://localhost:5000/'
     assert config['metadata']['identification']['title'] == \
         'pygeoapi default instance my title'
+    assert config['server']['api_rules']['url_prefix'] == ''
 
     os.environ['PYGEOAPI_URL'] = 'https://localhost:5000'
+    os.environ['PYGEOAPI_PREFIX'] = 'v1'
 
     with open(get_test_file_path('pygeoapi-test-config-envvars.yml')) as fh:
         config = yaml_load(fh)
 
     assert config['server']['url'] == 'https://localhost:5000'
+    assert config['server']['api_rules']['url_prefix'] == 'v1'
 
     os.environ.pop('PYGEOAPI_PORT')
 
