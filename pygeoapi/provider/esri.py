@@ -65,7 +65,6 @@ class ESRIServiceProvider(BaseProvider):
         self.token_url = provider_def.get('token_service', ARCGIS_URL)
         self.token_referer = provider_def.get('referer', GENERATE_TOKEN_URL)
         self.token = None
-            
         self.session = Session()
 
         self.login()
