@@ -145,11 +145,11 @@ To publish an ESRI `Feature Service`_ or `Map Service`_ specify the URL for the 
 
 * ``id_field`` will often be ``OBJECTID``, ``objectid``, or ``FID``.
 * If the map or feature service is not shared publicly, the ``username`` and ``password`` fields can be set in the
-  configuration to authenticate into the service.
+  configuration to authenticate to the service.
 * If the map or feature service is self-hosted and not shared publicly, the ``token_service`` and optional ``referer`` fields
-  can be set in the configuration to authenticate into the service.
+  can be set in the configuration to authenticate to the service.
 
-To publish from a ArcGIS online hosted service:
+To publish from an ArcGIS online hosted service:
 
 .. code-block:: yaml
 
@@ -162,10 +162,10 @@ To publish from a ArcGIS online hosted service:
          crs: 4326 # Optional crs (default is EPSG:4326)
          username: username # Optional ArcGIS username
          password: password # Optional ArcGIS password
-         token_service: https://your.server.com/arcgis/sharing/rest/generateToken # Optional url to your generateToken service
-         referer: https://your.server.com # Optional referer, defaults to https://www.arcgis.com if not set
+         token_service: https://your.server.com/arcgis/sharing/rest/generateToken  # optional URL to your generateToken service
+         referer: https://your.server.com  # optional referer, defaults to https://www.arcgis.com if not set
 
-To publish from a self-hosted service that is not publicly accessible the ``token_service`` field is required:
+To publish from a self-hosted service that is not publicly accessible, the ``token_service`` field is required:
 
 .. code-block:: yaml
 
