@@ -195,7 +195,6 @@ class ESRIServiceProvider(BaseProvider):
                 msg = 'Missing ESRI login information, not setting token'
                 LOGGER.debug(msg)
                 return
-                
             params = {
                 'f': 'pjson',
                 'username': self.username,
