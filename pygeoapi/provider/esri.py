@@ -62,8 +62,9 @@ class ESRIServiceProvider(BaseProvider):
         self.crs = provider_def.get('crs', '4326')
         self.username = provider_def.get('username')
         self.password = provider_def.get('password')
+        self.token_url = provider_def.get('token_service', ARCGIS_URL)
+        self.token_referer = provider_def.get('referer', GENERATE_TOKEN_URL)
         self.token = None
-
         self.session = Session()
 
         self.login()
@@ -194,16 +195,15 @@ class ESRIServiceProvider(BaseProvider):
                 msg = 'Missing ESRI login information, not setting token'
                 LOGGER.debug(msg)
                 return
-
             params = {
                 'f': 'pjson',
                 'username': self.username,
                 'password': self.password,
-                'referer': ARCGIS_URL
+                'referer': self.token_referer
             }
 
             LOGGER.debug('Logging in')
-            with self.session.post(GENERATE_TOKEN_URL, data=params) as r:
+            with self.session.post(self.token_url, data=params) as r:
                 self.token = r.json().get('token')
                 # https://enterprise.arcgis.com/en/server/latest/administer/windows/about-arcgis-tokens.htm
                 self.session.headers.update({
