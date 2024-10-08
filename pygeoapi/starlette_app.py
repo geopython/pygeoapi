@@ -528,9 +528,15 @@ async def get_collection_edr_query(request: Request, collection_id=None, instanc
         instance_id = request.path_params['instance_id']
 
     query_type = request["path"].split('/')[-1]  # noqa
+    location_id = None
+
+    if request["path"].split('/')[-2] == 'locations':
+        location_id = request["path"].split('/')[-1]
+        query_type = 'locations'
+
     return await execute_from_starlette(
         edr_api.get_collection_edr_query, request, collection_id,
-        instance_id, query_type,
+        instance_id, query_type, location_id,
         skip_valid_check=True,
     )
 
