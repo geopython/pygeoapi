@@ -80,6 +80,8 @@ class RasterioProvider(BaseProvider):
                 dtype2 = dtype
                 if dtype.startswith('float'):
                     dtype2 = 'number'
+                elif dtype.startswith('int'):
+                    dtype2 = 'integer'
 
                 self._fields[i2] = {
                     'title': name,
