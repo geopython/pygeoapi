@@ -46,7 +46,7 @@ from pygeoapi.provider.base import (BaseProvider,
                                     ProviderConnectionError,
                                     ProviderNoDataError,
                                     ProviderQueryError)
-from pygeoapi.util import get_crs_from_uri, read_data
+from pygeoapi.util import get_crs_from_uri
 
 LOGGER = logging.getLogger(__name__)
 
@@ -236,13 +236,14 @@ class XarrayProvider(BaseProvider):
                 "height": data.sizes[self.y_field],
                 "width": data.sizes[self.x_field],
                 "variables": {var_name: var.attrs
-                            for var_name, var in data.variables.items()}
+                              for var_name, var in data.variables.items()}
             }
 
             if self.time_field is not None:
+                time_values = data.coords[self.time_field].values
                 out_meta['time'] = [
-                    _to_datetime_string(data.coords[self.time_field].values[0]),
-                    _to_datetime_string(data.coords[self.time_field].values[-1]),
+                    _to_datetime_string(time_values[0]),
+                    _to_datetime_string(time_values[-1]),
                 ]
                 out_meta["time_steps"] = data.sizes[self.time_field]
 
