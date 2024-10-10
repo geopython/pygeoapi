@@ -1138,6 +1138,18 @@ class API:
                     except ProviderTypeError:
                         pass
                     else:
+                        for name, mimetype in p.supported_formats.items():
+                            if name in (F_JSON, collection_data_format['name']):  # noqa
+                                continue
+                            title_ = l10n.translate('Coverage data as', request.locale)  # noqa
+                            title_ = f"{title_} {name}"
+                            collection['links'].append({
+                                'type': mimetype,
+                                'rel': f'{OGC_RELTYPES_BASE}/coverage',
+                                'title': title_,
+                                'href': f"{self.get_collections_url()}/{k}/coverage?f={name}"  # noqa
+                            })
+
                         collection['extent']['spatial']['grid'] = [{
                             'cellsCount': p._coverage_properties['width'],
                             'resolution': p._coverage_properties['resx']

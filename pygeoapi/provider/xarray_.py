@@ -63,6 +63,9 @@ class XarrayProvider(BaseProvider):
 
         super().__init__(provider_def)
 
+        self.supported_formats['netcdf'] = 'application/x-netcdf'
+        self.supported_formats['zarr'] = 'application/zip+zarr'
+
         try:
             if provider_def['data'].endswith('.zarr'):
                 open_func = xarray.open_zarr
