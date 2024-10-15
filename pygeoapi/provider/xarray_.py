@@ -112,6 +112,8 @@ class XarrayProvider(BaseProvider):
                     dtype = value.dtype
                     if dtype.name.startswith('float'):
                         dtype = 'number'
+                    elif dtype.name.startswith('int'):
+                        dtype = 'integer'
 
                     self._fields[key] = {
                         'type': dtype,
