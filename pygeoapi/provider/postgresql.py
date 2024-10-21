@@ -62,7 +62,8 @@ import pyproj
 import shapely
 from sqlalchemy import create_engine, MetaData, PrimaryKeyConstraint, asc, desc
 from sqlalchemy.engine import URL
-from sqlalchemy.exc import InvalidRequestError, OperationalError
+from sqlalchemy.exc import ConstraintColumnNotFoundError, \
+    InvalidRequestError, OperationalError
 from sqlalchemy.ext.automap import automap_base
 from sqlalchemy.orm import Session, load_only
 from sqlalchemy.sql.expression import and_
@@ -515,7 +516,7 @@ def get_table_model(
     sqlalchemy_table_def = metadata.tables[f'{schema}.{table_name}']
     try:
         sqlalchemy_table_def.append_constraint(PrimaryKeyConstraint(id_field))
-    except KeyError:
+    except (ConstraintColumnNotFoundError, KeyError):
         raise ProviderQueryError(
             f"No such id_field column ({id_field}) on {schema}.{table_name}.")
 
