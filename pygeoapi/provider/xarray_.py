@@ -100,7 +100,8 @@ class XarrayProvider(BaseProvider):
             self.axes = [self._coverage_properties['x_axis_label'],
                          self._coverage_properties['y_axis_label'],
                          self._coverage_properties['time_axis_label']]
-            self.time_axis_covjson = provider_def.get('time_axis_covjson') or self.time_field
+            self.time_axis_covjson = provider_def.get('time_axis_covjson') \
+                or self.time_field
 
             self.get_fields()
         except Exception as err:
@@ -308,7 +309,11 @@ class XarrayProvider(BaseProvider):
                         'num': metadata['height']
                     },
                     self.time_axis_covjson: {
-                        'values': [str(i) for i in data.coords[self.time_field].values]
+                        'values': [str(i) for i in
+                                   data.coords[self.time_field].values],
+                        #'start': mint,
+                        #'stop': maxt,
+                        #'num': metadata['time_steps']
                     }
                 },
                 'referencing': [{
@@ -334,7 +339,7 @@ class XarrayProvider(BaseProvider):
         for key, value in selected_fields.items():
             parameter = {
                 'type': 'Parameter',
-                'description': {'en':value['title']},
+                'description': {'en': value['title']},
                 'unit': {
                     'symbol': value['x-ogc-unit']
                 },
@@ -356,7 +361,7 @@ class XarrayProvider(BaseProvider):
                     'type': 'NdArray',
                     'dataType': value['type'],
                     'axisNames': [
-                        self.time_axis_covjson,'y', 'x'
+                        self.time_axis_covjson, 'y', 'x'
                     ],
                     'shape': [metadata['time_steps'],
                               metadata['height'],
@@ -403,7 +408,6 @@ class XarrayProvider(BaseProvider):
             self.y_field = y_var
         if self.time_field is None:
             self.time_field = time_var
-
 
         # It would be preferable to use CF attributes to get width
         # resolution etc but for now a generic approach is used to assess
