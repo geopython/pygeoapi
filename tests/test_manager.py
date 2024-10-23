@@ -30,8 +30,10 @@ from typing import Dict
 
 import pytest
 
-from pygeoapi.process.base import UnknownProcessError
+from pygeoapi.process.base import UnknownProcessError, JobNotFoundError
 from pygeoapi.process.manager.base import get_manager
+
+from .util import get_test_file_path
 
 
 @pytest.fixture()
@@ -41,6 +43,7 @@ def config() -> Dict:
             'manager': {
                 'name': 'TinyDB',
                 'output_dir': '/tmp',
+                'connection': '/tmp/pygeoapi-process-manager-test.db'
             }
         },
         'resources': {
@@ -71,3 +74,28 @@ def test_get_processor_raises_exception(config):
     manager = get_manager(config)
     with pytest.raises(expected_exception=UnknownProcessError):
         manager.get_processor('foo')
+
+
+def test_get_job_result_binary(config):
+    manager = get_manager(config)
+    nc_file = get_test_file_path("tests/data/coads_sst.nc")
+    job_id = "15eeae38-608c-11ef-81c8-0242ac130002"
+    job_metadata = {
+        "type": "process",
+        "identifier": job_id,
+        "process_id": "dummy",
+        "job_start_datetime": "2024-08-22T12:00:00.000000Z",
+        "job_end_datetime": "2024-08-22T12:00:01.000000Z",
+        "status": "successful",
+        "location": nc_file,
+        "mimetype": "application/x-netcdf",
+        "message": "Job complete",
+        "progress": 100
+    }
+    try:
+        manager.get_job(job_id)
+    except JobNotFoundError:
+        manager.add_job(job_metadata)
+    mimetype, result = manager.get_job_result(job_id)
+    assert mimetype == "application/x-netcdf"
+    assert isinstance(result, bytes)

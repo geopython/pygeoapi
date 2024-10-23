@@ -32,6 +32,7 @@ import traceback
 
 from pymongo import MongoClient
 
+from pygeoapi.api import FORMAT_TYPES, F_JSON, F_JSONLD
 from pygeoapi.process.base import (
     JobNotFoundError,
     JobResultNotFoundError,
@@ -151,8 +152,16 @@ class MongoDBManager(BaseManager):
             if entry["status"] != "successful":
                 LOGGER.info("JOBMANAGER - job not finished or failed")
                 return (None,)
-            with open(entry["location"], "r") as file:
-                data = json.load(file)
+            if not entry["location"]:
+                LOGGER.warning(f"job {job_id!r} -  unknown result location")
+                raise JobResultNotFoundError()
+            if entry["mimetype"] in (None, FORMAT_TYPES[F_JSON],
+                                     FORMAT_TYPES[F_JSONLD]):
+                with open(entry["location"], "r") as file:
+                    data = json.load(file)
+            else:
+                with open(entry["location"], "rb") as file:
+                    data = file.read()
             LOGGER.info("JOBMANAGER - MongoDB job result queried")
             return entry["mimetype"], data
         except Exception as err:

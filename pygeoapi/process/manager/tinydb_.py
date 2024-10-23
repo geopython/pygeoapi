@@ -37,6 +37,7 @@ from typing import Any, Tuple
 import tinydb
 from filelock import FileLock
 
+from pygeoapi.api import FORMAT_TYPES, F_JSON, F_JSONLD
 from pygeoapi.process.base import (
     JobNotFoundError,
     JobResultNotFoundError,
@@ -211,8 +212,13 @@ class TinyDBManager(BaseManager):
         else:
             try:
                 location = Path(location)
-                with location.open('r', encoding='utf-8') as filehandler:
-                    result = json.load(filehandler)
+                if mimetype in (None, FORMAT_TYPES[F_JSON],
+                                FORMAT_TYPES[F_JSONLD]):
+                    with location.open('r', encoding='utf-8') as filehandler:
+                        result = json.load(filehandler)
+                else:
+                    with location.open('rb') as filehandler:
+                        result = filehandler.read()
             except (TypeError, FileNotFoundError, json.JSONDecodeError):
                 raise JobResultNotFoundError()
             else:
