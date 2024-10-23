@@ -97,7 +97,10 @@ class XarrayProvider(BaseProvider):
             self.storage_crs = self._parse_storage_crs(provider_def)
             self._coverage_properties = self._get_coverage_properties()
 
-            self.axes = self._coverage_properties['axes']
+            self.axes = [self._coverage_properties['x_axis_label'],
+                         self._coverage_properties['y_axis_label'],
+                         self._coverage_properties['time_axis_label']]
+            self.time_axis_covjson = provider_def.get('time_axis_covjson') or self.time_field
 
             self.get_fields()
         except Exception as err:
@@ -111,7 +114,7 @@ class XarrayProvider(BaseProvider):
                     LOGGER.debug('Adding variable')
                     dtype = value.dtype
                     if dtype.name.startswith('float'):
-                        dtype = 'number'
+                        dtype = 'float'
                     elif dtype.name.startswith('int'):
                         dtype = 'integer'
 
@@ -303,6 +306,9 @@ class XarrayProvider(BaseProvider):
                         'start': starty,
                         'stop': stopy,
                         'num': metadata['height']
+                    },
+                    self.time_axis_covjson: {
+                        'values': [str(i) for i in data.coords[self.time_field].values]
                     }
                 },
                 'referencing': [{
@@ -319,7 +325,7 @@ class XarrayProvider(BaseProvider):
 
         if self.time_field is not None:
             mint, maxt = metadata['time']
-            cj['domain']['axes'][self.time_field] = {
+            cj['domain']['axes'][self.time_axis_covjson] = {
                 'start': mint,
                 'stop': maxt,
                 'num': metadata['time_steps'],
@@ -328,7 +334,7 @@ class XarrayProvider(BaseProvider):
         for key, value in selected_fields.items():
             parameter = {
                 'type': 'Parameter',
-                'description': value['title'],
+                'description': {'en':value['title']},
                 'unit': {
                     'symbol': value['x-ogc-unit']
                 },
@@ -350,10 +356,12 @@ class XarrayProvider(BaseProvider):
                     'type': 'NdArray',
                     'dataType': value['type'],
                     'axisNames': [
-                        'y', 'x'
+                        self.time_axis_covjson,'y', 'x'
                     ],
-                    'shape': [metadata['height'],
-                              metadata['width']]
+                    'shape': [metadata['time_steps'],
+                              metadata['height'],
+                              metadata['width']
+                              ]
                 }
                 cj['ranges'][key]['values'] = data[key].values.flatten().tolist()  # noqa
 
@@ -395,6 +403,7 @@ class XarrayProvider(BaseProvider):
             self.y_field = y_var
         if self.time_field is None:
             self.time_field = time_var
+
 
         # It would be preferable to use CF attributes to get width
         # resolution etc but for now a generic approach is used to assess
