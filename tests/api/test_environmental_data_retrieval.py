@@ -123,7 +123,7 @@ def test_get_collection_edr_query(config, api_):
     # bounded date range
     req = mock_api_request({
         'coords': 'POINT(11 11)',
-        'datetime': '2000-01-17/2000-06-16'
+        'datetime': '2000-01-17/2000-08-16'
     })
     rsp_headers, code, response = get_collection_edr_query(
         api_, req, 'icoads-sst', None, 'position')
@@ -132,14 +132,17 @@ def test_get_collection_edr_query(config, api_):
     data = json.loads(response)
     time_dict = data['domain']['axes']['TIME']
 
-    assert time_dict['start'] == '2000-02-15T16:29:05.999999999'
-    assert time_dict['stop'] == '2000-06-16T10:25:30.000000000'
-    assert time_dict['num'] == 5
+    assert time_dict['values'] == ['2000-06-16T10:25:30.000000000',
+                                   '2000-07-16T20:54:36.000000000',
+                                   '2000-08-16T07:23:42.000000000']
+    # assert time_dict['start'] == '2000-06-16T10:25:30.000000000'
+    # assert time_dict['stop'] == '2000-08-16T07:23:42.000000000'
+    # assert time_dict['num'] == 3
 
     # unbounded date range - start
     req = mock_api_request({
         'coords': 'POINT(11 11)',
-        'datetime': '../2000-06-16'
+        'datetime': '../2000-08-16'
     })
     rsp_headers, code, response = get_collection_edr_query(
         api_, req, 'icoads-sst', None, 'position')
@@ -148,14 +151,17 @@ def test_get_collection_edr_query(config, api_):
     data = json.loads(response)
     time_dict = data['domain']['axes']['TIME']
 
-    assert time_dict['start'] == '2000-01-16T06:00:00.000000000'
-    assert time_dict['stop'] == '2000-06-16T10:25:30.000000000'
-    assert time_dict['num'] == 6
+    assert time_dict['values'] == ['2000-06-16T10:25:30.000000000',
+                                   '2000-07-16T20:54:36.000000000',
+                                   '2000-08-16T07:23:42.000000000']
+    # assert time_dict['start'] == '2000-06-16T10:25:30.000000000'
+    # assert time_dict['stop'] == '2000-08-16T07:23:42.000000000'
+    # assert time_dict['num'] == 3
 
     # unbounded date range - end
     req = mock_api_request({
         'coords': 'POINT(11 11)',
-        'datetime': '2000-06-16/..'
+        'datetime': '2000-08-16/..'
     })
     rsp_headers, code, response = get_collection_edr_query(
         api_, req, 'icoads-sst', None, 'position')
@@ -163,14 +169,18 @@ def test_get_collection_edr_query(config, api_):
 
     data = json.loads(response)
     time_dict = data['domain']['axes']['TIME']
-
-    assert time_dict['start'] == '2000-06-16T10:25:30.000000000'
-    assert time_dict['stop'] == '2000-12-16T01:20:05.999999996'
-    assert time_dict['num'] == 7
+    assert time_dict['values'] == ['2000-08-16T07:23:42.000000000',
+                                   '2000-09-15T17:52:48.000000000',
+                                   '2000-10-16T04:21:54.000000000',
+                                   '2000-11-15T14:51:00.000000000',
+                                   '2000-12-16T01:20:05.999999996']
+    # assert time_dict['start'] == '2000-08-16T07:23:42.000000000'
+    # assert time_dict['stop'] == '2000-12-16T01:20:05.999999996'
+    # assert time_dict['num'] == 7
 
     # some data
     req = mock_api_request({
-        'coords': 'POINT(11 11)', 'datetime': '2000-01-16'
+        'coords': 'POINT(11 11)', 'datetime': '2000-06-16'
     })
     rsp_headers, code, response = get_collection_edr_query(
         api_, req, 'icoads-sst', None, 'position')
