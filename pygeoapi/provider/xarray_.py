@@ -307,13 +307,6 @@ class XarrayProvider(BaseProvider):
                         'start': starty,
                         'stop': stopy,
                         'num': metadata['height']
-                    },
-                    self.time_axis_covjson: {
-                        'values': [str(i) for i in
-                                   data.coords[self.time_field].values],
-                        #'start': mint,
-                        #'stop': maxt,
-                        #'num': metadata['time_steps']
                     }
                 },
                 'referencing': [{
@@ -329,13 +322,10 @@ class XarrayProvider(BaseProvider):
         }
 
         if self.time_field is not None:
-            mint, maxt = metadata['time']
             cj['domain']['axes'][self.time_axis_covjson] = {
-                'start': mint,
-                'stop': maxt,
-                'num': metadata['time_steps'],
+                'values': [str(i) for i in data.coords[self.time_field].values]
             }
-
+        
         for key, value in selected_fields.items():
             parameter = {
                 'type': 'Parameter',
@@ -360,21 +350,20 @@ class XarrayProvider(BaseProvider):
                 cj['ranges'][key] = {
                     'type': 'NdArray',
                     'dataType': value['type'],
-                    'axisNames': [
-                        self.time_axis_covjson, 'y', 'x'
-                    ],
-                    'shape': [metadata['time_steps'],
-                              metadata['height'],
-                              metadata['width']
-                              ]
+                    'axisNames': [],
+                    'shape': []
                 }
                 cj['ranges'][key]['values'] = data[key].values.flatten().tolist()  # noqa
 
                 if self.time_field is not None:
                     cj['ranges'][key]['axisNames'].append(
-                        self._coverage_properties['time_axis_label']
+                        self.time_axis_covjson
                     )
                     cj['ranges'][key]['shape'].append(metadata['time_steps'])
+                cj['ranges'][key]['axisNames'].append('y')
+                cj['ranges'][key]['axisNames'].append('x')
+                cj['ranges'][key]['shape'].append(metadata['height'])
+                cj['ranges'][key]['shape'].append(metadata['width'])
         except IndexError as err:
             LOGGER.warning(err)
             raise ProviderQueryError('Invalid query parameter')
