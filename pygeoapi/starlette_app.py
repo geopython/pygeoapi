@@ -334,11 +334,7 @@ async def collection_items(request: Request, collection_id=None, item_id=None):
     if 'item_id' in request.path_params:
         item_id = request.path_params['item_id']
     if item_id is None:
-        if request.method == 'GET':  # list items
-            return await execute_from_starlette(
-                itemtypes_api.get_collection_items, request, collection_id,
-                skip_valid_check=True)
-        elif request.method == 'POST':  # filter or manage items
+        if request.method == 'POST':  # filter or manage items
             content_type = request.headers.get('content-type')
             if content_type is not None:
                 if content_type == 'application/geo+json':
@@ -357,6 +353,10 @@ async def collection_items(request: Request, collection_id=None, item_id=None):
                 itemtypes_api.manage_collection_item, request,
                 'options', collection_id, skip_valid_check=True,
             )
+        else:  # GET: list items
+            return await execute_from_starlette(
+                itemtypes_api.get_collection_items, request, collection_id,
+                skip_valid_check=True)
 
     elif request.method == 'DELETE':
         return await execute_from_starlette(
