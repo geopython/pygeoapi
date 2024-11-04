@@ -134,6 +134,52 @@ def gen_response_object(description: str, media_type: str,
     return response
 
 
+def gen_contact(cfg: dict) -> dict:
+    """
+    Generates an OpenAPI contact object with OGC extensions
+    based on OGC API - Records contact
+
+    :param cfg: `dict` of configuration
+
+    :returns: `dict` of OpenAPI contact object
+    """
+
+    contact = {
+        'name': cfg['metadata']['provider']['name'],
+        'url': cfg['metadata']['provider']['url'],
+        'email': cfg['metadata']['contact']['email']
+    }
+
+    contact['x-ogc-serviceContact'] = {
+        'name': cfg['metadata']['contact']['name'],
+        'position': cfg['metadata']['contact']['position'],
+        'addresses': [{
+            'deliveryPoint': [cfg['metadata']['contact']['address']],
+            'city': cfg['metadata']['contact']['city'],
+            'administrativeArea': cfg['metadata']['contact']['stateorprovince'],  # noqa
+            'postalCode': cfg['metadata']['contact']['postalcode'],
+            'country': cfg['metadata']['contact']['country']
+        }],
+        'phones': [{
+            'type': 'main', 'value': cfg['metadata']['contact']['phone']
+            }, {
+            'type': 'fax', 'value': cfg['metadata']['contact']['fax']
+        }],
+        'emails': [{
+            'value': cfg['metadata']['contact']['email']
+        }],
+        'contactInstructions': cfg['metadata']['contact']['instructions'],
+        'links': [{
+            'type': 'text/html',
+            'href': cfg['metadata']['contact']['url']
+        }],
+        'hoursOfService': cfg['metadata']['contact']['hours'],
+        'roles': [cfg['metadata']['contact']['role']]
+    }
+
+    return contact
+
+
 def get_oas_30(cfg: dict, fail_on_invalid_collection: bool = True) -> dict:
     """
     Generates an OpenAPI 3.0 Document
@@ -167,11 +213,7 @@ def get_oas_30(cfg: dict, fail_on_invalid_collection: bool = True) -> dict:
         'x-keywords': l10n.translate(cfg['metadata']['identification']['keywords'], locale_),  # noqa
         'termsOfService':
             cfg['metadata']['identification']['terms_of_service'],
-        'contact': {
-            'name': cfg['metadata']['provider']['name'],
-            'url': cfg['metadata']['provider']['url'],
-            'email': cfg['metadata']['contact']['email']
-        },
+        'contact': gen_contact(cfg),
         'license': {
             'name': cfg['metadata']['license']['name'],
             'url': cfg['metadata']['license']['url']
