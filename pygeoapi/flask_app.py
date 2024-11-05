@@ -140,7 +140,9 @@ def get_response(result: tuple):
 
 
 def execute_from_flask(api_function, request: Request, *args,
-                       skip_valid_check=False) -> Response:
+                       skip_valid_check=False,
+                       alternative_api=None
+                       ) -> Response:
     """
     Executes API function from Flask
 
@@ -148,18 +150,21 @@ def execute_from_flask(api_function, request: Request, *args,
     :param request: request object
     :param *args: variable length additional arguments
     :param skip_validity_check: bool
+    :param alternative_api: specify custom api instance such as Admin
 
     :returns: A Response instance
     """
 
-    api_request = APIRequest.from_flask(request, api_.locales)
+    actual_api = api_ if alternative_api is None else alternative_api
+
+    api_request = APIRequest.from_flask(request, actual_api.locales)
 
     content: Union[str, bytes]
 
     if not skip_valid_check and not api_request.is_valid():
-        headers, status, content = api_.get_format_exception(api_request)
+        headers, status, content = actual_api.get_format_exception(api_request)
     else:
-        headers, status, content = api_function(api_, api_request, *args)
+        headers, status, content = api_function(actual_api, api_request, *args)
         content = apply_gzip(headers, content)
 
     return get_response((headers, status, content))
@@ -559,13 +564,16 @@ def admin_config():
     """
 
     if request.method == 'GET':
-        return execute_from_flask(admin_api.get_config_, request)
+        return execute_from_flask(admin_api.get_config_, request,
+                                  alternative_api=admin_)
 
     elif request.method == 'PUT':
-        return get_response(admin_.put_config(request))
+        return execute_from_flask(admin_api.put_config, request,
+                                  alternative_api=admin_)
 
     elif request.method == 'PATCH':
-        return get_response(admin_.patch_config(request))
+        return execute_from_flask(admin_api.patch_config, request,
+                                  alternative_api=admin_)
 
 
 @ADMIN_BLUEPRINT.route('/admin/config/resources', methods=['GET', 'POST'])
@@ -577,10 +585,12 @@ def admin_config_resources():
     """
 
     if request.method == 'GET':
-        return get_response(admin_.get_resources(request))
+        return execute_from_flask(admin_api.get_resources, request,
+                                  alternative_api=admin_)
 
     elif request.method == 'POST':
-        return get_response(admin_.post_resource(request))
+        return execute_from_flask(admin_api.post_resource, request,
+                                  alternative_api=admin_)
 
 
 @ADMIN_BLUEPRINT.route(
@@ -594,16 +604,24 @@ def admin_config_resource(resource_id):
     """
 
     if request.method == 'GET':
-        return get_response(admin_.get_resource(request, resource_id))
+        return execute_from_flask(admin_api.get_resource, request,
+                                  resource_id,
+                                  alternative_api=admin_)
 
     elif request.method == 'DELETE':
-        return get_response(admin_.delete_resource(request, resource_id))
+        return execute_from_flask(admin_api.delete_resource, request,
+                                  resource_id,
+                                  alternative_api=admin_)
 
     elif request.method == 'PUT':
-        return get_response(admin_.put_resource(request, resource_id))
+        return execute_from_flask(admin_api.put_resource, request,
+                                  resource_id,
+                                  alternative_api=admin_)
 
     elif request.method == 'PATCH':
-        return get_response(admin_.patch_resource(request, resource_id))
+        return execute_from_flask(admin_api.patch_resource, request,
+                                  resource_id,
+                                  alternative_api=admin_)
 
 
 APP.register_blueprint(BLUEPRINT)

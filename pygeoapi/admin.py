@@ -35,9 +35,9 @@ import json
 from jsonpatch import make_patch
 from jsonschema.exceptions import ValidationError
 import logging
-from typing import Any, Tuple, Union
+from typing import Tuple
 
-from pygeoapi.api import API, APIRequest, F_HTML, pre_process
+from pygeoapi.api import API, APIRequest, F_HTML
 
 from pygeoapi.config import get_config, validate_config
 from pygeoapi.openapi import get_oas
@@ -157,446 +157,10 @@ class Admin(API):
         yaml_dump(oas, self.PYGEOAPI_OPENAPI)
         LOGGER.debug('Finished writing OpenAPI document')
 
-    @pre_process
-    def put_config(
-        self,
-        request: Union[APIRequest, Any]
-    ) -> Tuple[dict, int, str]:
-        """
-        Update complete pygeoapi configuration
-
-        :param request: request object
-
-        :returns: tuple of headers, status code, content
-        """
-
-        LOGGER.debug('Updating configuration')
-
-        if not request.is_valid():
-            return self.get_format_exception(request)
-
-        headers = request.get_response_headers()
-
-        data = request.data
-        if not data:
-            msg = 'missing request data'
-            return self.get_exception(
-                400, headers, request.format, 'MissingParameterValue', msg
-            )
-
-        try:
-            # Parse data
-            data = data.decode()
-        except (UnicodeDecodeError, AttributeError):
-            pass
-
-        try:
-            data = json.loads(data)
-        except (json.decoder.JSONDecodeError, TypeError) as err:
-            # Input is not valid JSON
-            LOGGER.error(err)
-            msg = 'invalid request data'
-            return self.get_exception(
-                400, headers, request.format, 'InvalidParameterValue', msg
-            )
-
-        LOGGER.debug('Updating configuration')
-        try:
-            self.validate(data)
-        except ValidationError as err:
-            LOGGER.error(err)
-            msg = 'Schema validation error'
-            return self.get_exception(
-                400, headers, request.format, 'ValidationError', msg
-            )
-
-        self.write(data)
-
-        return headers, 204, {}
-
-    @pre_process
-    def patch_config(
-        self, request: Union[APIRequest, Any]
-    ) -> Tuple[dict, int, str]:
-        """
-        Update partial pygeoapi configuration
-
-        :param request: request object
-        :param resource_id: resource identifier
-
-        :returns: tuple of headers, status code, content
-        """
-
-        if not request.is_valid():
-            return self.get_format_exception(request)
-
-        config = deepcopy(self.config)
-        headers = request.get_response_headers()
-
-        data = request.data
-        if not data:
-            msg = 'missing request data'
-            return self.get_exception(
-                400, headers, request.format, 'MissingParameterValue', msg
-            )
-
-        try:
-            # Parse data
-            data = data.decode()
-        except (UnicodeDecodeError, AttributeError):
-            pass
-
-        try:
-            data = json.loads(data)
-        except (json.decoder.JSONDecodeError, TypeError) as err:
-            # Input is not valid JSON
-            LOGGER.error(err)
-            msg = 'invalid request data'
-            return self.get_exception(
-                400, headers, request.format, 'InvalidParameterValue', msg
-            )
-
-        LOGGER.debug('Merging configuration')
-        config = self.merge(config, data)
-
-        try:
-            self.validate(config)
-        except ValidationError as err:
-            LOGGER.error(err)
-            msg = 'Schema validation error'
-            return self.get_exception(
-                400, headers, request.format, 'ValidationError', msg
-            )
-
-        self.write(config)
-
-        content = to_json(config, self.pretty_print)
-
-        return headers, 204, content
-
-    @pre_process
-    def get_resources(
-        self, request: Union[APIRequest, Any]
-    ) -> Tuple[dict, int, str]:
-        """
-        Provide admin document
-
-        :param request: request object
-
-        :returns: tuple of headers, status code, content
-        """
-
-        if not request.is_valid():
-            return self.get_format_exception(request)
-
-        headers = request.get_response_headers()
-
-        cfg = get_config(raw=True)
-
-        if request.format == F_HTML:
-            content = render_j2_template(
-                self.config,
-                'admin/index.html',
-                cfg['resources'],
-                request.locale,
-            )
-        else:
-            content = to_json(cfg['resources'], self.pretty_print)
-
-        return headers, 200, content
-
-    @pre_process
-    def post_resource(
-        self, request: Union[APIRequest, Any]
-    ) -> Tuple[dict, int, str]:
-        """
-        Add resource configuration
-
-        :param request: request object
-
-        :returns: tuple of headers, status code, content
-        """
-
-        if not request.is_valid():
-            return self.get_format_exception(request)
-
-        config = deepcopy(self.config)
-        headers = request.get_response_headers()
-
-        data = request.data
-        if not data:
-            msg = 'missing request data'
-            return self.get_exception(
-                400, headers, request.format, 'MissingParameterValue', msg
-            )
-
-        try:
-            # Parse data
-            data = data.decode()
-        except (UnicodeDecodeError, AttributeError):
-            pass
-
-        try:
-            data = json.loads(data)
-        except (json.decoder.JSONDecodeError, TypeError) as err:
-            # Input is not valid JSON
-            LOGGER.error(err)
-            msg = 'invalid request data'
-            return self.get_exception(
-                400, headers, request.format, 'InvalidParameterValue', msg
-            )
-
-        resource_id = next(iter(data.keys()))
-
-        if config['resources'].get(resource_id) is not None:
-            # Resource already exists
-            msg = f'Resource exists: {resource_id}'
-            LOGGER.error(msg)
-            return self.get_exception(
-                400, headers, request.format, 'NoApplicableCode', msg
-            )
-
-        LOGGER.debug(f'Adding resource: {resource_id}')
-        config['resources'].update(data)
-
-        try:
-            self.validate(config)
-        except ValidationError as err:
-            LOGGER.error(err)
-            msg = 'Schema validation error'
-            return self.get_exception(
-                400, headers, request.format, 'ValidationError', msg
-            )
-
-        self.write(config)
-
-        content = f'Location: /{request.path_info}/{resource_id}'
-        LOGGER.debug(f'Success at {content}')
-
-        return headers, 201, content
-
-    @pre_process
-    def get_resource(
-        self, request: Union[APIRequest, Any], resource_id: str
-    ) -> Tuple[dict, int, str]:
-        """
-        Get resource configuration
-
-        :param request: request object
-        :param resource_id:
-
-        :returns: tuple of headers, status code, content
-        """
-
-        if not request.is_valid():
-            return self.get_format_exception(request)
-
-        headers = request.get_response_headers()
-
-        cfg = get_config(raw=True)
-
-        try:
-            resource = cfg['resources'][resource_id]
-        except KeyError:
-            msg = f'Resource not found: {resource_id}'
-            return self.get_exception(
-                400, headers, request.format, 'ResourceNotFound', msg
-            )
-
-        if request.format == F_HTML:
-            content = render_j2_template(
-                self.config, 'admin/index.html', resource, request.locale
-            )
-        else:
-            content = to_json(resource, self.pretty_print)
-
-        return headers, 200, content
-
-    @pre_process
-    def delete_resource(
-        self, request: Union[APIRequest, Any], resource_id: str
-    ) -> Tuple[dict, int, str]:
-        """
-        Delete resource configuration
-
-        :param request: request object
-        :param resource_id: resource identifier
-
-        :returns: tuple of headers, status code, content
-        """
-
-        if not request.is_valid():
-            return self.get_format_exception(request)
-
-        config = deepcopy(self.config)
-        headers = request.get_response_headers()
-
-        try:
-            LOGGER.debug(f'Removing resource configuration for: {resource_id}')
-            config['resources'].pop(resource_id)
-        except KeyError:
-            msg = f'Resource not found: {resource_id}'
-            return self.get_exception(
-                400, headers, request.format, 'ResourceNotFound', msg
-            )
-
-        LOGGER.debug('Resource removed, validating and saving configuration')
-        try:
-            self.validate(config)
-        except ValidationError as err:
-            LOGGER.error(err)
-            msg = 'Schema validation error'
-            return self.get_exception(
-                400, headers, request.format, 'ValidationError', msg
-            )
-
-        self.write(config)
-
-        return headers, 204, {}
-
-    @pre_process
-    def put_resource(
-        self,
-        request: Union[APIRequest, Any],
-        resource_id: str,
-    ) -> Tuple[dict, int, str]:
-        """
-        Update complete resource configuration
-
-        :param request: request object
-        :param resource_id: resource identifier
-
-        :returns: tuple of headers, status code, content
-        """
-
-        if not request.is_valid():
-            return self.get_format_exception(request)
-
-        config = deepcopy(self.config)
-        headers = request.get_response_headers()
-
-        try:
-            LOGGER.debug('Verifying resource exists')
-            config['resources'][resource_id]
-        except KeyError:
-            msg = f'Resource not found: {resource_id}'
-            return self.get_exception(
-                400, headers, request.format, 'ResourceNotFound', msg
-            )
-
-        data = request.data
-        if not data:
-            msg = 'missing request data'
-            return self.get_exception(
-                400, headers, request.format, 'MissingParameterValue', msg
-            )
-
-        try:
-            # Parse data
-            data = data.decode()
-        except (UnicodeDecodeError, AttributeError):
-            pass
-
-        try:
-            data = json.loads(data)
-        except (json.decoder.JSONDecodeError, TypeError) as err:
-            # Input is not valid JSON
-            LOGGER.error(err)
-            msg = 'invalid request data'
-            return self.get_exception(
-                400, headers, request.format, 'InvalidParameterValue', msg
-            )
-
-        LOGGER.debug(f'Updating resource: {resource_id}')
-        config['resources'].update({resource_id: data})
-        try:
-            self.validate(config)
-        except ValidationError as err:
-            LOGGER.error(err)
-            msg = 'Schema validation error'
-            return self.get_exception(
-                400, headers, request.format, 'ValidationError', msg
-            )
-
-        self.write(config)
-
-        return headers, 204, {}
-
-    @pre_process
-    def patch_resource(
-        self, request: Union[APIRequest, Any], resource_id: str
-    ) -> Tuple[dict, int, str]:
-        """
-        Update partial resource configuration
-
-        :param request: request object
-        :param resource_id: resource identifier
-
-        :returns: tuple of headers, status code, content
-        """
-
-        if not request.is_valid():
-            return self.get_format_exception(request)
-
-        config = deepcopy(self.config)
-        headers = request.get_response_headers()
-
-        try:
-            LOGGER.debug('Verifying resource exists')
-            resource = config['resources'][resource_id]
-        except KeyError:
-            msg = f'Resource not found: {resource_id}'
-            return self.get_exception(
-                400, headers, request.format, 'ResourceNotFound', msg
-            )
-
-        data = request.data
-        if not data:
-            msg = 'missing request data'
-            return self.get_exception(
-                400, headers, request.format, 'MissingParameterValue', msg
-            )
-
-        try:
-            # Parse data
-            data = data.decode()
-        except (UnicodeDecodeError, AttributeError):
-            pass
-
-        try:
-            data = json.loads(data)
-        except (json.decoder.JSONDecodeError, TypeError) as err:
-            # Input is not valid JSON
-            LOGGER.error(err)
-            msg = 'invalid request data'
-            return self.get_exception(
-                400, headers, request.format, 'InvalidParameterValue', msg
-            )
-
-        LOGGER.debug('Merging resource block')
-        data = self.merge(resource, data)
-        LOGGER.debug('Updating resource')
-        config['resources'].update({resource_id: data})
-
-        try:
-            self.validate(config)
-        except ValidationError as err:
-            LOGGER.error(err)
-            msg = 'Schema validation error'
-            return self.get_exception(
-                400, headers, request.format, 'ValidationError', msg
-            )
-
-        self.write(config)
-
-        content = to_json(resource, self.pretty_print)
-
-        return headers, 204, content
-
 
 def get_config_(
     admin: Admin,
-    request: Union[APIRequest, Any]
+    request: APIRequest,
 ) -> Tuple[dict, int, str]:
     """
     Provide admin configuration document
@@ -618,3 +182,415 @@ def get_config_(
         content = to_json(cfg, admin.pretty_print)
 
     return headers, 200, content
+
+
+def put_config(
+    admin: Admin,
+    request: APIRequest,
+) -> Tuple[dict, int, str]:
+    """
+    Update complete pygeoapi configuration
+
+    :param request: request object
+
+    :returns: tuple of headers, status code, content
+    """
+
+    LOGGER.debug('Updating configuration')
+
+    headers = request.get_response_headers()
+
+    data = request.data
+    if not data:
+        msg = 'missing request data'
+        return admin.get_exception(
+            400, headers, request.format, 'MissingParameterValue', msg
+        )
+
+    try:
+        # Parse data
+        data = data.decode()
+    except (UnicodeDecodeError, AttributeError):
+        pass
+
+    try:
+        data = json.loads(data)
+    except (json.decoder.JSONDecodeError, TypeError) as err:
+        # Input is not valid JSON
+        LOGGER.error(err)
+        msg = 'invalid request data'
+        return admin.get_exception(
+            400, headers, request.format, 'InvalidParameterValue', msg
+        )
+
+    LOGGER.debug('Updating configuration')
+    try:
+        admin.validate(data)
+    except ValidationError as err:
+        LOGGER.error(err)
+        msg = 'Schema validation error'
+        return admin.get_exception(
+            400, headers, request.format, 'ValidationError', msg
+        )
+
+    admin.write(data)
+
+    return headers, 204, {}
+
+
+def patch_config(
+    admin: Admin, request: APIRequest,
+) -> Tuple[dict, int, str]:
+    """
+    Update partial pygeoapi configuration
+
+    :param request: request object
+    :param resource_id: resource identifier
+
+    :returns: tuple of headers, status code, content
+    """
+
+    config = deepcopy(admin.config)
+    headers = request.get_response_headers()
+
+    data = request.data
+    if not data:
+        msg = 'missing request data'
+        return admin.get_exception(
+            400, headers, request.format, 'MissingParameterValue', msg
+        )
+
+    try:
+        # Parse data
+        data = data.decode()
+    except (UnicodeDecodeError, AttributeError):
+        pass
+
+    try:
+        data = json.loads(data)
+    except (json.decoder.JSONDecodeError, TypeError) as err:
+        # Input is not valid JSON
+        LOGGER.error(err)
+        msg = 'invalid request data'
+        return admin.get_exception(
+            400, headers, request.format, 'InvalidParameterValue', msg
+        )
+
+    LOGGER.debug('Merging configuration')
+    config = admin.merge(config, data)
+
+    try:
+        admin.validate(config)
+    except ValidationError as err:
+        LOGGER.error(err)
+        msg = 'Schema validation error'
+        return admin.get_exception(
+            400, headers, request.format, 'ValidationError', msg
+        )
+
+    admin.write(config)
+
+    content = to_json(config, admin.pretty_print)
+
+    return headers, 204, content
+
+
+def get_resources(
+    admin: Admin, request: APIRequest,
+) -> Tuple[dict, int, str]:
+    """
+    Provide admin document
+
+    :param request: request object
+
+    :returns: tuple of headers, status code, content
+    """
+
+    headers = request.get_response_headers()
+
+    cfg = get_config(raw=True)
+
+    if request.format == F_HTML:
+        content = render_j2_template(
+            admin.config,
+            'admin/index.html',
+            cfg['resources'],
+            request.locale,
+        )
+    else:
+        content = to_json(cfg['resources'], admin.pretty_print)
+
+    return headers, 200, content
+
+
+def post_resource(
+    admin: Admin, request: APIRequest,
+) -> Tuple[dict, int, str]:
+    """
+    Add resource configuration
+
+    :param request: request object
+
+    :returns: tuple of headers, status code, content
+    """
+
+    config = deepcopy(admin.config)
+    headers = request.get_response_headers()
+
+    data = request.data
+    if not data:
+        msg = 'missing request data'
+        return admin.get_exception(
+            400, headers, request.format, 'MissingParameterValue', msg
+        )
+
+    try:
+        # Parse data
+        data = data.decode()
+    except (UnicodeDecodeError, AttributeError):
+        pass
+
+    try:
+        data = json.loads(data)
+    except (json.decoder.JSONDecodeError, TypeError) as err:
+        # Input is not valid JSON
+        LOGGER.error(err)
+        msg = 'invalid request data'
+        return admin.get_exception(
+            400, headers, request.format, 'InvalidParameterValue', msg
+        )
+
+    resource_id = next(iter(data.keys()))
+
+    if config['resources'].get(resource_id) is not None:
+        # Resource already exists
+        msg = f'Resource exists: {resource_id}'
+        LOGGER.error(msg)
+        return admin.get_exception(
+            400, headers, request.format, 'NoApplicableCode', msg
+        )
+
+    LOGGER.debug(f'Adding resource: {resource_id}')
+    config['resources'].update(data)
+
+    try:
+        admin.validate(config)
+    except ValidationError as err:
+        LOGGER.error(err)
+        msg = 'Schema validation error'
+        return admin.get_exception(
+            400, headers, request.format, 'ValidationError', msg
+        )
+
+    admin.write(config)
+
+    content = f'Location: /{request.path_info}/{resource_id}'
+    LOGGER.debug(f'Success at {content}')
+
+    return headers, 201, content
+
+
+def get_resource(
+    admin: Admin, request: APIRequest, resource_id: str
+) -> Tuple[dict, int, str]:
+    """
+    Get resource configuration
+
+    :param request: request object
+    :param resource_id:
+
+    :returns: tuple of headers, status code, content
+    """
+
+    headers = request.get_response_headers()
+
+    cfg = get_config(raw=True)
+
+    try:
+        resource = cfg['resources'][resource_id]
+    except KeyError:
+        msg = f'Resource not found: {resource_id}'
+        return admin.get_exception(
+            400, headers, request.format, 'ResourceNotFound', msg
+        )
+
+    if request.format == F_HTML:
+        content = render_j2_template(
+            admin.config, 'admin/index.html', resource, request.locale
+        )
+    else:
+        content = to_json(resource, admin.pretty_print)
+
+    return headers, 200, content
+
+
+def delete_resource(
+    admin: Admin, request: APIRequest, resource_id: str
+) -> Tuple[dict, int, str]:
+    """
+    Delete resource configuration
+
+    :param request: request object
+    :param resource_id: resource identifier
+
+    :returns: tuple of headers, status code, content
+    """
+
+    config = deepcopy(admin.config)
+    headers = request.get_response_headers()
+
+    try:
+        LOGGER.debug(f'Removing resource configuration for: {resource_id}')
+        config['resources'].pop(resource_id)
+    except KeyError:
+        msg = f'Resource not found: {resource_id}'
+        return admin.get_exception(
+            400, headers, request.format, 'ResourceNotFound', msg
+        )
+
+    LOGGER.debug('Resource removed, validating and saving configuration')
+    try:
+        admin.validate(config)
+    except ValidationError as err:
+        LOGGER.error(err)
+        msg = 'Schema validation error'
+        return admin.get_exception(
+            400, headers, request.format, 'ValidationError', msg
+        )
+
+    admin.write(config)
+
+    return headers, 204, {}
+
+
+def put_resource(
+    admin: Admin,
+    request: APIRequest,
+    resource_id: str,
+) -> Tuple[dict, int, str]:
+    """
+    Update complete resource configuration
+
+    :param request: request object
+    :param resource_id: resource identifier
+
+    :returns: tuple of headers, status code, content
+    """
+
+    config = deepcopy(admin.config)
+    headers = request.get_response_headers()
+
+    try:
+        LOGGER.debug('Verifying resource exists')
+        config['resources'][resource_id]
+    except KeyError:
+        msg = f'Resource not found: {resource_id}'
+        return admin.get_exception(
+            400, headers, request.format, 'ResourceNotFound', msg
+        )
+
+    data = request.data
+    if not data:
+        msg = 'missing request data'
+        return admin.get_exception(
+            400, headers, request.format, 'MissingParameterValue', msg
+        )
+
+    try:
+        # Parse data
+        data = data.decode()
+    except (UnicodeDecodeError, AttributeError):
+        pass
+
+    try:
+        data = json.loads(data)
+    except (json.decoder.JSONDecodeError, TypeError) as err:
+        # Input is not valid JSON
+        LOGGER.error(err)
+        msg = 'invalid request data'
+        return admin.get_exception(
+            400, headers, request.format, 'InvalidParameterValue', msg
+        )
+
+    LOGGER.debug(f'Updating resource: {resource_id}')
+    config['resources'].update({resource_id: data})
+    try:
+        admin.validate(config)
+    except ValidationError as err:
+        LOGGER.error(err)
+        msg = 'Schema validation error'
+        return admin.get_exception(
+            400, headers, request.format, 'ValidationError', msg
+        )
+
+    admin.write(config)
+
+    return headers, 204, {}
+
+
+def patch_resource(
+    admin: Admin, request: APIRequest, resource_id: str
+) -> Tuple[dict, int, str]:
+    """
+    Update partial resource configuration
+
+    :param request: request object
+    :param resource_id: resource identifier
+
+    :returns: tuple of headers, status code, content
+    """
+
+    config = deepcopy(admin.config)
+    headers = request.get_response_headers()
+
+    try:
+        LOGGER.debug('Verifying resource exists')
+        resource = config['resources'][resource_id]
+    except KeyError:
+        msg = f'Resource not found: {resource_id}'
+        return admin.get_exception(
+            400, headers, request.format, 'ResourceNotFound', msg
+        )
+
+    data = request.data
+    if not data:
+        msg = 'missing request data'
+        return admin.get_exception(
+            400, headers, request.format, 'MissingParameterValue', msg
+        )
+
+    try:
+        # Parse data
+        data = data.decode()
+    except (UnicodeDecodeError, AttributeError):
+        pass
+
+    try:
+        data = json.loads(data)
+    except (json.decoder.JSONDecodeError, TypeError) as err:
+        # Input is not valid JSON
+        LOGGER.error(err)
+        msg = 'invalid request data'
+        return admin.get_exception(
+            400, headers, request.format, 'InvalidParameterValue', msg
+        )
+
+    LOGGER.debug('Merging resource block')
+    data = admin.merge(resource, data)
+    LOGGER.debug('Updating resource')
+    config['resources'].update({resource_id: data})
+
+    try:
+        admin.validate(config)
+    except ValidationError as err:
+        LOGGER.error(err)
+        msg = 'Schema validation error'
+        return admin.get_exception(
+            400, headers, request.format, 'ValidationError', msg
+        )
+
+    admin.write(config)
+
+    content = to_json(resource, admin.pretty_print)
+
+    return headers, 204, content

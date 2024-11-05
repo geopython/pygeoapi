@@ -58,6 +58,7 @@ import pygeoapi.api.maps as maps_api
 import pygeoapi.api.processes as processes_api
 import pygeoapi.api.stac as stac_api
 import pygeoapi.api.tiles as tiles_api
+import pygeoapi.admin as admin_api
 from pygeoapi.openapi import load_openapi_document
 from pygeoapi.config import get_config
 from pygeoapi.util import get_api_rules
@@ -140,17 +141,20 @@ def _to_response(headers, status, content):
 
 
 async def execute_from_starlette(api_function, request: Request, *args,
-                                 skip_valid_check=False) -> Response:
-    api_request = await APIRequest.from_starlette(request, api_.locales)
+                                 skip_valid_check=False,
+                                 alternative_api=None
+                                 ) -> Response:
+    actual_api = api_ if alternative_api is None else alternative_api
+    api_request = await APIRequest.from_starlette(request, actual_api.locales)
     content: Union[str, bytes]
     if not skip_valid_check and not api_request.is_valid():
-        headers, status, content = api_.get_format_exception(api_request)
+        headers, status, content = actual_api.get_format_exception(api_request)
     else:
 
         loop = asyncio.get_running_loop()
         headers, status, content = await loop.run_in_executor(
             None, call_api_threadsafe, loop, api_function,
-            api_, api_request, *args)
+            actual_api, api_request, *args)
         # NOTE: that gzip currently doesn't work in starlette
         #       https://github.com/geopython/pygeoapi/issues/1591
         content = apply_gzip(headers, content)
@@ -583,11 +587,14 @@ async def admin_config(request: Request):
     """
 
     if request.method == 'GET':
-        return await get_response(ADMIN.get_config, request)
+        return await execute_from_starlette(admin_api.get_config, request,
+                                            alternative_api=ADMIN)
     elif request.method == 'PUT':
-        return await get_response(ADMIN.put_config, request)
+        return await execute_from_starlette(admin_api.put_config, request,
+                                            alternative_api=ADMIN)
     elif request.method == 'PATCH':
-        return await get_response(ADMIN.patch_config, request)
+        return await execute_from_starlette(admin_api.patch_config, request,
+                                            alternative_api=ADMIN)
 
 
 async def admin_config_resources(request: Request):
@@ -598,9 +605,11 @@ async def admin_config_resources(request: Request):
     """
 
     if request.method == 'GET':
-        return await get_response(ADMIN.get_resources, request)
+        return await execute_from_starlette(admin_api.get_resources, request,
+                                            alternative_api=ADMIN)
     elif request.method == 'POST':
-        return await get_response(ADMIN.put_resource, request)
+        return await execute_from_starlette(admin_api.put_resource, request,
+                                            alternative_api=ADMIN)
 
 
 async def admin_config_resource(request: Request, resource_id: str):
@@ -616,17 +625,21 @@ async def admin_config_resource(request: Request, resource_id: str):
         resource_id = request.path_params['resource_id']
 
     if request.method == 'GET':
-        return await get_response(
-            ADMIN.get_resource, request, resource_id)
+        return await execute_from_starlette(admin_api.get_resource, request,
+                                            resource_id,
+                                            alternative_api=ADMIN)
     elif request.method == 'PUT':
-        return await get_response(
-            ADMIN.put_resource, request, resource_id)
+        return await execute_from_starlette(admin_api.put_resource, request,
+                                            resource_id,
+                                            alternative_api=ADMIN)
     elif request.method == 'PATCH':
-        return await get_response(
-            ADMIN.patch_resource, request, resource_id)
+        return await execute_from_starlette(admin_api.patch_resource, request,
+                                            resource_id,
+                                            alternative_api=ADMIN)
     elif request.method == 'DELETE':
-        return await get_response(
-            ADMIN.delete_resource, request, resource_id)
+        return await execute_from_starlette(admin_api.delete_resource, request,
+                                            resource_id,
+                                            alternative_api=ADMIN)
 
 
 class ApiRulesMiddleware:

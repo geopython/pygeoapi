@@ -49,6 +49,7 @@ import pygeoapi.api.maps as maps_api
 import pygeoapi.api.processes as processes_api
 import pygeoapi.api.stac as stac_api
 import pygeoapi.api.tiles as tiles_api
+import pygeoapi.admin as admin_api
 
 
 def landing_page(request: HttpRequest) -> HttpResponse:
@@ -474,13 +475,13 @@ def admin_config(request: HttpRequest) -> HttpResponse:
     """
 
     if request.method == 'GET':
-        return _feed_response(request, 'get_admin_config')
+        return execute_from_django(admin_api.get_config_, request)
 
     elif request.method == 'PUT':
-        return _feed_response(request, 'put_admin_config')
+        return execute_from_django(admin_api.put_config, request)
 
     elif request.method == 'PATCH':
-        return _feed_response(request, 'patch_admin_config')
+        return execute_from_django(admin_api.patch_config, request)
 
 
 def admin_config_resources(request: HttpRequest) -> HttpResponse:
@@ -491,10 +492,10 @@ def admin_config_resources(request: HttpRequest) -> HttpResponse:
     """
 
     if request.method == 'GET':
-        return _feed_response(request, 'get_admin_config_resources')
+        return execute_from_django(admin_api.get_resources, request)
 
     elif request.method == 'POST':
-        return _feed_response(request, 'put_admin_config_resources')
+        return execute_from_django(admin_api.put_resource, request)
 
 
 def admin_config_resource(request: HttpRequest,
@@ -506,20 +507,20 @@ def admin_config_resource(request: HttpRequest,
     """
 
     if request.method == 'GET':
-        return _feed_response(request, 'put_admin_config_resource',
-                              resource_id)
+        return execute_from_django(admin_api.get_resource, request,
+                                   resource_id)
 
     elif request.method == 'DELETE':
-        return _feed_response(request, 'delete_admin_config_resource',
-                              resource_id)
+        return execute_from_django(admin_api.delete_resource, request,
+                                   resource_id)
 
     elif request.method == 'PUT':
-        return _feed_response(request, 'put_admin_config_resource',
-                              resource_id)
+        return execute_from_django(admin_api.put_resource, request,
+                                   resource_id)
 
     elif request.method == 'PATCH':
-        return _feed_response(request, 'patch_admin_config_resource',
-                              resource_id)
+        return execute_from_django(admin_api.patch_resource, request,
+                                   resource_id)
 
 
 # TODO: remove this when all views have been refactored
