@@ -46,6 +46,7 @@ import pygeoapi.api.maps as maps_api
 import pygeoapi.api.processes as processes_api
 import pygeoapi.api.stac as stac_api
 import pygeoapi.api.tiles as tiles_api
+import pygeoapi.admin as admin_api
 from pygeoapi.openapi import load_openapi_document
 from pygeoapi.config import get_config
 from pygeoapi.util import get_mimetype, get_api_rules
@@ -558,7 +559,7 @@ def admin_config():
     """
 
     if request.method == 'GET':
-        return get_response(admin_.get_config(request))
+        return execute_from_flask(admin_api.get_config_, request)
 
     elif request.method == 'PUT':
         return get_response(admin_.put_config(request))

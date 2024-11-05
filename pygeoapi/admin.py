@@ -158,35 +158,6 @@ class Admin(API):
         LOGGER.debug('Finished writing OpenAPI document')
 
     @pre_process
-    def get_config(
-        self,
-        request: Union[APIRequest, Any]
-    ) -> Tuple[dict, int, str]:
-        """
-        Provide admin configuration document
-
-        :param request: request object
-
-        :returns: tuple of headers, status code, content
-        """
-
-        if not request.is_valid():
-            return self.get_format_exception(request)
-
-        headers = request.get_response_headers()
-
-        cfg = get_config(raw=True)
-
-        if request.format == F_HTML:
-            content = render_j2_template(
-                self.config, 'admin/index.html', cfg, request.locale
-            )
-        else:
-            content = to_json(cfg, self.pretty_print)
-
-        return headers, 200, content
-
-    @pre_process
     def put_config(
         self,
         request: Union[APIRequest, Any]
@@ -621,3 +592,29 @@ class Admin(API):
         content = to_json(resource, self.pretty_print)
 
         return headers, 204, content
+
+
+def get_config_(
+    admin: Admin,
+    request: Union[APIRequest, Any]
+) -> Tuple[dict, int, str]:
+    """
+    Provide admin configuration document
+
+    :param request: request object
+
+    :returns: tuple of headers, status code, content
+    """
+
+    headers = request.get_response_headers()
+
+    cfg = get_config(raw=True)
+
+    if request.format == F_HTML:
+        content = render_j2_template(
+            admin.config, 'admin/index.html', cfg, request.locale
+        )
+    else:
+        content = to_json(cfg, admin.pretty_print)
+
+    return headers, 200, content
