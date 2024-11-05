@@ -190,7 +190,7 @@ async def conformance(request: Request):
 
     :returns: Starlette HTTP Response
     """
-    return await get_response(api_.conformance, request)
+    return await execute_from_starlette(core_api.conformance, request)
 
 
 async def get_tilematrix_set(request: Request, tileMatrixSetId=None):
@@ -229,8 +229,8 @@ async def collection_schema(request: Request, collection_id=None):
     if 'collection_id' in request.path_params:
         collection_id = request.path_params['collection_id']
 
-    return await get_response(api_.get_collection_schema, request,
-                              collection_id)
+    return await execute_from_starlette(core_api.get_collection_schema,
+                                        request, collection_id)
 
 
 async def collection_queryables(request: Request, collection_id=None):
@@ -547,8 +547,9 @@ async def collections(request: Request, collection_id=None):
     """
     if 'collection_id' in request.path_params:
         collection_id = request.path_params['collection_id']
-    return await get_response(
-        api_.describe_collections, request, collection_id)
+
+    return await execute_from_starlette(core_api.describe_collections, request,
+                                        collection_id)
 
 
 async def stac_catalog_root(request: Request):

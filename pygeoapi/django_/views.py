@@ -72,7 +72,7 @@ def openapi(request: HttpRequest) -> HttpResponse:
     :returns: Django HTTP Response
     """
 
-    return execute_from_django(core_api.openapi, request)
+    return execute_from_django(core_api.openapi_, request)
 
 
 def conformance(request: HttpRequest) -> HttpResponse:
@@ -83,11 +83,7 @@ def conformance(request: HttpRequest) -> HttpResponse:
 
     :returns: Django HTTP Response
     """
-
-    response_ = _feed_response(request, 'conformance')
-    response = _to_django_response(*response_)
-
-    return response
+    return execute_from_django(core_api.conformance, request)
 
 
 def tilematrixsets(request: HttpRequest,
@@ -121,9 +117,8 @@ def collections(request: HttpRequest,
     :returns: Django HTTP Response
     """
 
-    response_ = _feed_response(request, 'describe_collections', collection_id)
-
-    return _to_django_response(*response_)
+    return execute_from_django(core_api.describe_collections, request,
+                               collection_id)
 
 
 def collection_schema(request: HttpRequest,
@@ -137,7 +132,7 @@ def collection_schema(request: HttpRequest,
     :returns: Django HTTP Response
     """
 
-    return execute_from_django(itemtypes_api.get_collection_schema, request,
+    return execute_from_django(core_api.get_collection_schema, request,
                                collection_id)
 
 

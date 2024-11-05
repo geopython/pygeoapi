@@ -193,7 +193,7 @@ def conformance():
     :returns: HTTP response
     """
 
-    return get_response(api_.conformance(request))
+    return execute_from_flask(core_api.conformance, request)
 
 
 @BLUEPRINT.route('/TileMatrixSets/<tileMatrixSetId>')
@@ -232,7 +232,8 @@ def collections(collection_id=None):
     :returns: HTTP response
     """
 
-    return get_response(api_.describe_collections(request, collection_id))
+    return execute_from_flask(core_api.describe_collections, request,
+                              collection_id)
 
 
 @BLUEPRINT.route('/collections/<path:collection_id>/schema')
@@ -245,7 +246,8 @@ def collection_schema(collection_id):
     :returns: HTTP response
     """
 
-    return get_response(api_.get_collection_schema(request, collection_id))
+    return execute_from_flask(core_api.get_collection_schema, request,
+                              collection_id)
 
 
 @BLUEPRINT.route('/collections/<path:collection_id>/queryables')
