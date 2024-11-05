@@ -72,10 +72,7 @@ def openapi(request: HttpRequest) -> HttpResponse:
     :returns: Django HTTP Response
     """
 
-    response_ = _feed_response(request, 'openapi_')
-    response = _to_django_response(*response_)
-
-    return response
+    return execute_from_django(core_api.openapi, request)
 
 
 def conformance(request: HttpRequest) -> HttpResponse:

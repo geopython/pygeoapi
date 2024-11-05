@@ -687,45 +687,6 @@ class API:
 
     @gzip
     @pre_process
-    def openapi_(self, request: Union[APIRequest, Any]) -> Tuple[
-                 dict, int, str]:
-        """
-        Provide OpenAPI document
-
-        :param request: A request object
-        :param openapi: dict of OpenAPI definition
-
-        :returns: tuple of headers, status code, content
-        """
-
-        if not request.is_valid():
-            return self.get_format_exception(request)
-
-        headers = request.get_response_headers(**self.api_headers)
-
-        if request.format == F_HTML:
-            template = 'openapi/swagger.html'
-            if request._args.get('ui') == 'redoc':
-                template = 'openapi/redoc.html'
-
-            path = f'{self.base_url}/openapi'
-            data = {
-                'openapi-document-path': path
-            }
-            content = render_j2_template(self.tpl_config, template, data,
-                                         request.locale)
-            return headers, HTTPStatus.OK, content
-
-        headers['Content-Type'] = 'application/vnd.oai.openapi+json;version=3.0'  # noqa
-
-        if isinstance(self.openapi, dict):
-            return headers, HTTPStatus.OK, to_json(self.openapi,
-                                                   self.pretty_print)
-        else:
-            return headers, HTTPStatus.OK, self.openapi
-
-    @gzip
-    @pre_process
     def conformance(self,
                     request: Union[APIRequest, Any]) -> Tuple[dict, int, str]:
         """
@@ -1538,6 +1499,39 @@ def landing_page(api: API,
             api.fcmld, api.pretty_print)
 
     return headers, HTTPStatus.OK, to_json(fcm, api.pretty_print)
+
+
+def openapi_(api: API, request: APIRequest) -> Tuple[dict, int, str]:
+    """
+    Provide OpenAPI document
+
+    :param request: A request object
+    :param openapi: dict of OpenAPI definition
+
+    :returns: tuple of headers, status code, content
+    """
+    headers = request.get_response_headers(**api.api_headers)
+
+    if request.format == F_HTML:
+        template = 'openapi/swagger.html'
+        if request._args.get('ui') == 'redoc':
+            template = 'openapi/redoc.html'
+
+        path = f'{api.base_url}/openapi'
+        data = {
+            'openapi-document-path': path
+        }
+        content = render_j2_template(api.tpl_config, template, data,
+                                     request.locale)
+        return headers, HTTPStatus.OK, content
+
+    headers['Content-Type'] = 'application/vnd.oai.openapi+json;version=3.0'  # noqa
+
+    if isinstance(api.openapi, dict):
+        return headers, HTTPStatus.OK, to_json(api.openapi,
+                                               api.pretty_print)
+    else:
+        return headers, HTTPStatus.OK, api.openapi
 
 
 def validate_bbox(value=None) -> list:

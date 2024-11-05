@@ -41,7 +41,7 @@ import pytest
 from pygeoapi.api import (
     API, APIRequest, FORMAT_TYPES, F_HTML, F_JSON, F_JSONLD, F_GZIP,
     __version__, validate_bbox, validate_datetime,
-    validate_subset, landing_page,
+    validate_subset, landing_page, openapi_,
 )
 from pygeoapi.util import yaml_load, get_api_rules, get_base_url
 
@@ -356,12 +356,12 @@ def test_apirules_inactive(config, api_):
         assert 'X-API-Version' not in response.headers
 
 
-def test_api(config, api_, openapi):
+def test_openapi(config, api_, openapi):
     assert api_.config == config
     assert isinstance(api_.config, dict)
 
-    req = mock_request(HTTP_ACCEPT='application/json')
-    rsp_headers, code, response = api_.openapi_(req)
+    req = mock_api_request(HTTP_ACCEPT='application/json')
+    rsp_headers, code, response = openapi_(api_, req)
     assert rsp_headers['Content-Type'] == 'application/vnd.oai.openapi+json;version=3.0'  # noqa
     # No language requested: should be set to default from YAML
     assert rsp_headers['Content-Language'] == 'en-US'
@@ -369,28 +369,20 @@ def test_api(config, api_, openapi):
     assert isinstance(root, dict)
 
     a = 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8'
-    req = mock_request(HTTP_ACCEPT=a)
-    rsp_headers, code, response = api_.openapi_(req)
+    req = mock_api_request(HTTP_ACCEPT=a)
+    rsp_headers, code, response = openapi_(api_, req)
     assert rsp_headers['Content-Type'] == FORMAT_TYPES[F_HTML] == \
            FORMAT_TYPES[F_HTML]
 
     assert 'Swagger UI' in response
 
     a = 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8'
-    req = mock_request({'ui': 'redoc'}, HTTP_ACCEPT=a)
-    rsp_headers, code, response = api_.openapi_(req)
+    req = mock_api_request({'ui': 'redoc'}, HTTP_ACCEPT=a)
+    rsp_headers, code, response = openapi_(api_, req)
     assert rsp_headers['Content-Type'] == FORMAT_TYPES[F_HTML] == \
            FORMAT_TYPES[F_HTML]
 
     assert 'ReDoc' in response
-
-    req = mock_request({'f': 'foo'})
-    rsp_headers, code, response = api_.openapi_(req)
-    assert rsp_headers['Content-Language'] == 'en-US'
-    assert code == HTTPStatus.BAD_REQUEST
-
-    response = json.loads(response)
-    assert response['description'] == 'Invalid format requested'
 
     assert api_.get_collections_url() == 'http://localhost:5000/collections'
 

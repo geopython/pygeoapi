@@ -179,7 +179,7 @@ async def openapi(request: Request):
 
     :returns: Starlette HTTP Response
     """
-    return await get_response(api_.openapi_, request)
+    return await execute_from_starlette(core_api.openapi_, request)
 
 
 async def conformance(request: Request):

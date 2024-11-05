@@ -182,7 +182,7 @@ def openapi():
     :returns: HTTP response
     """
 
-    return get_response(api_.openapi_(request))
+    return execute_from_flask(core_api.openapi_, request)
 
 
 @BLUEPRINT.route('/conformance')
