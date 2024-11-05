@@ -687,130 +687,6 @@ class API:
 
     @gzip
     @pre_process
-    @jsonldify
-    def landing_page(self,
-                     request: Union[APIRequest, Any]) -> Tuple[dict, int, str]:
-        """
-        Provide API landing page
-
-        :param request: A request object
-
-        :returns: tuple of headers, status code, content
-        """
-
-        if not request.is_valid():
-            return self.get_format_exception(request)
-
-        fcm = {
-            'links': [],
-            'title': l10n.translate(
-                self.config['metadata']['identification']['title'],
-                request.locale),
-            'description':
-                l10n.translate(
-                    self.config['metadata']['identification']['description'],
-                    request.locale)
-        }
-
-        LOGGER.debug('Creating links')
-        # TODO: put title text in config or translatable files?
-        fcm['links'] = [{
-            'rel': 'about',
-            'type': 'text/html',
-            'title': l10n.translate(
-                self.config['metadata']['identification']['title'],
-                request.locale),
-            'href': self.config['metadata']['identification']['url']
-        }, {
-            'rel': request.get_linkrel(F_JSON),
-            'type': FORMAT_TYPES[F_JSON],
-            'title': l10n.translate('This document as JSON', request.locale),
-            'href': f"{self.base_url}?f={F_JSON}"
-        }, {
-            'rel': request.get_linkrel(F_JSONLD),
-            'type': FORMAT_TYPES[F_JSONLD],
-            'title': l10n.translate('This document as RDF (JSON-LD)', request.locale),  # noqa
-            'href': f"{self.base_url}?f={F_JSONLD}"
-        }, {
-            'rel': request.get_linkrel(F_HTML),
-            'type': FORMAT_TYPES[F_HTML],
-            'title': l10n.translate('This document as HTML', request.locale),
-            'href': f"{self.base_url}?f={F_HTML}",
-            'hreflang': self.default_locale
-        }, {
-            'rel': 'service-desc',
-            'type': 'application/vnd.oai.openapi+json;version=3.0',
-            'title': l10n.translate('The OpenAPI definition as JSON', request.locale),  # noqa
-            'href': f"{self.base_url}/openapi"
-        }, {
-            'rel': 'service-doc',
-            'type': FORMAT_TYPES[F_HTML],
-            'title': l10n.translate('The OpenAPI definition as HTML', request.locale),  # noqa
-            'href': f"{self.base_url}/openapi?f={F_HTML}",
-            'hreflang': self.default_locale
-        }, {
-            'rel': 'conformance',
-            'type': FORMAT_TYPES[F_JSON],
-            'title': l10n.translate('Conformance', request.locale),
-            'href': f"{self.base_url}/conformance"
-        }, {
-            'rel': 'data',
-            'type': FORMAT_TYPES[F_JSON],
-            'title': l10n.translate('Collections', request.locale),
-            'href': self.get_collections_url()
-        }, {
-            'rel': 'http://www.opengis.net/def/rel/ogc/1.0/processes',
-            'type': FORMAT_TYPES[F_JSON],
-            'title': l10n.translate('Processes', request.locale),
-            'href': f"{self.base_url}/processes"
-        }, {
-            'rel': 'http://www.opengis.net/def/rel/ogc/1.0/job-list',
-            'type': FORMAT_TYPES[F_JSON],
-            'title': l10n.translate('Jobs', request.locale),
-            'href': f"{self.base_url}/jobs"
-        }, {
-            'rel': 'http://www.opengis.net/def/rel/ogc/1.0/tiling-schemes',
-            'type': FORMAT_TYPES[F_JSON],
-            'title': l10n.translate('The list of supported tiling schemes as JSON', request.locale),  # noqa
-            'href': f"{self.base_url}/TileMatrixSets?f=json"
-        }, {
-            'rel': 'http://www.opengis.net/def/rel/ogc/1.0/tiling-schemes',
-            'type': FORMAT_TYPES[F_HTML],
-            'title': l10n.translate('The list of supported tiling schemes as HTML', request.locale),  # noqa
-            'href': f"{self.base_url}/TileMatrixSets?f=html"
-        }]
-
-        headers = request.get_response_headers(**self.api_headers)
-        if request.format == F_HTML:  # render
-
-            fcm['processes'] = False
-            fcm['stac'] = False
-            fcm['collection'] = False
-
-            if filter_dict_by_key_value(self.config['resources'],
-                                        'type', 'process'):
-                fcm['processes'] = True
-
-            if filter_dict_by_key_value(self.config['resources'],
-                                        'type', 'stac-collection'):
-                fcm['stac'] = True
-
-            if filter_dict_by_key_value(self.config['resources'],
-                                        'type', 'collection'):
-                fcm['collection'] = True
-
-            content = render_j2_template(self.tpl_config, 'landing_page.html',
-                                         fcm, request.locale)
-            return headers, HTTPStatus.OK, content
-
-        if request.format == F_JSONLD:
-            return headers, HTTPStatus.OK, to_json(
-                self.fcmld, self.pretty_print)
-
-        return headers, HTTPStatus.OK, to_json(fcm, self.pretty_print)
-
-    @gzip
-    @pre_process
     def openapi_(self, request: Union[APIRequest, Any]) -> Tuple[
                  dict, int, str]:
         """
@@ -1542,6 +1418,126 @@ class API:
                 content_crs_uri = DEFAULT_CRS
 
         headers['Content-Crs'] = f'<{content_crs_uri}>'
+
+
+@jsonldify
+def landing_page(api: API,
+                 request: APIRequest) -> Tuple[dict, int, str]:
+    """
+    Provide API landing page
+
+    :param request: A request object
+
+    :returns: tuple of headers, status code, content
+    """
+
+    fcm = {
+        'links': [],
+        'title': l10n.translate(
+            api.config['metadata']['identification']['title'],
+            request.locale),
+        'description':
+            l10n.translate(
+                api.config['metadata']['identification']['description'],
+                request.locale)
+    }
+
+    LOGGER.debug('Creating links')
+    # TODO: put title text in config or translatable files?
+    fcm['links'] = [{
+        'rel': 'about',
+        'type': 'text/html',
+        'title': l10n.translate(
+            api.config['metadata']['identification']['title'],
+            request.locale),
+        'href': api.config['metadata']['identification']['url']
+    }, {
+        'rel': request.get_linkrel(F_JSON),
+        'type': FORMAT_TYPES[F_JSON],
+        'title': l10n.translate('This document as JSON', request.locale),
+        'href': f"{api.base_url}?f={F_JSON}"
+    }, {
+        'rel': request.get_linkrel(F_JSONLD),
+        'type': FORMAT_TYPES[F_JSONLD],
+        'title': l10n.translate('This document as RDF (JSON-LD)', request.locale),  # noqa
+        'href': f"{api.base_url}?f={F_JSONLD}"
+    }, {
+        'rel': request.get_linkrel(F_HTML),
+        'type': FORMAT_TYPES[F_HTML],
+        'title': l10n.translate('This document as HTML', request.locale),
+        'href': f"{api.base_url}?f={F_HTML}",
+        'hreflang': api.default_locale
+    }, {
+        'rel': 'service-desc',
+        'type': 'application/vnd.oai.openapi+json;version=3.0',
+        'title': l10n.translate('The OpenAPI definition as JSON', request.locale),  # noqa
+        'href': f"{api.base_url}/openapi"
+    }, {
+        'rel': 'service-doc',
+        'type': FORMAT_TYPES[F_HTML],
+        'title': l10n.translate('The OpenAPI definition as HTML', request.locale),  # noqa
+        'href': f"{api.base_url}/openapi?f={F_HTML}",
+        'hreflang': api.default_locale
+    }, {
+        'rel': 'conformance',
+        'type': FORMAT_TYPES[F_JSON],
+        'title': l10n.translate('Conformance', request.locale),
+        'href': f"{api.base_url}/conformance"
+    }, {
+        'rel': 'data',
+        'type': FORMAT_TYPES[F_JSON],
+        'title': l10n.translate('Collections', request.locale),
+        'href': api.get_collections_url()
+    }, {
+        'rel': 'http://www.opengis.net/def/rel/ogc/1.0/processes',
+        'type': FORMAT_TYPES[F_JSON],
+        'title': l10n.translate('Processes', request.locale),
+        'href': f"{api.base_url}/processes"
+    }, {
+        'rel': 'http://www.opengis.net/def/rel/ogc/1.0/job-list',
+        'type': FORMAT_TYPES[F_JSON],
+        'title': l10n.translate('Jobs', request.locale),
+        'href': f"{api.base_url}/jobs"
+    }, {
+        'rel': 'http://www.opengis.net/def/rel/ogc/1.0/tiling-schemes',
+        'type': FORMAT_TYPES[F_JSON],
+        'title': l10n.translate('The list of supported tiling schemes as JSON', request.locale),  # noqa
+        'href': f"{api.base_url}/TileMatrixSets?f=json"
+    }, {
+        'rel': 'http://www.opengis.net/def/rel/ogc/1.0/tiling-schemes',
+        'type': FORMAT_TYPES[F_HTML],
+        'title': l10n.translate('The list of supported tiling schemes as HTML', request.locale),  # noqa
+        'href': f"{api.base_url}/TileMatrixSets?f=html"
+    }]
+
+    headers = request.get_response_headers(**api.api_headers)
+    if request.format == F_HTML:  # render
+
+        fcm['processes'] = False
+        fcm['stac'] = False
+        fcm['collection'] = False
+
+        if filter_dict_by_key_value(api.config['resources'],
+                                    'type', 'process'):
+            fcm['processes'] = True
+
+        if filter_dict_by_key_value(api.config['resources'],
+                                    'type', 'stac-collection'):
+            fcm['stac'] = True
+
+        if filter_dict_by_key_value(api.config['resources'],
+                                    'type', 'collection'):
+            fcm['collection'] = True
+
+        content = render_j2_template(api.tpl_config, 'landing_page.html',
+                                     fcm, request.locale)
+        return headers, HTTPStatus.OK, content
+
+    if request.format == F_JSONLD:
+        return headers, HTTPStatus.OK, to_json(
+            api.fcmld, api.pretty_print)
+
+    return headers, HTTPStatus.OK, to_json(fcm, api.pretty_print)
 
 
 def validate_bbox(value=None) -> list:

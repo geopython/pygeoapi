@@ -41,6 +41,7 @@ from django.conf import settings
 from django.http import HttpRequest, HttpResponse
 
 from pygeoapi.api import API, APIRequest, apply_gzip
+import pygeoapi.api as core_api
 import pygeoapi.api.coverages as coverages_api
 import pygeoapi.api.environmental_data_retrieval as edr_api
 import pygeoapi.api.itemtypes as itemtypes_api
@@ -59,10 +60,7 @@ def landing_page(request: HttpRequest) -> HttpResponse:
     :returns: Django HTTP Response
     """
 
-    response_ = _feed_response(request, 'landing_page')
-    response = _to_django_response(*response_)
-
-    return response
+    return execute_from_django(core_api.landing_page, request)
 
 
 def openapi(request: HttpRequest) -> HttpResponse:

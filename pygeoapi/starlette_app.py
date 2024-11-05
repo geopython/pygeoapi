@@ -50,6 +50,7 @@ from starlette.responses import (
 import uvicorn
 
 from pygeoapi.api import API, APIRequest, apply_gzip
+import pygeoapi.api as core_api
 import pygeoapi.api.coverages as coverages_api
 import pygeoapi.api.environmental_data_retrieval as edr_api
 import pygeoapi.api.itemtypes as itemtypes_api
@@ -167,7 +168,7 @@ async def landing_page(request: Request):
 
     :returns: Starlette HTTP Response
     """
-    return await get_response(api_.landing_page, request)
+    return await execute_from_starlette(core_api.landing_page, request)
 
 
 async def openapi(request: Request):
