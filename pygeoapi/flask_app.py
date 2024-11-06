@@ -120,25 +120,6 @@ if (OGC_SCHEMAS_LOCATION is not None and
                                    mimetype=get_mimetype(basename_))
 
 
-# TODO: inline in execute_from_flask when all views have been refactored
-def get_response(result: tuple):
-    """
-    Creates a Flask Response object and updates matching headers.
-
-    :param result: The result of the API call.
-                   This should be a tuple of (headers, status, content).
-
-    :returns: A Response instance
-    """
-
-    headers, status, content = result
-    response = make_response(content, status)
-
-    if headers:
-        response.headers = headers
-    return response
-
-
 def execute_from_flask(api_function, request: Request, *args,
                        skip_valid_check=False,
                        alternative_api=None
@@ -167,7 +148,11 @@ def execute_from_flask(api_function, request: Request, *args,
         headers, status, content = api_function(actual_api, api_request, *args)
         content = apply_gzip(headers, content)
 
-    return get_response((headers, status, content))
+    response = make_response(content, status)
+
+    if headers:
+        response.headers = headers
+    return response
 
 
 @BLUEPRINT.route('/')

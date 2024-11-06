@@ -146,60 +146,6 @@ def all_apis() -> dict:
     }
 
 
-def pre_process(func):
-    """
-    Decorator that transforms an incoming Request instance specific to the
-    web framework (i.e. Flask, Starlette or Django) into a generic
-    :class:`APIRequest` instance.
-
-    :param func: decorated function
-
-    :returns: `func`
-    """
-
-    def inner(*args):
-        cls, req_in = args[:2]
-        req_out = APIRequest.with_data(req_in, getattr(cls, 'locales', set()))
-        if len(args) > 2:
-            return func(cls, req_out, *args[2:])
-        else:
-            return func(cls, req_out)
-
-    return inner
-
-
-# TODO: remove this when all functions have been refactored
-def gzip(func):
-    """
-    Decorator that compresses the content of an outgoing API result
-    instance if the Content-Encoding response header was set to gzip.
-
-    :param func: decorated function
-
-    :returns: `func`
-    """
-
-    def inner(*args, **kwargs):
-        headers, status, content = func(*args, **kwargs)
-        charset = CHARSET[0]
-        if F_GZIP in headers.get('Content-Encoding', []):
-            try:
-                if isinstance(content, bytes):
-                    # bytes means Content-Type needs to be set upstream
-                    content = compress(content)
-                else:
-                    headers['Content-Type'] = \
-                        f"{headers['Content-Type']}; charset={charset}"
-                    content = compress(content.encode(charset))
-            except TypeError as err:
-                headers.pop('Content-Encoding')
-                LOGGER.error(f'Error in compression: {err}')
-
-        return headers, status, content
-
-    return inner
-
-
 def apply_gzip(headers: dict, content: Union[str, bytes]) -> Union[str, bytes]:
     """
     Compress content if requested in header.

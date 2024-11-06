@@ -104,28 +104,6 @@ def call_api_threadsafe(
     return api_call(*args)
 
 
-async def get_response(
-        api_call,
-        *args,
-) -> Union[Response, JSONResponse, HTMLResponse]:
-    """
-    Creates a Starlette Response object and updates matching headers.
-
-    Runs the core api handler in a separate thread in order to avoid
-    blocking the main event loop.
-
-    :param result: The result of the API call.
-                   This should be a tuple of (headers, status, content).
-
-    :returns: A Response instance.
-    """
-
-    loop = asyncio.get_running_loop()
-    headers, status, content = await loop.run_in_executor(
-        None, call_api_threadsafe, loop, api_call, *args)
-    return _to_response(headers, status, content)
-
-
 def _to_response(headers, status, content):
     if headers['Content-Type'] == 'text/html':
         response = HTMLResponse(content=content, status_code=status)

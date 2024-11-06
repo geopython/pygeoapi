@@ -35,7 +35,7 @@
 
 """Integration module for Django"""
 
-from typing import Tuple, Dict, Mapping, Optional, Union
+from typing import Optional, Union
 
 from django.conf import settings
 from django.http import HttpRequest, HttpResponse
@@ -523,22 +523,6 @@ def admin_config_resource(request: HttpRequest,
                                    resource_id)
 
 
-# TODO: remove this when all views have been refactored
-def _feed_response(request: HttpRequest, api_definition: str,
-                   *args, **kwargs) -> Tuple[Dict, int, str]:
-    """Use pygeoapi api to process the input request"""
-
-    if 'admin' in api_definition and settings.PYGEOAPI_CONFIG['server'].get('admin'):  # noqa
-        from pygeoapi.admin import Admin
-        api_ = Admin(settings.PYGEOAPI_CONFIG, settings.OPENAPI_DOCUMENT)
-    else:
-        api_ = API(settings.PYGEOAPI_CONFIG, settings.OPENAPI_DOCUMENT)
-
-    api = getattr(api_, api_definition)
-
-    return api(request, *args, **kwargs)
-
-
 def execute_from_django(api_function, request: HttpRequest, *args,
                         skip_valid_check=False) -> HttpResponse:
 
@@ -558,15 +542,8 @@ def execute_from_django(api_function, request: HttpRequest, *args,
         headers, status, content = api_function(api_, api_request, *args)
         content = apply_gzip(headers, content)
 
-    return _to_django_response(headers, status, content)
-
-
-# TODO: inline this to execute_from_django after refactoring
-def _to_django_response(headers: Mapping, status_code: int,
-                        content: Union[str, bytes]) -> HttpResponse:
-    """Convert API payload to a django response"""
-
-    response = HttpResponse(content, status=status_code)
+    # Convert API payload to a django response
+    response = HttpResponse(content, status=status)
 
     for key, value in headers.items():
         response[key] = value
