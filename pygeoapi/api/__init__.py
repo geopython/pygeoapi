@@ -40,7 +40,6 @@ Root level code of pygeoapi, parsing content provided by web framework.
 Returns content from plugins and sets responses.
 """
 
-import asyncio
 from collections import OrderedDict
 from copy import deepcopy
 from datetime import datetime
@@ -262,44 +261,6 @@ class APIRequest:
 
         # Get received headers
         self._headers = self.get_request_headers(request.headers)
-
-    # TODO: remove this after all views have been refactored (only used
-    #       in pre_process)
-    @classmethod
-    def with_data(cls, request, supported_locales) -> 'APIRequest':
-        """
-        Factory class method to create an `APIRequest` instance with data.
-
-        If the request body is required, an `APIRequest` should always be
-        instantiated using this class method. The reason for this is, that the
-        Starlette request body needs to be awaited (async), which cannot be
-        achieved in the :meth:`__init__` method of the `APIRequest`.
-        However, `APIRequest` can still be initialized using :meth:`__init__`,
-        but then the :attr:`data` property value will always be empty.
-
-        :param request:             The web platform specific Request instance.
-        :param supported_locales:   List or set of supported Locale instances.
-        :returns:                   An `APIRequest` instance with data.
-        """
-
-        api_req = cls(request, supported_locales)
-        if hasattr(request, 'data'):
-            # Set data from Flask request
-            api_req._data = request.data
-        elif hasattr(request, 'body'):
-            if 'django' in str(request.__class__):
-                # Set data from Django request
-                api_req._data = request.body
-            else:
-                # Set data from Starlette request after async
-                # coroutine completion
-                # TODO:
-                # this now blocks, but once Flask v2 with async support
-                # has been implemented, with_data() can become async too
-                loop = asyncio.get_event_loop()
-                api_req._data = asyncio.run_coroutine_threadsafe(
-                    request.body(), loop).result(1)
-        return api_req
 
     @classmethod
     def from_flask(cls, request, supported_locales) -> 'APIRequest':

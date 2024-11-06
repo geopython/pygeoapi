@@ -172,7 +172,7 @@ def test_apirequest(api_):
     # Test data
     for d in (None, '', 'test', {'key': 'value'}):
         req = mock_request(data=d)
-        apireq = APIRequest.with_data(req, api_.locales)
+        apireq = APIRequest.from_flask(req, api_.locales)
         if not d:
             assert apireq.data == b''
         elif isinstance(d, dict):
