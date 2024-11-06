@@ -474,23 +474,6 @@ def get_job_result(job_id=None):
     return execute_from_flask(processes_api.get_job_result, request, job_id)
 
 
-@BLUEPRINT.route('/jobs/<job_id>/results/<resource>',
-                 methods=['GET'])
-def get_job_result_resource(job_id, resource):
-    """
-    OGC API - Processes job result resource endpoint
-
-    :param job_id: job identifier
-    :param resource: job resource
-
-    :returns: HTTP response
-    """
-
-    # TODO: this does not seem to exist?
-    return get_response(api_.get_job_result_resource(
-        request, job_id, resource))
-
-
 @BLUEPRINT.route('/collections/<path:collection_id>/position')
 @BLUEPRINT.route('/collections/<path:collection_id>/area')
 @BLUEPRINT.route('/collections/<path:collection_id>/cube')

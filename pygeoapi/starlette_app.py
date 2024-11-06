@@ -494,28 +494,6 @@ async def get_job_result(request: Request, job_id=None):
                                         request, job_id)
 
 
-async def get_job_result_resource(request: Request,
-                                  job_id=None, resource=None):
-    """
-    OGC API - Processes job result resource endpoint
-
-    :param request: Starlette Request instance
-    :param job_id: job identifier
-    :param resource: job resource
-
-    :returns: HTTP response
-    """
-
-    if 'job_id' in request.path_params:
-        job_id = request.path_params['job_id']
-    if 'resource' in request.path_params:
-        resource = request.path_params['resource']
-
-    # TODO: this api function currently doesn't exist
-    return await get_response(
-        api_.get_job_result_resource, request, job_id, resource)
-
-
 async def get_collection_edr_query(request: Request, collection_id=None, instance_id=None):  # noqa
     """
     OGC EDR API endpoints
@@ -698,7 +676,6 @@ api_routes = [
     Route('/jobs/{job_id}', get_jobs, methods=['GET', 'DELETE']),
     Route('/processes/{process_id}/execution', execute_process_jobs, methods=['POST']),  # noqa
     Route('/jobs/{job_id}/results', get_job_result),
-    Route('/jobs/{job_id}/results/{resource}', get_job_result_resource),
     Route('/collections/{collection_id:path}/position', get_collection_edr_query),  # noqa
     Route('/collections/{collection_id:path}/area', get_collection_edr_query),
     Route('/collections/{collection_id:path}/cube', get_collection_edr_query),
