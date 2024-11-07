@@ -14,5 +14,5 @@ PyYAML
 rasterio
 requests
 shapely
-SQLAlchemy<2.0.0
+SQLAlchemy
 tinydb
