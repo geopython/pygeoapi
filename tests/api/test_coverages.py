@@ -36,9 +36,10 @@ from http import HTTPStatus
 import pytest
 
 from pygeoapi.api.coverages import get_collection_coverage
+from pygeoapi.api import describe_collections, get_collection_schema
 from pygeoapi.util import yaml_load
 
-from tests.util import get_test_file_path, mock_request, mock_api_request
+from tests.util import get_test_file_path, mock_api_request
 
 
 @pytest.fixture()
@@ -49,9 +50,9 @@ def config():
 
 def test_describe_collections(config, api_):
 
-    req = mock_request()
-    rsp_headers, code, response = api_.describe_collections(
-        req, 'gdps-temperature')
+    req = mock_api_request()
+    rsp_headers, code, response = describe_collections(
+        api_, req, 'gdps-temperature')
 
     collection = json.loads(response)
 
@@ -65,14 +66,14 @@ def test_describe_collections(config, api_):
 
 def test_get_collection_schema(config, api_):
     req = mock_api_request({'f': 'html'})
-    rsp_headers, code, response = api_.get_collection_schema(
-        req, 'gdps-temperature')
+    rsp_headers, code, response = get_collection_schema(
+        api_, req, 'gdps-temperature')
 
-    assert rsp_headers['Content-Type'] == 'application/schema+json'
+    assert rsp_headers['Content-Type'] == 'text/html'
 
     req = mock_api_request({'f': 'json'})
-    rsp_headers, code, response = api_.get_collection_schema(
-        req, 'gdps-temperature')
+    rsp_headers, code, response = get_collection_schema(
+        api_, req, 'gdps-temperature')
 
     assert rsp_headers['Content-Type'] == 'application/schema+json'
     schema = json.loads(response)
@@ -81,8 +82,8 @@ def test_get_collection_schema(config, api_):
     assert len(schema['properties']) == 1
 
     req = mock_api_request({'f': 'json'})
-    rsp_headers, code, response = api_.get_collection_schema(
-        req, 'gdps-temperature')
+    rsp_headers, code, response = get_collection_schema(
+        api_, req, 'gdps-temperature')
     assert rsp_headers['Content-Type'] == 'application/schema+json'
     schema = json.loads(response)
 

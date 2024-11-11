@@ -73,7 +73,7 @@ def _create_execute_request(name, message, locales):
         base_url='http://localhost:5000/processes/hello-world/execution',
         method="POST", json=data)
     req = Request(environ)
-    return APIRequest.with_data(req, locales)
+    return APIRequest.from_flask(req, locales)
 
 
 def _create_job_request(job_id, locales):
@@ -82,7 +82,7 @@ def _create_job_request(job_id, locales):
         query_string="f=json",
         method="GET")
     req = Request(environ)
-    return APIRequest.with_data(req, locales)
+    return APIRequest.from_flask(req, locales)
 
 
 def _create_results_request(job_id, locales):
@@ -91,7 +91,7 @@ def _create_results_request(job_id, locales):
         query_string="f=json",
         method="GET")
     req = Request(environ)
-    return APIRequest.with_data(req, locales)
+    return APIRequest.from_flask(req, locales)
 
 
 def _create_delete_request(job_id, locales):
@@ -100,7 +100,7 @@ def _create_delete_request(job_id, locales):
         query_string="f=json",
         method="DELETE")
     req = Request(environ)
-    return APIRequest.with_data(req, locales)
+    return APIRequest.from_flask(req, locales)
 
 
 def test_api_connection_rfc3986(config, openapi):
