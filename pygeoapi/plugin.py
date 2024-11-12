@@ -51,10 +51,11 @@ PLUGINS = {
         'MapScript': 'pygeoapi.provider.mapscript_.MapScriptProvider',
         'MongoDB': 'pygeoapi.provider.mongo.MongoProvider',
         'MVT-tippecanoe': 'pygeoapi.provider.mvt_tippecanoe.MVTTippecanoeProvider',  # noqa: E501
-        'MVT-elastic': 'pygeoapi.provider.mvt_elastic.MVTElasticProvider',  # noqa: E501
-        'MVT-proxy': 'pygeoapi.provider.mvt_proxy.MVTProxyProvider',  # noqa: E501
+        'MVT-elastic': 'pygeoapi.provider.mvt_elastic.MVTElasticProvider',
+        'MVT-proxy': 'pygeoapi.provider.mvt_proxy.MVTProxyProvider',
         'OracleDB': 'pygeoapi.provider.oracle.OracleProvider',
         'OGR': 'pygeoapi.provider.ogr.OGRProvider',
+        'OpenSearch': 'pygeoapi.provider.opensearch_.OpenSearchProvider',
         'Parquet': 'pygeoapi.provider.parquet.ParquetProvider',
         'PostgreSQL': 'pygeoapi.provider.postgresql.PostgreSQLProvider',
         'rasterio': 'pygeoapi.provider.rasterio_.RasterioProvider',

@@ -889,7 +889,7 @@ def post_collection_items(
                 HTTPStatus.BAD_REQUEST, headers, request.format,
                 'InvalidParameterValue', msg)
     else:
-        LOGGER.debug('processing Elasticsearch CQL_JSON data')
+        LOGGER.debug('processing CQL_JSON data')
         try:
             filter_ = CQLModel.parse_raw(data)
         except Exception:
