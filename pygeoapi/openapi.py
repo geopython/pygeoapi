@@ -150,32 +150,54 @@ def gen_contact(cfg: dict) -> dict:
         'email': cfg['metadata']['contact']['email']
     }
 
-    contact['x-ogc-serviceContact'] = {
-        'name': cfg['metadata']['contact']['name'],
-        'position': cfg['metadata']['contact']['position'],
-        'addresses': [{
-            'deliveryPoint': [cfg['metadata']['contact']['address']],
-            'city': cfg['metadata']['contact']['city'],
-            'administrativeArea': cfg['metadata']['contact']['stateorprovince'],  # noqa
-            'postalCode': cfg['metadata']['contact']['postalcode'],
-            'country': cfg['metadata']['contact']['country']
-        }],
-        'phones': [{
-            'type': 'main', 'value': cfg['metadata']['contact']['phone']
-            }, {
-            'type': 'fax', 'value': cfg['metadata']['contact']['fax']
-        }],
-        'emails': [{
-            'value': cfg['metadata']['contact']['email']
-        }],
-        'contactInstructions': cfg['metadata']['contact']['instructions'],
-        'links': [{
+    service_contact = {}
+    if cfg['metadata']['contact'].get('name'):
+        service_contact['name'] = cfg['metadata']['contact']['name']
+    if cfg['metadata']['contact'].get('position'):
+        service_contact['position'] = cfg['metadata']['contact']['position']
+
+    address = {}
+    if cfg['metadata']['contact'].get('address'):
+        address['deliveryPoint'] = [cfg['metadata']['contact']['address']]
+    if cfg['metadata']['contact'].get('city'):
+        address['city'] = cfg['metadata']['contact']['city']
+    if cfg['metadata']['contact'].get('stateorprovince'):
+        address['administrativeArea'] = cfg['metadata']['contact']['stateorprovince']
+    if cfg['metadata']['contact'].get('postalcode'):
+        address['postalCode'] = cfg['metadata']['contact']['postalcode']
+    if cfg['metadata']['contact'].get('country'):
+        address['country'] = cfg['metadata']['contact']['country']
+    if address:
+        service_contact['addresses'] = [address]
+
+    phones = []
+    if cfg['metadata']['contact'].get('phone'):
+        phones.append({'type': 'main', 'value': cfg['metadata']['contact']['phone']})
+    if cfg['metadata']['contact'].get('fax'):
+        phones.append({'type': 'fax', 'value': cfg['metadata']['contact']['fax']})
+    if phones:
+        service_contact['phones'] = phones
+
+    if cfg['metadata']['contact'].get('email'):
+        service_contact['emails'] = [{'value': cfg['metadata']['contact']['email']}]
+
+    if cfg['metadata']['contact'].get('instructions'):
+        service_contact['contactInstructions'] = cfg['metadata']['contact']['instructions']
+
+    if cfg['metadata']['contact'].get('url'):
+        service_contact['links'] = [{
             'type': 'text/html',
             'href': cfg['metadata']['contact']['url']
-        }],
-        'hoursOfService': cfg['metadata']['contact']['hours'],
-        'roles': [cfg['metadata']['contact']['role']]
-    }
+        }]
+
+    if cfg['metadata']['contact'].get('hours'):
+        service_contact['hoursOfService'] = cfg['metadata']['contact']['hours']
+
+    if cfg['metadata']['contact'].get('role'):
+        service_contact['roles'] = [cfg['metadata']['contact']['role']]
+
+    if service_contact:
+        contact['x-ogc-serviceContact'] = service_contact
 
     return contact
 
