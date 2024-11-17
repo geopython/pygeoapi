@@ -14,6 +14,15 @@ The API is enabled with the following server configuration:
     server:
         admin: true # boolean on whether to enable Admin API.
 
+.. note::
+
+    If you generate the OpenAPI definition after enabling the admin API, the admin routes will be exposed on ``/openapi`` 
+
+    .. image:: /_static/openapi_admin.png
+        :alt: admin routes
+        :align: center
+
+    
 Access control
 --------------
 
