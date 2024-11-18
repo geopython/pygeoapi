@@ -509,7 +509,7 @@ def get_oas_30(cfg: dict, fail_on_invalid_collection: bool = True) -> dict:
         schema_dict = get_config_schema()
         oas['definitions'] = schema_dict['definitions']
         LOGGER.debug('Adding admin endpoints')
-        oas['paths'].update(get_admin())
+        oas['paths'].update(get_admin(cfg))
 
     return oas
 
@@ -665,8 +665,12 @@ def get_config_schema():
     with open(schema_file) as fh2:
         return yaml_load(fh2)
 
+def get_admin(cfg: dict) -> dict:
+    """
+    Generates an OpenAPI definition for the admin UI
 
-def get_admin():
+    :param cfg: `dict` of configuration
+    """
 
     schema_dict = get_config_schema()
 
@@ -702,6 +706,7 @@ def get_admin():
                 'description': 'Updates admin configuration',
                 'content': {
                     'application/json': {
+                        'example': schema_dict['properties']['server']['properties']['admin-post-example'],
                         'schema': schema_dict
                     }
                 },
@@ -810,7 +815,7 @@ def get_admin():
                 'description': 'Updates admin configuration resource',
                 'content': {
                     'application/json': {
-                        'schema': schema_dict['properties']['resources']['patternProperties']['^.*$']  # noqa
+                        'schema': schema_dict['properties']['resources']['patternProperties']['^.*$'],  # noqa
                     }
                 },
                 'required': True
