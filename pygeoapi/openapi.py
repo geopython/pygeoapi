@@ -816,7 +816,7 @@ def get_admin(cfg: dict) -> dict:
                 'description': 'Updates admin configuration resource',
                 'content': {
                     'application/json': {
-                        'schema': schema_dict['properties']['resources']['patternProperties']['^.*$'],  # noqa
+                        'schema': schema_dict['properties']['resources']['patternProperties']['^.*$']  # noqa
                     }
                 },
                 'required': True
