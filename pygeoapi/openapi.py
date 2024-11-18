@@ -707,7 +707,7 @@ def get_admin(cfg: dict) -> dict:
                 'description': 'Updates admin configuration',
                 'content': {
                     'application/json': {
-                        #'example': schema_dict['properties']['server']['properties']['admin-post-example'],  # noqa
+                        'example': schema_dict['properties']['server']['properties']['admin-post-example'],  # noqa
                         'schema': schema_dict
                     }
                 },
