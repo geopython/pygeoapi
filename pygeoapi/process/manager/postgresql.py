@@ -49,6 +49,7 @@ from sqlalchemy import insert, update, delete
 from sqlalchemy.engine import make_url
 from sqlalchemy.orm import Session
 
+from pygeoapi.api import FORMAT_TYPES, F_JSON, F_JSONLD
 from pygeoapi.process.base import (
     JobNotFoundError,
     JobResultNotFoundError,
@@ -292,8 +293,13 @@ class PostgreSQLManager(BaseManager):
         else:
             try:
                 location = Path(location)
-                with location.open(encoding='utf-8') as fh:
-                    result = json.load(fh)
+                if mimetype in (None, FORMAT_TYPES[F_JSON],
+                                FORMAT_TYPES[F_JSONLD]):
+                    with location.open('r', encoding='utf-8') as fh:
+                        result = json.load(fh)
+                else:
+                    with location.open('rb') as fh:
+                        result = fh.read()
             except (TypeError, FileNotFoundError, json.JSONDecodeError):
                 raise JobResultNotFoundError()
             else:
