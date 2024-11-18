@@ -665,6 +665,7 @@ def get_config_schema():
     with open(schema_file) as fh2:
         return yaml_load(fh2)
 
+
 def get_admin(cfg: dict) -> dict:
     """
     Generates an OpenAPI definition for the admin UI
@@ -706,7 +707,7 @@ def get_admin(cfg: dict) -> dict:
                 'description': 'Updates admin configuration',
                 'content': {
                     'application/json': {
-                        'example': schema_dict['properties']['server']['properties']['admin-post-example'],
+                        #'example': schema_dict['properties']['server']['properties']['admin-post-example'],  # noqa
                         'schema': schema_dict
                     }
                 },
