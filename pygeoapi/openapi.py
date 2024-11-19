@@ -666,7 +666,7 @@ def get_config_schema():
         return yaml_load(fh2)
 
 
-def get_put_admin(cfg: dict) -> dict:
+def get_put_config(cfg: dict) -> dict:
     """
     Creates the payload for the PUT admin config request
 
@@ -677,6 +677,21 @@ def get_put_admin(cfg: dict) -> dict:
 
     cfg['metadata']['identification']['title']['en'] = 'New pygeoapi Title'
     cfg['metadata']['identification']['title']['fr'] = 'Nouveau pygeoapi Titre'
+
+    return cfg
+
+
+def get_patch_config(cfg: dict) -> dict:
+    """
+    Creates the payload for the PATCH admin config request
+
+    :param cfg: `dict` of configuration
+
+    :returns: dict of OpenAPI definition
+    """
+
+    cfg['metadata']['identification']['title']['en'] = 'Patched pygeoapi'
+    cfg['resources'] = {}
 
     return cfg
 
@@ -722,7 +737,7 @@ def get_admin(cfg: dict) -> dict:
                 'description': 'Updates admin configuration',
                 'content': {
                     'application/json': {
-                        'example': get_put_admin(cfg),
+                        'example': get_put_config(cfg),
                         'schema': schema_dict
                     }
                 },
@@ -743,6 +758,7 @@ def get_admin(cfg: dict) -> dict:
                 'description': 'Updates admin configuration',
                 'content': {
                     'application/json': {
+                        'example': get_patch_config(cfg),
                         'schema': schema_dict
                     }
                 },
