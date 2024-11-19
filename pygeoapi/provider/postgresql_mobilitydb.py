@@ -396,7 +396,7 @@ class PostgresMobilityDB:
 
     def get_temporalproperties(
             self, collection_id, mfeature_id, datetime='', limit=10,
-            offset=0, subTemporalValue=False):
+            offset=0, sub_temporal_value=False):
         """
         Retrieve the static information of the temporal property data
         that included a single moving feature
@@ -406,7 +406,7 @@ class PostgresMobilityDB:
         :param datetime: either a date-time or an interval(datestamp or extent)
         :param limit: number of items (default 10) [optional]
         :param offset: starting record to return (default 0)
-        :param subTemporalValue: only features with a temporal property
+        :param sub_temporal_value: only features with a temporal property
                                  intersecting the given time interval
                                  will return (default False) [optional]
 
@@ -415,7 +415,8 @@ class PostgresMobilityDB:
         with self.connection.cursor() as cur:
             datetime_restriction = ''
             if datetime != '' and datetime is not None:
-                if subTemporalValue is False or subTemporalValue == "false":
+                if sub_temporal_value is False \
+                        or sub_temporal_value == "false":
                     datetime_restriction = (""" and (atTime(pvalue_float,
                     tstzspan('[{0}]')) is not null
                     or atTime(pvalue_text, tstzspan('[{0}]')) is not null)"""
@@ -440,7 +441,7 @@ class PostgresMobilityDB:
             result = cur.fetchall()
             number_returned = len(result)
 
-            if subTemporalValue or subTemporalValue == "true":
+            if sub_temporal_value or sub_temporal_value == "true":
                 subTemporalValue_float_field = (
                     """atTime(tproperties.pvalue_float,
                     tstzspan('[{0}]'))""" .format(datetime))
@@ -483,7 +484,7 @@ class PostgresMobilityDB:
 
     def get_temporalproperties_value(
             self, collection_id, mfeature_id, tProperty_name, datetime='',
-            leaf='', subTemporalValue=False):
+            leaf='', sub_temporal_value=False):
         """
         Retrieve temporal values with a specified name
         {tPropertyName} of temporal property.
@@ -496,7 +497,7 @@ class PostgresMobilityDB:
                      property that intersects the given
                      date-time are selected [optional]
 
-        :param subTemporalValue: only features with a temporal property
+        :param sub_temporal_value: only features with a temporal property
                                  intersecting the given time interval
                                  will return (default False) [optional]
 
@@ -517,7 +518,7 @@ class PostgresMobilityDB:
                     tstzset('{" + leaf + "}'))"
                 text_field = "atTime(tproperties.pvalue_text, \
                     tstzset('{" + leaf + "}'))"
-            elif subTemporalValue or subTemporalValue == "true":
+            elif sub_temporal_value or sub_temporal_value == "true":
                 float_field = "atTime(tproperties.pvalue_float, \
                     tstzspan('[" + datetime + "]'))"
                 text_field = "atTime(tproperties.pvalue_text, \
@@ -674,6 +675,7 @@ class PostgresMobilityDB:
             datetimes = g_temporal_property.pop("datetimes", None)
         datetime_group = self.get_temporalproperties_group(
             collection_id, mfeature_id, datetimes)
+        tproperties_name_list = []
         for tproperties_name in g_temporal_property:
             with self.connection.cursor() as cur:
                 if 'values' in g_temporal_property[tproperties_name] \
@@ -720,8 +722,9 @@ class PostgresMobilityDB:
                             temporal_property[tproperties_name])))
                     cur.execute(insert_query)
 
-        # TODO replace g_temporal_property
-        return tproperties_name
+            tproperties_name_list.append(tproperties_name)
+
+        return tproperties_name_list
 
     def post_temporalvalue(
             self, collection_id, mfeature_id, tproperties_name,

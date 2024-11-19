@@ -1,4 +1,4 @@
-from pygeoapi.pmdb_provider.postgresql_mobilitydb import PostgresMobilityDB
+from pygeoapi.provider.postgresql_mobilitydb import PostgresMobilityDB
 import pytest
 
 
@@ -433,8 +433,8 @@ def test_query_post_collection(context, collection_property):
     pmdb_provider.connect()
     collection_id = pmdb_provider.post_collection(collection_property)
 
+    assert collection_id is not None
     context['collection_id'] = collection_id
-    assert collection_id
 
 
 def test_query_post_movingfeature(context, movingfeature):
@@ -444,8 +444,8 @@ def test_query_post_movingfeature(context, movingfeature):
         pmdb_provider.post_movingfeature(context.get('collection_id'),
                                          movingfeature)
 
+    assert mfeature_id is not None
     context['mfeature_id'] = mfeature_id
-    assert mfeature_id
 
 
 def test_query_post_temporalgeometry(context, temporalgeometry):
@@ -457,8 +457,8 @@ def test_query_post_temporalgeometry(context, temporalgeometry):
                                             context.get('mfeature_id'),
                                             temporalgeometry)
 
+    assert tgeometry_id is not None
     context['tgeometry_id'] = tgeometry_id
-    assert tgeometry_id
 
 
 def test_query_post_temporalproperties(context, temporalproperties):
@@ -472,16 +472,19 @@ def test_query_post_temporalproperties(context, temporalproperties):
         context.get('mfeature_id'),
         l_temporal_properties)
 
+    tProperty_name_list = []
     if canPost:
         for temporal_property in l_temporal_properties:
-            tProperty_name = pmdb_provider.\
-                post_temporalproperties(
-                    context.get('collection_id'),
-                    context.get('mfeature_id'),
-                    temporal_property)
+            tProperty_name_list.extend(pmdb_provider.
+                                       post_temporalproperties(
+                                           context.get('collection_id'),
+                                           context.get('mfeature_id'),
+                                           temporal_property))
 
-        context['tProperty_name'] = tProperty_name
-        assert tProperty_name
+    assert len(tProperty_name_list) == 4
+    tProperty_name = tProperty_name_list[-1]
+    assert tProperty_name is not None
+    context['tProperty_name'] = tProperty_name
 
 
 def test_query_post_temporalvalue(context, temporalvalue_data):
@@ -588,7 +591,7 @@ def test_query_get_features(
             30,
             0,
             200,
-            400,
+            40,
             10],
         datetime='2011-07-14 22:01:01.000,2011-07-14 22:01:01.000',
         limit=10, offset=0, sub_trajectory=False):
@@ -651,7 +654,7 @@ def test_query_get_temporalgeometries(
             30,
             0,
             200,
-            400,
+            40,
             10],
         leaf='2011-07-14 22:01:01.000',
         datetime='2011-07-14 22:01:01.000,2011-07-14 22:01:01.000',
