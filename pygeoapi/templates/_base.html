@@ -1,5 +1,5 @@
 <!doctype html>
-<html dir="{% trans %}text_direction{% endtrans %}" >
+<html lang="{{ (locale|lower)[:2] }}" dir="{% trans %}text_direction{% endtrans %}" >
   <head>
     <meta charset="{{ config['server']['encoding'] }}">
     <title>{% block title %}{% endblock %}{% if not self.title() %}{{ config['metadata']['identification']['title'] }}{% endif %}</title>
