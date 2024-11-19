@@ -105,7 +105,7 @@ msgstr "عرض المجموعات في هذه الخدمة"
 #: build/lib/pygeoapi/templates/landing_page.html:56
 #: pygeoapi/templates/landing_page.html:65
 msgid "SpatioTemporal Assets"
-msgstr "الأصول الزمانية والمكانية"
+msgstr "الأصول الزمانية والمكانية (STAC)"
 
 #: build/lib/pygeoapi/templates/landing_page.html:58
 #: pygeoapi/templates/landing_page.html:67
@@ -612,7 +612,7 @@ msgstr "غير متزامن"
 #: pygeoapi/templates/stac/collection_base.html:4
 #: pygeoapi/templates/stac/item.html:4
 msgid "SpatioTemporal Asset Catalog"
-msgstr "كتالوج الأصول الزمانية والمكانية"
+msgstr "كتالوج الأصول الزمانية والمكانية (STAC)"
 
 #: build/lib/pygeoapi/templates/stac/catalog.html:19
 #: pygeoapi/templates/stac/catalog.html:19
