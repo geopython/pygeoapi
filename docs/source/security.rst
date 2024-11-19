@@ -14,4 +14,5 @@ as required.
 The following projects provide security frameworks atop pygeoapi:
 
 * `fastgeoapi <https://github.com/geobeyond/fastgeoapi>`_
-* `pygeoapi-auth <https://github.com/cartologic/pygeoapi-auth>`_
+* `pygeoapi-auth-deployment <https://github.com/cartologic/pygeoapi-auth-deployment>`_
+* `pygeoapi-auth <https://github.com/geopython/pygeoapi-auth>`_ (Python package for use along with pygeoapi-auth-deployment)
