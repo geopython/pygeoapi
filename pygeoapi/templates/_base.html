@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="en">
+<html dir="{% trans %}text_direction{% endtrans %}" >
   <head>
     <meta charset="{{ config['server']['encoding'] }}">
     <title>{% block title %}{% endblock %}{% if not self.title() %}{{ config['metadata']['identification']['title'] }}{% endif %}</title>
@@ -66,7 +66,7 @@
         {% block crumbs %}
         <a href="{{ config['server']['url'] }}">{% trans %}Home{% endtrans %}</a>
         {% endblock %}
-        <span style="float:right">
+        <span style="float: inline-end">
           {% set links_found = namespace(json=0, jsonld=0) %}
 
           {% for link in data['links'] %}
