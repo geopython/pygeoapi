@@ -49,7 +49,12 @@ For more information related to API design rules (the ``api_rules`` property in 
     gzip: false # default server config to gzip/compress responses to requests with gzip in the Accept-Encoding header
     cors: true  # boolean on whether server should support CORS
     pretty_print: true  # whether JSON responses should be pretty-printed
-    limit: 10  # server limit on number of items to return
+
+    limits:  # server limits on number of items to return.  This property can also be defined at the resource level to override global server settings
+        defaultitems: 10
+        maxitems: 100
+        maxdistance: [25, 25]
+
     admin: false  # whether to enable the Admin API
 
     # optional configuration to specify a different set of templates for HTML pages. Recommend using absolute paths. Omit this to use the default provided templates
