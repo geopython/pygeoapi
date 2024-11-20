@@ -47,6 +47,7 @@ from shapely.errors import ShapelyError
 from shapely.wkt import loads as shapely_loads
 
 from pygeoapi import l10n
+from pygeoapi.api import evaluate_limit
 from pygeoapi.plugin import load_plugin, PLUGINS
 from pygeoapi.provider.base import (
     ProviderGenericError, ProviderItemNotFoundError)
@@ -342,6 +343,21 @@ def get_collection_edr_query(api: API, request: APIRequest,
             HTTPStatus.BAD_REQUEST, headers, request.format,
             'InvalidParameterValue', msg)
 
+    LOGGER.debug('Processing limit parameter')
+    if api.config['server'].get('limit') is not None:
+        msg = ('server.limit is no longer supported! '
+               'Please use limits at the server or collection '
+               'level (RFC5)')
+        LOGGER.warning(msg)
+    try:
+        limit = evaluate_limit(request.params.get('limit'),
+                               api.config['server'].get('limits', {}),
+                               collections[dataset].get('limits', {}))
+    except ValueError as err:
+        return api.get_exception(
+            HTTPStatus.BAD_REQUEST, headers, request.format,
+            'InvalidParameterValue', str(err))
+
     query_args = dict(
         query_type=query_type,
         instance=instance,
@@ -353,8 +369,8 @@ def get_collection_edr_query(api: API, request: APIRequest,
         bbox=bbox,
         within=within,
         within_units=within_units,
-        limit=int(api.config['server']['limit']),
-        location_id=location_id,
+        limit=limit,
+        location_id=location_id
     )
 
     try:

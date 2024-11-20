@@ -40,7 +40,7 @@ Root level code of pygeoapi, parsing content provided by web framework.
 Returns content from plugins and sets responses.
 """
 
-from collections import OrderedDict
+from collections import ChainMap, OrderedDict
 from copy import deepcopy
 from datetime import datetime
 from functools import partial
@@ -1623,3 +1623,43 @@ def validate_subset(value: str) -> dict:
         subsets[subset_name] = list(map(get_typed_value, values))
 
     return subsets
+
+
+def evaluate_limit(requested: Union[None, int], server_limits: dict,
+                   collection_limits: dict) -> int:
+    """
+    Helper function to evaluate limit parameter
+
+    :param requested: the limit requested by the client
+    :param server_limits: `dict` of server limits
+    :param collection_limits: `dict` of collection limits
+
+    :returns: `int` of evaluated limit
+    """
+
+    effective_limits = ChainMap(collection_limits, server_limits)
+
+    default = effective_limits.get('default_items', 10)
+    max_ = effective_limits.get('max_items', 10)
+    on_exceed = effective_limits.get('on_exceed', 'throttle')
+
+    LOGGER.debug(f'Requested limit: {requested}')
+    LOGGER.debug(f'Default limit: {default}')
+    LOGGER.debug(f'Maximum limit: {max_}')
+    LOGGER.debug(f'On exceed: {on_exceed}')
+
+    if requested is None:
+        LOGGER.debug('no limit requested; returning default')
+        return default
+
+    requested2 = get_typed_value(requested)
+    if not isinstance(requested2, int):
+        raise ValueError('limit value should be an integer')
+
+    if requested2 <= 0:
+        raise ValueError('limit value should be strictly positive')
+    elif requested2 > max_ and on_exceed == 'error':
+        raise RuntimeError('Limit exceeded; throwing errror')
+    else:
+        LOGGER.debug('limit requested')
+        return min(requested2, max_)
