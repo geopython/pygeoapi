@@ -40,7 +40,7 @@ import pytest
 
 from pygeoapi.api import (
     API, APIRequest, FORMAT_TYPES, F_HTML, F_JSON, F_JSONLD, F_GZIP,
-    __version__, validate_bbox, validate_datetime,
+    __version__, evaluate_limit, validate_bbox, validate_datetime,
     validate_subset
 )
 from pygeoapi.util import yaml_load, get_api_rules, get_base_url
@@ -875,3 +875,30 @@ def test_get_exception(config, api_):
     assert content['description'] == 'oops'
 
     d = api_.get_exception(500, {}, 'html', 'NoApplicableCode', 'oops')
+
+
+def test_evaluate_limit():
+    collection = {}
+    server = {}
+
+    with pytest.raises(ValueError):
+        assert evaluate_limit('1.1', server, collection) == 10
+
+    with pytest.raises(ValueError):
+        assert evaluate_limit('-12', server, collection) == 10
+
+    assert evaluate_limit('1', server, collection) == 1
+
+    collection = {}
+    server = {'defaultitems': 2, 'maxitems': 3}
+
+    assert evaluate_limit(None, server, collection) == 2
+    assert evaluate_limit('1', server, collection) == 1
+    assert evaluate_limit('4', server, collection) == 3
+
+    collection = {'defaultitems': 10, 'maxitems': 50}
+    server = {'defaultitems': 100, 'maxitems': 1000}
+
+    assert evaluate_limit(None, server, collection) == 10
+    assert evaluate_limit('40', server, collection) == 40
+    assert evaluate_limit('60', server, collection) == 50

@@ -1721,3 +1721,43 @@ def validate_subset(value: str) -> dict:
         subsets[subset_name] = list(map(get_typed_value, values))
 
     return subsets
+
+
+def evaluate_limit(requested: Union[None, int], server_limits: dict,
+                   collection_limits: dict) -> int:
+    """
+    Helper function to evaluate limit parameter
+
+    :param requested: the limit requested by the client
+    :param server_limits: `dict` of server limits
+    :param collection_limits: `dict` of collection limits
+
+    :returns: `int` of evaluated limit
+    """
+
+    if collection_limits:
+        LOGGER.debug('Using collection defined limit')
+        max_ = collection_limits.get('maxitems', 10)
+        default = collection_limits.get('defaultitems', 10)
+    else:
+        LOGGER.debug('Using server defined limit')
+        max_ = server_limits.get('maxitems', 10)
+        default = server_limits.get('defaultitems', 10)
+
+    LOGGER.debug(f'Requested limit: {requested}')
+    LOGGER.debug(f'Default limit: {default}')
+    LOGGER.debug(f'Maximum limit: {max_}')
+
+    if requested is None:
+        LOGGER.debug('no limit requested; returning default')
+        return default
+
+    requested2 = get_typed_value(requested)
+    if not isinstance(requested2, int):
+        raise ValueError('limit value should be an integer')
+
+    if requested2 <= 0:
+        raise ValueError('limit value should be strictly positive')
+    else:
+        LOGGER.debug('limit requested')
+        return min(requested2, max_)
