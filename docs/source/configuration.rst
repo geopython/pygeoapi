@@ -49,7 +49,15 @@ For more information related to API design rules (the ``api_rules`` property in 
     gzip: false # default server config to gzip/compress responses to requests with gzip in the Accept-Encoding header
     cors: true  # boolean on whether server should support CORS
     pretty_print: true  # whether JSON responses should be pretty-printed
-    limit: 10  # server limit on number of items to return
+
+    limits:  # server limits on number of items to return.  This property can also be defined at the resource level to override global server settings
+        default_items: 50
+        max_items: 1000
+        max_distance_x: 25
+        max_distance_y: 25
+        max_distance_units: m
+        on_exceed: throttle  # throttle or error (default=throttle)
+
     admin: false  # whether to enable the Admin API
 
     # optional configuration to specify a different set of templates for HTML pages. Recommend using absolute paths. Omit this to use the default provided templates
@@ -254,6 +262,41 @@ default.
 .. seealso::
    :ref:`plugins` for more information on plugins
 
+Using environment variables
+---------------------------
+
+pygeoapi configuration supports using system environment variables, which can be helpful
+for deploying into `12 factor <https://12factor.net/>`_ environments for example.
+
+Below is an example of how to integrate system environment variables in pygeoapi.
+
+.. code-block:: yaml
+
+   server:
+       bind:
+           host: ${MY_HOST}
+           port: ${MY_PORT}
+
+Multiple environment variables are supported as follows:
+
+.. code-block:: yaml
+
+   data: ${MY_HOST}:${MY_PORT}
+
+It is also possible to define a default value for a variable in case it does not exist in
+the environment using a syntax like: ``value: ${ENV_VAR:-the default}``
+
+.. code-block:: yaml
+
+   server:
+       bind:
+           host: ${MY_HOST:-localhost}
+           port: ${MY_PORT:-5000}
+   metadata:
+       identification:
+           title:
+               en: This is pygeoapi host ${MY_HOST} and port ${MY_PORT:-5000}, nice to meet you!
+
 Adding links to collections
 ---------------------------
 
@@ -389,53 +432,6 @@ If omitted, no header will be added. Common names for this header are ``API-Vers
 Note that pygeoapi already adds a ``X-Powered-By`` header by default that includes the software version number.
 
 
-Validating the configuration
-----------------------------
-
-To ensure your configuration is valid, pygeoapi provides a validation
-utility that can be run as follows:
-
-.. code-block:: bash
-
-   pygeoapi config validate -c /path/to/my-pygeoapi-config.yml
-
-
-Using environment variables
----------------------------
-
-pygeoapi configuration supports using system environment variables, which can be helpful
-for deploying into `12 factor <https://12factor.net/>`_ environments for example.
-
-Below is an example of how to integrate system environment variables in pygeoapi.
-
-.. code-block:: yaml
-
-   server:
-       bind:
-           host: ${MY_HOST}
-           port: ${MY_PORT}
-
-Multiple environment variables are supported as follows:
-
-.. code-block:: yaml
-
-   data: ${MY_HOST}:${MY_PORT}
-
-It is also possible to define a default value for a variable in case it does not exist in
-the environment using a syntax like: ``value: ${ENV_VAR:-the default}``
-
-.. code-block:: yaml
-
-   server:
-       bind:
-           host: ${MY_HOST:-localhost}
-           port: ${MY_PORT:-5000}
-   metadata:
-       identification:
-           title:
-               en: This is pygeoapi host ${MY_HOST} and port ${MY_PORT:-5000}, nice to meet you!
-
-
 Hierarchical collections
 ------------------------
 
@@ -507,6 +503,36 @@ Examples:
   curl https://example.org/collections/lakes/items  # only the name attribute is returned in properties
   curl https://example.org/collections/lakes/items/{item_id}  # only the name attribute is returned in properties
 
+Limiting data responses
+-----------------------
+
+pygeoapi defines a ``limits`` configuration parameter that will allow a user to define default and maximum limits for multiple data types. This parameter is defined at the server level (``server.limits``) with the ability to override at resource level (``resources[*].limits``). An example of this setting is shown below:
+
+.. code-block:: yaml
+
+   limits:
+       default_items: 10  # applies to vector data
+       max_items: 500  # applies to vector data
+       max_distance_x: 123  # applies to all datasets
+       max_distance_y: 456 # applies to all datasets
+       max_distance_units: m  # as per UCUM https://ucum.org/ucum#section-Tables-of-Terminal-Symbols
+       on_exceed: error  # one of error, throttle
+
+The ``limits`` setting is applied as follows:
+
+- can be defined at both the server and resources levels, with resource limits overriding server wide limits settings
+- ``on_exceed`` can be set to ``error`` or ``throttle`` (default).  If a client specified limit exceeds those set by the server:
+  - when set to ``error``, an exception is returned
+  - when set to ``throttle`` the maximum data allowed by the collection/server/provider is returned
+
+Vector data (features, records)
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+- when a limit not specified by the client, ``limits.default_items`` can be used to set the result set size
+- when a limit is specified by the client, the minimum of the ``limit`` parameter and ``limits.max_items`` is calculated to set the result set size
+
+Raster data (coverages, environmental data retrieval)
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+- when a bbox or spatial subset is specified by the client, ``limits.max_distance_x``, ``limits.max_distance_y`` and ``limits.max_distance_units`` are used to determine whether a request has asked for more data than the collection is configured to provide and respond accordingly (via ``on_exceed``)
 
 Linked Data
 -----------
@@ -637,6 +663,17 @@ deployment flexibility, the path can be specified with string interpolation of e
 .. note::
    The template ``tests/data/base.jsonld`` renders the unmodified JSON-LD. For more information on the capacities
    of Jinja2 templates, see :ref:`html-templating`.
+
+Validating the configuration
+----------------------------
+
+To ensure your configuration is valid, pygeoapi provides a validation
+utility that can be run as follows:
+
+.. code-block:: bash
+
+   pygeoapi config validate -c /path/to/my-pygeoapi-config.yml
+
 
 Summary
 -------
