@@ -179,7 +179,7 @@ def test_get_collection_items(config, api_):
     assert len(features['features']) == 0
 
     # Invalid limit
-    req = mock_api_request({'limit': 0})
+    req = mock_api_request({'limit': '0'})
     rsp_headers, code, response = get_collection_items(api_, req, 'obs')
     features = json.loads(response)
 
@@ -199,7 +199,7 @@ def test_get_collection_items(config, api_):
     assert len(features['features']) == 1
     assert features['numberMatched'] == 1
 
-    req = mock_api_request({'limit': 2})
+    req = mock_api_request({'limit': '2'})
     rsp_headers, code, response = get_collection_items(api_, req, 'obs')
     features = json.loads(response)
 
@@ -246,8 +246,8 @@ def test_get_collection_items(config, api_):
     assert links[4]['rel'] == 'collection'
 
     req = mock_api_request({
-        'offset': 1,
-        'limit': 1,
+        'offset': '1',
+        'limit': '1',
         'bbox': '-180,90,180,90'
     })
     rsp_headers, code, response = get_collection_items(api_, req, 'obs')
@@ -536,7 +536,7 @@ def test_manage_collection_item_editable_options_req(config, openapi):
 def test_get_collection_items_json_ld(config, api_):
     req = mock_api_request({
         'f': 'jsonld',
-        'limit': 2
+        'limit': '2'
     })
     rsp_headers, code, response = get_collection_items(api_, req, 'obs')
 

@@ -60,8 +60,29 @@ properties:
                 default: false
             limit:
                 type: integer
-                description: server limit on number of items to return
                 default: 10
+                description: "limit of items to return.  DEPRECATED: use limits instead"
+            limits: &x-limits
+                type: object
+                description: server level limits on number of items to return
+                properties:
+                    maxitems:
+                        type: integer
+                        minimum: 1
+                        default: 10
+                        description: maximum limit of items to return for feature and record providers
+                    defaultitems:
+                        type: integer
+                        minimum: 1
+                        default: 10
+                        description: default limit of items to return for feature and record providers
+                    maxdistance:
+                        type: array
+                        minItems: 2
+                        maxItems: 2
+                        items:
+                            type: number
+                        description: maximum distance in x and y for all data providers
             templates:
                 type: object
                 description: optional configuration to specify a different set of templates for HTML pages. Recommend using absolute paths. Omit this to use the default provided templates
@@ -417,6 +438,9 @@ properties:
                                               default: 'http://www.opengis.net/def/uom/ISO-8601/0/Gregorian'
                               required:
                                   - spatial
+                          limits:
+                              <<: *x-limits
+                              description: collection level limits on number of items to return
                           providers:
                               type: array
                               description: required connection information

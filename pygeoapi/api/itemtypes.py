@@ -48,6 +48,7 @@ from pygeofilter.parsers.cql_json import parse as parse_cql_json
 from pyproj.exceptions import CRSError
 
 from pygeoapi import l10n
+from pygeoapi.api import evaluate_limit
 from pygeoapi.formatter.base import FormatterSerializationError
 from pygeoapi.linked_data import geojson2jsonld
 from pygeoapi.plugin import load_plugin, PLUGINS
@@ -240,33 +241,24 @@ def get_collection_items(
             return api.get_exception(
                 HTTPStatus.BAD_REQUEST, headers, request.format,
                 'InvalidParameterValue', msg)
-    except TypeError as err:
-        LOGGER.warning(err)
-        offset = 0
     except ValueError:
         msg = 'offset value should be an integer'
         return api.get_exception(
             HTTPStatus.BAD_REQUEST, headers, request.format,
             'InvalidParameterValue', msg)
+    except TypeError as err:
+        LOGGER.warning(err)
+        offset = 0
 
     LOGGER.debug('Processing limit parameter')
     try:
-        limit = int(request.params.get('limit'))
-        # TODO: We should do more validation, against the min and max
-        #       allowed by the server configuration
-        if limit <= 0:
-            msg = 'limit value should be strictly positive'
-            return api.get_exception(
-                HTTPStatus.BAD_REQUEST, headers, request.format,
-                'InvalidParameterValue', msg)
-    except TypeError as err:
-        LOGGER.warning(err)
-        limit = int(api.config['server']['limit'])
-    except ValueError:
-        msg = 'limit value should be an integer'
+        limit = evaluate_limit(request.params.get('limit'),
+                               api.config['server'].get('limits', {}),
+                               collections[dataset].get('limits', {}))
+    except ValueError as err:
         return api.get_exception(
             HTTPStatus.BAD_REQUEST, headers, request.format,
-            'InvalidParameterValue', msg)
+            'InvalidParameterValue', str(err))
 
     resulttype = request.params.get('resulttype') or 'results'
 
@@ -693,22 +685,13 @@ def post_collection_items(
 
     LOGGER.debug('Processing limit parameter')
     try:
-        limit = int(request.params.get('limit'))
-        # TODO: We should do more validation, against the min and max
-        # allowed by the server configuration
-        if limit <= 0:
-            msg = 'limit value should be strictly positive'
-            return api.get_exception(
-                HTTPStatus.BAD_REQUEST, headers, request.format,
-                'InvalidParameterValue', msg)
-    except TypeError as err:
-        LOGGER.warning(err)
-        limit = int(api.config['server']['limit'])
-    except ValueError:
-        msg = 'limit value should be an integer'
+        limit = evaluate_limit(request.params.get('limit'),
+                               api.config['server'].get('limits', {}),
+                               collections[dataset].get('limits', {}))
+    except ValueError as err:
         return api.get_exception(
             HTTPStatus.BAD_REQUEST, headers, request.format,
-            'InvalidParameterValue', msg)
+            'InvalidParameterValue', str(err))
 
     resulttype = request.params.get('resulttype') or 'results'
 
