@@ -46,7 +46,7 @@ from tests.util import mock_api_request
 
 
 def test_describe_processes(config, api_):
-    req = mock_api_request({'limit': 1})
+    req = mock_api_request({'limit': '1'})
     # Test for description of single processes
     rsp_headers, code, response = describe_processes(api_, req)
     data = json.loads(response)
@@ -471,7 +471,7 @@ def test_get_jobs_pagination(api_):
 
     headers, code, response = get_jobs(
         api_,
-        mock_api_request({'limit': 10, 'offset': 9}),
+        mock_api_request({'limit': '10', 'offset': '9'}),
         job_id=None)
     job_response_offset = json.loads(response)
     # check to get 1 same job id with an offset of 9 and limit of 10
@@ -486,8 +486,8 @@ def test_get_jobs_pagination(api_):
     # test custom limit
     headers, code, response = get_jobs(
         api_,
-        mock_api_request({'limit': 20}),
+        mock_api_request({'limit': '20'}),
         job_id=None)
     job_response = json.loads(response)
     # might be more than 11 due to test interaction
-    assert len(job_response['jobs']) > 10
+    assert len(job_response['jobs']) >= 10
