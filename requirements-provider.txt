@@ -9,6 +9,8 @@ geoalchemy2
 geopandas
 netCDF4
 numpy==2.0.1
+opensearch-dsl
+opensearch-py
 oracledb
 pandas
 psycopg2

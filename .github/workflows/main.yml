@@ -62,6 +62,12 @@ jobs:
         host node port: 9300
         node port: 9300
         discovery type: 'single-node'
+    - name: Install and run OpenSearch 📦
+      uses: esmarkowski/opensearch-github-action@v1.0.0
+      with:
+        version: 2.12.0
+        security-disabled: true
+        port: 9209
     - name: Install and run MongoDB
       uses: supercharge/mongodb-github-action@1.5.0
       with:
@@ -99,6 +105,7 @@ jobs:
     - name: setup test data ⚙️
       run: |
         python3 tests/load_es_data.py tests/data/ne_110m_populated_places_simple.geojson geonameid
+        python3 tests/load_opensearch_data.py tests/data/ne_110m_populated_places_simple.geojson geonameid
         python3 tests/load_mongo_data.py tests/data/ne_110m_populated_places_simple.geojson
         gunzip < tests/data/hotosm_bdi_waterways.sql.gz | psql postgresql://postgres:${{ secrets.DatabasePassword || 'postgres' }}@localhost:5432/test
         psql postgresql://postgres:${{ secrets.DatabasePassword || 'postgres' }}@localhost:5432/test -f tests/data/dummy_data.sql
@@ -117,6 +124,7 @@ jobs:
         pytest tests/test_csv__provider.py
         pytest tests/test_django.py
         pytest tests/test_elasticsearch__provider.py
+        pytest tests/test_opensearch__provider.py
         pytest tests/test_esri_provider.py
         pytest tests/test_filesystem_provider.py
         pytest tests/test_geojson_provider.py
