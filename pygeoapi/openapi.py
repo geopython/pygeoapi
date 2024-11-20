@@ -38,7 +38,7 @@ import logging
 import os
 from pathlib import Path
 from typing import Union
-
+import random
 import click
 from jsonschema import validate as jsonschema_validate
 import yaml
@@ -641,7 +641,8 @@ def get_oas_30_parameters(cfg: dict, locale_: str):
                 'description': 'Configuration resource identifier',
                 'required': True,
                 'schema': {
-                    'type': 'string'
+                    'type': 'string',
+                    'default': 'obs'
                  }
             }
         }
@@ -666,6 +667,24 @@ def get_config_schema():
         return yaml_load(fh2)
 
 
+def remove_timestamps(cfg: dict) -> dict:
+    """
+    Removes timestamps from sample configuration, as they are being
+    translated to strings
+
+    :param cfg: `dict` of configuration
+
+    :returns: dict of OpenAPI definition
+    """
+
+    for key in cfg['resources'].keys():
+        extents = cfg['resources'][key].get('extents')
+        if extents is not None and 'temporal' in extents.keys():
+            del extents['temporal']
+
+    return cfg
+
+
 def get_put_config(cfg: dict) -> dict:
     """
     Creates the payload for the PUT admin config request
@@ -675,10 +694,17 @@ def get_put_config(cfg: dict) -> dict:
     :returns: dict of OpenAPI definition
     """
 
-    cfg['metadata']['identification']['title']['en'] = 'New pygeoapi Title'
-    cfg['metadata']['identification']['title']['fr'] = 'Nouveau pygeoapi Titre'
+    put = deepcopy(cfg)
 
-    return cfg
+    put['metadata']['identification']['title']['en'] = 'New pygeoapi Title'
+    put['metadata']['identification']['title']['fr'] = 'Nouveau pygeoapi Titre'
+
+    # If there are resources with timestamps, we have to remove the
+    # timestamps from the configuration.
+    if 'resources' in put.keys():
+        remove_timestamps(put)
+
+    return put
 
 
 def get_patch_config(cfg: dict) -> dict:
@@ -690,10 +716,99 @@ def get_patch_config(cfg: dict) -> dict:
     :returns: dict of OpenAPI definition
     """
 
-    cfg['metadata']['identification']['title']['en'] = 'Patched pygeoapi'
-    cfg['resources'] = {}
+    patch = deepcopy(cfg)
 
-    return cfg
+    patch['metadata']['identification']['title']['en'] = 'Patched pygeoapi'
+    patch['resources'] = {}
+
+    return patch
+
+
+def gen_collection_name():
+    """
+    Generates a collection name, based on a list.
+    Inspired by moby/docker:
+    https://github.com/moby/moby/blob/master/pkg/namesgenerator/names-generator.go
+
+    :returns: collection name
+    """
+
+    names = ['agnesi', 'allen', 'almeida', 'antonelli',
+             'austin', 'borg', 'clark']
+
+    return random.choice(names)
+
+
+def get_post_resource(cfg: dict) -> dict:
+    """
+    Creates the payload for the POST resource admin request
+
+    :param cfg: `dict` of configuration
+
+    :returns: dict of OpenAPI definition
+    """
+
+    collection = gen_collection_name()
+
+    if len(cfg['resources']) < 1 or cfg['resources']['obs'] is None:
+        return ''
+
+    post = {collection: {}}
+    post[collection] = deepcopy(cfg['resources']['obs'])
+
+    if 'temporal' in post[collection]['extents'].keys():
+        del post[collection]['extents']['temporal']
+
+    post[collection]['title'] = 'More observations'
+    post[collection]['description'] = 'More cool observations'
+
+    return post
+
+
+def get_put_resource(cfg: dict) -> dict:
+    """
+    Creates the payload for the PUT resource admin request
+
+    :param cfg: `dict` of configuration
+
+    :returns: dict of OpenAPI definition
+    """
+
+    if len(cfg['resources']) < 1 or cfg['resources']['obs'] is None:
+        return ''
+
+    put = deepcopy(cfg['resources']['obs'])
+
+    if 'temporal' in put['extents'].keys():
+        del put['extents']['temporal']
+
+    put['title'] = 'New observations'
+    put['description'] = 'New observations description'
+
+    return put
+
+
+def get_patch_resource(cfg: dict) -> dict:
+    """
+    Creates the payload for the PATCH resource admin request
+
+    :param cfg: `dict` of configuration
+
+    :returns: dict of OpenAPI definition
+    """
+
+    if len(cfg['resources']) < 1 or cfg['resources']['obs'] is None:
+        return ''
+
+    patch = deepcopy(cfg['resources']['obs'])
+
+    if 'temporal' in patch['extents'].keys():
+        del patch['extents']['temporal']
+
+    patch['title'] = 'Patched collection title'
+    del patch['providers']
+
+    return patch
 
 
 def get_admin(cfg: dict) -> dict:
@@ -801,6 +916,7 @@ def get_admin(cfg: dict) -> dict:
                 'description': 'Adds resource to configuration',
                 'content': {
                     'application/json': {
+                        'example': get_post_resource(cfg),
                         'schema': schema_dict['properties']['resources']['patternProperties']['^.*$']  # noqa
                     }
                 },
@@ -847,6 +963,7 @@ def get_admin(cfg: dict) -> dict:
                 'description': 'Updates admin configuration resource',
                 'content': {
                     'application/json': {
+                        'example': get_put_resource(cfg),
                         'schema': schema_dict['properties']['resources']['patternProperties']['^.*$']  # noqa
                     }
                 },
@@ -870,6 +987,7 @@ def get_admin(cfg: dict) -> dict:
                 'description': 'Updates admin configuration resource',
                 'content': {
                     'application/json': {
+                        'example': get_patch_resource(cfg),
                         'schema': schema_dict['properties']['resources']['patternProperties']['^.*$']  # noqa
                     }
                 },
