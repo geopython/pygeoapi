@@ -610,7 +610,6 @@ definitions:
                                         type: integer
                                     keepalives_interval:
                                         type: integer
-
 required:
     - server
     - logging
