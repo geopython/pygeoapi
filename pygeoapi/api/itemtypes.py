@@ -177,6 +177,8 @@ def get_collection_queryables(api: API, request: Union[APIRequest, Any],
                 queryables['properties'][k]['x-ogc-role'] = 'primary-instant'  # noqa
 
     if request.format == F_HTML:  # render
+        api.set_dataset_templates(dataset)
+
         queryables['title'] = l10n.translate(
             api.config['resources'][dataset]['title'], request.locale)
 
@@ -572,6 +574,7 @@ def get_collection_items(
     l10n.set_response_language(headers, prv_locale, request.locale)
 
     if request.format == F_HTML:  # render
+        api.set_dataset_templates(dataset)
         # For constructing proper URIs to items
 
         content['items_path'] = uri
@@ -1174,6 +1177,7 @@ def get_collection_item(api: API, request: APIRequest,
     l10n.set_response_language(headers, prv_locale, request.locale)
 
     if request.format == F_HTML:  # render
+        api.set_dataset_templates(dataset)
         content['title'] = l10n.translate(collections[dataset]['title'],
                                           request.locale)
         content['id_field'] = p.id_field

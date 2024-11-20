@@ -51,6 +51,15 @@ from urllib.request import urlopen
 import uuid
 
 import dateutil.parser
+from babel.support import Translations
+from jinja2 import Environment, FileSystemLoader, select_autoescape
+from jinja2.exceptions import TemplateNotFound
+import pyproj
+import pygeofilter.ast
+import pygeofilter.values
+from pyproj.exceptions import CRSError
+from requests import Session
+from requests.structures import CaseInsensitiveDict
 from shapely import ops
 from shapely.geometry import (
     box,
@@ -66,14 +75,6 @@ from shapely.geometry import (
     mapping as geom_to_geojson,
 )
 import yaml
-from babel.support import Translations
-from jinja2 import Environment, FileSystemLoader, select_autoescape
-import pygeofilter.ast
-import pygeofilter.values
-import pyproj
-from pyproj.exceptions import CRSError
-from requests import Session
-from requests.structures import CaseInsensitiveDict
 
 from pygeoapi import __version__
 from pygeoapi import l10n
@@ -473,7 +474,12 @@ def render_j2_template(config: dict, template: Path,
     translations = Translations.load(locale_dir, [locale_])
     env.install_gettext_translations(translations)
 
-    template = env.get_template(template)
+    try:
+        template = env.get_template(template)
+    except TemplateNotFound:
+        LOGGER.debug(f'template {template} not found')
+        template_paths.remove(templates)
+        template = env.get_template(template)
 
     return template.render(config=l10n.translate_struct(config, locale_, True),
                            data=data, locale=locale_, version=__version__)

@@ -171,6 +171,7 @@ def get_collection_tiles(api: API, request: APIRequest,
         tiles['tilesets'].append(tile_matrix)
 
     if request.format == F_HTML:  # render
+        api.set_dataset_templates(dataset)
         tiles['id'] = dataset
         tiles['title'] = l10n.translate(
             api.config['resources'][dataset]['title'], SYSTEM_LOCALE)
@@ -317,6 +318,7 @@ def get_collection_tiles_metadata(
         language=prv_locale)
 
     if request.format == F_HTML:  # render
+        api.set_dataset_templates(dataset)
         content = render_j2_template(api.tpl_config,
                                      'collections/tiles/metadata.html',
                                      tiles_metadata, request.locale)
