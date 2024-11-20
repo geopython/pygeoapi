@@ -27,6 +27,7 @@ properties:
                 description: URL of server (as used by client)
             admin:
                 type: boolean
+                description: whether to enable the Admin API (default is false)
                 default: false
             mimetype:
                 type: string
