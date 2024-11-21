@@ -1,0 +1,748 @@
+# Arabic translations for PROJECT.
+# Copyright (C) 2024 OSGeo
+# This file is distributed under the same license as the pygeoapi project.
+# FIRST AUTHOR Youssef Harby, 2024.
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: 0.0.19\n"
+"Report-Msgid-Bugs-To: pygeoapi@lists.osgeo.org\n"
+"POT-Creation-Date: 2024-11-19 23:22+0200\n"
+"PO-Revision-Date: 2024-11-19 23:22+0200\n"
+"Last-Translator: Youssef Harby <me@youssefharby.com>\n"
+"Language: ar\n"
+"Language-Team: ar <LL@li.org>\n"
+"Plural-Forms: nplurals=6; plural=(n==0 ? 0 : n==1 ? 1 : n==2 ? 2 : "
+"n%100>=3 && n%100<=10 ? 3 : n%100>=0 && n%100<=2 ? 4 : 5);\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=utf-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Generated-By: Babel 2.13.0\n"
+
+#: build/lib/pygeoapi/templates/_base.html:62
+#: build/lib/pygeoapi/templates/landing_page.html:2
+#: pygeoapi/templates/_base.html:67 pygeoapi/templates/landing_page.html:2
+msgid "Home"
+msgstr "الصفحة الرئيسية"
+
+#: build/lib/pygeoapi/templates/_base.html:70
+#: build/lib/pygeoapi/templates/_base.html:78 pygeoapi/templates/_base.html:75
+#: pygeoapi/templates/_base.html:83
+msgid "json"
+msgstr "json"
+
+#: build/lib/pygeoapi/templates/_base.html:73
+#: build/lib/pygeoapi/templates/_base.html:81 pygeoapi/templates/_base.html:78
+#: pygeoapi/templates/_base.html:86
+msgid "jsonld"
+msgstr "jsonld"
+
+#: build/lib/pygeoapi/templates/_base.html:100
+#: pygeoapi/templates/_base.html:107
+msgid "Powered by "
+msgstr "مدعوم بواسطة "
+
+#: build/lib/pygeoapi/templates/conformance.html:2
+#: build/lib/pygeoapi/templates/conformance.html:4
+#: build/lib/pygeoapi/templates/conformance.html:8
+#: build/lib/pygeoapi/templates/landing_page.html:86
+#: pygeoapi/templates/conformance.html:2 pygeoapi/templates/conformance.html:4
+#: pygeoapi/templates/conformance.html:8
+#: pygeoapi/templates/landing_page.html:95
+msgid "Conformance"
+msgstr "التوافق"
+
+#: build/lib/pygeoapi/templates/exception.html:2
+#: build/lib/pygeoapi/templates/exception.html:5
+#: pygeoapi/templates/exception.html:2 pygeoapi/templates/exception.html:5
+msgid "Exception"
+msgstr "استثناء"
+
+#: build/lib/pygeoapi/templates/landing_page.html:25
+#: pygeoapi/templates/landing_page.html:25
+msgid "Terms of service"
+msgstr "شروط الخدمة"
+
+#: build/lib/pygeoapi/templates/collections/collection.html:38
+#: build/lib/pygeoapi/templates/landing_page.html:35
+#: pygeoapi/templates/collections/collection.html:38
+#: pygeoapi/templates/landing_page.html:35
+msgid "License"
+msgstr "الرخصة"
+
+#: build/lib/pygeoapi/templates/collections/collection.html:6
+#: build/lib/pygeoapi/templates/collections/coverage/domainset.html:4
+#: build/lib/pygeoapi/templates/collections/coverage/rangetype.html:4
+#: build/lib/pygeoapi/templates/collections/edr/query.html:4
+#: build/lib/pygeoapi/templates/collections/index.html:2
+#: build/lib/pygeoapi/templates/collections/index.html:4
+#: build/lib/pygeoapi/templates/collections/items/index.html:4
+#: build/lib/pygeoapi/templates/collections/items/item.html:27
+#: build/lib/pygeoapi/templates/collections/queryables.html:4
+#: build/lib/pygeoapi/templates/collections/tiles/index.html:4
+#: build/lib/pygeoapi/templates/collections/tiles/metadata.html:4
+#: build/lib/pygeoapi/templates/landing_page.html:48
+#: pygeoapi/templates/collections/collection.html:6
+#: pygeoapi/templates/collections/edr/query.html:4
+#: pygeoapi/templates/collections/index.html:2
+#: pygeoapi/templates/collections/index.html:4
+#: pygeoapi/templates/collections/items/index.html:4
+#: pygeoapi/templates/collections/items/item.html:27
+#: pygeoapi/templates/collections/queryables.html:4
+#: pygeoapi/templates/collections/schema.html:4
+#: pygeoapi/templates/collections/tiles/index.html:4
+#: pygeoapi/templates/collections/tiles/metadata.html:4
+#: pygeoapi/templates/landing_page.html:57
+#: pygeoapi/templates/stac/collection_base.html:19
+msgid "Collections"
+msgstr "المجموعات"
+
+#: build/lib/pygeoapi/templates/landing_page.html:50
+#: pygeoapi/templates/landing_page.html:59
+msgid "View the collections in this service"
+msgstr "عرض المجموعات في هذه الخدمة"
+
+#: build/lib/pygeoapi/templates/landing_page.html:56
+#: pygeoapi/templates/landing_page.html:65
+msgid "SpatioTemporal Assets"
+msgstr "الأصول الزمانية والمكانية (STAC)"
+
+#: build/lib/pygeoapi/templates/landing_page.html:58
+#: pygeoapi/templates/landing_page.html:67
+msgid "View the SpatioTemporal Assets in this service"
+msgstr "عرض الأصول الزمانية والمكانية في هذه الخدمة"
+
+#: build/lib/pygeoapi/templates/landing_page.html:64
+#: build/lib/pygeoapi/templates/processes/index.html:2
+#: build/lib/pygeoapi/templates/processes/index.html:4
+#: build/lib/pygeoapi/templates/processes/process.html:4
+#: pygeoapi/templates/landing_page.html:73
+#: pygeoapi/templates/processes/index.html:2
+#: pygeoapi/templates/processes/index.html:4
+#: pygeoapi/templates/processes/process.html:4
+msgid "Processes"
+msgstr "العمليات"
+
+#: build/lib/pygeoapi/templates/landing_page.html:66
+#: pygeoapi/templates/landing_page.html:75
+msgid "View the processes in this service"
+msgstr "عرض العمليات في هذه الخدمة"
+
+#: build/lib/pygeoapi/templates/jobs/index.html:2
+#: build/lib/pygeoapi/templates/jobs/index.html:4
+#: build/lib/pygeoapi/templates/jobs/index.html:11
+#: build/lib/pygeoapi/templates/jobs/job.html:4
+#: build/lib/pygeoapi/templates/jobs/results/index.html:4
+#: build/lib/pygeoapi/templates/landing_page.html:70
+#: build/lib/pygeoapi/templates/processes/process.html:76
+#: pygeoapi/templates/jobs/index.html:2 pygeoapi/templates/jobs/index.html:4
+#: pygeoapi/templates/jobs/index.html:11 pygeoapi/templates/jobs/job.html:4
+#: pygeoapi/templates/jobs/results/index.html:4
+#: pygeoapi/templates/landing_page.html:79
+#: pygeoapi/templates/processes/process.html:76
+msgid "Jobs"
+msgstr "المهام"
+
+#: build/lib/pygeoapi/templates/landing_page.html:72
+#: build/lib/pygeoapi/templates/processes/process.html:77
+#: pygeoapi/templates/landing_page.html:81
+#: pygeoapi/templates/processes/process.html:77
+msgid "Browse jobs"
+msgstr "تصفح المهام"
+
+#: build/lib/pygeoapi/templates/landing_page.html:77
+#: pygeoapi/templates/landing_page.html:86
+msgid "API Definition"
+msgstr "تعريف API"
+
+#: build/lib/pygeoapi/templates/landing_page.html:79
+#: pygeoapi/templates/landing_page.html:88
+msgid "Documentation"
+msgstr "التوثيق"
+
+#: build/lib/pygeoapi/templates/landing_page.html:79
+#: pygeoapi/templates/landing_page.html:88
+msgid "Swagger UI"
+msgstr "واجهة Swagger"
+
+#: build/lib/pygeoapi/templates/landing_page.html:79
+#: pygeoapi/templates/landing_page.html:88
+msgid "ReDoc"
+msgstr "ReDoc"
+
+#: build/lib/pygeoapi/templates/landing_page.html:82
+#: pygeoapi/templates/landing_page.html:91
+msgid "OpenAPI Document"
+msgstr "وثيقة OpenAPI"
+
+#: build/lib/pygeoapi/templates/landing_page.html:88
+#: pygeoapi/templates/landing_page.html:97
+msgid "View the conformance classes of this service"
+msgstr "عرض فئات التوافق لهذه الخدمة"
+
+#: build/lib/pygeoapi/templates/landing_page.html:95
+#: pygeoapi/templates/landing_page.html:110
+msgid "Provider"
+msgstr "المزود"
+
+#: build/lib/pygeoapi/templates/landing_page.html:104
+#: pygeoapi/templates/landing_page.html:119
+msgid "Contact point"
+msgstr "نقطة الاتصال"
+
+#: build/lib/pygeoapi/templates/landing_page.html:107
+#: pygeoapi/templates/landing_page.html:122
+msgid "Address"
+msgstr "العنوان"
+
+#: build/lib/pygeoapi/templates/landing_page.html:116
+#: pygeoapi/templates/landing_page.html:131
+msgid "Email"
+msgstr "البريد الإلكتروني"
+
+#: build/lib/pygeoapi/templates/landing_page.html:119
+#: pygeoapi/templates/landing_page.html:134
+msgid "Telephone"
+msgstr "الهاتف"
+
+#: build/lib/pygeoapi/templates/landing_page.html:123
+#: pygeoapi/templates/landing_page.html:138
+msgid "Fax"
+msgstr "الفاكس"
+
+#: build/lib/pygeoapi/templates/landing_page.html:127
+#: pygeoapi/templates/landing_page.html:142
+msgid "Contact URL"
+msgstr "رابط الاتصال"
+
+#: build/lib/pygeoapi/templates/landing_page.html:131
+#: pygeoapi/templates/landing_page.html:146
+msgid "Hours"
+msgstr "ساعات العمل"
+
+#: build/lib/pygeoapi/templates/landing_page.html:135
+#: pygeoapi/templates/landing_page.html:150
+msgid "Contact instructions"
+msgstr "تعليمات الاتصال"
+
+#: build/lib/pygeoapi/templates/collections/collection.html:51
+#: pygeoapi/templates/collections/collection.html:51
+msgid "Browse"
+msgstr "تصفح"
+
+#: build/lib/pygeoapi/templates/collections/collection.html:55
+#: pygeoapi/templates/collections/collection.html:55
+msgid "Browse Items"
+msgstr "تصفح العناصر"
+
+#: build/lib/pygeoapi/templates/collections/collection.html:56
+#: pygeoapi/templates/collections/collection.html:56
+msgid "Browse through the items of"
+msgstr "تصفح عناصر"
+
+#: build/lib/pygeoapi/templates/collections/collection.html:59
+#: build/lib/pygeoapi/templates/collections/queryables.html:6
+#: build/lib/pygeoapi/templates/collections/queryables.html:17
+#: pygeoapi/templates/collections/collection.html:59
+#: pygeoapi/templates/collections/queryables.html:6
+#: pygeoapi/templates/collections/queryables.html:17
+msgid "Queryables"
+msgstr "قابليات الاستعلام"
+
+#: build/lib/pygeoapi/templates/collections/collection.html:63
+#: pygeoapi/templates/collections/collection.html:63
+msgid "Display Queryables"
+msgstr "عرض قابليات الاستعلام"
+
+#: build/lib/pygeoapi/templates/collections/collection.html:64
+#: pygeoapi/templates/collections/collection.html:64
+msgid "Display Queryables of"
+msgstr "عرض قابليات الاستعلام لـ"
+
+#: build/lib/pygeoapi/templates/collections/collection.html:69
+#: build/lib/pygeoapi/templates/collections/tiles/index.html:6
+#: build/lib/pygeoapi/templates/collections/tiles/metadata.html:6
+#: pygeoapi/templates/collections/collection.html:77
+#: pygeoapi/templates/collections/tiles/index.html:6
+#: pygeoapi/templates/collections/tiles/metadata.html:6
+msgid "Tiles"
+msgstr "البلاطات"
+
+#: build/lib/pygeoapi/templates/collections/collection.html:73
+#: pygeoapi/templates/collections/collection.html:81
+msgid "Display Tiles"
+msgstr "عرض البلاطات"
+
+#: build/lib/pygeoapi/templates/collections/collection.html:73
+#: pygeoapi/templates/collections/collection.html:81
+msgid "Display Tiles of"
+msgstr "عرض البلاطات لـ"
+
+#: build/lib/pygeoapi/templates/collections/collection.html:80
+#: build/lib/pygeoapi/templates/jobs/job.html:50
+#: build/lib/pygeoapi/templates/processes/process.html:78
+#: pygeoapi/templates/collections/collection.html:107
+#: pygeoapi/templates/collections/items/item.html:101
+#: pygeoapi/templates/jobs/job.html:50
+#: pygeoapi/templates/processes/process.html:78
+msgid "Links"
+msgstr "الروابط"
+
+#: build/lib/pygeoapi/templates/collections/collection.html:90
+#: pygeoapi/templates/collections/collection.html:117
+msgid "Reference Systems"
+msgstr "أنظمة الإسناد المرجعي"
+
+#: build/lib/pygeoapi/templates/collections/collection.html:98
+#: pygeoapi/templates/collections/collection.html:125
+msgid "Storage CRS"
+msgstr "نظام الإحداثيات المرجعي للتخزين"
+
+#: build/lib/pygeoapi/templates/collections/index.html:12
+#: build/lib/pygeoapi/templates/processes/index.html:14
+#: build/lib/pygeoapi/templates/stac/catalog.html:17
+#: build/lib/pygeoapi/templates/stac/collection.html:17
+#: pygeoapi/templates/collections/index.html:12
+#: pygeoapi/templates/collections/index.html:39
+#: pygeoapi/templates/processes/index.html:14
+#: pygeoapi/templates/stac/catalog.html:17
+#: pygeoapi/templates/stac/collection.html:17
+msgid "Name"
+msgstr "الاسم"
+
+#: build/lib/pygeoapi/templates/collections/index.html:13
+#: build/lib/pygeoapi/templates/stac/catalog.html:18
+#: pygeoapi/templates/stac/catalog.html:18
+msgid "Type"
+msgstr "النوع"
+
+#: build/lib/pygeoapi/templates/collections/index.html:14
+#: build/lib/pygeoapi/templates/processes/index.html:15
+#: build/lib/pygeoapi/templates/processes/process.html:26
+#: build/lib/pygeoapi/templates/processes/process.html:56
+#: build/lib/pygeoapi/templates/stac/collection.html:18
+#: pygeoapi/templates/collections/index.html:13
+#: pygeoapi/templates/collections/index.html:40
+#: pygeoapi/templates/processes/index.html:15
+#: pygeoapi/templates/processes/process.html:26
+#: pygeoapi/templates/processes/process.html:56
+#: pygeoapi/templates/stac/collection.html:18
+#: pygeoapi/templates/tilematrixsets/index.html:16
+msgid "Description"
+msgstr "الوصف"
+
+#: build/lib/pygeoapi/templates/collections/coverage/domainset.html:11
+msgid "Coverage domain set"
+msgstr "مجموعة مجال التغطية"
+
+#: build/lib/pygeoapi/templates/collections/coverage/domainset.html:12
+msgid "Axis labels"
+msgstr "تسميات المحاور"
+
+#: build/lib/pygeoapi/templates/collections/coverage/domainset.html:18
+msgid "Extent"
+msgstr "النطاق"
+
+#: build/lib/pygeoapi/templates/collections/coverage/domainset.html:24
+msgid "Coordinate reference system"
+msgstr "نظام الإحداثيات المرجعي"
+
+#: build/lib/pygeoapi/templates/collections/coverage/domainset.html:26
+#: build/lib/pygeoapi/templates/stac/catalog.html:20
+#: build/lib/pygeoapi/templates/stac/item.html:34
+#: pygeoapi/templates/stac/catalog.html:20
+#: pygeoapi/templates/stac/collection_base.html:34
+#: pygeoapi/templates/stac/item.html:34
+msgid "Size"
+msgstr "الحجم"
+
+#: build/lib/pygeoapi/templates/collections/coverage/domainset.html:28
+msgid "width"
+msgstr "العرض"
+
+#: build/lib/pygeoapi/templates/collections/coverage/domainset.html:29
+msgid "height"
+msgstr "الارتفاع"
+
+#: build/lib/pygeoapi/templates/collections/coverage/domainset.html:31
+msgid "Resolution"
+msgstr "الدقة"
+
+#: build/lib/pygeoapi/templates/collections/coverage/domainset.html:33
+msgid "x"
+msgstr "x"
+
+#: build/lib/pygeoapi/templates/collections/coverage/domainset.html:34
+msgid "y"
+msgstr "y"
+
+#: build/lib/pygeoapi/templates/collections/coverage/rangetype.html:11
+msgid "Coverage range type"
+msgstr "نوع نطاق التغطية"
+
+#: build/lib/pygeoapi/templates/collections/coverage/rangetype.html:12
+msgid "Fields"
+msgstr "الحقول"
+
+#: build/lib/pygeoapi/templates/collections/edr/query.html:11
+#: build/lib/pygeoapi/templates/collections/items/index.html:11
+#: build/lib/pygeoapi/templates/collections/items/item.html:33
+#: pygeoapi/templates/collections/items/index.html:11
+#: pygeoapi/templates/collections/items/item.html:33
+msgid "Items"
+msgstr "العناصر"
+
+#: build/lib/pygeoapi/templates/collections/items/index.html:25
+#: pygeoapi/templates/collections/items/index.html:38
+#: pygeoapi/templates/collections/items/index.html:142
+msgid "Items in this collection"
+msgstr "العناصر في هذه المجموعة"
+
+#: build/lib/pygeoapi/templates/collections/items/index.html:38
+#: pygeoapi/templates/collections/items/index.html:51
+msgid "Warning: Higher limits not recommended!"
+msgstr "تحذير: لا يُنصح بالحدود الأعلى!"
+
+#: build/lib/pygeoapi/templates/collections/items/index.html:43
+#: pygeoapi/templates/collections/items/index.html:44
+#: pygeoapi/templates/jobs/index.html:53
+msgid "Limit"
+msgstr "الحد"
+
+#: build/lib/pygeoapi/templates/collections/items/index.html:45
+#: pygeoapi/templates/collections/items/index.html:46
+#: pygeoapi/templates/jobs/index.html:55
+msgid "default"
+msgstr "افتراضي"
+
+#: build/lib/pygeoapi/templates/collections/items/index.html:66
+#: build/lib/pygeoapi/templates/collections/items/item.html:62
+#: pygeoapi/templates/collections/items/index.html:68
+#: pygeoapi/templates/collections/items/item.html:62
+#: pygeoapi/templates/jobs/index.html:76
+msgid "Prev"
+msgstr "السابق"
+
+#: build/lib/pygeoapi/templates/collections/items/index.html:68
+#: build/lib/pygeoapi/templates/collections/items/item.html:64
+#: pygeoapi/templates/collections/items/index.html:70
+#: pygeoapi/templates/collections/items/item.html:64
+#: pygeoapi/templates/jobs/index.html:78
+msgid "Next"
+msgstr "التالي"
+
+#: build/lib/pygeoapi/templates/collections/items/index.html:139
+#: pygeoapi/templates/collections/edr/query.html:37
+#: pygeoapi/templates/collections/items/index.html:147
+msgid "No items"
+msgstr "لا توجد عناصر"
+
+#: build/lib/pygeoapi/templates/collections/items/item.html:77
+#: build/lib/pygeoapi/templates/stac/item.html:58
+#: pygeoapi/templates/collections/items/item.html:77
+#: pygeoapi/templates/stac/collection_base.html:58
+#: pygeoapi/templates/stac/item.html:58
+msgid "Property"
+msgstr "الخاصية"
+
+#: build/lib/pygeoapi/templates/collections/items/item.html:78
+#: build/lib/pygeoapi/templates/stac/item.html:59
+#: pygeoapi/templates/collections/items/item.html:78
+#: pygeoapi/templates/stac/collection_base.html:59
+#: pygeoapi/templates/stac/item.html:59
+msgid "Value"
+msgstr "القيمة"
+
+#: build/lib/pygeoapi/templates/collections/tiles/index.html:31
+#: pygeoapi/templates/collections/tiles/index.html:31
+msgid "Tile Matrix Set"
+msgstr "مجموعة مصفوفة البلاطات"
+
+#: build/lib/pygeoapi/templates/collections/tiles/index.html:43
+#: pygeoapi/templates/collections/tiles/index.html:42
+msgid "Metadata"
+msgstr "البيانات الوصفية"
+
+#: build/lib/pygeoapi/templates/collections/tiles/metadata.html:18
+msgid "Tiles metadata"
+msgstr "بيانات وصفية للبلاطات"
+
+#: build/lib/pygeoapi/templates/collections/tiles/metadata.html:18
+msgid "format"
+msgstr "التنسيق"
+
+#: build/lib/pygeoapi/templates/collections/tiles/metadata.html:19
+msgid "Tileset"
+msgstr "مجموعة البلاطات"
+
+#: build/lib/pygeoapi/templates/jobs/index.html:14
+#: pygeoapi/templates/jobs/index.html:14
+msgid "Job ID"
+msgstr "معرف المهمة"
+
+#: build/lib/pygeoapi/templates/jobs/index.html:15
+#: pygeoapi/templates/jobs/index.html:15
+msgid "Process ID"
+msgstr "معرف العملية"
+
+#: build/lib/pygeoapi/templates/jobs/index.html:16
+#: pygeoapi/templates/jobs/index.html:16
+msgid "Start"
+msgstr "بداية"
+
+#: build/lib/pygeoapi/templates/jobs/index.html:17
+#: build/lib/pygeoapi/templates/jobs/job.html:37
+#: pygeoapi/templates/jobs/index.html:17 pygeoapi/templates/jobs/job.html:37
+msgid "Duration"
+msgstr "المدة"
+
+#: build/lib/pygeoapi/templates/jobs/index.html:18
+#: build/lib/pygeoapi/templates/jobs/job.html:17
+#: build/lib/pygeoapi/templates/jobs/job.html:35
+#: pygeoapi/templates/jobs/index.html:18 pygeoapi/templates/jobs/job.html:17
+#: pygeoapi/templates/jobs/job.html:35
+msgid "Progress"
+msgstr "التقدم"
+
+#: build/lib/pygeoapi/templates/jobs/index.html:19
+#: build/lib/pygeoapi/templates/jobs/job.html:16
+#: pygeoapi/templates/jobs/index.html:19 pygeoapi/templates/jobs/job.html:16
+msgid "Status"
+msgstr "الحالة"
+
+#: build/lib/pygeoapi/templates/jobs/index.html:20
+#: build/lib/pygeoapi/templates/jobs/job.html:21
+#: pygeoapi/templates/jobs/index.html:20 pygeoapi/templates/jobs/job.html:21
+msgid "Message"
+msgstr "الرسالة"
+
+#: build/lib/pygeoapi/templates/jobs/job.html:2
+#: build/lib/pygeoapi/templates/jobs/job.html:10
+#: pygeoapi/templates/jobs/job.html:2 pygeoapi/templates/jobs/job.html:10
+msgid "Job status"
+msgstr "حالة المهمة"
+
+#: build/lib/pygeoapi/templates/jobs/job.html:26
+#: pygeoapi/templates/jobs/job.html:26
+msgid "Parameters"
+msgstr "المعلمات"
+
+#: build/lib/pygeoapi/templates/jobs/job.html:45
+#: pygeoapi/templates/jobs/job.html:45
+msgid "Started processing"
+msgstr "بدأت المعالجة"
+
+#: build/lib/pygeoapi/templates/jobs/job.html:47
+#: pygeoapi/templates/jobs/job.html:47
+msgid "Finished processing"
+msgstr "انتهت المعالجة"
+
+#: build/lib/pygeoapi/templates/jobs/results/index.html:2
+#: pygeoapi/templates/jobs/results/index.html:2
+msgid "Job result"
+msgstr "نتيجة المهمة"
+
+#: build/lib/pygeoapi/templates/jobs/results/index.html:6
+#: pygeoapi/templates/jobs/results/index.html:6
+msgid "Results"
+msgstr "النتائج"
+
+#: build/lib/pygeoapi/templates/jobs/results/index.html:10
+#: pygeoapi/templates/jobs/results/index.html:10
+msgid "Results of job"
+msgstr "نتائج المهمة"
+
+#: build/lib/pygeoapi/templates/processes/index.html:8
+#: pygeoapi/templates/processes/index.html:8
+msgid "Processes in this service"
+msgstr "العمليات في هذه الخدمة"
+
+#: build/lib/pygeoapi/templates/processes/process.html:20
+#: pygeoapi/templates/processes/process.html:20
+msgid "Inputs"
+msgstr "المدخلات"
+
+#: build/lib/pygeoapi/templates/processes/process.html:23
+#: build/lib/pygeoapi/templates/processes/process.html:54
+#: pygeoapi/templates/processes/process.html:23
+#: pygeoapi/templates/processes/process.html:54
+msgid "Id"
+msgstr "معرف"
+
+#: build/lib/pygeoapi/templates/processes/process.html:24
+#: build/lib/pygeoapi/templates/processes/process.html:55
+#: pygeoapi/templates/processes/process.html:24
+#: pygeoapi/templates/processes/process.html:55
+#: pygeoapi/templates/tilematrixsets/index.html:15
+msgid "Title"
+msgstr "العنوان"
+
+#: build/lib/pygeoapi/templates/processes/process.html:25
+#: pygeoapi/templates/processes/process.html:25
+msgid "Data Type"
+msgstr "نوع البيانات"
+
+#: build/lib/pygeoapi/templates/processes/process.html:51
+#: pygeoapi/templates/processes/process.html:51
+msgid "Outputs"
+msgstr "المخرجات"
+
+#: build/lib/pygeoapi/templates/processes/process.html:71
+#: pygeoapi/templates/processes/process.html:71
+msgid "Execution modes"
+msgstr "أنماط التنفيذ"
+
+#: build/lib/pygeoapi/templates/processes/process.html:73
+#: pygeoapi/templates/processes/process.html:73
+msgid "Synchronous"
+msgstr "متزامن"
+
+#: build/lib/pygeoapi/templates/processes/process.html:74
+#: pygeoapi/templates/processes/process.html:74
+msgid "Asynchronous"
+msgstr "غير متزامن"
+
+#: build/lib/pygeoapi/templates/stac/catalog.html:4
+#: build/lib/pygeoapi/templates/stac/collection.html:2
+#: build/lib/pygeoapi/templates/stac/collection.html:4
+#: build/lib/pygeoapi/templates/stac/item.html:4
+#: pygeoapi/templates/stac/catalog.html:4
+#: pygeoapi/templates/stac/collection.html:2
+#: pygeoapi/templates/stac/collection.html:4
+#: pygeoapi/templates/stac/collection_base.html:4
+#: pygeoapi/templates/stac/item.html:4
+msgid "SpatioTemporal Asset Catalog"
+msgstr "كتالوج الأصول الزمانية والمكانية (STAC)"
+
+#: build/lib/pygeoapi/templates/stac/catalog.html:19
+#: pygeoapi/templates/stac/catalog.html:19
+msgid "Last modified"
+msgstr "آخر تعديل"
+
+#: build/lib/pygeoapi/templates/stac/collection.html:9
+#: pygeoapi/templates/stac/collection.html:9
+msgid "STAC Version"
+msgstr "إصدار STAC"
+
+#: build/lib/pygeoapi/templates/stac/item.html:19
+#: pygeoapi/templates/stac/item.html:19
+msgid "Item"
+msgstr "العنصر"
+
+#: build/lib/pygeoapi/templates/stac/item.html:28
+#: pygeoapi/templates/stac/collection_base.html:28
+#: pygeoapi/templates/stac/item.html:28
+msgid "Assets"
+msgstr "الأصول"
+
+#: build/lib/pygeoapi/templates/stac/item.html:32
+#: pygeoapi/templates/landing_page.html:45
+#: pygeoapi/templates/stac/collection_base.html:32
+#: pygeoapi/templates/stac/item.html:32
+msgid "URL"
+msgstr "الرابط"
+
+#: build/lib/pygeoapi/templates/stac/item.html:33
+#: pygeoapi/templates/stac/collection_base.html:33
+#: pygeoapi/templates/stac/item.html:33
+msgid "Last Modified"
+msgstr "آخر تعديل"
+
+#: build/lib/pygeoapi/templates/stac/item.html:64
+#: pygeoapi/templates/stac/collection_base.html:64
+#: pygeoapi/templates/stac/item.html:64
+msgid "id"
+msgstr "معرف"
+
+#: pygeoapi/templates/_base.html:2
+msgid "text_direction"
+msgstr "rtl"
+
+#: pygeoapi/templates/_base.html:47
+msgid "Contact"
+msgstr "الاتصال"
+
+#: pygeoapi/templates/_base.html:51
+msgid "Admin"
+msgstr "الإدارة"
+
+#: pygeoapi/templates/landing_page.html:101
+msgid "Tile Matrix Sets"
+msgstr "مجموعات مصفوفة البلاطات"
+
+#: pygeoapi/templates/landing_page.html:103
+msgid "View the Tile Matrix Sets available on this service"
+msgstr "عرض مجموعات مصفوفة البلاطات المتاحة في هذه الخدمة"
+
+#: pygeoapi/templates/collections/collection.html:67
+#: pygeoapi/templates/collections/schema.html:6
+#: pygeoapi/templates/collections/schema.html:17
+msgid "Schema"
+msgstr "المخطط"
+
+#: pygeoapi/templates/collections/collection.html:71
+msgid "Display Schema"
+msgstr "عرض المخطط"
+
+#: pygeoapi/templates/collections/collection.html:72
+msgid "Display Schema of"
+msgstr "عرض مخطط لـ"
+
+#: pygeoapi/templates/collections/collection.html:128
+msgid "CRS"
+msgstr "CRS"
+
+#: pygeoapi/templates/collections/collection.html:131
+msgid "Epoch"
+msgstr "العصر"
+
+#: pygeoapi/templates/collections/index.html:8
+msgid "Data collections in this service"
+msgstr "مجموعات البيانات في هذه الخدمة"
+
+#: pygeoapi/templates/collections/index.html:35
+msgid "Record collections in this service"
+msgstr "مجموعات السجلات في هذه الخدمة"
+
+#: pygeoapi/templates/collections/edr/query.html:11
+#, python-format
+msgid "%(query_type)s"
+msgstr "%(query_type)s"
+
+#: pygeoapi/templates/collections/tiles/metadata.html:15
+msgid "TileJSON"
+msgstr "TileJSON"
+
+#: pygeoapi/templates/collections/tiles/metadata.html:17
+msgid "JSON"
+msgstr "JSON"
+
+#: pygeoapi/templates/stac/collection_base.html:68
+msgid "description"
+msgstr "الوصف"
+
+#: pygeoapi/templates/stac/collection_base.html:72
+msgid "extent"
+msgstr "النطاق"
+
+#: pygeoapi/templates/stac/collection_base.html:77
+msgid "cube:dimensions"
+msgstr "cube:dimensions"
+
+#: pygeoapi/templates/stac/collection_base.html:83
+msgid "cube:variables"
+msgstr "cube:variables"
+
+#: pygeoapi/templates/tilematrixsets/index.html:2
+#: pygeoapi/templates/tilematrixsets/index.html:4
+#: pygeoapi/templates/tilematrixsets/tilematrixset.html:4
+msgid "TileMatrixSets"
+msgstr "مجموعات مصفوفة البلاطات"
+
+#: pygeoapi/templates/tilematrixsets/index.html:9
+msgid "Tile matrix sets available in this service"
+msgstr "مجموعات مصفوفة البلاطات المتاحة في هذه الخدمة"
+
+#: pygeoapi/templates/tilematrixsets/tilematrixset.html:2
+msgid "TileMatrixSet"
+msgstr "مجموعة مصفوفة البلاطات"

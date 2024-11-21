@@ -18,6 +18,10 @@ msgstr ""
 "Content-Transfer-Encoding: 8bit\n"
 "Generated-By: Babel 2.9.1\n"
 
+#: pygeoapi/templates/_base.html:2
+msgid "text_direction"
+msgstr "ltr"
+
 #: build/lib/pygeoapi/templates/_base.html:40
 #: build/lib/pygeoapi/templates/landing_page.html:2
 #: pygeoapi/templates/_base.html:40 pygeoapi/templates/landing_page.html:2
