@@ -680,7 +680,7 @@ def remove_timestamps(cfg: dict) -> dict:
 
     for key in cfg['resources'].keys():
         extents = cfg['resources'][key].get('extents')
-        if extents is not None and 'temporal' in extents.keys():
+        if (extents is not None and 'temporal' in extents.keys()):
             del extents['temporal']
 
     return cfg
@@ -751,7 +751,7 @@ def get_post_resource(cfg: dict) -> dict:
 
     collection = gen_collection_name()
 
-    if len(cfg['resources']) < 1 or cfg['resources']['obs'] is None:
+    if (len(cfg['resources']) < 1 or cfg['resources'].get('obs') is None):
         return ''
 
     post = {collection: {}}
@@ -775,7 +775,7 @@ def get_put_resource(cfg: dict) -> dict:
     :returns: dict of OpenAPI definition
     """
 
-    if len(cfg['resources']) < 1 or cfg['resources']['obs'] is None:
+    if (len(cfg['resources']) < 1 or cfg['resources']['obs'] is None):
         return ''
 
     put = deepcopy(cfg['resources']['obs'])
@@ -798,7 +798,7 @@ def get_patch_resource(cfg: dict) -> dict:
     :returns: dict of OpenAPI definition
     """
 
-    if len(cfg['resources']) < 1 or cfg['resources']['obs'] is None:
+    if (len(cfg['resources']) < 1 or cfg['resources']['obs'] is None):
         return ''
 
     patch = deepcopy(cfg['resources']['obs'])
