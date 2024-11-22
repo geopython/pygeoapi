@@ -1,32 +1,37 @@
-from pygeoapi.api.movingfeatures import MOVING_FEATURES
 from pygeoapi.provider.postgresql_mobilitydb import PostgresMobilityDB
 import pytest
 import json
 from http import HTTPStatus
 from pygeoapi.util import yaml_load
 
-from tests.util import get_test_file_path, mock_request
+from tests.util import get_test_file_path, mock_api_request
+
+from pygeoapi.api.movingfeatures import (
+    manage_collection,
+    manage_collection_item,
+    manage_collection_item_tGeometry,
+    manage_collection_item_tProperty,
+    manage_collection_item_tProperty_value,
+    get_collection_items,
+    get_collection,
+    get_collection_item,
+    get_collection_items_tGeometry,
+    get_collection_items_tGeometry_velocity,
+    get_collection_items_tGeometry_distance,
+    get_collection_items_tGeometry_acceleration,
+    get_collection_items_tProperty,
+    get_collection_items_tProperty_value)
+
+from pygeoapi.api import API
 
 
 @pytest.fixture()
-def config():
+def api_():
     with open(get_test_file_path('example-config.yml')) as fh:
-        return yaml_load(fh)
-
-
-@pytest.fixture()
-def openapi():
+        config = yaml_load(fh)
     with open(get_test_file_path('example-openapi.yml')) as fh:
-        return yaml_load(fh)
-
-# @pytest.fixture(scope="session")
-# def context():
-#     return {
-#         'collection_id':'f81e0521-cf63-4cc5-b690-3daf1f326104',
-#         'mfeature_id':'196695e8-b79b-4655-a1e0-b90de887f205',
-#         'tgeometry_id':'1d2edbdc-717a-4fcb-94ad-19a00ee208e0',
-#         'tProperty_name':'labels'
-#     }
+        openapi = yaml_load(fh)
+    return API(config, openapi)
 
 
 @pytest.fixture(scope="session")
@@ -456,27 +461,23 @@ def temporalvalue_data():
 
 
 def test_manage_collection_create(
-        config,
-        openapi,
+        api_,
         collection_property,
         context):
-    mf = MOVING_FEATURES(config, openapi)
 
     # missing request data
-    req = mock_request()
-    rsp_headers, code, response = mf.manage_collection(req, 'create')
+    req = mock_api_request()
+    rsp_headers, code, response = manage_collection(api_, req, 'create')
     assert code == HTTPStatus.BAD_REQUEST
 
     # invalid request data
-    req = mock_request()
-    req.data = 'Invalid data. Valid parameter is JSON'
-    rsp_headers, code, response = mf.manage_collection(req, 'create')
+    req = mock_api_request(data='Invalid data. Valid data is JSON')
+    rsp_headers, code, response = manage_collection(api_, req, 'create')
     assert code == HTTPStatus.BAD_REQUEST
 
     # successful request data
-    req = mock_request()
-    req.data = json.dumps(collection_property)
-    rsp_headers, code, response = mf.manage_collection(req, 'create')
+    req = mock_api_request(data=json.dumps(collection_property))
+    rsp_headers, code, response = manage_collection(api_, req, 'create')
     assert code == HTTPStatus.CREATED
     assert response == ''
     assert rsp_headers['Content-Type'] == 'application/json'
@@ -489,26 +490,24 @@ def test_manage_collection_create(
 
 
 def test_manage_collection_item_create(
-        config, openapi, movingfeature, context):
-    mf = MOVING_FEATURES(config, openapi)
+        api_, movingfeature, context):
 
     # collection not found
-    req = mock_request()
-    rsp_headers, code, response = mf.manage_collection_item(
-        req, 'create', '00000000-0000-0000-0000-000000000000')
+    req = mock_api_request()
+    rsp_headers, code, response = manage_collection_item(
+        api_, req, 'create', '00000000-0000-0000-0000-000000000000')
     assert code == HTTPStatus.NOT_FOUND
 
     # no data found
-    req = mock_request()
-    rsp_headers, code, response = mf.manage_collection_item(
-        req, 'create', context['collection_id'])
+    req = mock_api_request()
+    rsp_headers, code, response = manage_collection_item(
+        api_, req, 'create', context['collection_id'])
     assert code == HTTPStatus.BAD_REQUEST
 
     # invalid request data
-    req = mock_request()
-    req.data = 'data'
-    rsp_headers, code, response = mf.manage_collection_item(
-        req, 'create', context['collection_id'])
+    req = mock_api_request(data='Invalid data. Valid data is JSON')
+    rsp_headers, code, response = manage_collection_item(
+        api_, req, 'create', context['collection_id'])
     assert code == HTTPStatus.BAD_REQUEST
 
     # The required tag (e.g., type,temporalgeometry)
@@ -516,17 +515,15 @@ def test_manage_collection_item_create(
     missing_data = dict(movingfeature)
     del missing_data['temporalGeometry']
 
-    req = mock_request()
-    req.data = json.dumps(missing_data)
-    rsp_headers, code, response = mf.manage_collection_item(
-        req, 'create', context['collection_id'])
+    req = mock_api_request(data=json.dumps(missing_data))
+    rsp_headers, code, response = manage_collection_item(
+        api_, req, 'create', context['collection_id'])
     assert code == HTTPStatus.NOT_IMPLEMENTED
 
     # successful request data
-    req = mock_request()
-    req.data = json.dumps(movingfeature)
-    rsp_headers, code, response = mf.manage_collection_item(
-        req, 'create', context['collection_id'])
+    req = mock_api_request(data=json.dumps(movingfeature))
+    rsp_headers, code, response = manage_collection_item(
+        api_, req, 'create', context['collection_id'])
 
     assert code == HTTPStatus.CREATED
     assert response == ''
@@ -540,27 +537,25 @@ def test_manage_collection_item_create(
 
 
 def test_manage_collection_item_tGeometry_create(
-        config, openapi, temporalgeometry, context):
-    mf = MOVING_FEATURES(config, openapi)
+        api_, temporalgeometry, context):
 
     # feature not found
-    req = mock_request()
-    rsp_headers, code, response = mf.manage_collection_item_tGeometry(
-        req, 'create', '00000000-0000-0000-0000-000000000000',
+    req = mock_api_request()
+    rsp_headers, code, response = manage_collection_item_tGeometry(
+        api_, req, 'create', '00000000-0000-0000-0000-000000000000',
         '00000000-0000-0000-0000-000000000000')
     assert code == HTTPStatus.NOT_FOUND
 
     # no data found
-    req = mock_request()
-    rsp_headers, code, response = mf.manage_collection_item_tGeometry(
-        req, 'create', context['collection_id'], context['mfeature_id'])
+    req = mock_api_request()
+    rsp_headers, code, response = manage_collection_item_tGeometry(
+        api_, req, 'create', context['collection_id'], context['mfeature_id'])
     assert code == HTTPStatus.BAD_REQUEST
 
     # invalid request data
-    req = mock_request()
-    req.data = 'data'
-    rsp_headers, code, response = mf.manage_collection_item_tGeometry(
-        req, 'create', context['collection_id'], context['mfeature_id'])
+    req = mock_api_request(data='Invalid data. Valid data is JSON')
+    rsp_headers, code, response = manage_collection_item_tGeometry(
+        api_, req, 'create', context['collection_id'], context['mfeature_id'])
     assert code == HTTPStatus.BAD_REQUEST
 
     # The required tag (e.g., type,prisms)
@@ -568,17 +563,15 @@ def test_manage_collection_item_tGeometry_create(
     missing_data = dict(temporalgeometry)
     del missing_data['type']
 
-    req = mock_request()
-    req.data = json.dumps(missing_data)
-    rsp_headers, code, response = mf.manage_collection_item_tGeometry(
-        req, 'create', context['collection_id'], context['mfeature_id'])
+    req = mock_api_request(data=json.dumps(missing_data))
+    rsp_headers, code, response = manage_collection_item_tGeometry(
+        api_, req, 'create', context['collection_id'], context['mfeature_id'])
     assert code == HTTPStatus.NOT_IMPLEMENTED
 
     # successful request data
-    req = mock_request()
-    req.data = json.dumps(temporalgeometry)
-    rsp_headers, code, response = mf.manage_collection_item_tGeometry(
-        req, 'create', context['collection_id'], context['mfeature_id'])
+    req = mock_api_request(data=json.dumps(temporalgeometry))
+    rsp_headers, code, response = manage_collection_item_tGeometry(
+        api_, req, 'create', context['collection_id'], context['mfeature_id'])
 
     assert code == HTTPStatus.CREATED
     assert response == ''
@@ -592,27 +585,25 @@ def test_manage_collection_item_tGeometry_create(
 
 
 def test_manage_collection_item_tProperty_create(
-        config, openapi, temporalproperties, context):
-    mf = MOVING_FEATURES(config, openapi)
+        api_, temporalproperties, context):
 
     # feature not found
-    req = mock_request()
-    rsp_headers, code, response = mf.manage_collection_item_tProperty(
-        req, 'create', '00000000-0000-0000-0000-000000000000',
+    req = mock_api_request()
+    rsp_headers, code, response = manage_collection_item_tProperty(
+        api_, req, 'create', '00000000-0000-0000-0000-000000000000',
         '00000000-0000-0000-0000-000000000000')
     assert code == HTTPStatus.NOT_FOUND
 
     # no data found
-    req = mock_request()
-    rsp_headers, code, response = mf.manage_collection_item_tProperty(
-        req, 'create', context['collection_id'], context['mfeature_id'])
+    req = mock_api_request()
+    rsp_headers, code, response = manage_collection_item_tProperty(
+        api_, req, 'create', context['collection_id'], context['mfeature_id'])
     assert code == HTTPStatus.BAD_REQUEST
 
     # invalid request data
-    req = mock_request()
-    req.data = 'data'
-    rsp_headers, code, response = mf.manage_collection_item_tProperty(
-        req, 'create', context['collection_id'], context['mfeature_id'])
+    req = mock_api_request(data='Invalid data. Valid data is JSON')
+    rsp_headers, code, response = manage_collection_item_tProperty(
+        api_, req, 'create', context['collection_id'], context['mfeature_id'])
     assert code == HTTPStatus.BAD_REQUEST
 
     # The required tag (e.g., datetimes,interpolation)
@@ -622,17 +613,15 @@ def test_manage_collection_item_tProperty_create(
         missing_data.append(dict(temporalproperty))
     del missing_data[0]['datetimes']
 
-    req = mock_request()
-    req.data = json.dumps(missing_data, indent=2)
-    rsp_headers, code, response = mf.manage_collection_item_tProperty(
-        req, 'create', context['collection_id'], context['mfeature_id'])
+    req = mock_api_request(data=json.dumps(missing_data, indent=2))
+    rsp_headers, code, response = manage_collection_item_tProperty(
+        api_, req, 'create', context['collection_id'], context['mfeature_id'])
     assert code == HTTPStatus.NOT_IMPLEMENTED
 
     # successful request data
-    req = mock_request()
-    req.data = json.dumps(temporalproperties, indent=2)
-    rsp_headers, code, response = mf.manage_collection_item_tProperty(
-        req, 'create', context['collection_id'], context['mfeature_id'])
+    req = mock_api_request(data=json.dumps(temporalproperties, indent=2))
+    rsp_headers, code, response = manage_collection_item_tProperty(
+        api_, req, 'create', context['collection_id'], context['mfeature_id'])
 
     assert code == HTTPStatus.CREATED
     assert response == ''
@@ -647,28 +636,26 @@ def test_manage_collection_item_tProperty_create(
 
 
 def test_manage_collection_item_tProperty_value_create(
-        config, openapi, temporalvalue_data, context):
-    mf = MOVING_FEATURES(config, openapi)
+        api_, temporalvalue_data, context):
 
     # temporal property not found
-    req = mock_request()
-    rsp_headers, code, response = mf.manage_collection_item_tProperty_value(
-        req, 'create', '00000000-0000-0000-0000-000000000000',
+    req = mock_api_request()
+    rsp_headers, code, response = manage_collection_item_tProperty_value(
+        api_, req, 'create', '00000000-0000-0000-0000-000000000000',
         '00000000-0000-0000-0000-000000000000', '')
     assert code == HTTPStatus.NOT_FOUND
 
     # no data found
-    req = mock_request()
-    rsp_headers, code, response = mf.manage_collection_item_tProperty_value(
-        req, 'create', context['collection_id'], context['mfeature_id'],
+    req = mock_api_request()
+    rsp_headers, code, response = manage_collection_item_tProperty_value(
+        api_, req, 'create', context['collection_id'], context['mfeature_id'],
         context['tProperty_name'])
     assert code == HTTPStatus.BAD_REQUEST
 
     # invalid request data
-    req = mock_request()
-    req.data = 'data'
-    rsp_headers, code, response = mf.manage_collection_item_tProperty_value(
-        req, 'create', context['collection_id'], context['mfeature_id'],
+    req = mock_api_request(data='Invalid data. Valid data is JSON')
+    rsp_headers, code, response = manage_collection_item_tProperty_value(
+        api_, req, 'create', context['collection_id'], context['mfeature_id'],
         context['tProperty_name'])
     assert code == HTTPStatus.BAD_REQUEST
 
@@ -677,18 +664,16 @@ def test_manage_collection_item_tProperty_value_create(
     missing_data = dict(temporalvalue_data)
     del missing_data['datetimes']
 
-    req = mock_request()
-    req.data = json.dumps(missing_data)
-    rsp_headers, code, response = mf.manage_collection_item_tProperty_value(
-        req, 'create', context['collection_id'], context['mfeature_id'],
+    req = mock_api_request(data=json.dumps(missing_data))
+    rsp_headers, code, response = manage_collection_item_tProperty_value(
+        api_, req, 'create', context['collection_id'], context['mfeature_id'],
         context['tProperty_name'])
     assert code == HTTPStatus.NOT_IMPLEMENTED
 
     # successful request data
-    req = mock_request()
-    req.data = json.dumps(temporalvalue_data)
-    rsp_headers, code, response = mf.manage_collection_item_tProperty_value(
-        req, 'create', context['collection_id'], context['mfeature_id'],
+    req = mock_api_request(data=json.dumps(temporalvalue_data))
+    rsp_headers, code, response = manage_collection_item_tProperty_value(
+        api_, req, 'create', context['collection_id'], context['mfeature_id'],
         context['tProperty_name'])
 
     assert code == HTTPStatus.CREATED
@@ -698,111 +683,107 @@ def test_manage_collection_item_tProperty_value_create(
 
 
 def test_manage_collection_update(
-        config,
-        openapi,
+        api_,
         update_collection_property,
         context):
-    mf = MOVING_FEATURES(config, openapi)
 
     # missing request data
-    req = mock_request()
-    rsp_headers, code, response = mf.manage_collection(
-        req, 'update', context['collection_id'])
+    req = mock_api_request()
+    rsp_headers, code, response = manage_collection(
+        api_, req, 'update', context['collection_id'])
     assert code == HTTPStatus.BAD_REQUEST
 
     # invalid request data
-    req = mock_request()
-    req.data = 'data'
-    rsp_headers, code, response = mf.manage_collection(
-        req, 'update', context['collection_id'])
+    req = mock_api_request(data='Invalid data. Valid data is JSON')
+    rsp_headers, code, response = manage_collection(
+        api_, req, 'update', context['collection_id'])
     assert code == HTTPStatus.BAD_REQUEST
 
     # successful request data
-    req = mock_request()
-    req.data = json.dumps(update_collection_property)
-    rsp_headers, code, response = mf.manage_collection(
-        req, 'update', context['collection_id'])
+    req = mock_api_request(data=json.dumps(update_collection_property))
+    rsp_headers, code, response = manage_collection(
+        api_, req, 'update', context['collection_id'])
 
     assert code == HTTPStatus.NO_CONTENT
     assert response == ''
 
 
-def test_get_collection_items(config, openapi, context):
-    mf = MOVING_FEATURES(config, openapi)
+def test_get_collection_items(api_, context):
 
     # not found
-    req = mock_request()
-    rsp_headers, code, response = mf.get_collection_items(
-        req, '00000000-0000-0000-0000-000000000000')
+    req = mock_api_request()
+    rsp_headers, code, response = get_collection_items(
+        api_, req, '00000000-0000-0000-0000-000000000000')
     assert code == HTTPStatus.NOT_FOUND
 
     # offset value should be positive or zero
-    req = mock_request({'offset': -1})
-    rsp_headers, code, response = mf.get_collection_items(
-        req, context['collection_id'])
+    req = mock_api_request({'offset': -1})
+    rsp_headers, code, response = get_collection_items(
+        api_, req, context['collection_id'])
     assert code == HTTPStatus.BAD_REQUEST
 
     # offset value should be an integer
-    req = mock_request({'offset': 'one'})
-    rsp_headers, code, response = mf.get_collection_items(
-        req, context['collection_id'])
+    req = mock_api_request({'offset': 'one'})
+    rsp_headers, code, response = get_collection_items(
+        api_, req, context['collection_id'])
     assert code == HTTPStatus.BAD_REQUEST
 
     # limit value should be strictly positive
-    req = mock_request({'offset': 0, 'limit': 0})
-    rsp_headers, code, response = mf.get_collection_items(
-        req, context['collection_id'])
+    req = mock_api_request({'offset': 0, 'limit': 0})
+    rsp_headers, code, response = get_collection_items(
+        api_, req, context['collection_id'])
     assert code == HTTPStatus.BAD_REQUEST
 
     # limit value should be less than or equal to 10000
-    req = mock_request({'offset': 0, 'limit': 10001})
-    rsp_headers, code, response = mf.get_collection_items(
-        req, context['collection_id'])
+    req = mock_api_request({'offset': 0, 'limit': 10001})
+    rsp_headers, code, response = get_collection_items(
+        api_, req, context['collection_id'])
     assert code == HTTPStatus.BAD_REQUEST
 
     # limit value should be an integer
-    req = mock_request({'offset': 0, 'limit': 'one'})
-    rsp_headers, code, response = mf.get_collection_items(
-        req, context['collection_id'])
+    req = mock_api_request({'offset': 0, 'limit': 'one'})
+    rsp_headers, code, response = get_collection_items(
+        api_, req, context['collection_id'])
     assert code == HTTPStatus.BAD_REQUEST
 
     # bbox values must be numbers
-    req = mock_request(
+    req = mock_api_request(
         {'offset': 0, 'limit': 10, 'bbox': 'one,two,three,four'})
-    rsp_headers, code, response = mf.get_collection_items(
-        req, context['collection_id'])
+    rsp_headers, code, response = get_collection_items(
+        api_, req, context['collection_id'])
     assert code == HTTPStatus.BAD_REQUEST
 
     # bbox should be 4 values (minx,miny,maxx,maxy) or 6 values
     # (minx,miny,minz,maxx,maxy,maxz)
-    req = mock_request({'offset': 0, 'limit': 10, 'bbox': '100,30,0,200,40'})
-    rsp_headers, code, response = mf.get_collection_items(
-        req, context['collection_id'])
+    req = mock_api_request(
+        {'offset': 0, 'limit': 10, 'bbox': '100,30,0,200,40'})
+    rsp_headers, code, response = get_collection_items(
+        api_, req, context['collection_id'])
     assert code == HTTPStatus.BAD_REQUEST
 
     # minx is greater than maxx (possibly antimeridian bbox)
-    req = mock_request(
+    req = mock_api_request(
         {'offset': 0, 'limit': 10, 'bbox': '200,30,0,100,40,10'})
-    rsp_headers, code, response = mf.get_collection_items(
-        req, context['collection_id'])
+    rsp_headers, code, response = get_collection_items(
+        api_, req, context['collection_id'])
     assert code == HTTPStatus.BAD_REQUEST
 
     # datetime parameter out of range
-    req = mock_request({'offset': 0,
-                        'limit': 10,
-                        'bbox': '100,30,0,200,40,10',
-                        'datetime': '2011-07-14T23:01:01.000Z/2011-07-14T22:01:01.000Z'})  # noqa
-    rsp_headers, code, response = mf.get_collection_items(
-        req, context['collection_id'])
+    req = mock_api_request({'offset': 0,
+                            'limit': 10,
+                            'bbox': '100,30,0,200,40,10',
+                            'datetime': '2011-07-14T23:01:01.000Z/2011-07-14T22:01:01.000Z'})  # noqa
+    rsp_headers, code, response = get_collection_items(
+        api_, req, context['collection_id'])
     assert code == HTTPStatus.BAD_REQUEST
 
-    req = mock_request({'offset': 0,
-                        'limit': 10,
-                        'bbox': '100,30,0,200,40,10',
-                        'datetime': '2011-07-14T22:01:01.000Z/2011-07-14T23:01:01.000Z',  # noqa
-                        'subTrajectory': 'true'})
-    rsp_headers, code, response = mf.get_collection_items(
-        req, context['collection_id'])
+    req = mock_api_request({'offset': 0,
+                            'limit': 10,
+                            'bbox': '100,30,0,200,40,10',
+                            'datetime': '2011-07-14T22:01:01.000Z/2011-07-14T23:01:01.000Z',  # noqa
+                            'subTrajectory': 'true'})
+    rsp_headers, code, response = get_collection_items(
+        api_, req, context['collection_id'])
     assert code == HTTPStatus.OK
 
     assert rsp_headers['Content-Type'] == 'application/json'
@@ -856,19 +837,18 @@ def test_get_collection_items(config, openapi, context):
     assert collection['numberReturned'] == 1
 
 
-def test_get_collection(config, openapi, context):
-    mf = MOVING_FEATURES(config, openapi)
+def test_get_collection(api_, context):
 
     # not found
-    req = mock_request()
-    rsp_headers, code, response = mf.get_collection(
-        req, '00000000-0000-0000-0000-000000000000')
+    req = mock_api_request()
+    rsp_headers, code, response = get_collection(
+        api_, req, '00000000-0000-0000-0000-000000000000')
     assert code == HTTPStatus.NOT_FOUND
 
     # successful data
-    req = mock_request()
-    rsp_headers, code, response = mf.get_collection(
-        req, context['collection_id'])
+    req = mock_api_request()
+    rsp_headers, code, response = get_collection(
+        api_, req, context['collection_id'])
     assert code == HTTPStatus.OK
 
     assert rsp_headers['Content-Type'] == 'application/json'
@@ -899,19 +879,18 @@ def test_get_collection(config, openapi, context):
     assert len(collection['links']) == 1
 
 
-def test_get_collection_item(config, openapi, context):
-    mf = MOVING_FEATURES(config, openapi)
+def test_get_collection_item(api_, context):
 
     # not found
-    req = mock_request()
-    rsp_headers, code, response = mf.get_collection_item(
-        req, '00000000-0000-0000-0000-000000000000',
+    req = mock_api_request()
+    rsp_headers, code, response = get_collection_item(
+        api_, req, '00000000-0000-0000-0000-000000000000',
         '00000000-0000-0000-0000-000000000000')
     assert code == HTTPStatus.NOT_FOUND
 
     # successful data
-    rsp_headers, code, response = mf.get_collection_item(
-        req, context['collection_id'], context['mfeature_id'])
+    rsp_headers, code, response = get_collection_item(
+        api_, req, context['collection_id'], context['mfeature_id'])
     assert code == HTTPStatus.OK
 
     assert rsp_headers['Content-Type'] == 'application/json'
@@ -944,105 +923,105 @@ def test_get_collection_item(config, openapi, context):
     assert len(mfeature['links']) == 1
 
 
-def test_get_collection_items_tGeometry(config, openapi, context):
-    mf = MOVING_FEATURES(config, openapi)
+def test_get_collection_items_tGeometry(api_, context):
 
     # not found
-    req = mock_request()
-    rsp_headers, code, response = mf.get_collection_items_tGeometry(
-        req, '00000000-0000-0000-0000-000000000000',
+    req = mock_api_request()
+    rsp_headers, code, response = get_collection_items_tGeometry(
+        api_, req, '00000000-0000-0000-0000-000000000000',
         '00000000-0000-0000-0000-000000000000')
     assert code == HTTPStatus.NOT_FOUND
 
     # offset value should be positive or zero
-    req = mock_request({'offset': -1})
-    rsp_headers, code, response = mf.get_collection_items_tGeometry(
-        req, context['collection_id'], context['mfeature_id'])
+    req = mock_api_request({'offset': -1})
+    rsp_headers, code, response = get_collection_items_tGeometry(
+        api_, req, context['collection_id'], context['mfeature_id'])
     assert code == HTTPStatus.BAD_REQUEST
 
     # offset value should be an integer
-    req = mock_request({'offset': 'one'})
-    rsp_headers, code, response = mf.get_collection_items_tGeometry(
-        req, context['collection_id'], context['mfeature_id'])
+    req = mock_api_request({'offset': 'one'})
+    rsp_headers, code, response = get_collection_items_tGeometry(
+        api_, req, context['collection_id'], context['mfeature_id'])
     assert code == HTTPStatus.BAD_REQUEST
 
     # limit value should be strictly positive
-    req = mock_request({'offset': 0, 'limit': 0})
-    rsp_headers, code, response = mf.get_collection_items_tGeometry(
-        req, context['collection_id'], context['mfeature_id'])
+    req = mock_api_request({'offset': 0, 'limit': 0})
+    rsp_headers, code, response = get_collection_items_tGeometry(
+        api_, req, context['collection_id'], context['mfeature_id'])
     assert code == HTTPStatus.BAD_REQUEST
 
     # limit value should be less than or equal to 10000
-    req = mock_request({'offset': 0, 'limit': 10001})
-    rsp_headers, code, response = mf.get_collection_items_tGeometry(
-        req, context['collection_id'], context['mfeature_id'])
+    req = mock_api_request({'offset': 0, 'limit': 10001})
+    rsp_headers, code, response = get_collection_items_tGeometry(
+        api_, req, context['collection_id'], context['mfeature_id'])
     assert code == HTTPStatus.BAD_REQUEST
 
     # limit value should be an integer
-    req = mock_request({'offset': 0, 'limit': 'one'})
-    rsp_headers, code, response = mf.get_collection_items_tGeometry(
-        req, context['collection_id'], context['mfeature_id'])
+    req = mock_api_request({'offset': 0, 'limit': 'one'})
+    rsp_headers, code, response = get_collection_items_tGeometry(
+        api_, req, context['collection_id'], context['mfeature_id'])
     assert code == HTTPStatus.BAD_REQUEST
 
     # bbox values must be numbers
-    req = mock_request(
+    req = mock_api_request(
         {'offset': 0, 'limit': 10, 'bbox': 'one,two,three,four'})
-    rsp_headers, code, response = mf.get_collection_items_tGeometry(
-        req, context['collection_id'], context['mfeature_id'])
+    rsp_headers, code, response = get_collection_items_tGeometry(
+        api_, req, context['collection_id'], context['mfeature_id'])
     assert code == HTTPStatus.BAD_REQUEST
 
     # bbox should be 4 values (minx,miny,maxx,maxy) or 6 values
     # (minx,miny,minz,maxx,maxy,maxz)
-    req = mock_request({'offset': 0, 'limit': 10, 'bbox': '100,30,0,200,40'})
-    rsp_headers, code, response = mf.get_collection_items_tGeometry(
-        req, context['collection_id'], context['mfeature_id'])
+    req = mock_api_request(
+        {'offset': 0, 'limit': 10, 'bbox': '100,30,0,200,40'})
+    rsp_headers, code, response = get_collection_items_tGeometry(
+        api_, req, context['collection_id'], context['mfeature_id'])
     assert code == HTTPStatus.BAD_REQUEST
 
     # minx is greater than maxx (possibly antimeridian bbox)
-    req = mock_request(
+    req = mock_api_request(
         {'offset': 0, 'limit': 10, 'bbox': '200,30,0,100,40,10'})
-    rsp_headers, code, response = mf.get_collection_items_tGeometry(
-        req, context['collection_id'], context['mfeature_id'])
+    rsp_headers, code, response = get_collection_items_tGeometry(
+        api_, req, context['collection_id'], context['mfeature_id'])
     assert code == HTTPStatus.BAD_REQUEST
 
     # invalid leaf
-    req = mock_request({'offset': 0,
-                        'limit': 10,
-                        'bbox': '100,30,0,200,40,10',
-                        'leaf': '2011-07-14T22:01:01.000Z,2011-07-14T22:01:01.000Z'})  # noqa
-    rsp_headers, code, response = mf.get_collection_items_tGeometry(
-        req, context['collection_id'], context['mfeature_id'])
+    req = mock_api_request({'offset': 0,
+                            'limit': 10,
+                            'bbox': '100,30,0,200,40,10',
+                            'leaf': '2011-07-14T22:01:01.000Z,2011-07-14T22:01:01.000Z'})  # noqa
+    rsp_headers, code, response = get_collection_items_tGeometry(
+        api_, req, context['collection_id'], context['mfeature_id'])
 
     assert code == HTTPStatus.BAD_REQUEST
 
     # cannot use both parameter `subTrajectory` and `leaf` at the same time
-    req = mock_request({'offset': 0,
-                        'limit': 10,
-                        'bbox': '100,30,0,200,40,10',
-                        'leaf': '2011-07-14T22:01:01.000Z',
-                        'subTrajectory': True})
-    rsp_headers, code, response = mf.get_collection_items_tGeometry(
-        req, context['collection_id'], context['mfeature_id'])
+    req = mock_api_request({'offset': 0,
+                            'limit': 10,
+                            'bbox': '100,30,0,200,40,10',
+                            'leaf': '2011-07-14T22:01:01.000Z',
+                            'subTrajectory': True})
+    rsp_headers, code, response = get_collection_items_tGeometry(
+        api_, req, context['collection_id'], context['mfeature_id'])
     assert code == HTTPStatus.BAD_REQUEST
 
     # datetime parameter out of range
-    req = mock_request({'offset': 0,
-                        'limit': 10,
-                        'bbox': '100,30,0,200,40,10',
-                        'leaf': '2011-07-14T22:01:01.000Z',
-                        'datetime': '2011-07-14T23:01:01.000Z/2011-07-14T22:01:01.000Z'})  # noqa
-    rsp_headers, code, response = mf.get_collection_items_tGeometry(
-        req, context['collection_id'], context['mfeature_id'])
+    req = mock_api_request({'offset': 0,
+                            'limit': 10,
+                            'bbox': '100,30,0,200,40,10',
+                            'leaf': '2011-07-14T22:01:01.000Z',
+                            'datetime': '2011-07-14T23:01:01.000Z/2011-07-14T22:01:01.000Z'})  # noqa
+    rsp_headers, code, response = get_collection_items_tGeometry(
+        api_, req, context['collection_id'], context['mfeature_id'])
     assert code == HTTPStatus.BAD_REQUEST
 
     # successful data
-    req = mock_request({'offset': 0,
-                        'limit': 10,
-                        'bbox': '100,30,0,200,40,10',
-                        'leaf': '2011-07-14T22:01:01.000Z',
-                        'datetime': '2011-07-14T22:01:01.000Z/2011-07-14T23:01:01.000Z'})  # noqa
-    rsp_headers, code, response = mf.get_collection_items_tGeometry(
-        req, context['collection_id'], context['mfeature_id'])
+    req = mock_api_request({'offset': 0,
+                            'limit': 10,
+                            'bbox': '100,30,0,200,40,10',
+                            'leaf': '2011-07-14T22:01:01.000Z',
+                            'datetime': '2011-07-14T22:01:01.000Z/2011-07-14T23:01:01.000Z'})  # noqa
+    rsp_headers, code, response = get_collection_items_tGeometry(
+        api_, req, context['collection_id'], context['mfeature_id'])
 
     assert code == HTTPStatus.OK
 
@@ -1075,13 +1054,12 @@ def test_get_collection_items_tGeometry(config, openapi, context):
     assert temporal_geometries['numberReturned'] == 1
 
 
-def test_get_collection_items_tGeometry_velocity(config, openapi, context):
-    mf = MOVING_FEATURES(config, openapi)
+def test_get_collection_items_tGeometry_velocity(api_, context):
 
     # successful data
-    req = mock_request({'date-time': '2011-07-14T22:01:08Z'})
-    rsp_headers, code, response = mf.get_collection_items_tGeometry_velocity(
-        req, context['collection_id'], context['mfeature_id'],
+    req = mock_api_request({'date-time': '2011-07-14T22:01:08Z'})
+    rsp_headers, code, response = get_collection_items_tGeometry_velocity(
+        api_, req, context['collection_id'], context['mfeature_id'],
         context['tgeometry_id'])
     assert code == HTTPStatus.OK
 
@@ -1107,13 +1085,12 @@ def test_get_collection_items_tGeometry_velocity(config, openapi, context):
     assert value_sequence['interpolation'], 1 == "Discrete"
 
 
-def test_get_collection_items_tGeometry_distance(config, openapi, context):
-    mf = MOVING_FEATURES(config, openapi)
+def test_get_collection_items_tGeometry_distance(api_, context):
 
     # successful data
-    req = mock_request({'date-time': '2011-07-14T22:01:08Z'})
-    rsp_headers, code, response = mf.get_collection_items_tGeometry_distance(
-        req, context['collection_id'], context['mfeature_id'],
+    req = mock_api_request({'date-time': '2011-07-14T22:01:08Z'})
+    rsp_headers, code, response = get_collection_items_tGeometry_distance(
+        api_, req, context['collection_id'], context['mfeature_id'],
         context['tgeometry_id'])
     assert code == HTTPStatus.OK
 
@@ -1139,14 +1116,13 @@ def test_get_collection_items_tGeometry_distance(config, openapi, context):
     assert value_sequence['interpolation'], 1 == "Discrete"
 
 
-def test_get_collection_items_tGeometry_acceleration(config, openapi, context):
-    mf = MOVING_FEATURES(config, openapi)
+def test_get_collection_items_tGeometry_acceleration(api_, context):
 
     # successful data
-    req = mock_request({'date-time': '2011-07-14T22:01:08Z'})
+    req = mock_api_request({'date-time': '2011-07-14T22:01:08Z'})
     rsp_headers, code, response = \
-        mf.get_collection_items_tGeometry_acceleration(
-            req, context['collection_id'], context['mfeature_id'],
+        get_collection_items_tGeometry_acceleration(
+            api_, req, context['collection_id'], context['mfeature_id'],
             context['tgeometry_id'])
     assert code == HTTPStatus.OK
 
@@ -1172,60 +1148,59 @@ def test_get_collection_items_tGeometry_acceleration(config, openapi, context):
     assert value_sequence['interpolation'], 1 == "Discrete"
 
 
-def test_get_collection_items_tProperty(config, openapi, context):
-    mf = MOVING_FEATURES(config, openapi)
+def test_get_collection_items_tProperty(api_, context):
 
     # not found
-    req = mock_request()
-    rsp_headers, code, response = mf.get_collection_items_tProperty(
-        req, '00000000-0000-0000-0000-000000000000',
+    req = mock_api_request()
+    rsp_headers, code, response = get_collection_items_tProperty(
+        api_, req, '00000000-0000-0000-0000-000000000000',
         '00000000-0000-0000-0000-000000000000')
     assert code == HTTPStatus.NOT_FOUND
 
     # offset value should be positive or zero
-    req = mock_request({'offset': -1})
-    rsp_headers, code, response = mf.get_collection_items_tProperty(
-        req, context['collection_id'], context['mfeature_id'])
+    req = mock_api_request({'offset': -1})
+    rsp_headers, code, response = get_collection_items_tProperty(
+        api_, req, context['collection_id'], context['mfeature_id'])
     assert code == HTTPStatus.BAD_REQUEST
 
     # offset value should be an integer
-    req = mock_request({'offset': 'one'})
-    rsp_headers, code, response = mf.get_collection_items_tProperty(
-        req, context['collection_id'], context['mfeature_id'])
+    req = mock_api_request({'offset': 'one'})
+    rsp_headers, code, response = get_collection_items_tProperty(
+        api_, req, context['collection_id'], context['mfeature_id'])
     assert code == HTTPStatus.BAD_REQUEST
 
     # limit value should be strictly positive
-    req = mock_request({'offset': 0, 'limit': 0})
-    rsp_headers, code, response = mf.get_collection_items_tProperty(
-        req, context['collection_id'], context['mfeature_id'])
+    req = mock_api_request({'offset': 0, 'limit': 0})
+    rsp_headers, code, response = get_collection_items_tProperty(
+        api_, req, context['collection_id'], context['mfeature_id'])
     assert code == HTTPStatus.BAD_REQUEST
 
     # limit value should be less than or equal to 10000
-    req = mock_request({'offset': 0, 'limit': 10001})
-    rsp_headers, code, response = mf.get_collection_items_tProperty(
-        req, context['collection_id'], context['mfeature_id'])
+    req = mock_api_request({'offset': 0, 'limit': 10001})
+    rsp_headers, code, response = get_collection_items_tProperty(
+        api_, req, context['collection_id'], context['mfeature_id'])
     assert code == HTTPStatus.BAD_REQUEST
 
     # limit value should be an integer
-    req = mock_request({'offset': 0, 'limit': 'one'})
-    rsp_headers, code, response = mf.get_collection_items_tProperty(
-        req, context['collection_id'], context['mfeature_id'])
+    req = mock_api_request({'offset': 0, 'limit': 'one'})
+    rsp_headers, code, response = get_collection_items_tProperty(
+        api_, req, context['collection_id'], context['mfeature_id'])
     assert code == HTTPStatus.BAD_REQUEST
 
     # datetime parameter out of range
-    req = mock_request({'offset': 0, 'limit': 10,
+    req = mock_api_request({'offset': 0, 'limit': 10,
                        'datetime': '2011-07-17T22:01:01.450Z/2011-07-16T00:01:01.450Z'})  # noqa
-    rsp_headers, code, response = mf.get_collection_items_tProperty(
-        req, context['collection_id'], context['mfeature_id'])
+    rsp_headers, code, response = get_collection_items_tProperty(
+        api_, req, context['collection_id'], context['mfeature_id'])
     assert code == HTTPStatus.BAD_REQUEST
 
     # successful data
-    req = mock_request({'offset': 0,
-                        'limit': 10,
-                        'datetime': '2011-07-16T22:01:01.450Z/2011-07-17T00:01:01.450Z',  # noqa
-                        'subTemporalValue': 'true'})
-    rsp_headers, code, response = mf.get_collection_items_tProperty(
-        req, context['collection_id'], context['mfeature_id'])
+    req = mock_api_request({'offset': 0,
+                            'limit': 10,
+                            'datetime': '2011-07-16T22:01:01.450Z/2011-07-17T00:01:01.450Z',  # noqa
+                            'subTemporalValue': 'true'})
+    rsp_headers, code, response = get_collection_items_tProperty(
+        api_, req, context['collection_id'], context['mfeature_id'])
     assert code == HTTPStatus.OK
 
     assert rsp_headers['Content-Type'] == 'application/json'
@@ -1264,87 +1239,86 @@ def test_get_collection_items_tProperty(config, openapi, context):
     assert result['numberReturned'] == 4
 
 
-def test_get_collection_items_tProperty_value(config, openapi, context):
-    mf = MOVING_FEATURES(config, openapi)
+def test_get_collection_items_tProperty_value(api_, context):
 
     # not found
-    req = mock_request()
-    rsp_headers, code, response = mf.get_collection_items_tProperty_value(
-        req, '00000000-0000-0000-0000-000000000000',
+    req = mock_api_request()
+    rsp_headers, code, response = get_collection_items_tProperty_value(
+        api_, req, '00000000-0000-0000-0000-000000000000',
         '00000000-0000-0000-0000-000000000000', '')
     assert code == HTTPStatus.NOT_FOUND
 
     # offset value should be positive or zero
-    req = mock_request({'offset': -1})
-    rsp_headers, code, response = mf.get_collection_items_tProperty_value(
-        req, context['collection_id'], context['mfeature_id'],
+    req = mock_api_request({'offset': -1})
+    rsp_headers, code, response = get_collection_items_tProperty_value(
+        api_, req, context['collection_id'], context['mfeature_id'],
         context['tProperty_name'])
     assert code == HTTPStatus.BAD_REQUEST
 
     # offset value should be an integer
-    req = mock_request({'offset': 'one'})
-    rsp_headers, code, response = mf.get_collection_items_tProperty_value(
-        req, context['collection_id'], context['mfeature_id'],
+    req = mock_api_request({'offset': 'one'})
+    rsp_headers, code, response = get_collection_items_tProperty_value(
+        api_, req, context['collection_id'], context['mfeature_id'],
         context['tProperty_name'])
     assert code == HTTPStatus.BAD_REQUEST
 
     # limit value should be strictly positive
-    req = mock_request({'offset': 0, 'limit': 0})
-    rsp_headers, code, response = mf.get_collection_items_tProperty_value(
-        req, context['collection_id'], context['mfeature_id'],
+    req = mock_api_request({'offset': 0, 'limit': 0})
+    rsp_headers, code, response = get_collection_items_tProperty_value(
+        api_, req, context['collection_id'], context['mfeature_id'],
         context['tProperty_name'])
     assert code == HTTPStatus.BAD_REQUEST
 
     # limit value should be less than or equal to 10000
-    req = mock_request({'offset': 0, 'limit': 10001})
-    rsp_headers, code, response = mf.get_collection_items_tProperty_value(
-        req, context['collection_id'], context['mfeature_id'],
+    req = mock_api_request({'offset': 0, 'limit': 10001})
+    rsp_headers, code, response = get_collection_items_tProperty_value(
+        api_, req, context['collection_id'], context['mfeature_id'],
         context['tProperty_name'])
     assert code == HTTPStatus.BAD_REQUEST
 
     # limit value should be an integer
-    req = mock_request({'offset': 0, 'limit': 'one'})
-    rsp_headers, code, response = mf.get_collection_items_tProperty_value(
-        req, context['collection_id'], context['mfeature_id'],
+    req = mock_api_request({'offset': 0, 'limit': 'one'})
+    rsp_headers, code, response = get_collection_items_tProperty_value(
+        api_, req, context['collection_id'], context['mfeature_id'],
         context['tProperty_name'])
     assert code == HTTPStatus.BAD_REQUEST
 
     # invalid leaf
-    req = mock_request({'offset': 0, 'limit': 10,
-                       'leaf': '2011-07-14T22:01:01.000Z,2011-07-14T22:01:01.000Z'})  # noqa
-    rsp_headers, code, response = mf.get_collection_items_tProperty_value(
-        req, context['collection_id'], context['mfeature_id'],
+    req = mock_api_request({'offset': 0, 'limit': 10,
+                        'leaf': '2011-07-14T22:01:01.000Z,2011-07-14T22:01:01.000Z'})  # noqa
+    rsp_headers, code, response = get_collection_items_tProperty_value(
+        api_, req, context['collection_id'], context['mfeature_id'],
         context['tProperty_name'])
     assert code == HTTPStatus.BAD_REQUEST
 
     # cannot use both parameter `subTemporalValue`
     # and `leaf` at the same time
-    req = mock_request({'offset': 0,
-                        'limit': 10,
-                        'leaf': '2011-07-16T22:01:01.450Z',
-                        'subTemporalValue': True})
-    rsp_headers, code, response = mf.get_collection_items_tProperty_value(
-        req, context['collection_id'], context['mfeature_id'],
+    req = mock_api_request({'offset': 0,
+                            'limit': 10,
+                            'leaf': '2011-07-16T22:01:01.450Z',
+                            'subTemporalValue': True})
+    rsp_headers, code, response = get_collection_items_tProperty_value(
+        api_, req, context['collection_id'], context['mfeature_id'],
         context['tProperty_name'])
     assert code == HTTPStatus.BAD_REQUEST
 
     # datetime parameter out of range
-    req = mock_request({'offset': 0,
-                        'limit': 10,
-                        'leaf': '2011-07-16T22:01:01.450Z',
-                        'datetime': '2011-07-17T22:01:01.450Z/2011-07-16T00:01:01.450Z'})  # noqa
-    rsp_headers, code, response = mf.get_collection_items_tProperty_value(
-        req, context['collection_id'], context['mfeature_id'],
+    req = mock_api_request({'offset': 0,
+                            'limit': 10,
+                            'leaf': '2011-07-16T22:01:01.450Z',
+                            'datetime': '2011-07-17T22:01:01.450Z/2011-07-16T00:01:01.450Z'})  # noqa
+    rsp_headers, code, response = get_collection_items_tProperty_value(
+        api_, req, context['collection_id'], context['mfeature_id'],
         context['tProperty_name'])
     assert code == HTTPStatus.BAD_REQUEST
 
     # successful data
-    req = mock_request({'offset': 0,
-                        'limit': 10,
-                        'leaf': '2011-07-16T22:01:01.450Z',
-                        'datetime': '2011-07-16T22:01:01.450Z/2011-07-17T00:01:01.450Z'})  # noqa
-    rsp_headers, code, response = mf.get_collection_items_tProperty_value(
-        req, context['collection_id'], context['mfeature_id'],
+    req = mock_api_request({'offset': 0,
+                            'limit': 10,
+                            'leaf': '2011-07-16T22:01:01.450Z',
+                            'datetime': '2011-07-16T22:01:01.450Z/2011-07-17T00:01:01.450Z'})  # noqa
+    rsp_headers, code, response = get_collection_items_tProperty_value(
+        api_, req, context['collection_id'], context['mfeature_id'],
         context['tProperty_name'])
 
     assert code == HTTPStatus.OK
@@ -1367,20 +1341,19 @@ def test_get_collection_items_tProperty_value(config, openapi, context):
 
 
 def test_manage_collection_item_tProperty_delete(
-        config, openapi, context):
-    mf = MOVING_FEATURES(config, openapi)
+        api_, context):
 
     # feature not found
-    req = mock_request()
-    rsp_headers, code, response = mf.manage_collection_item_tProperty(
-        req, 'delete', '00000000-0000-0000-0000-000000000000',
+    req = mock_api_request()
+    rsp_headers, code, response = manage_collection_item_tProperty(
+        api_, req, 'delete', '00000000-0000-0000-0000-000000000000',
         '00000000-0000-0000-0000-000000000000', '')
     assert code == HTTPStatus.NOT_FOUND
 
     # successful delete
-    req = mock_request()
-    rsp_headers, code, response = mf.manage_collection_item_tProperty(
-        req, 'delete', context['collection_id'], context['mfeature_id'],
+    req = mock_api_request()
+    rsp_headers, code, response = manage_collection_item_tProperty(
+        api_, req, 'delete', context['collection_id'], context['mfeature_id'],
         context['tProperty_name'])
 
     assert code == HTTPStatus.NO_CONTENT
@@ -1389,21 +1362,20 @@ def test_manage_collection_item_tProperty_delete(
 
 
 def test_manage_collection_item_tGeometry_delete(
-        config, openapi, context):
-    mf = MOVING_FEATURES(config, openapi)
+        api_, context):
 
     # feature not found
-    req = mock_request()
-    rsp_headers, code, response = mf.manage_collection_item_tGeometry(
-        req, 'delete', '00000000-0000-0000-0000-000000000000',
+    req = mock_api_request()
+    rsp_headers, code, response = manage_collection_item_tGeometry(
+        api_, req, 'delete', '00000000-0000-0000-0000-000000000000',
         '00000000-0000-0000-0000-000000000000',
         '00000000-0000-0000-0000-000000000000')
     assert code == HTTPStatus.NOT_FOUND
 
     # successful delete
-    req = mock_request()
-    rsp_headers, code, response = mf.manage_collection_item_tGeometry(
-        req, 'delete', context['collection_id'], context['mfeature_id'],
+    req = mock_api_request()
+    rsp_headers, code, response = manage_collection_item_tGeometry(
+        api_, req, 'delete', context['collection_id'], context['mfeature_id'],
         context['tgeometry_id'])
 
     assert code == HTTPStatus.NO_CONTENT
@@ -1412,20 +1384,19 @@ def test_manage_collection_item_tGeometry_delete(
 
 
 def test_manage_collection_item_delete(
-        config, openapi, context):
-    mf = MOVING_FEATURES(config, openapi)
+        api_, context):
 
     # collection not found
-    req = mock_request()
-    rsp_headers, code, response = mf.manage_collection_item(
-        req, 'delete', '00000000-0000-0000-0000-000000000000',
+    req = mock_api_request()
+    rsp_headers, code, response = manage_collection_item(
+        api_, req, 'delete', '00000000-0000-0000-0000-000000000000',
         '00000000-0000-0000-0000-000000000000')
     assert code == HTTPStatus.NOT_FOUND
 
     # successful delete
-    req = mock_request()
-    rsp_headers, code, response = mf.manage_collection_item(
-        req, 'delete', context['collection_id'], context['mfeature_id'])
+    req = mock_api_request()
+    rsp_headers, code, response = manage_collection_item(
+        api_, req, 'delete', context['collection_id'], context['mfeature_id'])
     assert code == HTTPStatus.NO_CONTENT
     assert response == ''
     assert rsp_headers['Content-Type'] == 'application/json'
@@ -1439,15 +1410,13 @@ def test_manage_collection_item_delete(
 
 
 def test_manage_collection_delete(
-        config,
-        openapi,
+        api_,
         context):
-    mf = MOVING_FEATURES(config, openapi)
 
     # successful delete
-    req = mock_request()
-    rsp_headers, code, response = mf.manage_collection(
-        req, 'delete', context['collection_id'])
+    req = mock_api_request()
+    rsp_headers, code, response = manage_collection(
+        api_, req, 'delete', context['collection_id'])
     assert code == HTTPStatus.NO_CONTENT
     assert response == ''
     assert rsp_headers['Content-Type'] == 'application/json'
