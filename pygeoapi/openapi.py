@@ -65,7 +65,6 @@ OPENAPI_YAML = {
 
 THISDIR = os.path.dirname(os.path.realpath(__file__))
 
-
 def get_ogc_schemas_location(server_config: dict) -> str:
     """
     Determine OGC schemas location
@@ -751,7 +750,7 @@ def get_post_resource(cfg: dict) -> dict:
 
     collection = gen_collection_name()
 
-    if (len(cfg['resources']) < 1 or cfg['resources'].get('obs') is None):
+    if (len(cfg['resources']) < 1 or 'obs' not in cfg['resources'].keys()):
         return ''
 
     post = {collection: {}}
@@ -775,9 +774,9 @@ def get_put_resource(cfg: dict) -> dict:
     :returns: dict of OpenAPI definition
     """
 
-    if (len(cfg['resources']) < 1 or cfg['resources']['obs'] is None):
+    if (len(cfg['resources']) < 1 or 'obs' not in cfg['resources'].keys()):
         return ''
-
+    
     put = deepcopy(cfg['resources']['obs'])
 
     if 'temporal' in put['extents'].keys():
@@ -798,7 +797,7 @@ def get_patch_resource(cfg: dict) -> dict:
     :returns: dict of OpenAPI definition
     """
 
-    if (len(cfg['resources']) < 1 or cfg['resources']['obs'] is None):
+    if (len(cfg['resources']) < 1 or 'obs' not in cfg['resources'].keys()):
         return ''
 
     patch = deepcopy(cfg['resources']['obs'])
