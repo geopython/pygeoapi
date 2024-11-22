@@ -65,6 +65,7 @@ OPENAPI_YAML = {
 
 THISDIR = os.path.dirname(os.path.realpath(__file__))
 
+
 def get_ogc_schemas_location(server_config: dict) -> str:
     """
     Determine OGC schemas location
@@ -776,7 +777,7 @@ def get_put_resource(cfg: dict) -> dict:
 
     if (len(cfg['resources']) < 1 or 'obs' not in cfg['resources'].keys()):
         return ''
-    
+
     put = deepcopy(cfg['resources']['obs'])
 
     if 'temporal' in put['extents'].keys():
