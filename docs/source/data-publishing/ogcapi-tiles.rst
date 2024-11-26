@@ -20,7 +20,7 @@ pygeoapi core tile providers are listed below, along with supported features.
 
    `MVT-tippecanoe`_,❌,✅,✅,❌,❌,✅
    `MVT-elastic`_,✅,✅,✅,❌,❌,✅
-   `MVT-proxy`_,❓,❓,❓,❓,❓,❓
+   `MVT-proxy`_,❓,❓,❓,❓,❌,✅
    `WMTSFacade`_,✅,❌,✅,✅,✅,❌
 
 Below are specific connection examples based on supported providers.
