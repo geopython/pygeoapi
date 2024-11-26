@@ -15,13 +15,13 @@ Providers
 pygeoapi core tile providers are listed below, along with supported features.
 
 .. csv-table::
-   :header: Provider, rendered on-the-fly, properties, WebMercatorQuad, WorldCRS84Quad
+   :header: Provider, rendered on-the-fly, properties, WebMercatorQuad, WorldCRS84Quad, raster, vector
    :align: left
 
-   `MVT-tippecanoe`_,❌,✅,✅,❌
-   `MVT-elastic`_,✅,✅,✅,❌
-   `MVT-proxy`_,❓,❓,❓,❓
-   `WMTSFacade`_,✅,❌,✅,✅
+   `MVT-tippecanoe`_,❌,✅,✅,❌,❌,✅
+   `MVT-elastic`_,✅,✅,✅,❌,❌,✅
+   `MVT-proxy`_,❓,❓,❓,❓,❓,❓
+   `WMTSFacade`_,✅,❌,✅,✅,✅,❌
 
 Below are specific connection examples based on supported providers.
 
