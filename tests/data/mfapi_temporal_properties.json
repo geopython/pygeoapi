@@ -1,0 +1,51 @@
+[
+    {
+        "datetimes": [
+            "2011-07-16T22:01:01.450Z",
+            "2011-07-16T23:01:01.450Z",
+            "2011-07-17T00:01:01.450Z"
+        ],
+        "length": {
+            "type": "Measure",
+            "form": "http://www.qudt.org/qudt/owl/1.0.0/quantity/Length",
+            "values": [
+                1,
+                2.4,
+                1
+            ],
+            "interpolation": "Linear"
+        },
+        "discharge": {
+            "type": "Measure",
+            "form": "MQS",
+            "values": [
+                3,
+                4,
+                5
+            ],
+            "interpolation": "Step"
+        }
+    },
+    {
+        "datetimes": [
+            "2011-07-16T22:01:01.450Z",
+            "2011-07-16T23:01:01.450Z"
+        ],
+        "camera": {
+            "type": "Image",
+            "values": [
+                "http://www.opengis.net/spec/movingfeatures/json/1.0/prism/example/image1", 
+                "iVBORw0KGgoAAAANSUhEU......"
+            ],
+            "interpolation": "Discrete"
+        },
+        "labels": {
+            "type": "Text",
+            "values": [
+                "car",
+                "human"
+            ],
+            "interpolation": "Discrete"
+        }
+    }
+]

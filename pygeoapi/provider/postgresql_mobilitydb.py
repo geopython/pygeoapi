@@ -11,20 +11,29 @@ from pymeos_cffi import (tfloat_from_mfjson, ttext_from_mfjson,
 # from mobilitydb.psycopg import register
 
 
+# CREATE DATABASE mobilitydb
+#   WITH TEMPLATE = template0
+#   ENCODING = 'UTF8';
+# ALTER DATABASE mobilitydb OWNER TO postgres;
+
+# create table:
+# psql -U postgres -h 127.0.0.1 -p 5432 mobilitydb <
+#   tests/data/mf-api.sql
+
 class PostgresMobilityDB:
-    # host = '127.0.0.1'
+    host = '127.0.0.1'
+    port = 5432
+    db = 'mobilitydb'
+    user = 'docker'
+    password = 'docker'
+    connection = None
+
+    # host = '172.20.241.18'
     # port = 5432
     # db = 'mobilitydb'
-    # user = 'docker'
-    # password = 'docker'
+    # user = 'postgres'
+    # password = 'postgres'
     # connection = None
-
-    host = '172.20.241.18'
-    port = 5432
-    db = 'mobility'
-    user = 'postgres'
-    password = 'postgres'
-    connection = None
 
     def __init__(self, datasource=None):
         """

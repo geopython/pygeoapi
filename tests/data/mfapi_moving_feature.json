@@ -1,0 +1,219 @@
+{
+    "type": "Feature",
+    "crs": {
+        "type": "Name",
+        "properties": {
+            "name": "urn:ogc:def:crs:OGC:1.3:CRS84"
+        }
+    },
+    "trs": {
+        "type": "Link",
+        "properties": {
+            "type": "OGCDEF",
+            "href": "http://www.opengis.net/def/uom/ISO-8601/0/Gregorian"
+        }
+    },
+    "temporalGeometry": {
+        "type": "MovingPoint",
+        "datetimes": [
+            "2011-07-14T22:01:01Z",
+            "2011-07-14T22:01:02Z",
+            "2011-07-14T22:01:03Z",
+            "2011-07-14T22:01:04Z",
+            "2011-07-14T22:01:05Z"
+        ],
+        "coordinates": [
+            [
+                139.757083,
+                35.627701,
+                0.5
+            ],
+            [
+                139.757399,
+                35.627701,
+                2
+            ],
+            [
+                139.757555,
+                35.627688,
+                4
+            ],
+            [
+                139.757651,
+                35.627596,
+                4
+            ],
+            [
+                139.757716,
+                35.627483,
+                4
+            ]
+        ],
+        "interpolation": "Linear",
+        "base": {
+            "type": "glTF",
+            "href": "http://www.opengis.net/spec/movingfeatures/json/1.0/prism/example/car3dmodel.gltf"  
+        },
+        "orientations": [
+            {
+                "scales": [
+                    1,
+                    1,
+                    1
+                ],
+                "angles": [
+                    0,
+                    0,
+                    0
+                ]
+            },
+            {
+                "scales": [
+                    1,
+                    1,
+                    1
+                ],
+                "angles": [
+                    0,
+                    355,
+                    0
+                ]
+            },
+            {
+                "scales": [
+                    1,
+                    1,
+                    1
+                ],
+                "angles": [
+                    0,
+                    0,
+                    330
+                ]
+            },
+            {
+                "scales": [
+                    1,
+                    1,
+                    1
+                ],
+                "angles": [
+                    0,
+                    0,
+                    300
+                ]
+            },
+            {
+                "scales": [
+                    1,
+                    1,
+                    1
+                ],
+                "angles": [
+                    0,
+                    0,
+                    270
+                ]
+            }
+        ]
+    },
+    "temporalProperties": [
+        {
+            "datetimes": [
+                "2011-07-14T22:01:01.450Z",
+                "2011-07-14T23:01:01.450Z",
+                "2011-07-15T00:01:01.450Z"
+            ],
+            "length": {
+                "type": "Measure",
+                "form": "http://www.qudt.org/qudt/owl/1.0.0/quantity/Length",  
+                "values": [
+                    1,
+                    2.4,
+                    1
+                ],
+                "interpolation": "Linear"
+            },
+            "discharge": {
+                "type": "Measure",
+                "form": "MQS",
+                "values": [
+                    3,
+                    4,
+                    5
+                ],
+                "interpolation": "Step"
+            }
+        },
+        {
+            "datetimes": [
+                1465621816590,
+                1465711526300
+            ],
+            "camera": {
+                "type": "Image",
+                "values": [
+                    "http://www.opengis.net/spec/movingfeatures/json/1.0/prism/example/image1",  
+                    "iVBORw0KGgoAAAANSUhEU......"
+                ],
+                "interpolation": "Discrete"
+            },
+            "labels": {
+                "type": "Text",
+                "values": [
+                    "car",
+                    "human"
+                ],
+                "interpolation": "Discrete"
+            }
+        }
+    ],
+    "geometry": {
+        "type": "LineString",
+        "coordinates": [
+            [
+                139.757083,
+                35.627701,
+                0.5
+            ],
+            [
+                139.757399,
+                35.627701,
+                2
+            ],
+            [
+                139.757555,
+                35.627688,
+                4
+            ],
+            [
+                139.757651,
+                35.627596,
+                4
+            ],
+            [
+                139.757716,
+                35.627483,
+                4
+            ]
+        ]
+    },
+    "properties": {
+        "name": "car1",
+        "state": "test1",
+        "video": "http://www.opengis.net/spec/movingfeatures/json/1.0/prism/example/video.mpeg"  
+    },
+    "bbox": [
+        139.757083,
+        35.627483,
+        0,
+        139.757716,
+        35.627701,
+        4.5
+    ],
+    "time": [
+        "2011-07-14T22:01:01Z",
+        "2011-07-15T01:11:22Z"
+    ],
+    "id": "mf-1"
+}
