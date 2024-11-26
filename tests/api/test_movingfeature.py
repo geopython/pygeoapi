@@ -27,9 +27,9 @@ from pygeoapi.api import API
 
 @pytest.fixture()
 def api_():
-    with open(get_test_file_path('example-config.yml')) as fh:
+    with open(get_test_file_path('../pygeoapi-test-config-mfapi.yml')) as fh:
         config = yaml_load(fh)
-    with open(get_test_file_path('example-openapi.yml')) as fh:
+    with open(get_test_file_path('../pygeoapi-test-openapi-mfapi.yml')) as fh:
         openapi = yaml_load(fh)
     return API(config, openapi)
 
@@ -680,6 +680,11 @@ def test_manage_collection_item_tProperty_value_create(
     assert response == ''
     assert rsp_headers['Content-Type'] == 'application/json'
     assert 'Location' in rsp_headers
+
+    location = rsp_headers['Location']
+    tvalue_id = location.split('/')[-1]
+    assert tvalue_id is not None
+    context['tvalue_id'] = tvalue_id
 
 
 def test_manage_collection_update(
@@ -1338,6 +1343,28 @@ def test_get_collection_items_tProperty_value(api_, context):
     assert valueSequence['datetimes'] == ["2011-07-16T22:01:01.45Z"]
     assert 'interpolation' in valueSequence
     assert valueSequence['interpolation'] == 'Discrete'
+
+
+def test_manage_collection_item_tProperty_value_delete(
+        api_, context):
+
+    # feature not found
+    req = mock_api_request()
+    rsp_headers, code, response = manage_collection_item_tProperty_value(
+        api_, req, 'delete', '00000000-0000-0000-0000-000000000000',
+        '00000000-0000-0000-0000-000000000000', '',
+        '00000000-0000-0000-0000-000000000000')
+    assert code == HTTPStatus.NOT_FOUND
+
+    # successful delete
+    req = mock_api_request()
+    rsp_headers, code, response = manage_collection_item_tProperty_value(
+        api_, req, 'delete', context['collection_id'], context['mfeature_id'],
+        context['tProperty_name'], context['tvalue_id'])
+
+    assert code == HTTPStatus.NO_CONTENT
+    assert response == ''
+    assert rsp_headers['Content-Type'] == 'application/json'
 
 
 def test_manage_collection_item_tProperty_delete(

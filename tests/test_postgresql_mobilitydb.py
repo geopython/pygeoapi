@@ -491,12 +491,13 @@ def test_query_post_temporalvalue(context, temporalvalue_data):
 
     pmdb_provider = PostgresMobilityDB()
     pmdb_provider.connect()
-    pmdb_provider.post_temporalvalue(context.get('collection_id'),
-                                     context.get('mfeature_id'),
-                                     context.get('tProperty_name'),
-                                     temporalvalue_data)
+    tvalue_id = pmdb_provider.post_temporalvalue(context.get('collection_id'),
+                                                 context.get('mfeature_id'),
+                                                 context.get('tProperty_name'),
+                                                 temporalvalue_data)
 
-    assert True
+    assert tvalue_id is not None
+    context['tvalue_id'] = tvalue_id
 
 
 def test_query_put_collection(context, update_collection_property):
@@ -795,9 +796,23 @@ def test_query_get_acceleration(context,
     assert value_sequence is not None
 
 
+def test_query_delete_temporalvalue(context):
+    restriction = "AND tvalue_id ='{0}'".format(
+        context.get('tvalue_id'))
+
+    pmdb_provider = PostgresMobilityDB()
+    pmdb_provider.connect()
+    pmdb_provider.delete_temporalvalue(restriction)
+
+    assert True
+
+
 def test_query_delete_temporalproperties(context):
-    restriction = "AND tproperties_name ='{0}'".format(
-        context.get('tProperty_name'))
+    restriction = """AND collection_id ='{0}' AND mfeature_id ='{1}'
+                AND tproperties_name ='{2}'""".format(
+        context.get('collection_id'),
+        context.get('mfeature_id'),
+        context.get('tProperties_name'))
 
     pmdb_provider = PostgresMobilityDB()
     pmdb_provider.connect()

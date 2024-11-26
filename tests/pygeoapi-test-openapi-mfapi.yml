@@ -1,0 +1,2416 @@
+openapi: 3.0.3
+info:
+  title: 'Building Blocks specified in OGC API - Moving Features - Part 1: Core'
+  version: 0.1.0
+  description: This is the OpenAPI definition of Moving Features API specification that conforms to the OGC Moving Features Encoding Extension - JSON.
+  contact:
+    name: OGC Moving Features SWG
+    email: moving-features.swg-bounces@lists.ogc.org
+  license:
+    name: OGC License
+    url: https://www.ogc.org/ogc/Document
+  x-logo:
+    url: https://www.ogc.org/pub/www/files/OGC_Logo_2D_Blue_x_0_0.png
+    backgroundColor: '#FFFFFF'
+    altText: OGC logo
+    href: https://www.ogc.org/contacts
+tags:
+  - name: Capabilities
+    description: Essential characteristics of the information available from the API.
+  - name: MovingFeatureCollection
+    description: Collections of moving features to be logically managed by a user.
+  - name: MovingFeatures
+    description: Moving feature data, including the temporal geometry, temporal properties, etc.
+  - name: TemporalGeometry
+    description: The spatial change over time (temporal geometry), representing the movement of the rigid or nonrigid body of a feature.
+  - name: TemporalGeometryQuery
+    description: Queryable resources for the temporal primitive geometry.
+  - name: TemporalProperty
+    description: The thematic change over time (temporal property), representing the variation of the value of any descriptive characteristic of a feature.
+paths:
+  /:
+    get:
+      operationId: getLandingPage
+      summary: Landing page
+      description: The landing page provides links to the API definition, the conformance statements and to the feature collections in this dataset.
+      tags:
+        - Capabilities
+      responses:
+        '200':
+          $ref: '#/components/responses/LandingPage'
+        '500':
+          $ref: '#/components/responses/ServerError'
+  /conformance:
+    get:
+      operationId: getConformance
+      summary: Information about specifications that this API conforms to
+      description: A list of all conformance classes specified in a standard that the server conforms to.
+      tags:
+        - Capabilities
+      responses:
+        '200':
+          $ref: '#/components/responses/Conformance'
+        '500':
+          $ref: '#/components/responses/ServerError'
+  /api:
+    get:
+      operationId: getAPIList
+      summary: API definition
+      description: A list of all API definition
+      tags:
+        - Capabilities
+      responses:
+        '500':
+          $ref: '#/components/responses/ServerError'
+  /collections:
+    get:
+      operationId: searchCatalog
+      summary: Retrieve catalogs of moving features collection
+      description: |
+        A user can retrieve catalogs to access collections by simple filtering and a limit.
+      tags:
+        - Capabilities
+      responses:
+        '200':
+          $ref: '#/components/responses/Collections'
+        '500':
+          $ref: '#/components/responses/ServerError'
+    post:
+      operationId: registerMetadata
+      summary: Register metadata about a collection of moving features
+      description: |
+        A user SHOULD register metadata about a collection of moving features into the system.
+      tags:
+        - MovingFeatureCollection
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/collection-2'
+            example:
+              title: moving_feature_collection_sample
+              updateFrequency: 1000
+              description: example
+      responses:
+        '201':
+          description: Successful create a collection to manage moving features.
+          headers:
+            Location:
+              description: A URI of the newly added resource
+              schema:
+                type: string
+                example: https://data.example.org/collections/mfc1
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - id
+                properties:
+                  id:
+                    type: string
+                    description: Newly added resource ID
+                example:
+                  id: mfc-1
+        '500':
+          $ref: '#/components/responses/ServerError'
+  /collections/{collectionId}:
+    get:
+      operationId: accessMetadata
+      summary: Access metadata about the collection
+      description: |
+        A user can access metadata with id `collectionId`.
+      tags:
+        - MovingFeatureCollection
+      parameters:
+        - $ref: '#/components/parameters/collectionId'
+      responses:
+        '200':
+          $ref: '#/components/responses/Collection'
+        '404':
+          description: A collection with the specified id was not found.
+        '500':
+          $ref: '#/components/responses/ServerError'
+    delete:
+      operationId: deleteCollection
+      summary: Delete the collection
+      description: |
+        The collection catalog with id `collectionId` and including metadata and moving features SHOULD be deleted.
+      tags:
+        - MovingFeatureCollection
+      parameters:
+        - $ref: '#/components/parameters/collectionId'
+      responses:
+        '204':
+          description: Successfully deleted.
+        '404':
+          description: A collection with the specified name was not found.
+        '500':
+          $ref: '#/components/responses/ServerError'
+    put:
+      operationId: replaceMetadata
+      summary: Replace metadata about the collection
+      description: |
+        A user SHOULD replace metadata with id `collectionId`.
+
+        The request body schema is the same the POST's one. 
+
+        However, `updateFrequency` property is NOT updated.
+      tags:
+        - MovingFeatureCollection
+      parameters:
+        - $ref: '#/components/parameters/collectionId'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/collection-2'
+            example:
+              title: moving_feature_collection_sample
+              updateFrequency: 1000
+              description: example
+      responses:
+        '204':
+          description: Successfully replaced.
+        '404':
+          description: A collection with the specified name was not found.
+        '500':
+          $ref: '#/components/responses/ServerError'
+  /collections/{collectionId}/items:
+    get:
+      operationId: retrieveMovingFeatures
+      summary: Retrieve moving feature collection
+      description: |
+        A user can retrieve moving feature collection to access the static information of the moving feature by simple filtering and a limit.
+
+        Specifically, if the `subTrajectory` parameter is "true", it will return the temporal geometry within the time interval specified by `datetime` parameter.
+      tags:
+        - MovingFeatures
+      parameters:
+        - $ref: '#/components/parameters/collectionId'
+        - $ref: '#/components/parameters/bbox'
+        - $ref: '#/components/parameters/datetime'
+        - $ref: '#/components/parameters/limit'
+        - $ref: '#/components/parameters/subtrajectory-description'
+      responses:
+        '200':
+          $ref: '#/components/responses/MovingFeatures'
+        '404':
+          description: A collection with the specified id was not found.
+        '500':
+          $ref: '#/components/responses/ServerError'
+    post:
+      operationId: insertMovingFeatures
+      summary: Insert moving features
+      description: |
+        A user SHOULD insert a set of moving features or a moving feature into a collection with id `collectionId`.
+
+        The request body schema SHALL follows the [MovingFeature object](https://docs.opengeospatial.org/is/19-045r3/19-045r3.html#mfeature) or 
+        [MovingFeatureCollection object](https://docs.opengeospatial.org/is/19-045r3/19-045r3.html#mfeaturecollection) in the OGC MF-JSON.
+      tags:
+        - MovingFeatures
+      parameters:
+        - $ref: '#/components/parameters/collectionId'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              oneOf:
+                - $ref: '#/components/schemas/movingFeature-2'
+                - $ref: '#/components/schemas/movingFeatureCollection'
+            example:
+              type: Feature
+              crs:
+                type: Name
+                properties:
+                  name: urn:ogc:def:crs:OGC:1.3:CRS84
+              trs:
+                type: Link
+                properties:
+                  type: OGCDEF
+                  href: http://www.opengis.net/def/uom/ISO-8601/0/Gregorian
+              temporalGeometry:
+                type: MovingPoint
+                datetimes:
+                  - '2011-07-14T22:01:01Z'
+                  - '2011-07-14T22:01:02Z'
+                  - '2011-07-14T22:01:03Z'
+                  - '2011-07-14T22:01:04Z'
+                  - '2011-07-14T22:01:05Z'
+                coordinates:
+                  - - 139.757083
+                    - 35.627701
+                    - 0.5
+                  - - 139.757399
+                    - 35.627701
+                    - 2
+                  - - 139.757555
+                    - 35.627688
+                    - 4
+                  - - 139.757651
+                    - 35.627596
+                    - 4
+                  - - 139.757716
+                    - 35.627483
+                    - 4
+                interpolation: Linear
+                base:
+                  type: glTF
+                  href: http://www.opengis.net/spec/movingfeatures/json/1.0/prism/example/car3dmodel.gltf
+                orientations:
+                  - scales:
+                      - 1
+                      - 1
+                      - 1
+                    angles:
+                      - 0
+                      - 0
+                      - 0
+                  - scales:
+                      - 1
+                      - 1
+                      - 1
+                    angles:
+                      - 0
+                      - 355
+                      - 0
+                  - scales:
+                      - 1
+                      - 1
+                      - 1
+                    angles:
+                      - 0
+                      - 0
+                      - 330
+                  - scales:
+                      - 1
+                      - 1
+                      - 1
+                    angles:
+                      - 0
+                      - 0
+                      - 300
+                  - scales:
+                      - 1
+                      - 1
+                      - 1
+                    angles:
+                      - 0
+                      - 0
+                      - 270
+              temporalProperties:
+                - datetimes:
+                    - '2011-07-14T22:01:01.450Z'
+                    - '2011-07-14T23:01:01.450Z'
+                    - '2011-07-15T00:01:01.450Z'
+                  length:
+                    type: Measure
+                    form: http://www.qudt.org/qudt/owl/1.0.0/quantity/Length
+                    values:
+                      - 1
+                      - 2.4
+                      - 1
+                    interpolation: Linear
+                  discharge:
+                    type: Measure
+                    form: MQS
+                    values:
+                      - 3
+                      - 4
+                      - 5
+                    interpolation: Step
+                - datetimes:
+                    - 1465621816590
+                    - 1465711526300
+                  camera:
+                    type: Image
+                    values:
+                      - http://www.opengis.net/spec/movingfeatures/json/1.0/prism/example/image1
+                      - iVBORw0KGgoAAAANSUhEU......
+                    interpolation: Discrete
+                  labels:
+                    type: Text
+                    values:
+                      - car
+                      - human
+                    interpolation: Discrete
+              geometry:
+                type: LineString
+                coordinates:
+                  - - 139.757083
+                    - 35.627701
+                    - 0.5
+                  - - 139.757399
+                    - 35.627701
+                    - 2
+                  - - 139.757555
+                    - 35.627688
+                    - 4
+                  - - 139.757651
+                    - 35.627596
+                    - 4
+                  - - 139.757716
+                    - 35.627483
+                    - 4
+              properties:
+                name: car1
+                state: test1
+                video: http://www.opengis.net/spec/movingfeatures/json/1.0/prism/example/video.mpeg
+              bbox:
+                - 139.757083
+                - 35.627483
+                - 0
+                - 139.757716
+                - 35.627701
+                - 4.5
+              time:
+                - '2011-07-14T22:01:01Z'
+                - '2011-07-15T01:11:22Z'
+              id: mf-1
+      responses:
+        '201':
+          description: |
+            Successful create a set of moving features or a moving feature into a specific collection.
+          headers:
+            Location:
+              description: A list of URI of the newly added resources
+              schema:
+                type: array
+                items:
+                  type: string
+                example:
+                  - https://data.example.org/collections/mfc-1/items/mf-1
+                  - https://data.example.org/collections/mfc-1/items/109301273
+        '400':
+          description: A query parameter was not validly used.
+        '404':
+          description: A collection with the specified id was not found.
+        '500':
+          $ref: '#/components/responses/ServerError'
+  /collections/{collectionId}/items/{mFeatureId}:
+    get:
+      operationId: accessMovingFeature
+      summary: Access the static data of the moving feature
+      description: |
+        A user can access a static data of a moving feature with id `mFeatureId`.
+
+        The static data of a moving feature is not included temporal geometries and temporal properties.
+      tags:
+        - MovingFeatures
+      parameters:
+        - $ref: '#/components/parameters/collectionId'
+        - $ref: '#/components/parameters/mFeatureId'
+      responses:
+        '200':
+          $ref: '#/components/responses/MovingFeature'
+        '404':
+          description: |
+            - A collection with the specified id was not found.
+            - Or a moving feature with the specified id was not found.
+        '500':
+          $ref: '#/components/responses/ServerError'
+    delete:
+      operationId: deleteMovingFeature
+      summary: Delete a single moving feature
+      description: |
+        The moving feature with id `mFeatureId` and including temporal geometries and properties SHOULD be deleted.
+      tags:
+        - MovingFeatures
+      parameters:
+        - $ref: '#/components/parameters/collectionId'
+        - $ref: '#/components/parameters/mFeatureId'
+      responses:
+        '204':
+          description: Successfully deleted.
+        '404':
+          description: |
+            - A collection with the specified id was not found.
+            - Or a moving feature with the specified id was not found.
+        '500':
+          $ref: '#/components/responses/ServerError'
+  /collections/{collectionId}/items/{mFeatureId}/tgsequence:
+    get:
+      operationId: retrieveTemporalGeometrySequence
+      summary: Retrieve the movement data of the single moving feature
+      description: |
+        A user can retrieve only the movement data of a moving feature with id `mFeatureId` by simple filtering and a limit.
+      tags:
+        - TemporalGeometry
+      parameters:
+        - $ref: '#/components/parameters/collectionId'
+        - $ref: '#/components/parameters/mFeatureId'
+        - $ref: '#/components/parameters/bbox'
+        - $ref: '#/components/parameters/datetime'
+        - $ref: '#/components/parameters/limit'
+        - $ref: '#/components/parameters/leaf-description'
+        - $ref: '#/components/parameters/subtrajectory-description'
+      responses:
+        '200':
+          $ref: '#/components/responses/TemporalGeometrySequence'
+        '500':
+          $ref: '#/components/responses/ServerError'
+    post:
+      operationId: insertTemporalPrimitiveGeometry
+      summary: Add movement data into the moving feature
+      description: |
+        A user SHOULD add more movement data into a moving feature with id `mFeatureId`.
+
+        The request body schema SHALL follows the [TemporalPrimitiveGeometry object](https://docs.ogc.org/is/19-045r3/19-045r3.html#tprimitive) in the OGC MF-JSON.
+      tags:
+        - TemporalGeometry
+      parameters:
+        - $ref: '#/components/parameters/collectionId'
+        - $ref: '#/components/parameters/mFeatureId'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/temporalPrimitiveGeometry'
+            example:
+              type: MovingPoint
+              datetimes:
+                - '2011-07-14T22:01:06Z'
+                - '2011-07-14T22:01:07Z'
+                - '2011-07-14T22:01:08Z'
+                - '2011-07-14T22:01:09Z'
+                - '2011-07-14T22:01:10Z'
+              coordinates:
+                - - 139.757083
+                  - 35.627701
+                  - 0.5
+                - - 139.757399
+                  - 35.627701
+                  - 2
+                - - 139.757555
+                  - 35.627688
+                  - 4
+                - - 139.757651
+                  - 35.627596
+                  - 4
+                - - 139.757716
+                  - 35.627483
+                  - 4
+              interpolation: Linear
+              base:
+                type: glTF
+                href: https://www.opengis.net/spec/movingfeatures/json/1.0/prism/example/car3dmodel.gltf
+              orientations:
+                - scales:
+                    - 1
+                    - 1
+                    - 1
+                  angles:
+                    - 0
+                    - 0
+                    - 0
+                - scales:
+                    - 1
+                    - 1
+                    - 1
+                  angles:
+                    - 0
+                    - 355
+                    - 0
+                - scales:
+                    - 1
+                    - 1
+                    - 1
+                  angles:
+                    - 0
+                    - 0
+                    - 330
+                - scales:
+                    - 1
+                    - 1
+                    - 1
+                  angles:
+                    - 0
+                    - 0
+                    - 300
+                - scales:
+                    - 1
+                    - 1
+                    - 1
+                  angles:
+                    - 0
+                    - 0
+                    - 270
+      responses:
+        '201':
+          description: |
+            Successful add more movement data into a specified moving feature.
+          headers:
+            Location:
+              description: A URI of the newly added resource
+              schema:
+                type: string
+                example: https://data.example.org/collections/mfc-1/items/mf-1/tgsequence/tg-2
+        '400':
+          description: A query parameter was not validly used.
+        '404':
+          description: |
+            - A collection with the specified id was not found.
+            - Or a moving feature with the specified id was not found.
+        '500':
+          $ref: '#/components/responses/ServerError'
+  /collections/{collectionId}/items/{mFeatureId}/tgsequence/{tGeometryId}:
+    delete:
+      operationId: deleteTemporalPrimitiveGeometry
+      summary: Delete a singe temporal primitive geometry
+      description: |
+        The temporal primitive geometry with id `tGeometryId` SHOULD be deleted.
+      tags:
+        - TemporalGeometry
+      parameters:
+        - $ref: '#/components/parameters/collectionId'
+        - $ref: '#/components/parameters/mFeatureId'
+        - $ref: '#/components/parameters/tGeometryId'
+      responses:
+        '204':
+          description: Successfully deleted.
+        '404':
+          description: |
+            - A collection with the specified id was not found.
+            - Or a moving feature with the specified id was not found.
+            - Or a temporal primitive geometry with the specified id was not found.
+        '500':
+          $ref: '#/components/responses/ServerError'
+  /collections/{collectionId}/items/{mFeatureId}/tgsequence/{tGeometryId}/distance:
+    get:
+      operationId: getDistanceOfTemporalPrimitiveGeometry
+      summary: Get a time-to-distance curve of a temporal primitive geometry
+      description: |
+        A user can get time-to-distance curve of a temporal primitive geometry with id `tGeometryId`.
+
+        When `date-time` query parameter is provided, this operation will return a single distance value according to the specified date and time in the `data-time` parameter.
+      tags:
+        - TemporalGeometryQuery
+      parameters:
+        - $ref: '#/components/parameters/collectionId'
+        - $ref: '#/components/parameters/mFeatureId'
+        - $ref: '#/components/parameters/tGeometryId'
+        - $ref: '#/components/parameters/date-time'
+      responses:
+        '200':
+          $ref: '#/components/responses/DistanceQuery'
+        '400':
+          description: A query parameter was not validly used.
+        '500':
+          $ref: '#/components/responses/ServerError'
+  /collections/{collectionId}/items/{mFeatureId}/tgsequence/{tGeometryId}/velocity:
+    get:
+      operationId: getVelocityOfTemporalPrimitiveGeometry
+      summary: Get a time-to-velocity curve of a temporal primitive geometry
+      description: |
+        A user can get time-to-velocity curve of a temporal primitive geometry with id `tGeometryId`.
+
+        When `date-time` query parameter is provided, this operation will return a single velocity value according to the specified date and time in the `data-time` parameter.
+      tags:
+        - TemporalGeometryQuery
+      parameters:
+        - $ref: '#/components/parameters/collectionId'
+        - $ref: '#/components/parameters/mFeatureId'
+        - $ref: '#/components/parameters/tGeometryId'
+        - $ref: '#/components/parameters/date-time'
+      responses:
+        '200':
+          $ref: '#/components/responses/VelocityQuery'
+        '400':
+          description: A query parameter was not validly used.
+        '500':
+          $ref: '#/components/responses/ServerError'
+  /collections/{collectionId}/items/{mFeatureId}/tgsequence/{tGeometryId}/acceleration:
+    get:
+      operationId: getAccelerationOfTemporalPrimitiveGeometry
+      summary: Get a time-to-acceleration curve of a temporal primitive geometry
+      description: |
+        A user can get time-to-acceleration curve of a temporal primitive geometry with id `tGeometryId`.
+
+        When `date-time` query parameter is provided, this operation will return a single acceleration value according to the specified date and time in the `data-time` parameter.
+      tags:
+        - TemporalGeometryQuery
+      parameters:
+        - $ref: '#/components/parameters/collectionId'
+        - $ref: '#/components/parameters/mFeatureId'
+        - $ref: '#/components/parameters/tGeometryId'
+        - $ref: '#/components/parameters/date-time'
+      responses:
+        '200':
+          $ref: '#/components/responses/AccelerationQuery'
+        '400':
+          description: A query parameter was not validly used.
+        '500':
+          $ref: '#/components/responses/ServerError'
+  /collections/{collectionId}/items/{mFeatureId}/tproperties:
+    get:
+      operationId: retrieveTemporalProperties
+      summary: Retrieve a set of the temporal property data
+      description: |
+        A user can retrieve the static information of the temporal property data that included a single moving feature with id `mFeatureId`.
+
+        The static data of a temporal property is not included temporal values (property `valueSequence`).
+
+        Also a user can retrieve the sub sequence of the temporal information of the temporal property data for the specified time interval with `subTemporalValue` query parameter. 
+        In this case, `temporalProperties` property schema SHALL follows the [TemporalProperties object](https://docs.ogc.org/is/19-045r3/19-045r3.html#tproperties) in the OGC MF-JSON.
+      tags:
+        - TemporalProperty
+      parameters:
+        - $ref: '#/components/parameters/collectionId'
+        - $ref: '#/components/parameters/mFeatureId'
+        - $ref: '#/components/parameters/datetime'
+        - $ref: '#/components/parameters/limit'
+        - $ref: '#/components/parameters/subtemporalvalue-description'
+      responses:
+        '200':
+          $ref: '#/components/responses/TemporalProperties'
+        '400':
+          description: A query parameter was not validly used.
+        '500':
+          $ref: '#/components/responses/ServerError'
+    post:
+      operationId: insertTemporalProperty
+      summary: Add temporal property data
+      description: |
+        A user SHOULD add new temporal property data into a moving feature with id `mFeatureId`.
+
+        The request body schema SHALL follows the [TemporalProperties object](https://docs.opengeospatial.org/is/19-045r3/19-045r3.html#tproperties) in the OGC MF-JSON.
+      tags:
+        - TemporalProperty
+      parameters:
+        - $ref: '#/components/parameters/collectionId'
+        - $ref: '#/components/parameters/mFeatureId'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/temporalProperties'
+            example:
+              - datetimes:
+                  - '2011-07-14T22:01:01.450Z'
+                  - '2011-07-14T23:01:01.450Z'
+                  - '2011-07-15T00:01:01.450Z'
+                length:
+                  type: Measure
+                  form: http://www.qudt.org/qudt/owl/1.0.0/quantity/Length
+                  values:
+                    - 1
+                    - 2.4
+                    - 1
+                  interpolation: Linear
+                discharge:
+                  type: Measure
+                  form: MQS
+                  values:
+                    - 3
+                    - 4
+                    - 5
+                  interpolation: Step
+              - datetimes:
+                  - '2011-07-14T22:01:01.450Z'
+                  - '2011-07-14T23:01:01.450Z'
+                camera:
+                  type: Image
+                  values:
+                    - http://www.opengis.net/spec/movingfeatures/json/1.0/prism/example/image1
+                    - iVBORw0KGgoAAAANSUhEU......
+                  interpolation: Discrete
+                labels:
+                  type: Text
+                  values:
+                    - car
+                    - human
+                  interpolation: Discrete
+      responses:
+        '201':
+          description: |
+            Successful add more temporal property into a specified moving feature.
+          headers:
+            Locations:
+              description: A list of URI of the newly added resources
+              schema:
+                type: array
+                items:
+                  type: string
+                example:
+                  - https://data.example.org/collections/mfc-1/items/mf-1/tproperties/length
+                  - https://data.example.org/collections/mfc-1/items/mf-1/tproperties/discharge
+                  - https://data.example.org/collections/mfc-1/items/mf-1/tproperties/camera
+                  - https://data.example.org/collections/mfc-1/items/mf-1/tproperties/labels
+        '404':
+          description: |
+            - A collection with the specified id was not found.
+            - Or a moving feature with the specified id was not found.
+        '500':
+          $ref: '#/components/responses/ServerError'
+  /collections/{collectionId}/items/{mFeatureId}/tproperties/{tPropertyName}:
+    get:
+      operationId: retrieveTemporalProperty
+      summary: Retrieve a temporal property
+      description: |
+        A user can retrieve only the temporal values with a specified name `tPropertyName` of temporal property.
+      tags:
+        - TemporalProperty
+      parameters:
+        - $ref: '#/components/parameters/collectionId'
+        - $ref: '#/components/parameters/mFeatureId'
+        - $ref: '#/components/parameters/tPropertyName'
+        - $ref: '#/components/parameters/datetime'
+        - $ref: '#/components/parameters/leaf-description'
+        - $ref: '#/components/parameters/subtemporalvalue-description'
+      responses:
+        '200':
+          $ref: '#/components/responses/TemporalProperty'
+        '400':
+          description: A query parameter was not validly used.
+        '500':
+          $ref: '#/components/responses/ServerError'
+    post:
+      operationId: insertTemporalPrimitiveValue
+      summary: Add temporal primitive value data
+      description: |
+        A user SHOULD add more temporal primitive value data into a temporal property with id `tPropertyName`.
+      tags:
+        - TemporalProperty
+      parameters:
+        - $ref: '#/components/parameters/collectionId'
+        - $ref: '#/components/parameters/mFeatureId'
+        - $ref: '#/components/parameters/tPropertyName'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/temporalPrimitiveValue'
+            example:
+              datetimes:
+                - '2011-07-15T08:00:00Z'
+                - '2011-07-15T08:00:01Z'
+                - '2011-07-15T08:00:02Z'
+              values:
+                - 0
+                - 20
+                - 50
+              interpolation: Linear
+      responses:
+        '201':
+          description: |
+            Successful add more temporal primitive value data into a specified temporal property.
+        '404':
+          description: |
+            - A collection with the specified id was not found.
+            - Or a moving feature with the specified id was not found.
+            - Or a temporal property with the specified id was not found.
+        '500':
+          $ref: '#/components/responses/ServerError'
+    delete:
+      operationId: deleteTemporalProperty
+      summary: Delete a specified temporal property
+      description: |
+        The temporal property with id `tPropertyName` SHOULD be deleted.
+      tags:
+        - TemporalProperty
+      parameters:
+        - $ref: '#/components/parameters/collectionId'
+        - $ref: '#/components/parameters/mFeatureId'
+        - $ref: '#/components/parameters/tPropertyName'
+      responses:
+        '204':
+          description: Successfully deleted.
+        '404':
+          description: |
+            - A collection with the specified id was not found.
+            - Or a moving feature with the specified id was not found.
+            - Or a temporal property with the specified id was not found.
+        '500':
+          $ref: '#/components/responses/ServerError'
+components:
+  schemas:
+    link:
+      type: object
+      required:
+        - href
+        - rel
+      properties:
+        href:
+          type: string
+          example: http://data.example.com/buildings/123
+        rel:
+          type: string
+          example: alternate
+        type:
+          type: string
+          example: application/geo+json
+        hreflang:
+          type: string
+          example: en
+        title:
+          type: string
+          example: Trierer Strasse 70, 53115 Bonn
+        length:
+          type: integer
+    landingPage:
+      type: object
+      required:
+        - links
+      properties:
+        title:
+          type: string
+          example: Moving features data server
+        description:
+          type: string
+          example: Access to data about moving features
+        links:
+          type: array
+          items:
+            $ref: '#/components/schemas/link'
+    exception:
+      type: object
+      required:
+        - code
+      properties:
+        code:
+          type: string
+        description:
+          type: string
+    confClasses:
+      type: object
+      required:
+        - conformsTo
+      properties:
+        conformsTo:
+          type: array
+          items:
+            type: string
+            example:
+              - http://www.opengis.net/spec/ogcapi-movingfeatures-1/1.0/conf/common
+              - http://www.opengis.net/spec/ogcapi-movingfeatures-1/1.0/conf/mf-collection
+              - http://www.opengis.net/spec/ogcapi-movingfeatures-1/1.0/conf/movingfeatures
+    extent:
+      description: |-
+        The extent of the features in the collection. In the Core only spatial and temporal
+        extents are specified. Extensions may add additional members to represent other
+        extents, for example, thermal or pressure ranges.
+
+        An array of extents is provided for each extent type (spatial, temporal). The first item
+        in the array describes the overall extent of the data. All subsequent items describe more
+        precise extents, e.g., to identify clusters of data. Clients only interested in the
+        overall extent will only need to access the first extent in the array.
+      type: object
+      properties:
+        spatial:
+          description: The spatial extent of the features in the collection.
+          type: object
+          properties:
+            bbox:
+              description: |-
+                One or more bounding boxes that describe the spatial extent of the dataset.
+                In the Core only a single bounding box is supported.
+
+                Extensions may support additional areas.
+                The first bounding box describes the overall spatial
+                extent of the data. All subsequent bounding boxes describe
+                more precise bounding boxes, e.g., to identify clusters of data.
+                Clients only interested in the overall spatial extent will
+                only need to access the first bounding box in the array.
+              type: array
+              minItems: 1
+              items:
+                description: |-
+                  Each bounding box is provided as four or six numbers, depending on
+                  whether the coordinate reference system includes a vertical axis
+                  (height or depth):
+
+                  * Lower left corner, coordinate axis 1
+                  * Lower left corner, coordinate axis 2
+                  * Minimum value, coordinate axis 3 (optional)
+                  * Upper right corner, coordinate axis 1
+                  * Upper right corner, coordinate axis 2
+                  * Maximum value, coordinate axis 3 (optional)
+
+                  If the value consists of four numbers, the coordinate reference system is
+                  WGS 84 longitude/latitude (http://www.opengis.net/def/crs/OGC/1.3/CRS84)
+                  unless a different coordinate reference system is specified in `crs`.
+
+                  If the value consists of six numbers, the coordinate reference system is WGS 84
+                  longitude/latitude/ellipsoidal height (http://www.opengis.net/def/crs/OGC/0/CRS84h)
+                  unless a different coordinate reference system is specified in `crs`.
+
+                  For WGS 84 longitude/latitude the values are in most cases the sequence of
+                  minimum longitude, minimum latitude, maximum longitude and maximum latitude.
+                  However, in cases where the box spans the antimeridian the first value
+                  (west-most box edge) is larger than the third value (east-most box edge).
+
+                  If the vertical axis is included, the third and the sixth number are
+                  the bottom and the top of the 3-dimensional bounding box.
+
+                  If a feature has multiple spatial geometry properties, it is the decision of the
+                  server whether only a single spatial geometry property is used to determine
+                  the extent or all relevant geometries.
+                type: array
+                oneOf:
+                  - minItems: 4
+                    maxItems: 4
+                  - minItems: 6
+                    maxItems: 6
+                items:
+                  type: number
+                example:
+                  - -180
+                  - -90
+                  - 180
+                  - 90
+            crs:
+              description: |-
+                Coordinate reference system of the coordinates in the spatial extent
+                (property `bbox`). The default reference system is WGS 84 longitude/latitude.
+                In the Core the only other supported coordinate reference system is
+                WGS 84 longitude/latitude/ellipsoidal height for coordinates with height.
+                Extensions may support additional coordinate reference systems and add
+                additional enum values.
+              type: string
+              enum:
+                - http://www.opengis.net/def/crs/OGC/1.3/CRS84
+                - http://www.opengis.net/def/crs/OGC/0/CRS84h
+              default: http://www.opengis.net/def/crs/OGC/1.3/CRS84
+        temporal:
+          description: The temporal extent of the features in the collection.
+          type: object
+          properties:
+            interval:
+              description: |-
+                One or more time intervals that describe the temporal extent of the dataset.
+                In the Core only a single time interval is supported.
+
+                Extensions may support multiple intervals.
+                The first time interval describes the overall
+                temporal extent of the data. All subsequent time intervals describe
+                more precise time intervals, e.g., to identify clusters of data.
+                Clients only interested in the overall temporal extent will only need
+                to access the first time interval in the array (a pair of lower and upper
+                bound instants).
+              type: array
+              minItems: 1
+              items:
+                description: |-
+                  Begin and end times of the time interval. The timestamps are in the
+                  temporal coordinate reference system specified in `trs`. By default
+                  this is the Gregorian calendar.
+
+                  The value `null` at start or end is supported and indicates a half-bounded interval.
+                type: array
+                minItems: 2
+                maxItems: 2
+                items:
+                  type: string
+                  format: date-time
+                  nullable: true
+                example:
+                  - '2011-11-11T12:22:11Z'
+                  - null
+            trs:
+              description: |-
+                Coordinate reference system of the coordinates in the temporal extent
+                (property `interval`). The default reference system is the Gregorian calendar.
+                In the Core this is the only supported temporal coordinate reference system.
+                Extensions may support additional temporal coordinate reference systems and add
+                additional enum values.
+              type: string
+              enum:
+                - http://www.opengis.net/def/uom/ISO-8601/0/Gregorian
+              default: http://www.opengis.net/def/uom/ISO-8601/0/Gregorian
+    collection:
+      type: object
+      required:
+        - id
+        - links
+        - itemType
+      properties:
+        id:
+          description: identifier of the collection used, for example, in URIs
+          type: string
+          example: address
+        title:
+          description: human readable title of the collection
+          type: string
+          example: address
+        description:
+          description: a description of the features in the collection
+          type: string
+          example: An address.
+        links:
+          type: array
+          items:
+            $ref: '#/components/schemas/link'
+          example:
+            - href: https://data.example.com/buildings
+              rel: item
+            - href: https://example.com/concepts/buildings.html
+              rel: describedby
+              type: text/html
+        extent:
+          $ref: '#/components/schemas/extent'
+        itemType:
+          description: indicator about the type of the items in the collection
+          type: string
+          default: movingfeature
+        crs:
+          description: the list of coordinate reference systems supported by the service
+          type: array
+          items:
+            type: string
+          default:
+            - https://www.opengis.net/def/crs/OGC/1.3/CRS84
+          example:
+            - https://www.opengis.net/def/crs/OGC/1.3/CRS84
+            - https://www.opengis.net/def/crs/EPSG/0/4326
+        updateFrequency:
+          description: a time interval of sampling location. The unit is millisecond.
+          type: number
+    collections:
+      type: object
+      required:
+        - collections
+        - links
+      properties:
+        collections:
+          type: array
+          items:
+            $ref: '#/components/schemas/collection'
+        links:
+          type: array
+          items:
+            $ref: '#/components/schemas/link'
+    collection-2:
+      type: object
+      required:
+        - itemType
+      properties:
+        title:
+          description: human readable title of the collection
+          type: string
+        updateFrequency:
+          description: a time interval of sampling location. The unit is millisecond.
+          type: number
+        description:
+          description: any description
+          type: string
+        itemType:
+          description: indicator about the type of the items in the moving features collection (the default value is 'movingfeature').
+          type: string
+          default: movingfeature
+    motionCurve:
+      description: MF-JSON Prism encoding MotionCurve Object
+      title: MF-JSON MotionCurve
+      oneOf:
+        - type: string
+          enum:
+            - Discrete
+            - Step
+            - Linear
+            - Quadratic
+            - Cubic
+          default: Linear
+        - type: string
+          format: uri
+    namedCRS:
+      description: MF-JSON Prism encoding NamedCRS Object
+      title: MF-JSON NamedCRS
+      type: object
+      nullable: true
+      required:
+        - type
+        - properties
+      properties:
+        type:
+          type: string
+          enum:
+            - Name
+        properties:
+          type: object
+          additionalProperties: false
+          required:
+            - name
+          properties:
+            name:
+              type: string
+              default: urn:ogc:def:crs:OGC:1.3:CRS84
+    linkedCRS:
+      description: MF-JSON Prism encoding LinkedCRS Object
+      title: MF-JSON LinkedCRS
+      type: object
+      nullable: true
+      required:
+        - type
+        - properties
+      properties:
+        type:
+          type: string
+          enum:
+            - Link
+        properties:
+          type: object
+          required:
+            - href
+            - type
+          properties:
+            href:
+              type: string
+              format: uri
+            type:
+              type: string
+    crs:
+      description: MF-JSON Prism encoding CoordinateReferenceSystem Object
+      title: MF-JSON CRS
+      oneOf:
+        - $ref: '#/components/schemas/namedCRS'
+        - $ref: '#/components/schemas/linkedCRS'
+    trs:
+      description: The "trs" member in MovingFeature object
+      title: MF-JSON TRS
+      oneOf:
+        - $ref: '#/components/schemas/linkedCRS'
+        - type: object
+          nullable: true
+          required:
+            - type
+            - properties
+          properties:
+            type:
+              type: string
+              enum:
+                - Name
+            properties:
+              type: object
+              additionalProperties: false
+              required:
+                - name
+              properties:
+                name:
+                  type: string
+                  default: urn:ogc:data:time:iso8601
+    temporalPrimitiveGeometry:
+      description: MF-JSON Prism encoding TemporalPrimitiveGeometry Object
+      title: MF-JSON TemporalPrimitiveGeometry
+      type: object
+      required:
+        - type
+        - coordinates
+        - datetimes
+      properties:
+        type:
+          type: string
+          enum:
+            - MovingPoint
+            - MovingLineString
+            - MovingPolygon
+            - MovingPointCloud
+        coordinates:
+          type: array
+          minItems: 2
+          items:
+            oneOf:
+              - title: pointGeoJSON coordinates
+                type: array
+                minItems: 2
+                items:
+                  type: number
+              - title: linestringGeoJSON coordinates
+                type: array
+                minItems: 2
+                items:
+                  type: array
+                  minItems: 2
+                  items:
+                    type: number
+              - title: polygonGeoJSON coordinates
+                type: array
+                items:
+                  type: array
+                  minItems: 4
+                  items:
+                    type: array
+                    minItems: 2
+                    items:
+                      type: number
+              - title: multipointGeoJSON coordinates
+                type: array
+                items:
+                  type: array
+                  minItems: 2
+                  items:
+                    type: number
+        datetimes:
+          type: array
+          uniqueItems: true
+          minItems: 2
+          items:
+            type: string
+        interpolation:
+          $ref: '#/components/schemas/motionCurve'
+        base:
+          type: object
+          nullable: true
+          required:
+            - href
+            - type
+          properties:
+            href:
+              type: string
+              format: uri
+            type:
+              type: string
+        orientations:
+          type: array
+          nullable: true
+          items:
+            type: object
+            required:
+              - scales
+              - angles
+            properties:
+              scales:
+                type: array
+                oneOf:
+                  - minItems: 2
+                    maxItems: 2
+                  - minItems: 3
+                    maxItems: 3
+                items:
+                  type: number
+              angles:
+                type: array
+                oneOf:
+                  - minItems: 2
+                    maxItems: 2
+                  - minItems: 3
+                    maxItems: 3
+                items:
+                  type: number
+        crs:
+          $ref: '#/components/schemas/crs'
+        trs:
+          $ref: '#/components/schemas/trs'
+    temporalComplexGeometry:
+      description: MF-JSON Prism encoding TemporalComplexGeometry Object
+      title: MF-JSON TemporalComplexGeometry
+      type: object
+      required:
+        - type
+        - prisms
+      properties:
+        type:
+          type: string
+          default: MovingGeometryCollection
+        prisms:
+          type: array
+          items:
+            $ref: '#/components/schemas/temporalPrimitiveGeometry'
+        crs:
+          $ref: '#/components/schemas/crs'
+        trs:
+          $ref: '#/components/schemas/trs'
+    temporalGeometry:
+      description: MF-JSON Prism encoding TemporalGeometry Object
+      title: MF-JSON TemporalGeometry
+      oneOf:
+        - $ref: '#/components/schemas/temporalPrimitiveGeometry'
+        - $ref: '#/components/schemas/temporalComplexGeometry'
+    parametricValues:
+      description: MF-JSON Prism encoding ParametricValues Object
+      title: MF-JSON ParametricValues
+      type: object
+      required:
+        - datetimes
+      properties:
+        datetimes:
+          type: array
+          uniqueItems: true
+          minItems: 2
+          items:
+            type: string
+            format: date-time
+      patternProperties:
+        ^S_:
+          oneOf:
+            - type: object
+              required:
+                - type
+                - values
+              properties:
+                type:
+                  type: string
+                  enum:
+                    - Measure
+                values:
+                  type: array
+                  nullable: true
+                  items:
+                    type: number
+                interpolation:
+                  oneOf:
+                    - type: string
+                      enum:
+                        - Discrete
+                        - Step
+                        - Linear
+                        - Regression
+                      default: Linear
+                    - type: string
+                      format: uri
+                description:
+                  type: string
+                form:
+                  oneOf:
+                    - type: string
+                      minLength: 3
+                      maxLength: 3
+                    - type: string
+                      format: uri
+            - type: object
+              required:
+                - type
+                - values
+              properties:
+                type:
+                  type: string
+                  enum:
+                    - Text
+                values:
+                  type: array
+                  nullable: true
+                  items:
+                    oneOf:
+                      - type: string
+                      - type: boolean
+                interpolation:
+                  oneOf:
+                    - type: string
+                      enum:
+                        - Discrete
+                        - Step
+                        - Linear
+                        - Regression
+                      default: Linear
+                    - type: string
+                      format: uri
+                description:
+                  type: string
+            - type: object
+              required:
+                - type
+                - values
+              properties:
+                type:
+                  type: string
+                  enum:
+                    - Image
+                values:
+                  type: array
+                  nullable: true
+                  items:
+                    type: string
+                interpolation:
+                  oneOf:
+                    - type: string
+                      enum:
+                        - Discrete
+                        - Step
+                        - Linear
+                        - Regression
+                      default: Linear
+                    - type: string
+                      format: uri
+                description:
+                  type: string
+    temporalProperties:
+      description: MF-JSON Prism encoding TemporalProperties Object
+      title: MF-JSON TemporalProperties
+      type: array
+      nullable: true
+      items:
+        $ref: '#/components/schemas/parametricValues'
+    bbox:
+      description: MF-JSON Prism encoding BoundingBox Object
+      title: MF-JSON BoundingBox
+      type: array
+      minItems: 4
+      nullable: true
+      items:
+        type: number
+    lifeSpan:
+      description: MF-JSON Prism encoding LifeSpan Object
+      title: MF-JSON LifeSpan
+      type: array
+      minItems: 2
+      maxItems: 2
+      uniqueItems: true
+      items:
+        type: string
+        nullable: true
+    pointGeoJSON:
+      type: object
+      required:
+        - type
+        - coordinates
+      properties:
+        type:
+          type: string
+          enum:
+            - Point
+        coordinates:
+          type: array
+          minItems: 2
+          items:
+            type: number
+    multipointGeoJSON:
+      type: object
+      required:
+        - type
+        - coordinates
+      properties:
+        type:
+          type: string
+          enum:
+            - MultiPoint
+        coordinates:
+          type: array
+          items:
+            type: array
+            minItems: 2
+            items:
+              type: number
+    linestringGeoJSON:
+      type: object
+      required:
+        - type
+        - coordinates
+      properties:
+        type:
+          type: string
+          enum:
+            - LineString
+        coordinates:
+          type: array
+          minItems: 2
+          items:
+            type: array
+            minItems: 2
+            items:
+              type: number
+    multilinestringGeoJSON:
+      type: object
+      required:
+        - type
+        - coordinates
+      properties:
+        type:
+          type: string
+          enum:
+            - MultiLineString
+        coordinates:
+          type: array
+          items:
+            type: array
+            minItems: 2
+            items:
+              type: array
+              minItems: 2
+              items:
+                type: number
+    polygonGeoJSON:
+      type: object
+      required:
+        - type
+        - coordinates
+      properties:
+        type:
+          type: string
+          enum:
+            - Polygon
+        coordinates:
+          type: array
+          items:
+            type: array
+            minItems: 4
+            items:
+              type: array
+              minItems: 2
+              items:
+                type: number
+    multipolygonGeoJSON:
+      type: object
+      required:
+        - type
+        - coordinates
+      properties:
+        type:
+          type: string
+          enum:
+            - MultiPolygon
+        coordinates:
+          type: array
+          items:
+            type: array
+            items:
+              type: array
+              minItems: 4
+              items:
+                type: array
+                minItems: 2
+                items:
+                  type: number
+    geometryGeoJSON:
+      oneOf:
+        - $ref: '#/components/schemas/pointGeoJSON'
+        - $ref: '#/components/schemas/multipointGeoJSON'
+        - $ref: '#/components/schemas/linestringGeoJSON'
+        - $ref: '#/components/schemas/multilinestringGeoJSON'
+        - $ref: '#/components/schemas/polygonGeoJSON'
+        - $ref: '#/components/schemas/multipolygonGeoJSON'
+        - $ref: '#/components/schemas/geometrycollectionGeoJSON'
+    geometrycollectionGeoJSON:
+      type: object
+      required:
+        - type
+        - geometries
+      properties:
+        type:
+          type: string
+          enum:
+            - GeometryCollection
+        geometries:
+          type: array
+          items:
+            $ref: '#/components/schemas/geometryGeoJSON'
+    movingFeature:
+      type: object
+      required:
+        - id
+        - type
+      properties:
+        type:
+          type: string
+          enum:
+            - Feature
+        temporalGeometry:
+          $ref: '#/components/schemas/temporalGeometry'
+        temporalProperties:
+          $ref: '#/components/schemas/temporalProperties'
+        crs:
+          $ref: '#/components/schemas/crs'
+        trs:
+          $ref: '#/components/schemas/trs'
+        bbox:
+          $ref: '#/components/schemas/bbox'
+        time:
+          $ref: '#/components/schemas/lifeSpan'
+        geometry:
+          $ref: '#/components/schemas/geometryGeoJSON'
+        properties:
+          type: object
+          nullable: true
+        id:
+          description: An identifier for the feature
+          oneOf:
+            - type: string
+            - type: integer
+        links:
+          type: array
+          items:
+            $ref: '#/components/schemas/link'
+    movingFeatures:
+      type: object
+      required:
+        - type
+        - features
+      properties:
+        type:
+          type: string
+          enum:
+            - FeatureCollection
+        features:
+          type: array
+          nullable: true
+          items:
+            $ref: '#/components/schemas/movingFeature'
+        crs:
+          $ref: '#/components/schemas/crs'
+        trs:
+          $ref: '#/components/schemas/trs'
+        bbox:
+          $ref: '#/components/schemas/bbox'
+        time:
+          $ref: '#/components/schemas/lifeSpan'
+        links:
+          type: array
+          items:
+            $ref: '#/components/schemas/link'
+        timeStamp:
+          type: string
+          format: date-time
+        numberMatched:
+          type: integer
+          minimum: 0
+        numberReturned:
+          type: integer
+          minimum: 0
+    movingFeature-2:
+      description: MF-JSON Prism encoding MovingFeature Object
+      title: MF-JSON MovingFeature
+      type: object
+      required:
+        - type
+        - temporalGeometry
+      properties:
+        type:
+          type: string
+          enum:
+            - Feature
+        temporalGeometry:
+          $ref: '#/components/schemas/temporalGeometry'
+        temporalProperties:
+          $ref: '#/components/schemas/temporalProperties'
+        crs:
+          $ref: '#/components/schemas/crs'
+        trs:
+          $ref: '#/components/schemas/trs'
+        bbox:
+          $ref: '#/components/schemas/bbox'
+        time:
+          $ref: '#/components/schemas/lifeSpan'
+        geometry:
+          $ref: '#/components/schemas/geometryGeoJSON'
+        properties:
+          type: object
+          nullable: true
+        id:
+          description: An identifier for the feature
+          oneOf:
+            - type: string
+            - type: integer
+    movingFeatureCollection:
+      description: MF-JSON Prism encoding MovingFeatureCollection Object
+      title: MF-JSON MovingFeatureCollection
+      type: object
+      required:
+        - type
+        - features
+      properties:
+        type:
+          type: string
+          enum:
+            - FeatureCollection
+        features:
+          type: array
+          minItems: 1
+          items:
+            $ref: '#/components/schemas/movingFeature-2'
+        crs:
+          $ref: '#/components/schemas/crs'
+        trs:
+          $ref: '#/components/schemas/trs'
+        bbox:
+          $ref: '#/components/schemas/bbox'
+        time:
+          $ref: '#/components/schemas/lifeSpan'
+        label:
+          type: string
+          nullable: true
+    temporalGeometrySequence:
+      type: object
+      required:
+        - type
+        - geometrySequence
+      properties:
+        type:
+          type: string
+          enum:
+            - TemporalGeometrySequence
+        geometrySequence:
+          type: array
+          items:
+            $ref: '#/components/schemas/temporalPrimitiveGeometry'
+        links:
+          type: array
+          items:
+            $ref: '#/components/schemas/link'
+        timeStamp:
+          type: string
+          format: date-time
+        numberMatched:
+          type: integer
+          minimum: 0
+        numberReturned:
+          type: integer
+          minimum: 0
+    temporalPrimitiveValue:
+      type: object
+      required:
+        - datetimes
+        - values
+        - interpolation
+      properties:
+        datetimes:
+          type: array
+          uniqueItems: true
+          minItems: 2
+          items:
+            type: string
+            format: date-time
+        values:
+          oneOf:
+            - type: number
+            - type: string
+            - type: boolean
+        interpolation:
+          type: string
+          enum:
+            - Discrete
+            - Step
+            - Linear
+            - Regression
+    temporalProperty:
+      type: object
+      required:
+        - name
+        - type
+      properties:
+        name:
+          type: string
+        type:
+          type: string
+          enum:
+            - TBoolean
+            - TText
+            - TInteger
+            - TReal
+            - TImage
+        form:
+          oneOf:
+            - type: string
+              format: uri
+            - type: string
+              minLength: 3
+              maxLength: 3
+        valueSequence:
+          type: array
+          uniqueItems: true
+          items:
+            $ref: '#/components/schemas/temporalPrimitiveValue'
+        description:
+          type: string
+        links:
+          type: array
+          items:
+            $ref: '#/components/schemas/link'
+    temporalProperties-2:
+      type: object
+      required:
+        - temporalProperties
+      properties:
+        temporalProperties:
+          oneOf:
+            - $ref: '#/components/schemas/temporalProperties'
+            - type: array
+              items:
+                $ref: '#/components/schemas/temporalProperty'
+        links:
+          type: array
+          items:
+            $ref: '#/components/schemas/link'
+        timeStamp:
+          type: string
+          format: date-time
+        numberMatched:
+          type: integer
+          minimum: 0
+        numberReturned:
+          type: integer
+          minimum: 0
+  responses:
+    LandingPage:
+      description: The links to the API capabilities.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/landingPage'
+    ServerError:
+      description: A server error occurred.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/exception'
+          example:
+            code: '500'
+            description: Server Internal Error
+    Conformance:
+      description: The URIs of all requirements classes supported by the server.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/confClasses'
+    Collections:
+      description: A list of catalogs about collections of moving features.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/collections'
+          example:
+            collections:
+              - id: mfc-1
+                title: MovingFeatureCollection_1
+                description: a collection of moving features to manage data in a distinct (physical or logical) space
+                itemType: movingfeature
+                updateFrequency: 1000
+                extent:
+                  spatial:
+                    bbox:
+                      - -180
+                      - -90
+                      - 190
+                      - 90
+                    crs: http://www.opengis.net/def/crs/OGC/1.3/CRS84
+                  temporal:
+                    interval:
+                      - '2011-11-11T12:22:11Z'
+                      - '2012-11-24T12:32:43Z'
+                    trs: http://www.opengis.net/def/uom/ISO-8601/0/Gregorian
+                links:
+                  - href: https://data.example.org/collections/mfc-1
+                    rel: self
+                    type: application/json
+            links:
+              - href: https://data.example.org/collections
+                rel: self
+                type: application/json
+    Collection:
+      description: The metadata being returned.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/collection'
+          example:
+            id: mfc-1
+            title: moving_feature_collection_sample
+            itemType: movingfeature
+            updateFrequency: 1000
+            extent:
+              spatial:
+                bbox:
+                  - -180
+                  - -90
+                  - 190
+                  - 90
+                crs:
+                  - http://www.opengis.net/def/crs/OGC/1.3/CRS84
+              temporal:
+                interval:
+                  - '2011-11-11T12:22:11Z'
+                  - '2012-11-24T12:32:43Z'
+                trs:
+                  - http://www.opengis.net/def/uom/ISO-8601/0/Gregorian
+            links:
+              - href: https://data.example.org/collections/mfc-1
+                rel: self
+                type: application/json
+    MovingFeatures:
+      description: A list of static data of moving feature.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/movingFeatures'
+          example:
+            type: FeatureCollection
+            features:
+              - id: mf-1
+                type: Feature
+                geometry:
+                  type: LineString
+                  coordinates:
+                    - - 139.757083
+                      - 35.627701
+                      - 0.5
+                    - - 139.757399
+                      - 35.627701
+                      - 2
+                    - - 139.757555
+                      - 35.627688
+                      - 4
+                    - - 139.757651
+                      - 35.627596
+                      - 4
+                    - - 139.757716
+                      - 35.627483
+                      - 4
+                properties:
+                  label: car
+                  state: test1
+                  video: http://www.opengis.net/spec/movingfeatures/json/1.0/prism/example/video.mpeg
+                bbox:
+                  - 139.757083
+                  - 35.627483
+                  - 0
+                  - 139.757716
+                  - 35.627701
+                  - 4.5
+                time:
+                  - '2011-07-14T22:01:01Z'
+                  - '2011-07-15T01:11:22Z'
+                crs:
+                  type: Name
+                  properties: urn:ogc:def:crs:OGC:1.3:CRS84
+                trs:
+                  type: Name
+                  properties: urn:ogc:data:time:iso8601
+            crs:
+              type: Name
+              properties: urn:ogc:def:crs:OGC:1.3:CRS84
+            trs:
+              type: Name
+              properties: urn:ogc:data:time:iso8601
+            links:
+              - href: https://data.example.org/collections/mfc-1/items
+                rel: self
+                type: application/geo+json
+              - href: https://data.example.org/collections/mfc-1/items&offset=1&limit=1
+                rel: next
+                type: application/geo+json
+            timeStamp: '2020-01-01T12:00:00Z'
+            numberMatched: 100
+            numberReturned: 1
+    MovingFeature:
+      description: A moving feature static data.
+      content:
+        application/geo+json:
+          schema:
+            $ref: '#/components/schemas/movingFeature'
+          example:
+            id: mf-1
+            type: Feature
+            geometry:
+              type: LineString
+              coordinates:
+                - - 139.757083
+                  - 35.627701
+                  - 0.5
+                - - 139.757399
+                  - 35.627701
+                  - 2
+                - - 139.757555
+                  - 35.627688
+                  - 4
+                - - 139.757651
+                  - 35.627596
+                  - 4
+                - - 139.757716
+                  - 35.627483
+                  - 4
+            properties:
+              name: car1
+              state: test1
+              video: http://www.opengis.net/spec/movingfeatures/json/1.0/prism/example/video.mpeg
+            bbox:
+              - 139.757083
+              - 35.627483
+              - 0
+              - 139.757716
+              - 35.627701
+              - 4.5
+            time:
+              - '2011-07-14T22:01:01Z'
+              - '2011-07-15T01:11:22Z'
+            crs:
+              type: Name
+              properties: urn:ogc:def:crs:OGC:1.3:CRS84
+            trs:
+              type: Name
+              properties: urn:ogc:data:time:iso8601
+    TemporalGeometrySequence:
+      description: A TemporalGeometrySequence data.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/temporalGeometrySequence'
+          example:
+            type: TemporalGeometrySequence
+            geometrySequence:
+              - id: tg-1
+                type: MovingPoint
+                datetimes:
+                  - '2011-07-14T22:01:02Z'
+                  - '2011-07-14T22:01:03Z'
+                  - '2011-07-14T22:01:04Z'
+                coordinates:
+                  - - 139.757399
+                    - 35.627701
+                    - 2
+                  - - 139.757555
+                    - 35.627688
+                    - 4
+                  - - 139.757651
+                    - 35.627596
+                    - 4
+                interpolation: Linear
+                base:
+                  type: glTF
+                  href: https://www.opengis.net/spec/movingfeatures/json/1.0/prism/example/car3dmodel.gltf
+                orientations:
+                  - scales:
+                      - 1
+                      - 1
+                      - 1
+                    angles:
+                      - 0
+                      - 355
+                      - 0
+                  - scales:
+                      - 1
+                      - 1
+                      - 1
+                    angles:
+                      - 0
+                      - 0
+                      - 330
+                  - scales:
+                      - 1
+                      - 1
+                      - 1
+                    angles:
+                      - 0
+                      - 0
+                      - 300
+                crs:
+                  type: Name
+                  properties: urn:ogc:def:crs:OGC:1.3:CRS84
+                trs:
+                  type: Name
+                  properties: urn:ogc:data:time:iso8601
+            links:
+              - href: https://data.example.org/collections/mfc-1/items/mf-1/tgsequence
+                rel: self
+                type: application/json
+              - href: https://data.example.org/collections/mfc-1/items/mf-1/tgsequence&offset=10&limit=1
+                rel: next
+                type: application/json
+            timeStamp: '2021-09-01T12:00:00Z'
+            numberMatched: 100
+            numberReturned: 1
+    DistanceQuery:
+      description: A temporal property data that represents a time-to-distance curve of specified temporal primitive geometry.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/temporalProperty'
+          example:
+            name: distance
+            type: TReal
+            form: MTR
+            valueSequence:
+              - datetimes:
+                  - '2011-07-15T08:00:00Z'
+                  - '2011-07-15T08:00:01Z'
+                  - '2011-07-15T08:00:02Z'
+                values:
+                  - 0
+                  - 10
+                  - 20
+                interpolation: Linear
+    VelocityQuery:
+      description: A temporal property data that represents a time-to-velocity curve of specified temporal primitive geometry.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/temporalProperty'
+          example:
+            name: velocity
+            type: TReal
+            form: KMH
+            valueSequence:
+              - datetimes:
+                  - '2011-07-15T08:00:00Z'
+                  - '2011-07-15T08:00:01Z'
+                  - '2011-07-15T08:00:02Z'
+                values:
+                  - 0
+                  - 10
+                  - 20
+                interpolation: Linear
+    AccelerationQuery:
+      description: A temporal property data that represents a time-to-acceleration curve of specified temporal primitive geometry.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/temporalProperty'
+          example:
+            name: acceleration
+            type: TReal
+            form: KMH
+            valueSequence:
+              - datetimes:
+                  - '2011-07-15T08:00:00Z'
+                  - '2011-07-15T08:00:01Z'
+                  - '2011-07-15T08:00:02Z'
+                values:
+                  - 0
+                  - 10
+                  - 20
+                interpolation: Linear
+    TemporalProperties:
+      description: A list of static (or temporal) data of TemporalProperty.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/temporalProperties-2'
+          example:
+            temporalProperties:
+              - datetimes:
+                  - '2011-07-14T22:01:06.000Z'
+                  - '2011-07-14T22:01:07.000Z'
+                  - '2011-07-14T22:01:08.000Z'
+                length:
+                  type: Measure
+                  form: http://www.qudt.org/qudt/owl/1.0.0/quantity/Length
+                  values:
+                    - 1
+                    - 2.4
+                    - 1
+                  interpolation: Linear
+                speed:
+                  type: Measure
+                  form: KMH
+                  values:
+                    - 65
+                    - 70
+                    - 80
+                  interpolation: Linear
+            links:
+              - href: https://data.example.org/collections/mfc-1/items/mf-1/tproperties
+                rel: self
+                type: application/json
+              - href: https://data.example.org/collections/mfc-1/items/mf-1/tproperties&offset=2&limit=2
+                rel: next
+                type: application/json
+            timeStamp: '2021-09-01T12:00:00Z'
+            numberMatched: 10
+            numberReturned: 2
+    TemporalProperty:
+      description: A (subsequence of) the temporal property data.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/temporalProperty'
+          example:
+            name: speed
+            type: TReal
+            form: KMH
+            valueSequence:
+              - datetimes:
+                  - '2011-07-15T08:00:00Z'
+                  - '2011-07-15T08:00:01Z'
+                  - '2011-07-15T08:00:02Z'
+                values:
+                  - 0
+                  - 20
+                  - 50
+                interpolation: Linear
+  parameters:
+    collectionId:
+      name: collectionId
+      in: path
+      description: local identifier of a collection
+      required: true
+      schema:
+        type: string
+    bbox:
+      name: bbox
+      in: query
+      description: |-
+        Only features that have a geometry that intersects the bounding box are selected.
+        The bounding box is provided as four or six numbers, depending on whether the
+        coordinate reference system includes a vertical axis (height or depth):
+
+        * Lower left corner, coordinate axis 1
+        * Lower left corner, coordinate axis 2
+        * Minimum value, coordinate axis 3 (optional)
+        * Upper right corner, coordinate axis 1
+        * Upper right corner, coordinate axis 2
+        * Maximum value, coordinate axis 3 (optional)
+
+        If the value consists of four numbers, the coordinate reference system is
+        WGS 84 longitude/latitude (http://www.opengis.net/def/crs/OGC/1.3/CRS84)
+        unless a different coordinate reference system is specified in the parameter `bbox-crs`.
+
+        If the value consists of six numbers, the coordinate reference system is WGS 84 
+        longitude/latitude/ellipsoidal height (http://www.opengis.net/def/crs/OGC/0/CRS84h)
+        unless a different coordinate reference system is specified in the parameter `bbox-crs`.
+
+        The query parameter `bbox-crs` is specified in OGC API - Features - Part 2: Coordinate 
+        Reference Systems by Reference.
+
+        For WGS 84 longitude/latitude the values are in most cases the sequence of
+        minimum longitude, minimum latitude, maximum longitude and maximum latitude.
+        However, in cases where the box spans the antimeridian the first value
+        (west-most box edge) is larger than the third value (east-most box edge).
+
+        If the vertical axis is included, the third and the sixth number are the
+        bottom and the top of the 3-dimensional bounding box.
+
+        If a feature has multiple spatial geometry properties, it is the decision of the
+        server whether only a single spatial geometry property is used to determine
+        the extent or all relevant geometries.
+      required: false
+      schema:
+        type: array
+        oneOf:
+          - minItems: 4
+            maxItems: 4
+          - minItems: 6
+            maxItems: 6
+        items:
+          type: number
+      style: form
+      explode: false
+    datetime:
+      name: datetime
+      in: query
+      description: |-
+        Either a date-time or an interval. Date and time expressions adhere to RFC 3339. 
+        Intervals may be bounded or half-bounded (double-dots at start or end).
+
+        Examples:
+
+        * A date-time: "2018-02-12T23:20:50Z"
+        * A bounded interval: "2018-02-12T00:00:00Z/2018-03-18T12:31:12Z"
+        * Half-bounded intervals: "2018-02-12T00:00:00Z/.." or "../2018-03-18T12:31:12Z"
+
+        Only features that have temporal information that intersects the value of `datetime` are selected.
+
+        If a feature has multiple temporal properties, it is the decision of the server whether only a single temporal property is used to determine the extent or all relevant temporal properties.
+      required: true
+      schema:
+        type: string
+      style: form
+      explode: false
+    limit:
+      name: limit
+      in: query
+      description: |-
+        The optional limit parameter limits the number of items that are presented in the response document.
+
+        Only items are counted that are on the first level of the collection in the response document.
+        Nested objects contained within the explicitly requested items shall not be counted.
+
+        Minimum = 1. Maximum = 10000. Default = 10.
+      required: false
+      schema:
+        type: integer
+        minimum: 1
+        maximum: 10000
+        default: 10
+      style: form
+      explode: false
+    subtrajectory-description:
+      name: subTrajectory
+      in: query
+      required: false
+      description: |-
+        The `subTrajectory` parameter is a boolean value used with the `datetime` parameter.
+        If the `subTrajectory` is "true", 
+
+        * the `datetime` must be a bounded interval, not half-bounded intervals or a date-time. 
+        * the `datetime` represents a specified time interval (new start time and new end time)
+        * only features with a temporal geometry intersecting the given time interval will return.
+          
+        The `subTrajectory` query implements *subTrajectory* operation, which is defined in the [OGC Moving Feature Access](https://docs.ogc.org/is/16-120r3/16-120r3.html).
+        This operation returns only a subsequence of temporal geometry within a time interval contained in the `datetime` parameter, using interpolated trajectory according to the `interpolation` property.
+          
+        If the `subTrajectory` parameter is provided with a `bbox` parameter, it will only apply to resources that intersect with a `bbox` parameter. 
+
+        The `subTrajectory` parameter must not be used with the `leaf` parameter. 
+        Only one of these parameters can be used in the HTTP GET operation.
+      schema:
+        type: boolean
+      style: form
+      explode: false
+    mFeatureId:
+      name: mFeatureId
+      in: path
+      description: local identifier of a moving feature
+      required: true
+      schema:
+        type: string
+    leaf-description:
+      name: leaf
+      in: query
+      required: false
+      description: |-
+        The `leaf` is provided as a sequence of monotonic increasing instants with date-time strings.
+        Only features that have a temporal geometry and property that intersects the given date-time are selected.
+
+        The `leaf` operation implements *_pointAtTime_* operation which defined in the OGC Moving Feature Access.
+        This operation returns only temporal geometry coordinates (or temporal property values) 
+        at each date-time included in the `leaf` parameter, using interpolated trajectory according to the `interpolation` property.
+
+        If the `leaf` parameter is provided with a `bbox` or (and) a `datetime` parameter, 
+        it will only apply to resources that intersect with a `bbox` or (and) a `datetime` parameter. 
+
+        The `leaf` parameter shall not be used with the `subTrajectory` and `subTemporalValue` parameter. 
+        Only one of those parameters can be used in the HTTP GET operation.
+      schema:
+        type: array
+        uniqueItems: true
+        minItems: 1
+        items:
+          type: string
+          format: date-time
+      style: form
+      explode: false
+    tGeometryId:
+      name: tGeometryId
+      in: path
+      description: local identifier of a temporal primitive geometry
+      required: true
+      schema:
+        type: string
+    date-time:
+      name: date-time
+      in: query
+      description: |-
+        A date-time. Date and time expressions adhere to RFC 3339. 
+
+        Examples:
+
+        * A date-time: "2018-02-12T23:20:50Z"
+
+        The date-time parameter defines the specified date and time to return the temporal value from the time-to-distance (or time-to-velocity or time-to-acceleration) curve.
+      required: false
+      schema:
+        type: string
+        format: date-time
+      style: form
+      explode: false
+    subtemporalvalue-description:
+      name: subTemporalValue
+      in: query
+      required: false
+      description: |-
+        The `subTemporalValue` parameter is a boolean value used with the `datetime` parameter.
+        If the `subTemporalValue` is "true", 
+
+        * the `datetime` must be a bounded interval, not half-bounded intervals or a date-time. 
+        * the `datetime` represents a specified time interval (new start time and new end time)
+        * only features with a temporal property intersecting the given time interval will return.
+        * it returns only the subsequence of temporal property value within a time interval contained in the `subTemporalValue` parameter, using an interpolated time-to-value curve of temporal property according to the `interpolation` property.
+
+        The `subTemporalValue` parameter must not be used with the `leaf` parameter. 
+        Only one of these parameters can be used in the HTTP GET operation.
+      schema:
+        type: boolean
+      style: form
+      explode: false
+    tPropertyName:
+      name: tPropertyName
+      in: path
+      description: local identifier of a temporal property
+      required: true
+      schema:
+        type: string

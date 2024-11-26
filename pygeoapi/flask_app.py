@@ -367,7 +367,7 @@ def collection_items(collection_id, item_id=None):
         else:
             return execute_from_flask(itemtypes_api.get_collection_item,
                                       request, collection_id, item_id)
-    # moving feature collections
+
     else:
         if item_id is None:
             if request.method == 'GET':  # list items
@@ -731,33 +731,10 @@ def collection_items_tgeometries_acceleration(collection_id, item_id,
 @BLUEPRINT.route(
     '/collections/<path:collection_id>/items/<path:item_id>/tproperties',
     methods=['GET', 'POST'])
-def collection_items_tproperties(collection_id, item_id):
-    """
-    OGC API collections items endpoint
-
-    :param collection_id: collection identifier
-    :param item_id: item identifier
-
-    :returns: HTTP response
-    """
-
-    if request.method == 'GET':  # list items
-        return execute_from_flask(
-            movingfeatures.get_collection_items_tProperty, request,
-            collection_id,
-            item_id)
-    elif request.method == 'POST':  # filter or manage items
-        return execute_from_flask(
-            movingfeatures.manage_collection_item_tProperty, request,
-            'create',
-            collection_id,
-            item_id)
-
-
 @BLUEPRINT.route(
     '/collections/<path:collection_id>/items/<path:item_id>/tproperties/<path:tProperty_id>',  # noqa
     methods=['GET', 'POST', 'DELETE'])
-def collection_items_tproperties_values(collection_id, item_id, tProperty_id):
+def collection_items_tproperties(collection_id, item_id, tProperty_id=None):
     """
     OGC API collections items endpoint
 
@@ -767,28 +744,65 @@ def collection_items_tproperties_values(collection_id, item_id, tProperty_id):
     :returns: HTTP response
     """
 
-    if request.method == 'GET':  # list items
+    if tProperty_id is None:
+        if request.method == 'GET':  # list items
+            return execute_from_flask(
+                movingfeatures.get_collection_items_tProperty, request,
+                collection_id,
+                item_id)
+        elif request.method == 'POST':  # filter or manage items
+            return execute_from_flask(
+                movingfeatures.manage_collection_item_tProperty, request,
+                'create',
+                collection_id,
+                item_id)
+    else:
+        if request.method == 'GET':  # list items
+            return execute_from_flask(
+                movingfeatures.get_collection_items_tProperty_value, request,
+                collection_id,
+                item_id,
+                tProperty_id)
+        elif request.method == 'POST':  # filter or manage items
+            return execute_from_flask(
+                movingfeatures
+                .manage_collection_item_tProperty_value, request,
+                'create',
+                collection_id,
+                item_id,
+                tProperty_id)
+        elif request.method == 'DELETE':  # filter or manage items
+            return execute_from_flask(
+                movingfeatures
+                .manage_collection_item_tProperty, request,
+                'delete',
+                collection_id,
+                item_id,
+                tProperty_id)
+
+
+@BLUEPRINT.route(
+    '/collections/<path:collection_id>/items/<path:item_id>/tproperties/<path:tProperty_id>/<path:tValue_id>',  # noqa
+    methods=['DELETE'])
+def collection_items_tproperties_values(collection_id, item_id,
+                                        tProperty_id, tValue_id=None):
+    """
+    OGC API collections items endpoint
+
+    :param collection_id: collection identifier
+    :param item_id: item identifier
+
+    :returns: HTTP response
+    """
+
+    if request.method == 'DELETE':   # filter or manage items
         return execute_from_flask(
-            movingfeatures.get_collection_items_tProperty_value, request,
-            collection_id,
-            item_id,
-            tProperty_id)
-    elif request.method == 'POST':  # filter or manage items
-        return execute_from_flask(
-            movingfeatures
-            .manage_collection_item_tProperty_value, request,
-            'create',
-            collection_id,
-            item_id,
-            tProperty_id)
-    elif request.method == 'DELETE':  # filter or manage items
-        return execute_from_flask(
-            movingfeatures
-            .manage_collection_item_tProperty, request,
+            movingfeatures.manage_collection_item_tProperty_value, request,
             'delete',
             collection_id,
             item_id,
-            tProperty_id)
+            tProperty_id,
+            tValue_id)
 
 
 @ADMIN_BLUEPRINT.route('/admin/config', methods=['GET', 'PUT', 'PATCH'])

@@ -1329,7 +1329,6 @@ def get_collection_items_tProperty(api: API, request: APIRequest,
                                    datetime=datetime_,
                                    limit=limit, offset=offset,
                                    sub_temporal_value=sub_temporal_value)
-
         temporal_properties = []
         if sub_temporal_value is False or sub_temporal_value == "false":
             for row in result:
@@ -1703,7 +1702,7 @@ def get_collection_items_tProperty_value(api: API, request: APIRequest,
 def manage_collection_item_tProperty_value(
         api: API, request: APIRequest,
         action, dataset, identifier,
-        tProperty=None) -> Tuple[dict, int, str]:
+        tProperty=None, tvalue=None) -> Tuple[dict, int, str]:
     """
     Adds Temporal Property Value item to a Temporal Property
 
@@ -1729,7 +1728,6 @@ def manage_collection_item_tProperty_value(
         return api.get_exception(
             HTTPStatus.BAD_REQUEST,
             headers, request.format, 'ConnectingError', msg)
-
     if [dataset, identifier, tProperty] not in tproperty_list:
         msg = 'Temporal Property not found'
         LOGGER.error(msg)
@@ -1740,6 +1738,7 @@ def manage_collection_item_tProperty_value(
     collection_id = dataset
     mfeature_id = identifier
     tProperty_name = tProperty
+    tvalue_id = tvalue
     if action == 'create':
         if not request.data:
             msg = 'No data found'
@@ -1796,6 +1795,24 @@ def manage_collection_item_tProperty_value(
                     tProperty_name, pValue_id)
 
         return headers, HTTPStatus.CREATED, ''
+
+    if action == 'delete':
+        LOGGER.debug('Deleting item')
+
+        try:
+            pmdb_provider.connect()
+            pmdb_provider.delete_temporalvalue(
+                "AND tvalue_id ='{0}'".format(tvalue_id))
+
+        except (Exception, psycopg2.Error) as error:
+            msg = str(error)
+            return api.get_exception(
+                HTTPStatus.BAD_REQUEST,
+                headers, request.format, 'ConnectingError', msg)
+        finally:
+            pmdb_provider.disconnect()
+
+        return headers, HTTPStatus.NO_CONTENT, ''
 
 
 def validate_bbox(value=None) -> list:

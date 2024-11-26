@@ -12,20 +12,19 @@ from pymeos_cffi import (tfloat_from_mfjson, ttext_from_mfjson,
 
 
 class PostgresMobilityDB:
-    host = '127.0.0.1'
-    port = 5432
-    db = 'mobilitydb'
-    user = 'docker'
-    password = 'docker'
-    connection = None
-
-    # Local WSL environment test
-    # host = '172.20.241.18'
+    # host = '127.0.0.1'
     # port = 5432
-    # db = 'mobility'
-    # user = 'postgres'
-    # password = 'postgres'
+    # db = 'mobilitydb'
+    # user = 'docker'
+    # password = 'docker'
     # connection = None
+
+    host = '172.20.241.18'
+    port = 5432
+    db = 'mobility'
+    user = 'postgres'
+    password = 'postgres'
+    connection = None
 
     def __init__(self, datasource=None):
         """
@@ -218,17 +217,17 @@ class PostgresMobilityDB:
                 mfeature.mf_geometry, mfeature.mf_property, mfeature.lifespan)
                 mfeature left outer join
                 (select mfeature.collection_id, mfeature.mfeature_id,
-                extent(tproperties.pvalue_float)
+                extent(tvalue.pvalue_float)
                 as extentTPropertiesValueFloat,
-                extent(tproperties.pvalue_text) as extentTPropertiesValueText
-                from mfeature left outer join tproperties
-                on mfeature.collection_id = tproperties.collection_id
-                and mfeature.mfeature_id = tproperties.mfeature_id
+                extent(tvalue.pvalue_text) as extentTPropertiesValueText
+                from mfeature left outer join tvalue
+                on mfeature.collection_id = tvalue.collection_id
+                and mfeature.mfeature_id = tvalue.mfeature_id
                 where mfeature.collection_id ='{0}'
                 group by mfeature.collection_id, mfeature.mfeature_id)
-                tproperties ON
-                mfeature.collection_id = tproperties.collection_id
-                and mfeature.mfeature_id = tproperties.mfeature_id
+                tvalue ON
+                mfeature.collection_id = tvalue.collection_id
+                and mfeature.mfeature_id = tvalue.mfeature_id
                 where 1=1 {1} {2}""" .format(
                     collection_id, bbox_restriction, datetime_restriction))
 
@@ -428,7 +427,11 @@ class PostgresMobilityDB:
             tproperties.mfeature_id, tproperties.tproperties_name)
             tproperties.collection_id, tproperties.mfeature_id,
             tproperties.tproperties_name, tproperties.tproperty
-            from tproperties WHERE tproperties.collection_id ='{0}'
+            from tproperties left outer join tvalue
+            on tproperties.collection_id = tvalue.collection_id
+            and tproperties.mfeature_id = tvalue.mfeature_id
+            and tproperties.tproperties_name = tvalue.tproperties_name
+            WHERE tproperties.collection_id ='{0}'
             AND tproperties.mfeature_id='{1}' {2}""". format(
                 collection_id, mfeature_id, datetime_restriction))
 
@@ -443,10 +446,10 @@ class PostgresMobilityDB:
 
             if sub_temporal_value or sub_temporal_value == "true":
                 subTemporalValue_float_field = (
-                    """atTime(tproperties.pvalue_float,
+                    """atTime(tvalue.pvalue_float,
                     tstzspan('[{0}]'))""" .format(datetime))
                 subTemporalValue_text_field = (
-                    """atTime(tproperties.pvalue_text,
+                    """atTime(tvalue.pvalue_text,
                     tstzspan('[{0}]'))""" .format(datetime))
 
                 select_temporalvalue_query = (
@@ -457,18 +460,22 @@ class PostgresMobilityDB:
         tproperties.mfeature_id, tproperties.tproperties_name)
         tproperties.collection_id, tproperties.mfeature_id,
         tproperties.tproperties_name, tproperties.tproperty
-        from tproperties where tproperties.collection_id ='{0}'
-        AND tproperties.mfeature_id='{1}' {2} {3}) tproperties
-        left outer join (select tproperties.collection_id,
-        tproperties.mfeature_id, tproperties.tproperties_name,
-        tproperties.datetime_group, {4} as pvalue_float,
-        {5} as pvalue_text from tproperties
+        from tproperties left outer join tvalue
+        on tproperties.collection_id = tvalue.collection_id
+        and tproperties.mfeature_id = tvalue.mfeature_id
+        and tproperties.tproperties_name = tvalue.tproperties_name
         where tproperties.collection_id ='{0}'
-        AND tproperties.mfeature_id='{1}' and ({4} is not null
-        or {5} is not null)) tpropertiesvalue
-        on tproperties.collection_id = tpropertiesvalue.collection_id
-        and tproperties.mfeature_id = tpropertiesvalue.mfeature_id
-        and tproperties.tproperties_name = tpropertiesvalue.tproperties_name
+        AND tproperties.mfeature_id='{1}' {2} {3}) tproperties
+        left outer join (select tvalue.collection_id,
+        tvalue.mfeature_id, tvalue.tproperties_name,
+        tvalue.datetime_group, {4} as pvalue_float,
+        {5} as pvalue_text from tvalue
+        where tvalue.collection_id ='{0}'
+        AND tvalue.mfeature_id='{1}' and ({4} is not null
+        or {5} is not null)) tvalue
+        on tproperties.collection_id = tvalue.collection_id
+        and tproperties.mfeature_id = tvalue.mfeature_id
+        and tproperties.tproperties_name = tvalue.tproperties_name
         where 1=1 order by datetime_group""".
                     format(
                         collection_id, mfeature_id,
@@ -507,44 +514,45 @@ class PostgresMobilityDB:
             datetime_restriction = ""
             if datetime != '' and datetime is not None:
                 datetime_restriction = (
-                    """ and (atTime(tproperties.pvalue_float,
+                    """ and (atTime(tvalue.pvalue_float,
                 tstzspan('[{0}]')) is not null
-                or atTime(tproperties.pvalue_text,
+                or atTime(tvalue.pvalue_text,
                 tstzspan('[{0}]')) is not null) """ .format(datetime))
             float_field = 'pvalue_float'
             text_field = 'pvalue_text'
             if leaf != '' and leaf is not None:
-                float_field = "atTime(tproperties.pvalue_float, \
+                float_field = "atTime(tvalue.pvalue_float, \
                     tstzset('{" + leaf + "}'))"
-                text_field = "atTime(tproperties.pvalue_text, \
+                text_field = "atTime(tvalue.pvalue_text, \
                     tstzset('{" + leaf + "}'))"
             elif sub_temporal_value or sub_temporal_value == "true":
-                float_field = "atTime(tproperties.pvalue_float, \
+                float_field = "atTime(tvalue.pvalue_float, \
                     tstzspan('[" + datetime + "]'))"
-                text_field = "atTime(tproperties.pvalue_text, \
+                text_field = "atTime(tvalue.pvalue_text, \
                     tstzspan('[" + datetime + "]'))"
 
             select_query = (
                 """select tproperties.collection_id, tproperties.mfeature_id,
         tproperties.tproperties_name, tproperties.tproperty,
         datetime_group, pvalue_float, pvalue_text
-        from (select distinct on (tproperties.collection_id,
-        tproperties.mfeature_id, tproperties.tproperties_name)
-        tproperties.collection_id, tproperties.mfeature_id,
+        from (select tproperties.collection_id, tproperties.mfeature_id,
         tproperties.tproperties_name, tproperties.tproperty
         from tproperties where tproperties.collection_id ='{0}'
         AND tproperties.mfeature_id='{1}'
         AND tproperties.tproperties_name='{2}') tproperties
         left outer join (select tproperties.collection_id,
         tproperties.mfeature_id, tproperties.tproperties_name,
-        tproperties.datetime_group, {3} as pvalue_float,
-        {4} as pvalue_text from tproperties
+        tvalue.datetime_group, {3} as pvalue_float, {4} as pvalue_text
+        from tproperties left outer join tvalue
+        on tproperties.collection_id = tvalue.collection_id
+        and tproperties.mfeature_id = tvalue.mfeature_id
+        and tproperties.tproperties_name = tvalue.tproperties_name
         where tproperties.collection_id ='{0}'
         AND tproperties.mfeature_id='{1}'
-        AND tproperties.tproperties_name='{2}' {5}) tpropertiesvalue
-        on tproperties.collection_id = tpropertiesvalue.collection_id
-        and tproperties.mfeature_id = tpropertiesvalue.mfeature_id
-        and tproperties.tproperties_name = tpropertiesvalue.tproperties_name
+        AND tproperties.tproperties_name='{2}' {5}) tvalue
+        on tproperties.collection_id = tvalue.collection_id
+        and tproperties.mfeature_id = tvalue.mfeature_id
+        and tproperties.tproperties_name = tvalue.tproperties_name
         where 1=1 order by datetime_group"""
                 .format(collection_id, mfeature_id, tProperty_name,
                         float_field, text_field, datetime_restriction))
@@ -673,11 +681,11 @@ class PostgresMobilityDB:
         datetimes = []
         if 'datetimes' in g_temporal_property:
             datetimes = g_temporal_property.pop("datetimes", None)
-        datetime_group = self.get_temporalproperties_group(
-            collection_id, mfeature_id, datetimes)
+
         tproperties_name_list = []
         for tproperties_name in g_temporal_property:
             with self.connection.cursor() as cur:
+                temporal_value_data = {}
                 if 'values' in g_temporal_property[tproperties_name] \
                     and 'interpolation' in g_temporal_property[
                         tproperties_name]:
@@ -686,44 +694,30 @@ class PostgresMobilityDB:
                     interpolation = g_temporal_property[tproperties_name].pop(
                         "interpolation", None)
 
-                    temporal_value = self.create_temporalproperty_value(
-                        datetimes, values, interpolation)
+                    temporal_value_data['datetimes'] = datetimes
+                    temporal_value_data['values'] = values
+                    temporal_value_data['interpolation'] = interpolation
 
-                    dataType = temporal_value["type"]
-                    pvalue_column = ""
-                    value = None
+                insert_query = (
+                    """INSERT INTO tproperties(collection_id, mfeature_id,
+                        tproperties_name, tproperty)
+                        VALUES ('{0}', '{1}', '{2}', '{3}')
+                        ON CONFLICT (collection_id, mfeature_id,
+                        tproperties_name)
+                        DO UPDATE SET tproperty = EXCLUDED.tproperty"""
+                    .format(collection_id, mfeature_id,
+                            tproperties_name, json.dumps(
+                                g_temporal_property[tproperties_name])))
+                cur.execute(insert_query)
 
-                    pymeos_initialize()
-                    if dataType == 'MovingFloat':
-                        pvalue_column = "pValue_float"
-                        value = Temporal._factory(
-                            tfloat_from_mfjson(json.dumps(temporal_value)))
-                    else:
-                        pvalue_column = "pValue_text"
-                        value = Temporal._factory(
-                            ttext_from_mfjson(json.dumps(temporal_value)))
-
-                    insert_query = (
-                        """INSERT INTO tproperties(collection_id, mfeature_id,
-                            tproperties_name, datetime_group, tproperty, {0})
-                            VALUES ('{1}', '{2}', '{3}', {4}, '{5}', '{6}')"""
-                        .format(
-                            pvalue_column, collection_id, mfeature_id,
-                            tproperties_name, datetime_group, json.dumps(
-                                temporal_property[tproperties_name]),
-                            str(value)))
-                    cur.execute(insert_query)
-                else:
-                    insert_query = ("""INSERT INTO tproperties(collection_id,
-                    mfeature_id, tproperties_name, datetime_group, tproperty)
-                    VALUES ('{0}', '{1}', '{2}', {3}, '{4}')""".format(
+                if temporal_value_data:
+                    self.post_temporalvalue(
                         collection_id, mfeature_id, tproperties_name,
-                        datetime_group, json.dumps(
-                            temporal_property[tproperties_name])))
-                    cur.execute(insert_query)
+                        temporal_value_data)
 
             tproperties_name_list.append(tproperties_name)
 
+        # TODO replace g_temporal_property
         return tproperties_name_list
 
     def post_temporalvalue(
@@ -742,7 +736,6 @@ class PostgresMobilityDB:
 
         :returns: Temporal Primitive Value
         """
-
         with self.connection.cursor() as cur:
 
             datetimes = temporal_value_data['datetimes']
@@ -751,7 +744,7 @@ class PostgresMobilityDB:
             temporal_value = self.create_temporalproperty_value(
                 datetimes, values, interpolation)
 
-            datetime_group = self.get_temporalproperties_group(
+            datetime_group = self.get_temporalvalue_group(
                 collection_id, mfeature_id, datetimes)
             dataType = temporal_value["type"]
             pvalue_column = ""
@@ -768,16 +761,18 @@ class PostgresMobilityDB:
                     ttext_from_mfjson(json.dumps(temporal_value)))
 
             insert_querry = (
-                """INSERT INTO tproperties(collection_id, mfeature_id,
+                """INSERT INTO tvalue(collection_id, mfeature_id,
                 tproperties_name, datetime_group, {0})
-                VALUES ('{1}', '{2}', '{3}', {4}, '{5}')"""
+                VALUES ('{1}', '{2}', '{3}', {4}, '{5}')
+                 RETURNING tvalue_id"""
                 .format(
                     pvalue_column, collection_id, mfeature_id,
                     tproperties_name, datetime_group, str(value)))
-            cur.execute(insert_querry)
-            pValue_id = ''
 
-        return pValue_id
+            cur.execute(insert_querry)
+            tvalue_id = cur.fetchone()[0]
+
+        return tvalue_id
 
     def put_collection(self, collection_id, collection_property):
         """
@@ -806,9 +801,11 @@ class PostgresMobilityDB:
 
         with self.connection.cursor() as cur:
             cur.execute(
-                "DELETE FROM tgeometry WHERE 1=1 {0}".format(restriction))
+                "DELETE FROM tvalue WHERE 1=1 {0}".format(restriction))
             cur.execute(
                 "DELETE FROM tproperties WHERE 1=1 {0}".format(restriction))
+            cur.execute(
+                "DELETE FROM tgeometry WHERE 1=1 {0}".format(restriction))
             cur.execute(
                 "DELETE FROM mfeature WHERE 1=1 {0}".format(restriction))
             cur.execute(
@@ -821,6 +818,8 @@ class PostgresMobilityDB:
         :param restriction: moving feature id
         """
         with self.connection.cursor() as cur:
+            cur.execute(
+                "DELETE FROM tvalue WHERE 1=1 {0}".format(restriction))
             cur.execute(
                 "DELETE FROM tproperties WHERE 1=1 {0}".format(restriction))
             cur.execute(
@@ -847,7 +846,20 @@ class PostgresMobilityDB:
 
         with self.connection.cursor() as cur:
             cur.execute(
+                "DELETE FROM tvalue WHERE 1=1 {0}".format(restriction))
+            cur.execute(
                 "DELETE FROM tproperties WHERE 1=1 {0}".format(restriction))
+
+    def delete_temporalvalue(self, restriction):
+        """
+        Delete the temporal value record with the given restriction.
+
+        :param restriction: temporal value id
+        """
+
+        with self.connection.cursor() as cur:
+            cur.execute(
+                "DELETE FROM tvalue WHERE 1=1 {0}".format(restriction))
 
     def convert_temporalgeometry_to_new_version(self, temporal_geometry):
         """
@@ -1026,7 +1038,7 @@ class PostgresMobilityDB:
                     select_query = (
                         """select collection_id, mfeature_id, tproperties_name,
                     count(datetime_group) as intersect_count
-                    from tproperties where collection_id ='{0}'
+                    from tvalue where collection_id ='{0}'
                     and mfeature_id='{1}' and tproperties_name in ({2})
                     and ((pvalue_float::tstzspan && tstzset('{3}')::tstzspan)
                     or (pvalue_text::tstzspan && tstzset('{3}')::tstzspan))
@@ -1042,7 +1054,7 @@ class PostgresMobilityDB:
                             return False
         return True
 
-    def get_temporalproperties_group(
+    def get_temporalvalue_group(
             self, collection_id, mfeature_id, datetimes):
         """
         Get temporal properties group
@@ -1065,24 +1077,25 @@ class PostgresMobilityDB:
             select_query = (
                 """select temp1.collection_id, temp1.mfeature_id,
                 COALESCE(temp2.datetime_group, temp3.max_datetime_group)
-                from (select collection_id, mfeature_id from tproperties
+                from (select collection_id, mfeature_id from tvalue
                 where collection_id ='{0}' and mfeature_id='{1}') temp1
                 left outer join (select collection_id, mfeature_id,
-                datetime_group from tproperties
+                datetime_group from tvalue
                 where collection_id ='{0}' and mfeature_id='{1}'
-                and (timestamps(getTime(pvalue_float)) = tstzset('{2}')
-                or timestamps(getTime(pvalue_text)) = tstzset('{2}'))) temp2
+                and (set(timestamps(pvalue_float)) = tstzset('{2}')
+                or set(timestamps(pvalue_text)) = tstzset('{2}'))) temp2
                 on temp1.collection_id = temp2.collection_id
                 and temp1.mfeature_id = temp2.mfeature_id
                 left outer join (select collection_id, mfeature_id,
                 COALESCE(max(datetime_group), 0) + 1 as max_datetime_group
-                from tproperties where collection_id ='{0}'
+                from tvalue where collection_id ='{0}'
                 and mfeature_id='{1}'
                 group by collection_id, mfeature_id ) temp3
                 on temp1.collection_id = temp3.collection_id
                 and temp1.mfeature_id = temp3.mfeature_id """
                 .format(collection_id, mfeature_id,
                         "{" + ", ".join(datetimes) + "}"))
+            print(select_query)
             cur.execute(select_query)
             result = cur.fetchall()
         if len(result) > 0:
