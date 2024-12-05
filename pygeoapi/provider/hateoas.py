@@ -120,6 +120,8 @@ class HateoasProvider(BaseProvider):
             try:
                 jsondata = _get_json_data(f'{data_path}/collection.json')
                 resource_type = 'Collection'
+                content['license'] = jsondata['license']
+                content['extent'] = jsondata['extent']
             except Exception:
                 try:
                     filename = os.path.basename(data_path)
