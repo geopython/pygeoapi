@@ -1,0 +1,21 @@
+version: '3.0'
+services:
+  mf-api:
+    build: 
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - 5000:80
+
+  mobilitydb:
+    container_name: mobilitydb
+    ports:
+      - 25432:5432
+    environment:
+      - POSTGRES_DB=mobilitydb
+      - POSTGRES_USER=docker
+      - POSTGRES_PASSWORD=docker
+    build: 
+      context: .
+      dockerfile: DockerfileMobiitydb
+    restart: on-failure

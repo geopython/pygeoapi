@@ -8,7 +8,7 @@ GDAL<=3.8.4
 geoalchemy2
 geopandas
 netCDF4
-numpy==2.0.1
+# numpy==2.0.1
 oracledb
 pandas
 psycopg2
@@ -23,3 +23,4 @@ xarray
 zarr
 s3fs<=2023.6.0
 pymeos
+numpy<2.0
