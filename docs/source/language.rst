@@ -15,9 +15,9 @@ End user guide
 There are 2 ways to affect the language of the results returned by pygeoapi, both for the HTML and JSON(-LD) formats:
 
 1. After the requested pygeoapi URL, append a ``lang=<code>`` query parameter, where ``<code>`` should be replaced by a well-known language code.
-   This can be an ISO 639-1 code (e.g. `de` for German), optionally accompanied by an ISO 3166-1 alpha-2 country code (e.g. `de-CH` for Swiss-German).
-   Please refer to this `W3C article <https://www.w3.org/International/articles/language-tags/>`_ for more information or
-   this `list of language codes <http://www.lingoes.net/en/translator/langcode.htm>`_ for more examples.
+   This can be an `ISO 639-1 code <https://www.loc.gov/standards/iso639-2/php/code_list.php>`_ (e.g. `de` for German), optionally accompanied by an `ISO 3166-1 alpha-2 country code <https://www.iso.org/obp/ui/#search>`_ (e.g. `de-CH` for Swiss-German).
+
+   Please refer to this `W3C article <https://www.w3.org/International/articles/language-tags/>`_ for more information.
    Another option is to send a complex definition with quality weights (e.g. `de-CH, de;q=0.9, en;q=0.8, fr;q=0.7, \*;q=0.5`).
    pygeoapi will then figure out the best match for the requested language.
 
