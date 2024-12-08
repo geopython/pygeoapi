@@ -334,7 +334,7 @@ The example below shows the content of a file named *arcticdem-frontiere-0.json*
       ],
       "assets": {
           "image": {
-              "href": "http://absolute/path/to/the/ressource/arcticdem-frontiere-0.tif",
+              "href": "https://example.com/path/to/resource/arcticdem-frontiere-0.tif",
               "type": "image/tiff; application=geotiff; profile=cloud-optimized",
               "roles": []
           }

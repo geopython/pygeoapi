@@ -114,6 +114,4 @@ Data access examples
 .. _`NetCDF`: https://en.wikipedia.org/wiki/NetCDF
 .. _`Zarr`: https://zarr.readthedocs.io/en/stable
 .. _`pyproj.CRS.from_user_input`: https://pyproj4.github.io/pyproj/stable/api/crs/coordinate_system.html#pyproj.crs.CoordinateSystem.from_user_input
-
-
-.. _`OGC Environmental Data Retrieval (EDR) (API)`: https://github.com/opengeospatial/ogcapi-coverages
+.. _`OGC Environmental Data Retrieval (EDR) (API)`: https://ogcapi.ogc.org/edr

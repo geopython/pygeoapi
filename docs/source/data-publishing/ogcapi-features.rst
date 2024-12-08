@@ -813,7 +813,7 @@ Data access examples
 .. _`Feature Service`: https://enterprise.arcgis.com/en/server/latest/publish-services/windows/what-is-a-feature-service-.htm
 .. _`Map Service`: https://enterprise.arcgis.com/en/server/latest/publish-services/windows/what-is-a-map-service.htm
 .. _`Google Cloud SQL`: https://cloud.google.com/sql
-.. _`OGC API - Features`: https://www.ogc.org/standards/ogcapi-features
+.. _`OGC API - Features`: https://ogcapi.ogc.org/features
 .. _`Socrata Open Data API (SODA)`: https://dev.socrata.com
 .. _`sodapy`: https://github.com/xmunoz/sodapy
 .. _`Tabledap`: https://coastwatch.pfeg.noaa.gov/erddap/tabledap/documentation.html
