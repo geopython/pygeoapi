@@ -1287,13 +1287,15 @@ class API:
         if request.format == F_HTML:  # render
             fcm['collections_path'] = self.get_collections_url()
             if dataset is not None:
+                self.set_dataset_templates(dataset)
+
                 content = render_j2_template(self.tpl_config,
                                              'collections/collection.html',
                                              fcm, request.locale)
             else:
                 content = render_j2_template(self.tpl_config,
-                                             'collections/index.html', fcm,
-                                             request.locale)
+                                             'collections/index.html',
+                                             fcm, request.locale)
 
             return headers, HTTPStatus.OK, content
 
@@ -1379,6 +1381,8 @@ class API:
                 schema['properties'][k]['x-ogc-role'] = 'primary-instant'
 
         if request.format == F_HTML:  # render
+            self.set_dataset_templates(dataset)
+
             schema['title'] = l10n.translate(
                 self.config['resources'][dataset]['title'], request.locale)
 
@@ -1449,6 +1453,10 @@ class API:
 
     def get_collections_url(self):
         return f"{self.base_url}/collections"
+
+    def set_dataset_templates(self, dataset):
+        if 'templates' in self.config['resources'][dataset]:
+           self.tpl_config['server']['templates'] = self.config['resources'][dataset]['templates']  # noqa
 
     @staticmethod
     def _create_crs_transform_spec(
