@@ -469,7 +469,7 @@ def get_oas_30(cfg: dict, locale: str) -> tuple[list[dict[str, str]], dict[str, 
                     'summary': f'Fetch a {title} tiles description',
                     'description': description,
                     'tags': [k],
-                    'operationId': f'describe{k.capitalize()}Tiles',
+                    'operationId': f'describe{k.capitalize()}.collection.vector.getTileSetsList',  # noqa
                     'parameters': [
                         {'$ref': '#/components/parameters/f'},
                         {'$ref': '#/components/parameters/lang'}
@@ -490,7 +490,7 @@ def get_oas_30(cfg: dict, locale: str) -> tuple[list[dict[str, str]], dict[str, 
                     'summary': f'Get a {title} tile',
                     'description': description,
                     'tags': [k],
-                    'operationId': f'get{k.capitalize()}Tiles',
+                    'operationId': f'get{k.capitalize()}.collection.vector.getTile',  # noqa
                     'parameters': [
                         {'$ref': f"{OPENAPI_YAML['oapit']}#/components/parameters/tileMatrixSetId"}, # noqa
                         {'$ref': f"{OPENAPI_YAML['oapit']}#/components/parameters/tileMatrix"},  # noqa
