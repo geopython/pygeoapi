@@ -38,11 +38,33 @@ Linking to a static file in your HTML templates can be done using Jinja syntax a
 Dataset level templates
 -----------------------
 
-The ``templates`` configuration directive is applied to the entire server by default.  It can also be used for dataset specific look and feel.  As example use case is defining a template for a specific dataset to be able to add custom UI/UX functionality (e.g. search/filter widget).
+The ``templates`` configuration directive is applied to the entire server by default.  It can also be used for a dataset specific look and feel.  As example use case is defining a template for a specific dataset to be able to add custom UI/UX functionality (e.g. search/filter widget).
 
 .. note::
 
    Dataset level templates apply to ``/collections/{collectionId}`` and below.
+
+
+Example
+^^^^^^^
+
+The below is an example dataset specific template using pygeoapi's default theme:
+
+
+.. code-block:: html
+
+   {% extends "_base.html" %}
+
+   {% block body %}
+
+   <h1>My cool dataset</h1>
+
+   {% endblock %}
+
+.. note::
+
+   You can choose to use pygeoapi's default base theme, or your own as desired.
+
 
 Featured themes
 ---------------
