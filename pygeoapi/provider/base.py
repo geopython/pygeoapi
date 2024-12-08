@@ -80,6 +80,7 @@ class BaseProvider:
         self.axes = []
         self.crs = None
         self.num_bands = None
+        self.supported_formats = {}  # e.g. {'netcdf':'application/x-netcdf'}
 
     def get_fields(self):
         """
