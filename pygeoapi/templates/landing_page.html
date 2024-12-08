@@ -121,11 +121,12 @@
       <div class="card-body">
         <b>{% trans %}Address{% endtrans %}</b><br/>
         <div class="section">
-          <span>{{ config['metadata']['contact']['address'] }}</span><br/>
-          <span>{{ config['metadata']['contact']['city'] }}</span>,
-          <span>{{ config['metadata']['contact']['stateorprovince'] }}</span><br/>
-          <span>{{ config['metadata']['contact']['postalcode'] }}</span><br/>
-          <span>{{ config['metadata']['contact']['country'] }}</span>
+          <span>{{ config['metadata']['contact']['name'] }}</span><br/>
+          {% for key in ['address', 'city', 'stateorprovince', 'postalcode', 'country'] %}
+             {% if key in config['metadata']['contact'] %}
+             <span>{{ config['metadata']['contact'][key] }}</span><br/>
+             {% endif %}
+          {% endfor %}
         </div>
         <div>
           <b>{% trans %}Email{% endtrans %}</b><br/>

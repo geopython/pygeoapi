@@ -144,38 +144,81 @@ def gen_contact(cfg: dict) -> dict:
     :returns: `dict` of OpenAPI contact object
     """
 
+    has_addresses = False
+    has_phones = False
+
     contact = {
-        'name': cfg['metadata']['provider']['name'],
-        'url': cfg['metadata']['provider']['url'],
-        'email': cfg['metadata']['contact']['email']
+        'name': cfg['metadata']['provider']['name']
     }
+
+    for key in ['url', 'email']:
+        if key in cfg['metadata']['provider']:
+            contact[key] = cfg['metadata']['provider'][key]
 
     contact['x-ogc-serviceContact'] = {
         'name': cfg['metadata']['contact']['name'],
-        'position': cfg['metadata']['contact']['position'],
-        'addresses': [{
-            'deliveryPoint': [cfg['metadata']['contact']['address']],
-            'city': cfg['metadata']['contact']['city'],
-            'administrativeArea': cfg['metadata']['contact']['stateorprovince'],  # noqa
-            'postalCode': cfg['metadata']['contact']['postalcode'],
-            'country': cfg['metadata']['contact']['country']
-        }],
-        'phones': [{
-            'type': 'main', 'value': cfg['metadata']['contact']['phone']
-            }, {
-            'type': 'fax', 'value': cfg['metadata']['contact']['fax']
-        }],
-        'emails': [{
+        'addresses': []
+    }
+
+    if 'position' in cfg['metadata']['contact']:
+        contact['x-ogc-serviceContact']['position'] = cfg['metadata']['contact']['position']  # noqa
+
+    if any(address in ['address', 'city', 'stateorprovince', 'postalcode', 'country'] for address in cfg['metadata']['contact']):  # noqa
+        has_addresses = True
+
+    if has_addresses:
+        address = {}
+        if 'address' in cfg['metadata']['contact']:
+            address['deliveryPoint'] = [cfg['metadata']['contact']['address']]
+
+        if 'city' in cfg['metadata']['contact']:
+            address['city'] = cfg['metadata']['contact']['city']
+
+        if 'stateorprovince' in cfg['metadata']['contact']:
+            address['administrativeArea'] = cfg['metadata']['contact']['stateorprovince']  # noqa
+
+        if 'postalCode' in cfg['metadata']['contact']:
+            address['administrativeArea'] = cfg['metadata']['contact']['postalCode']  # noqa
+
+        if 'country' in cfg['metadata']['contact']:
+            address['administrativeArea'] = cfg['metadata']['contact']['country']  # noqa
+
+        contact['x-ogc-serviceContact']['addresses'].append(address)
+
+    if any(phone in ['phone', 'fax'] for phone in cfg['metadata']['contact']):
+        has_phones = True
+        contact['x-ogc-serviceContact']['phones'] = []
+
+    if has_phones:
+        if 'phone' in cfg['metadata']['contact']:
+            contact['x-ogc-serviceContact']['phones'].append({
+                'type': 'main', 'value': cfg['metadata']['contact']['phone']
+            })
+
+        if 'fax' in cfg['metadata']['contact']:
+            contact['x-ogc-serviceContact']['phones'].append({
+                'type': 'fax', 'value': cfg['metadata']['contact']['fax']
+            })
+
+    if 'email' in cfg['metadata']['contact']:
+        contact['x-ogc-serviceContact']['emails'] = [{
             'value': cfg['metadata']['contact']['email']
-        }],
-        'contactInstructions': cfg['metadata']['contact']['instructions'],
-        'links': [{
+        }]
+
+    if 'url' in cfg['metadata']['contact']:
+        contact['x-ogc-serviceContact']['links'] = [{
             'type': 'text/html',
             'href': cfg['metadata']['contact']['url']
-        }],
-        'hoursOfService': cfg['metadata']['contact']['hours'],
-        'roles': [cfg['metadata']['contact']['role']]
-    }
+        }]
+
+    if 'instructions' in cfg['metadata']['contact']:
+        contact['x-ogc-serviceContact']['contactInstructions'] = cfg['metadata']['contact']['instructions']  # noqa
+
+    if 'hours' in cfg['metadata']['contact']:
+        contact['x-ogc-serviceContact']['hoursOfService'] = cfg['metadata']['contact']['hours']  # noqa
+
+    if 'role' in cfg['metadata']['contact']:
+        contact['x-ogc-serviceContact']['hoursOfService'] = cfg['metadata']['contact']['role']  # noqa
 
     return contact
 

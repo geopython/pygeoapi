@@ -74,7 +74,7 @@ def test_str2bool():
     osl = get_ogc_schemas_location(default)
 
 
-def test_get_oas(config, openapi):
+def test_get_oas(config):
     openapi_doc = get_oas(config)
 
     assert isinstance(openapi_doc, dict)
@@ -82,6 +82,41 @@ def test_get_oas(config, openapi):
     is_valid = validate_openapi_document(openapi_doc)
 
     assert is_valid
+
+
+def test_get_oas_ogc_service_contact(config):
+
+    ogc_service_contact = {
+        'addresses': [{
+            'administrativeArea': 'Country',
+            'city': 'City',
+            'deliveryPoint': ['Mailing Address']
+        }],
+        'contactInstructions': 'During hours of service.  Off on weekends.',
+        'emails': [{
+            'value': 'you@example.org'
+        }],
+        'hoursOfService': 'pointOfContact',
+        'links': [{
+            'href': 'Contact URL',
+            'type': 'text/html'
+        }],
+        'name': 'Lastname, Firstname',
+        'phones': [{
+            'type': 'main',
+            'value': '+xx-xxx-xxx-xxxx'
+        }, {
+            'type': 'fax',
+            'value': '+xx-xxx-xxx-xxxx'
+        }],
+        'position': 'Position Title'
+    }
+
+    openapi_doc = get_oas(config)
+
+    assert isinstance(openapi_doc, dict)
+
+    assert openapi_doc['info']['contact']['x-ogc-serviceContact'] == ogc_service_contact  # noqa
 
 
 def test_validate_openapi_document(openapi):
