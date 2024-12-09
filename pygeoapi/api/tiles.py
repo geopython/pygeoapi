@@ -141,11 +141,9 @@ def get_collection_tiles(api: API, request: APIRequest,
 
     tiling_schemes = p.get_tiling_schemes()
 
-    dataType = None
-    if (t['format']['mimetype'] == 'application/vnd.mapbox-vector-tile'):
-        dataType = 'vector'
-    elif (t['format']['mimetype'] == 'image/png'):
-        dataType = 'map'
+
+    dataType = 'vector'
+    if t['formats']['mimetype'].startswith('image'):  datatype = 'map'
 
     if dataType is None:
         LOGGER.error("Could not determine tile data type")
