@@ -141,9 +141,9 @@ def get_collection_tiles(api: API, request: APIRequest,
 
     tiling_schemes = p.get_tiling_schemes()
 
-
     dataType = 'vector'
-    if t['formats']['mimetype'].startswith('image'):  datatype = 'map'
+    if t['formats']['mimetype'].startswith('image'):
+        dataType = 'map'
 
     if dataType is None:
         LOGGER.error("Could not determine tile data type")
