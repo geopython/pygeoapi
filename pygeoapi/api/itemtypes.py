@@ -509,9 +509,12 @@ def get_collection_items(
             serialized_query_params += '='
             serialized_query_params += urllib.parse.quote(str(v), safe=',')
 
+    if 'links' not in content:
+        content['links'] = []
+
     # TODO: translate titles
     uri = f'{api.get_collections_url()}/{dataset}/items'
-    content['links'] = [{
+    content['links'].extend([{
         'type': 'application/geo+json',
         'rel': request.get_linkrel(F_JSON),
         'title': l10n.translate('This document as GeoJSON', request.locale),
@@ -526,7 +529,7 @@ def get_collection_items(
         'rel': request.get_linkrel(F_HTML),
         'title': l10n.translate('This document as HTML', request.locale),
         'href': f'{uri}?f={F_HTML}{serialized_query_params}'
-    }]
+    }])
 
     if offset > 0:
         prev = max(0, offset - limit)
