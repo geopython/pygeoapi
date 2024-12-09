@@ -141,12 +141,22 @@ def get_collection_tiles(api: API, request: APIRequest,
 
     tiling_schemes = p.get_tiling_schemes()
 
+
+    dataType = None
+    if (t['format']['mimetype'] == 'application/vnd.mapbox-vector-tile'):
+        dataType = 'vector'
+    elif (t['format']['mimetype'] == 'image/png'):
+        dataType = 'map'
+    
+    if dataType == None:
+        LOGGER.error ("Could not determine tile data type")
+
     for matrix in tiling_schemes:
         tile_matrix = {
             'title': dataset,
             'tileMatrixSetURI': matrix.tileMatrixSetURI,
             'crs': matrix.crs,
-            'dataType': 'vector',
+            'dataType': dataType,
             'links': []
         }
         tile_matrix['links'].append({
@@ -230,6 +240,7 @@ def get_collection_tiles_data(
     try:
         t = get_provider_by_type(
             api.config['resources'][dataset]['providers'], 'tile')
+
         p = load_plugin('provider', t)
 
         format_ = p.format_type
