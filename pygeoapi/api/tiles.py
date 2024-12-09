@@ -475,12 +475,20 @@ def get_oas_30(cfg: dict, locale: str) -> tuple[list[dict[str, str]], dict[str, 
             title = l10n.translate(v['title'], locale)
             description = l10n.translate(v['description'], locale)
 
+            operationId_tileSetsList = ''
+            operationId_tile = ''
+            if (tile_extension['format']['mimetype'] == 'application/vnd.mapbox-vector-tile'):
+                operationId_tileSetsList.join(f'describe{k.capitalize()}.collection.vector.getTileSetsList'),  # noqa
+                operationId_tile.join(f'get{k.capitalize()}.collection.vector.getTile'),  # noqa
+            else:
+                LOGGER.error ("operation id is currently supported only for vector tiles")
+
             paths[tiles_path] = {
                 'get': {
                     'summary': f'Fetch a {title} tiles description',
                     'description': description,
                     'tags': [k],
-                    'operationId': f'describe{k.capitalize()}.collection.vector.getTileSetsList',  # noqa
+                    'operationId': operationId_tileSetsList,  # noqa
                     'parameters': [
                         {'$ref': '#/components/parameters/f'},
                         {'$ref': '#/components/parameters/lang'}
@@ -501,7 +509,7 @@ def get_oas_30(cfg: dict, locale: str) -> tuple[list[dict[str, str]], dict[str, 
                     'summary': f'Get a {title} tile',
                     'description': description,
                     'tags': [k],
-                    'operationId': f'get{k.capitalize()}.collection.vector.getTile',  # noqa
+                    'operationId': operationId_tile,  # noqa
                     'parameters': [
                         {'$ref': f"{OPENAPI_YAML['oapit']}#/components/parameters/tileMatrixSetId"}, # noqa
                         {'$ref': f"{OPENAPI_YAML['oapit']}#/components/parameters/tileMatrix"},  # noqa
