@@ -141,12 +141,17 @@ def get_collection_tiles(api: API, request: APIRequest,
 
     tiling_schemes = p.get_tiling_schemes()
 
+    datatype = 'vector'
+
+    if t['format']['mimetype'].startswith('image'):
+        datatype = 'map'
+
     for matrix in tiling_schemes:
         tile_matrix = {
             'title': dataset,
             'tileMatrixSetURI': matrix.tileMatrixSetURI,
             'crs': matrix.crs,
-            'dataType': 'vector',
+            'dataType': datatype,
             'links': []
         }
         tile_matrix['links'].append({
@@ -464,12 +469,17 @@ def get_oas_30(cfg: dict, locale: str) -> tuple[list[dict[str, str]], dict[str, 
             title = l10n.translate(v['title'], locale)
             description = l10n.translate(v['description'], locale)
 
+            datatype = 'vector'
+
+            if tile_extension['format']['mimetype'].startswith('image'):
+                datatype = 'map'
+
             paths[tiles_path] = {
                 'get': {
                     'summary': f'Fetch a {title} tiles description',
                     'description': description,
                     'tags': [k],
-                    'operationId': f'describe{k.capitalize()}.collection.vector.getTileSetsList',  # noqa
+                    'operationId': f'describe{k.capitalize()}.collection.{datatype}.getTileSetsList',  # noqa
                     'parameters': [
                         {'$ref': '#/components/parameters/f'},
                         {'$ref': '#/components/parameters/lang'}
@@ -490,7 +500,7 @@ def get_oas_30(cfg: dict, locale: str) -> tuple[list[dict[str, str]], dict[str, 
                     'summary': f'Get a {title} tile',
                     'description': description,
                     'tags': [k],
-                    'operationId': f'get{k.capitalize()}.collection.vector.getTile',  # noqa
+                    'operationId': f'get{k.capitalize()}.collection.{datatype}.getTile',  # noqa
                     'parameters': [
                         {'$ref': f"{OPENAPI_YAML['oapit']}#/components/parameters/tileMatrixSetId"}, # noqa
                         {'$ref': f"{OPENAPI_YAML['oapit']}#/components/parameters/tileMatrix"},  # noqa
