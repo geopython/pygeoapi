@@ -141,15 +141,14 @@ def get_collection_tiles(api: API, request: APIRequest,
 
     tiling_schemes = p.get_tiling_schemes()
 
-
     dataType = None
     if (t['format']['mimetype'] == 'application/vnd.mapbox-vector-tile'):
         dataType = 'vector'
     elif (t['format']['mimetype'] == 'image/png'):
         dataType = 'map'
-    
-    if dataType == None:
-        LOGGER.error ("Could not determine tile data type")
+
+    if dataType is None:
+        LOGGER.error("Could not determine tile data type")
 
     for matrix in tiling_schemes:
         tile_matrix = {
@@ -477,11 +476,11 @@ def get_oas_30(cfg: dict, locale: str) -> tuple[list[dict[str, str]], dict[str, 
 
             operationId_tileSetsList = ''
             operationId_tile = ''
-            if (tile_extension['format']['mimetype'] == 'application/vnd.mapbox-vector-tile'):
+            if (tile_extension['format']['mimetype'] == 'application/vnd.mapbox-vector-tile'): # noqa
                 operationId_tileSetsList.join(f'describe{k.capitalize()}.collection.vector.getTileSetsList'),  # noqa
                 operationId_tile.join(f'get{k.capitalize()}.collection.vector.getTile'),  # noqa
             else:
-                LOGGER.error ("operation id is currently supported only for vector tiles")
+                LOGGER.error("operation id is currently supported only for vector tiles") # noqa
 
             paths[tiles_path] = {
                 'get': {
