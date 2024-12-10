@@ -189,6 +189,9 @@ def get_collection_coverage(
 
         headers['Content-Type'] = collection_def['format']['mimetype']
         return headers, HTTPStatus.OK, data
+    elif format_ in p.supported_formats:
+        headers['Content-Type'] = p.supported_formats[format_]
+        return headers, HTTPStatus.OK, data
     elif format_ == F_JSON:
         headers['Content-Type'] = 'application/prs.coverage+json'
         return headers, HTTPStatus.OK, to_json(data, api.pretty_print)
