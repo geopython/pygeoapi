@@ -11,6 +11,6 @@
     <pre id="results"></pre>
   </section>
   <script>
-    document.getElementById('results').innerHTML = JSON.stringify({{ data.result }}, undefined, 2);
+    document.getElementById('results').innerHTML = JSON.stringify({{ data.result | to_json | safe }}, undefined, 2);
   </script>
 {% endblock %}

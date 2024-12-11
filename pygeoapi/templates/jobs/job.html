@@ -27,7 +27,7 @@
                 <pre id="job-parameters"></pre>
               </div>
               <script>
-                var parameters = {{ data['jobs']['parameters'] | tojson }};
+                var parameters = {{ data['jobs']['parameters'] | to_json | safe }};
                 document.getElementById('job-parameters').innerHTML = JSON.stringify(JSON.parse(parameters), undefined, 2);
               </script>
               {% endif %}
