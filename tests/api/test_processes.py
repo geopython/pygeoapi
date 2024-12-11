@@ -435,7 +435,7 @@ def test_get_job_result(api_):
     # default response is html
     assert code == HTTPStatus.OK
     assert rsp_headers['Content-Type'] == 'text/html'
-    result = 'JSON.stringify({"id": "echo", "value": "Hello Sync Test!"}'
+    result = 'JSON.stringify({"id":"echo","value":"Hello Sync Test!"}'
     assert result in response
 
     rsp_headers, code, response = get_job_result(
