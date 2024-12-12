@@ -71,6 +71,30 @@ Or you can create a ``Dockerfile`` extending the base image and **copy** in your
 
 A corresponding example can be found in https://github.com/geopython/demo.pygeoapi.io/tree/master/services/pygeoapi_master
 
+Environment Variables for Configuration
+---------------------------------------
+
+The base Docker image supports two additional environment variables for configuring the `pygeoapi` server behavior:
+
+1. **`PYGEOAPI_URL`**:  
+   This variable sets the `pygeoapi` server URL in the configuration. It is useful for dynamically configuring the server URL during container deployment. For example:
+
+   .. code-block:: bash
+
+      docker run -p 2018:80 -e PYGEOAPI_URL='http://localhost:2018' -it geopython/pygeoapi
+
+   This ensures the service URLs in the configuration file are automatically updated to reflect the specified URL.
+
+2. **`PYGEOAPI_ADMIN_API`**:  
+   This boolean environment variable enables or disables the `pygeoapi` Admin API. By default, the Admin API is disabled. To enable it:
+
+   .. code-block:: bash
+
+      docker run -p 5000:80 -e PYGEOAPI_ADMIN_API=true -it geopython/pygeoapi
+
+   This does not enable hot reloading of the `pygoeapi` configuration. To learn more about the Admin API see :ref:`admin-api`.
+
+
 Deploying on a sub-path
 -----------------------
 
