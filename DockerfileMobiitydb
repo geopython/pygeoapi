@@ -1,4 +1,4 @@
-FROM postgis/postgis:14-3.2
+FROM postgis/postgis:17-3.5
 
 # Configuration Parameters
 LABEL maintainer="MobilityDB Project - https://github.com/MobilityDB/MobilityDB"
