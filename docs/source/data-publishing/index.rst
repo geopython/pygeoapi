@@ -26,6 +26,7 @@ return back data to the pygeoapi API framework in a plug and play fashion.
    ogcapi-records
    ogcapi-edr
    stac
+   ogcapi-mfapi
 
 
 .. seealso::

@@ -253,3 +253,67 @@ discover what is supported by the server.
 .. _`Toronto, Ontario, Canada`: https://en.wikipedia.org/wiki/Toronto
 .. _`Swagger`: https://en.wikipedia.org/wiki/Swagger_(software)
 .. _`curl`: https://curl.se
+
+
+MF-API Tour
+-----------
+The OGC API - Moving Features Standard is an extension of the OGC API - Common and the OGC API - Features Standards.
+MovingFeatures – Part 1: Core is described in the `here <https://github.com/opengeospatial/ogcapi-movingfeatures/tree/master?tab=readme-ov-file>`_.
+
+
+MovingFeatures Collection Catalog
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+http://localhost:5000/collections
+
+Retrieve catalogs of a moving features collection.
+
+MovingFeatures
+^^^^^^^^^^^^^^
+http://localhost:5000/{collectionId}/items
+
+Retrieve the moving feature collection to access the static information of the moving feature by simple filtering and a limit.
+
+MovingFeature
+"""""""""""""
+http://localhost:5000/{collectionId}/items/{mf_id}
+
+
+Access the static data of the moving feature with id {mFeatureId}. 
+The static data of a moving feature is not included temporal geometries and temporal properties.
+
+TemporalGeometrySequence
+""""""""""""""""""""""""
+http://localhost:5000/{collectionId}/items/{mf_id}/tgsequence
+
+Retrieve the movement data of the single moving feature with id {mFeatureId}.
+
+TemporalGeometryQuery
+"""""""""""""""""""""
+http://localhost:5000/{collectionId}/items/{mf_id}/tgsequence/{tGeometryId}
+
+Get a time-to-distance curve of a temporal primitive geometry with id {tGeometryId}.
+
+TemporalProperties
+""""""""""""""""""
+http://localhost:5000/{collectionId}/items/{mf_id}/tproperties
+
+Retrieve the static information of the temporal property data that included a single moving feature with id {mFeatureId}. 
+The static data of a temporal property is not included temporal values (property values).
+
+.. seealso::
+   :ref:`ogcapi-mfapi` for more OGC API - MF-API request examples.
+
+Transactions
+^^^^^^^^^^^^
+Register metadata about a collection of moving features. (using `curl`_):
+
+.. code-block:: sh
+
+   curl -X POST http://localhost:5000/collections \
+      -H "Content-Type: application/json" \
+      -d "{\"title\": \"moving_feature_collection_sample\",
+         \"updateFrequency\": 1000,
+         \"description\": \"example\",
+         \"itemType\": \"movingfeature\"
+         }"
+

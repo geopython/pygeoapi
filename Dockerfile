@@ -125,11 +125,16 @@ RUN \
     && apt autoremove -y  \
     && rm -rf /var/lib/apt/lists/*
 
-ADD requirements-docker.txt requirements-admin.txt /pygeoapi/
+ADD requirements-docker.txt requirements-admin.txt requirements-provider.txt /pygeoapi/
+
 # Install remaining pygeoapi deps
 RUN python3 -m pip install --no-cache-dir -r requirements-docker.txt \
-    && python3 -m pip install --no-cache-dir -r requirements-admin.txt
+    && python3 -m pip install --no-cache-dir -r requirements-admin.txt \
+    && python3 -m pip install --no-cache-dir -r requirements-provider.txt
 
+# If execute pytest
+ADD requirements-dev.txt /pygeoapi/
+RUN python3 -m pip install --no-cache-dir -r requirements-dev.txt
 
 ADD . /pygeoapi
 
@@ -142,4 +147,3 @@ RUN \
     && cp /pygeoapi/docker/entrypoint.sh /entrypoint.sh 
 
 ENTRYPOINT ["/entrypoint.sh"]
-

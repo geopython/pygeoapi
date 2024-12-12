@@ -53,13 +53,14 @@ LOGGER = logging.getLogger(__name__)
 
 OPENAPI_YAML = {
     'oapif-1': 'https://schemas.opengis.net/ogcapi/features/part1/1.0/openapi/ogcapi-features-1.yaml',  # noqa
-    'oapif-2': 'https://schemas.opengis.net/ogcapi/features/part2/1.0/openapi/ogcapi-features-2.yaml', # noqa
+    'oapif-2': 'https://schemas.opengis.net/ogcapi/features/part2/1.0/openapi/ogcapi-features-2.yaml',  # noqa
     'oapip': 'https://schemas.opengis.net/ogcapi/processes/part1/1.0/openapi',
     'oacov': 'https://raw.githubusercontent.com/tomkralidis/ogcapi-coverages-1/fix-cis/yaml-unresolved',  # noqa
     'oapir': 'https://raw.githubusercontent.com/opengeospatial/ogcapi-records/master/core/openapi',  # noqa
-    'oaedr': 'https://schemas.opengis.net/ogcapi/edr/1.0/openapi', # noqa
+    'oaedr': 'https://schemas.opengis.net/ogcapi/edr/1.0/openapi',  # noqa
     'oapit': 'https://schemas.opengis.net/ogcapi/tiles/part1/1.0/openapi/ogcapi-tiles-1.yaml',  # noqa
-    'pygeoapi': 'https://raw.githubusercontent.com/geopython/pygeoapi/master/pygeoapi/schemas/config/pygeoapi-config-0.x.yml'  # noqa
+    'pygeoapi': 'https://raw.githubusercontent.com/geopython/pygeoapi/master/pygeoapi/schemas/config/pygeoapi-config-0.x.yml',  # noqa
+    'movingfeature': 'https://schemas.opengis.net/ogcapi/movingfeatures/part1/1.0/openapi/ogcapi-movingfeatures-1.bundled.yaml'  # noqa
 }
 
 THISDIR = os.path.dirname(os.path.realpath(__file__))
@@ -154,7 +155,7 @@ def get_oas_30(cfg: dict, fail_on_invalid_collection: bool = True) -> dict:
 
     osl = get_ogc_schemas_location(cfg['server'])
     OPENAPI_YAML['oapif-1'] = os.path.join(osl, 'ogcapi/features/part1/1.0/openapi/ogcapi-features-1.yaml')  # noqa
-    OPENAPI_YAML['oapif-2'] = os.path.join(osl, 'ogcapi/features/part2/1.0/openapi/ogcapi-features-2.yaml') # noqa
+    OPENAPI_YAML['oapif-2'] = os.path.join(osl, 'ogcapi/features/part2/1.0/openapi/ogcapi-features-2.yaml')  # noqa
 
     LOGGER.debug('setting up server info')
     oas = {
@@ -267,6 +268,46 @@ def get_oas_30(cfg: dict, fail_on_invalid_collection: bool = True) -> dict:
                 '400': {'$ref': f"{OPENAPI_YAML['oapif-1']}#/components/responses/InvalidParameter"},  # noqa
                 '500': {'$ref': f"{OPENAPI_YAML['oapif-1']}#/components/responses/ServerError"}  # noqa
             }
+        },
+        "post": {
+            "operationId": "registerMetadata",
+            "summary": "Register metadata about a collection of moving features",  # noqa
+            "description": "A user SHOULD register metadata about a collection of moving features into the system.\n",  # noqa
+            "tags": [
+                "MovingFeatureCollection"
+            ],
+            "requestBody": {
+                "content": {
+                    "application/json": {
+                        "schema": {
+                            "$ref": f"{OPENAPI_YAML['movingfeature']}#/components/schemas/collection-body"  # noqa
+                        },
+                        "example": {
+                            "title": "moving_feature_collection_sample",  # noqa
+                            "updateFrequency": 1000,
+                            "description": "example",
+                            "itemType": "movingfeature"
+                        }
+                    }
+                }
+            },
+            "responses": {
+                "201": {
+                    "description": "Successful create a collection to manage moving features.",  # noqa
+                    "headers": {
+                        "Location": {
+                            "description": "A URI of the newly added resource",  # noqa
+                            "schema": {
+                                "type": "string",
+                                "example": "https://data.example.org/collections/mfc-1"  # noqa
+                            }
+                        }
+                    }
+                },
+                "500": {
+                    "$ref": f"{OPENAPI_YAML['movingfeature']}#/components/responses/ServerError"  # noqa
+                }
+            }
         }
     }
 
@@ -311,30 +352,30 @@ def get_oas_30(cfg: dict, fail_on_invalid_collection: bool = True) -> dict:
                 ],
                 'properties': {
                     'queryable': {
-                        'description': 'the token that may be used in a CQL predicate', # noqa
+                        'description': 'the token that may be used in a CQL predicate',  # noqa
                         'type': 'string'
                     },
                     'title': {
-                        'description': 'a human readable title for the queryable', # noqa
+                        'description': 'a human readable title for the queryable',  # noqa
                         'type': 'string'
                     },
                     'description': {
-                        'description': 'a human-readable narrative describing the queryable', # noqa
+                        'description': 'a human-readable narrative describing the queryable',  # noqa
                         'type': 'string'
                     },
                     'language': {
-                        'description': 'the language used for the title and description', # noqa
+                        'description': 'the language used for the title and description',  # noqa
                         'type': 'string',
                         'default': [
                             'en'
                         ]
                     },
                     'type': {
-                        'description': 'the data type of the queryable', # noqa
+                        'description': 'the data type of the queryable',  # noqa
                         'type': 'string'
                     },
                     'type-ref': {
-                        'description': 'a reference to the formal definition of the type', # noqa
+                        'description': 'a reference to the formal definition of the type',  # noqa
                         'type': 'string',
                         'format': 'url'
                     }
@@ -401,7 +442,7 @@ def get_oas_30(cfg: dict, fail_on_invalid_collection: bool = True) -> dict:
 
         oas['components']['responses'].update({
                 'Tiles': {
-                    'description': 'Retrieves the tiles description for this collection', # noqa
+                    'description': 'Retrieves the tiles description for this collection',  # noqa
                     'content': {
                         'application/json': {
                             'schema': {
@@ -436,7 +477,7 @@ def get_oas_30(cfg: dict, fail_on_invalid_collection: bool = True) -> dict:
                         'tileMatrixSetLinks': {
                             'type': 'array',
                             'items': {
-                                '$ref': '#/components/schemas/tilematrixsetlink' # noqa
+                                '$ref': '#/components/schemas/tilematrixsetlink'  # noqa
                             }
                         },
                         'links': {

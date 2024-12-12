@@ -40,6 +40,14 @@ Root level code of pygeoapi, parsing content provided by web framework.
 Returns content from plugins and sets responses.
 """
 
+from pygeoapi.util import (CrsTransformSpec, TEMPLATES, UrlPrefetcher,
+                           get_api_rules, get_base_url, get_provider_by_type,
+                           get_typed_value, get_crs_from_uri, dategetter,
+                           get_supported_crs_list, render_j2_template, to_json,
+                           get_provider_default, filter_dict_by_key_value)
+from pymeos import STBox, TsTzSpan, pymeos_initialize
+import psycopg2
+from pygeoapi.provider.postgresql_mobilitydb import PostgresMobilityDB
 import asyncio
 from collections import OrderedDict
 from copy import deepcopy
@@ -62,13 +70,6 @@ from pygeoapi.plugin import load_plugin
 from pygeoapi.process.manager.base import get_manager
 from pygeoapi.provider.base import (
     ProviderConnectionError, ProviderGenericError, ProviderTypeError)
-
-from pygeoapi.util import (
-    CrsTransformSpec, TEMPLATES, UrlPrefetcher, dategetter,
-    filter_dict_by_key_value, get_api_rules, get_base_url,
-    get_provider_by_type, get_provider_default, get_typed_value,
-    get_crs_from_uri, get_supported_crs_list, render_j2_template, to_json
-)
 
 LOGGER = logging.getLogger(__name__)
 
@@ -133,7 +134,7 @@ def all_apis() -> dict:
     """
 
     from . import (coverages, environmental_data_retrieval, itemtypes, maps,
-                   processes, tiles, stac)
+                   processes, tiles, stac, movingfeatures)
 
     return {
         'coverage': coverages,
@@ -142,7 +143,8 @@ def all_apis() -> dict:
         'map': maps,
         'process': processes,
         'tile': tiles,
-        'stac': stac
+        'stac': stac,
+        'movingfeature': movingfeatures,
     }
 
 
@@ -292,6 +294,7 @@ class APIRequest:
     :param request:             The web platform specific Request instance.
     :param supported_locales:   List or set of supported Locale instances.
     """
+
     def __init__(self, request, supported_locales):
         # Set default request data
         self._data = b''
@@ -454,7 +457,7 @@ class APIRequest:
 
         # Format not specified: get from Accept headers (MIME types)
         # e.g. format_ = 'text/html'
-        h = headers.get('accept', headers.get('Accept', '')).strip() # noqa
+        h = headers.get('accept', headers.get('Accept', '')).strip()  # noqa
         (fmts, mimes) = zip(*FORMAT_TYPES.items())
         # basic support for complex types (i.e. with "q=0.x")
         for type_ in (t.split(';')[0].strip() for t in h.split(',') if t):
@@ -812,7 +815,7 @@ class API:
     @gzip
     @pre_process
     def openapi_(self, request: Union[APIRequest, Any]) -> Tuple[
-                 dict, int, str]:
+            dict, int, str]:
         """
         Provide OpenAPI document
 
@@ -882,6 +885,9 @@ class API:
                     if provider['type'] == 'record':
                         conformance_list.extend(
                             apis_dict['itemtypes'].CONFORMANCE_CLASSES_RECORDS)
+                    if provider['type'] == 'movingfeatures':
+                        conformance_list.extend(
+                            apis_dict['movingfeatures'].CONFORMANCE_CLASSES_RECORDS)  # noqa
 
         conformance = {
             'conformsTo': sorted(list(set(conformance_list)))
@@ -898,20 +904,19 @@ class API:
     @gzip
     @pre_process
     @jsonldify
-    def describe_collections(self, request: Union[APIRequest, Any],
-                             dataset=None) -> Tuple[dict, int, str]:
+    def describe_collections(
+        self, request: Union[APIRequest, Any],
+            dataset=None) -> Tuple[dict, int, str]:
         """
-        Provide collection metadata
+        Queries collection
 
         :param request: A request object
-        :param dataset: name of collection
 
         :returns: tuple of headers, status code, content
         """
-
         if not request.is_valid():
             return self.get_format_exception(request)
-        headers = request.get_response_headers(**self.api_headers)
+        headers = request.get_response_headers()
 
         fcm = {
             'collections': [],
@@ -1099,10 +1104,10 @@ class API:
 
                 # OAPIF Part 2 - list supported CRSs and StorageCRS
                 if collection_data_type == 'feature':
-                    collection['crs'] = get_supported_crs_list(collection_data, DEFAULT_CRS_LIST) # noqa
-                    collection['storageCRS'] = collection_data.get('storage_crs', DEFAULT_STORAGE_CRS) # noqa
+                    collection['crs'] = get_supported_crs_list(collection_data, DEFAULT_CRS_LIST)  # noqa
+                    collection['storageCRS'] = collection_data.get('storage_crs', DEFAULT_STORAGE_CRS)  # noqa
                     if 'storage_crs_coordinate_epoch' in collection_data:
-                        collection['storageCrsCoordinateEpoch'] = collection_data.get('storage_crs_coordinate_epoch') # noqa
+                        collection['storageCrsCoordinateEpoch'] = collection_data.get('storage_crs_coordinate_epoch')  # noqa
 
             elif collection_data_type == 'coverage':
                 # TODO: translate
@@ -1141,7 +1146,7 @@ class API:
                         collection['extent']['spatial']['grid'] = [{
                             'cellsCount': p._coverage_properties['width'],
                             'resolution': p._coverage_properties['resx']
-                            }, {
+                        }, {
                             'cellsCount': p._coverage_properties['height'],
                             'resolution': p._coverage_properties['resy']
                         }]
@@ -1235,7 +1240,7 @@ class API:
                         'link': {
                             'href': f'{self.get_collections_url()}/{k}/{qt}',
                             'rel': 'data'
-                         }
+                        }
                     }
                     collection['data_queries'][qt] = data_query
 
@@ -1264,6 +1269,144 @@ class API:
             fcm['collections'].append(collection)
 
         if dataset is None:
+            # get moving feature collections
+            pmdb_provider = PostgresMobilityDB()
+
+            try:
+                pmdb_provider.connect()
+                result = pmdb_provider.get_collections()
+            except (Exception, psycopg2.Error) as error:
+                msg = str(error)
+                return self.get_exception(
+                    HTTPStatus.BAD_REQUEST,
+                    headers,
+                    request.format,
+                    'ConnectingError',
+                    msg)
+
+            pymeos_initialize()
+            for row in result:
+                collection_id = row[0]
+                collection = row[1]
+                collection['itemType'] = 'movingfeature'
+                collection['id'] = collection_id
+
+                crs = None
+                trs = None
+                if 'crs' in collection:
+                    crs = collection.pop('crs', None)
+                if 'trs' in collection:
+                    trs = collection.pop('trs', None)
+
+                extend_stbox = STBox(row[3]) if row[3] is not None else None
+                lifespan = TsTzSpan(row[2]) if row[2] is not None else None
+
+                bbox = []
+                if extend_stbox is not None:
+                    bbox.append(extend_stbox.xmin())
+                    bbox.append(extend_stbox.ymin())
+                    if extend_stbox.zmin() is not None:
+                        bbox.append(extend_stbox.zmin())
+                    bbox.append(extend_stbox.xmax())
+                    bbox.append(extend_stbox.ymax())
+                    if extend_stbox.zmax() is not None:
+                        bbox.append(extend_stbox.zmax())
+
+                    if crs is None:
+                        if extend_stbox.srid() == 4326:
+                            if extend_stbox.zmax() is not None:
+                                crs = 'http://www.opengis.net/def/crs/OGC/0/CRS84h'  # noqa
+                            else:
+                                crs = 'http://www.opengis.net/def/\
+                                    crs/OGC/1.3/CRS84'
+                if crs is None:
+                    crs = 'http://www.opengis.net/def/crs/OGC/1.3/CRS84'
+                if trs is None:
+                    trs = 'http://www.opengis.net/def/uom/ISO-8601/0/Gregorian'
+
+                time = []
+                if lifespan is not None:
+                    time.append(
+                        lifespan.lower().strftime("%Y-%m-%dT%H:%M:%SZ"))
+                    time.append(
+                        lifespan.upper().strftime("%Y-%m-%dT%H:%M:%SZ"))
+                else:
+                    if extend_stbox is not None:
+                        if extend_stbox.tmin() is not None:
+                            time.append(extend_stbox.tmin().strftime(
+                                "%Y-%m-%dT%H:%M:%SZ"))
+                            time.append(extend_stbox.tmax().strftime(
+                                "%Y-%m-%dT%H:%M:%SZ"))
+
+                collection['extent'] = {
+                    'spatial': {
+                        'bbox': bbox,
+                        'crs': crs
+                    },
+                    'temporal': {
+                        'interval': time,
+                        'trs': trs
+                    }
+                }
+
+                collection['links'] = []
+
+                # TODO: provide translations
+                LOGGER.debug('Adding JSON and HTML link relations')
+
+                collection['links'].append({
+                    'type': FORMAT_TYPES[F_JSON],
+                    'rel': 'root',
+                    'title': l10n.translate('The landing page of this server as JSON', request.locale),  # noqa
+                    'href': f"{self.base_url}?f={F_JSON}"
+                })
+                collection['links'].append({
+                    'type': FORMAT_TYPES[F_HTML],
+                    'rel': 'root',
+                    'title': l10n.translate('The landing page of this server as HTML', request.locale),  # noqa
+                    'href': f"{self.base_url}?f={F_HTML}"
+                })
+                collection['links'].append({
+                    'type': FORMAT_TYPES[F_JSON],
+                    'rel': request.get_linkrel(F_JSON),
+                    'title': l10n.translate('This document as JSON', request.locale),  # noqa
+                    'href': f'{self.get_collections_url()}/{collection_id}?f={F_JSON}'  # noqa
+                })
+                collection['links'].append({
+                    'type': FORMAT_TYPES[F_JSONLD],
+                    'rel': request.get_linkrel(F_JSONLD),
+                    'title': l10n.translate('This document as RDF (JSON-LD)', request.locale),  # noqa
+                    'href': f'{self.get_collections_url()}/{collection_id}?f={F_JSONLD}'  # noqa
+                })
+                collection['links'].append({
+                    'type': FORMAT_TYPES[F_HTML],
+                    'rel': request.get_linkrel(F_HTML),
+                    'title': l10n.translate('This document as HTML', request.locale),  # noqa
+                    'href': f'{self.get_collections_url()}/{collection_id}?f={F_HTML}'  # noqa
+                })
+
+                collection['links'].append({
+                    'type': 'application/geo+json',
+                    'rel': 'items',
+                    'title': l10n.translate('Items as GeoJSON', request.locale),  # noqa
+                    'href': f'{self.get_collections_url()}/{collection_id}/items?f={F_JSON}'  # noqa
+                })
+                collection['links'].append({
+                    'type': FORMAT_TYPES[F_JSONLD],
+                    'rel': 'items',
+                    'title': l10n.translate('Items as RDF (GeoJSON-LD)', request.locale),  # noqa
+                    'href': f'{self.get_collections_url()}/{collection_id}/items?f={F_JSONLD}'  # noqa
+                })
+                collection['links'].append({
+                    'type': FORMAT_TYPES[F_HTML],
+                    'rel': 'items',
+                    'title': l10n.translate('Items as HTML', request.locale),  # noqa
+                    'href': f'{self.get_collections_url()}/{collection_id}/items?f={F_HTML}'  # noqa
+                })
+
+                fcm['collections'].append(collection)
+
+        if dataset is None:
             # TODO: translate
             fcm['links'].append({
                 'type': FORMAT_TYPES[F_JSON],
@@ -1286,7 +1429,7 @@ class API:
 
         if request.format == F_HTML:  # render
             fcm['collections_path'] = self.get_collections_url()
-            if dataset is not None:
+            if len(result) > 0:
                 content = render_j2_template(self.tpl_config,
                                              'collections/collection.html',
                                              fcm, request.locale)
