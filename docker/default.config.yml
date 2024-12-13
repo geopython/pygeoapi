@@ -45,7 +45,7 @@ server:
     language: en-US
     cors: true
     pretty_print: true
-    admin: ${PYGEOAPI_ADMIN_API:-false}
+    admin: ${PYGEOAPI_SERVER_ADMIN:-false}
     limit: 10
     # templates: /path/to/templates
     map:

@@ -85,12 +85,12 @@ The base Docker image supports two additional environment variables for configur
 
    This ensures the service URLs in the configuration file are automatically updated to reflect the specified URL.
 
-2. **`PYGEOAPI_ADMIN_API`**:  
+2. **`PYGEOAPI_SERVER_ADMIN`**:  
    This boolean environment variable enables or disables the `pygeoapi` Admin API. By default, the Admin API is disabled. To enable it:
 
    .. code-block:: bash
 
-      docker run -p 5000:80 -e PYGEOAPI_ADMIN_API=true -it geopython/pygeoapi
+      docker run -p 5000:80 -e PYGEOAPI_SERVER_ADMIN=true -it geopython/pygeoapi
 
    This does not enable hot reloading of the `pygoeapi` configuration. To learn more about the Admin API see :ref:`admin-api`.
 
