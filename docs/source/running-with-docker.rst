@@ -76,12 +76,12 @@ Environment Variables for Configuration
 
 The base Docker image supports two additional environment variables for configuring the `pygeoapi` server behavior:
 
-1. **`PYGEOAPI_URL`**:  
+1. **`PYGEOAPI_SERVER_URL`**:  
    This variable sets the `pygeoapi` server URL in the configuration. It is useful for dynamically configuring the server URL during container deployment. For example:
 
    .. code-block:: bash
 
-      docker run -p 2018:80 -e PYGEOAPI_URL='http://localhost:2018' -it geopython/pygeoapi
+      docker run -p 2018:80 -e PYGEOAPI_SERVER_URL='http://localhost:2018' -it geopython/pygeoapi
 
    This ensures the service URLs in the configuration file are automatically updated to reflect the specified URL.
 
