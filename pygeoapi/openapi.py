@@ -731,6 +731,19 @@ def get_post_resource(res):
     return newres
 
 
+def get_patch_resource(res):
+    """
+    Creates the payload for the PATCH resource admin request
+    :param res: configuration resource
+    :returns: resource patch
+    """
+
+    if 'extents' in res.keys():
+        return {'extents': res['extents']}
+    else:
+        return ''
+
+
 def get_admin(cfg: dict) -> dict:
 
     schema_dict = get_config_schema()
@@ -907,7 +920,7 @@ def get_admin(cfg: dict) -> dict:
                 'description': 'Updates admin configuration resource',
                 'content': {
                     'application/json': {
-                        'example': {'extents': res_eg[res_eg_key]['extents']},
+                        'example': get_patch_resource(res_eg[res_eg_key]),
                         'schema': schema_dict['properties']['resources']['patternProperties']['^.*$']  # noqa
                     }
                 },
