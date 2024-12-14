@@ -725,7 +725,7 @@ def get_post_resource(res):
     newres[newkey] = res[list(res.keys())[0]]
 
     # remove temporal extent to prevent type conversion issues
-    if 'temporal' in newres[newkey]['extents'].keys():
+    if 'extents' in newres[newkey].keys() and 'temporal' in newres[newkey]['extents'].keys(): # noqa
         del newres[newkey]['extents']['temporal']
 
     return newres
