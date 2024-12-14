@@ -273,17 +273,13 @@ def get_oas_30(cfg: dict, fail_on_invalid_collection: bool = True) -> dict:
             "operationId": "registerMetadata",
             "summary": "Register metadata about a collection of moving features",  # noqa
             "description": "A user SHOULD register metadata about a collection of moving features into the system.\n",  # noqa
-            "tags": [
-                "MovingFeatureCollection"
-            ],
+            "tags": ["MovingFeatureCollection"],
             "requestBody": {
                 "content": {
                     "application/json": {
-                        "schema": {
-                            "$ref": f"{OPENAPI_YAML['movingfeature']}#/components/schemas/collection-body"  # noqa
-                        },
+                        "schema": {"$ref": f"{OPENAPI_YAML['movingfeature']}#/components/schemas/collection-body"},
                         "example": {
-                            "title": "moving_feature_collection_sample",  # noqa
+                            "title": "moving_feature_collection_sample",
                             "updateFrequency": 1000,
                             "description": "example",
                             "itemType": "movingfeature"
@@ -297,16 +293,11 @@ def get_oas_30(cfg: dict, fail_on_invalid_collection: bool = True) -> dict:
                     "headers": {
                         "Location": {
                             "description": "A URI of the newly added resource",  # noqa
-                            "schema": {
-                                "type": "string",
-                                "example": "https://data.example.org/collections/mfc-1"  # noqa
-                            }
+                            "schema": {"type": "string"}
                         }
                     }
                 },
-                "500": {
-                    "$ref": f"{OPENAPI_YAML['movingfeature']}#/components/responses/ServerError"  # noqa
-                }
+                "500": {"$ref": f"{OPENAPI_YAML['movingfeature']}#/components/responses/ServerError"}
             }
         }
     }

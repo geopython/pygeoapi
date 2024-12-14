@@ -8,17 +8,6 @@ from pymeos import (Temporal, TFloatSeq, TFloatSeqSet, pymeos_initialize)
 from pygeoapi.util import format_datetime
 from pymeos_cffi import (tfloat_from_mfjson, ttext_from_mfjson,
                          tgeompoint_from_mfjson)
-# from mobilitydb.psycopg import register
-
-
-# CREATE DATABASE mobilitydb
-#   WITH TEMPLATE = template0
-#   ENCODING = 'UTF8';
-# ALTER DATABASE mobilitydb OWNER TO postgres;
-
-# create table:
-# psql -U postgres -h 127.0.0.1 -p 5432 mobilitydb <
-#   tests/data/mf-api.sql
 
 class PostgresMobilityDB:
     host = 'mobilitydb'
@@ -27,13 +16,6 @@ class PostgresMobilityDB:
     user = 'docker'
     password = 'docker'
     connection = None
-
-    # host = '172.20.241.18'
-    # port = 5432
-    # db = 'mobilitydb'
-    # user = 'postgres'
-    # password = 'postgres'
-    # connection = None
 
     def __init__(self, datasource=None):
         """
@@ -299,7 +281,7 @@ class PostgresMobilityDB:
         :returns: JSON MovingFeature
         """
         with self.connection.cursor() as cur:
-            cur = self.connection.cursor()
+            # cur = self.connection.cursor()
             select_query = (
                 """select mfeature.collection_id, mfeature.mfeature_id,
                 st_asgeojson(mfeature.mf_geometry) as mf_geometry,
@@ -359,8 +341,7 @@ class PostgresMobilityDB:
             datetime_restriction = ""
             if datetime != '' and datetime is not None:
                 datetime_restriction = (""" and atTime(tgeometry_property,
-                    tstzspan('[{0}]')) is not null """
-                                        .format(datetime))
+                    tstzspan('[{0}]')) is not null """.format(datetime))
 
             if leaf != '' and leaf is not None:
                 tgeometry_property = ("""atTime(tgeometry_property,
@@ -512,7 +493,6 @@ class PostgresMobilityDB:
         :param leaf: only features that have a temporal geometry and
                      property that intersects the given
                      date-time are selected [optional]
-
         :param sub_temporal_value: only features with a temporal property
                                  intersecting the given time interval
                                  will return (default False) [optional]
@@ -574,7 +554,7 @@ class PostgresMobilityDB:
         Register metadata about a collection of moving features
 
         :param collection_property: metadata about a collection
-            title - human readable title of the collection
+            title - human-readable title of the collection
             updateFrequency - a time interval of sampling location
             description - any description
             itemType - indicator about the type of the items in the
@@ -682,7 +662,7 @@ class PostgresMobilityDB:
 
         :param collection_id: local identifier of a collection
         :param mfeature_id: local identifier of a moving feature
-        :param temporalProperty: TemporalProperties object in the OGC MF-JSON
+        :param temporal_property: TemporalProperties object in the OGC MF-JSON
 
         :returns: TemporalProperty Name
         """
@@ -789,7 +769,7 @@ class PostgresMobilityDB:
 
         :param collection_id: local identifier of a collection
         :param collection_property: metadata about a collection
-            title - human readable title of the collection
+            title - human-readable title of the collection
             updateFrequency - a time interval of sampling location
             description - any description
             itemType - indicator about the type of the items in the
@@ -1104,59 +1084,85 @@ class PostgresMobilityDB:
                 and temp1.mfeature_id = temp3.mfeature_id """
                 .format(collection_id, mfeature_id,
                         "{" + ", ".join(datetimes) + "}"))
-            print(select_query)
+            # print(select_query)
             cur.execute(select_query)
             result = cur.fetchall()
         if len(result) > 0:
             return result[0][2]
         return 1
 
-    def get_velocity(
-            self, collection_id, mfeature_id, tgeometry_id, datetime=None):
+    def get_velocity(self, collection_id, mfeature_id, tgeometry_id,
+                     datetime='', leaf='', sub_temporal_value=False):
         """
         Get temporal property of velocity
 
         :param collection_id: local identifier of a collection
         :param mfeature_id: local identifier of a moving feature
         :param tgeometry_id: local identifier of a geometry
-        :param datetime: array of strings <date-time> (default None)
+        :param datetime: either a date-time or an interval(datestamp or extent)
+        :param leaf: array of strings <date-time> (default None)
+                     only features that have a temporal geometry and property
+                     that intersects the given date-time are selected [optional]
+        :param sub_temporal_value: boolean, only features with a temporal property
+                                 intersecting the given time interval
+                                 will return (default False) [optional]
 
         :returns: TemporalProperty of velocity
         """
-
         form = "MTS"
         name = "velocity"
-
         with self.connection.cursor() as cur:
-            if datetime is None:
-                select_query = f"""SELECT speed(tgeog_property) AS speed
-                FROM tgeometry
-                WHERE collection_id = '{collection_id}'
-                and mfeature_id = '{mfeature_id}'
-                and tgeometry_id = '{tgeometry_id}'"""
-            else:
+            if (leaf == '' or leaf is None) and \
+                    (not sub_temporal_value or sub_temporal_value == "false"):
+                # no optional query parameters are used -> time-to-velocity curve returns
                 select_query = \
-                    f"""SELECT valueAtTimestamp(speed(tgeog_property),
-                '{datetime}') AS speed, interp(speed(tgeog_property))
-                AS interp
-                FROM tgeometry
-                WHERE collection_id = '{collection_id}'
-                and mfeature_id = '{mfeature_id}'
-                and tgeometry_id = '{tgeometry_id}'"""
+                    f"""SELECT speed(tgeog_property) AS speed 
+                        FROM tgeometry
+                        WHERE collection_id = '{collection_id}'
+                        and mfeature_id = '{mfeature_id}'
+                        and tgeometry_id = '{tgeometry_id}'"""
+            elif (leaf != '' or leaf is not None) and \
+                    (not sub_temporal_value or sub_temporal_value == "false"):
+                # only leaf query parameter is used
+                leaf_condition = "tstzset('{"+leaf+"}')"
+                select_query = \
+                    f"""SELECT atTime(speed(tgeog_property),{leaf_condition}) AS speed 
+                        FROM tgeometry
+                        WHERE collection_id = '{collection_id}'
+                        and mfeature_id = '{mfeature_id}'
+                        and tgeometry_id = '{tgeometry_id}'"""
+            elif (leaf == '' or leaf is None) and \
+                    (sub_temporal_value or sub_temporal_value == "true"):
+                # only sub_temporal_value query parameter is used
+                select_query = \
+                    f"""SELECT atTime(speed(tgeog_property), tstzspan('[{datetime}]')) AS speed
+                        FROM tgeometry
+                        WHERE collection_id = '{collection_id}'
+                        and mfeature_id = '{mfeature_id}'
+                        and tgeometry_id = '{tgeometry_id}'"""
+            else:
+               print("Not valid query parameters")
+
             cur.execute(select_query)
             result = cur.fetchall()
 
-        return self.to_tproperties(result, name, form, datetime)
+        return self.to_tproperties(result, name, form, leaf)
 
-    def get_distance(
-            self, collection_id, mfeature_id, tgeometry_id, datetime=None):
+    def get_distance(self, collection_id, mfeature_id, tgeometry_id,
+                     datetime='', leaf='', sub_temporal_value=False):
         """
         Get temporal property of distance
 
         :param collection_id: local identifier of a collection
         :param mfeature_id: local identifier of a moving feature
         :param tgeometry_id: local identifier of a geometry
-        :param datetime: array of strings <date-time> (default None)
+        :param datetime: either a date-time or an interval(datestamp or extent)
+        :param leaf: array of strings <date-time> (default None)
+                     only features that have a temporal geometry and property
+                     that intersects the given date-time are selected [optional]
+        :param sub_temporal_value: boolean, only features with a temporal property
+                                 intersecting the given time interval
+                                 will return (default False) [optional]
 
         :returns: TemporalProperty of distance
         """
@@ -1164,35 +1170,57 @@ class PostgresMobilityDB:
         form = "MTR"
         name = "distance"
         with self.connection.cursor() as cur:
-            if datetime is None:
-                select_query = f"""SELECT cumulativeLength(tgeog_property)
-                AS distance FROM tgeometry
-                WHERE collection_id = '{collection_id}'
-                and mfeature_id = '{mfeature_id}'
-                and tgeometry_id = '{tgeometry_id}'"""
+            if (leaf == '' or leaf is None) and \
+                    (not sub_temporal_value or sub_temporal_value == "false"):
+                # no optional query parameters are used -> time-to-velocity curve returns
+                select_query = \
+                    f"""SELECT cumulativeLength(tgeog_property) AS distance 
+                        FROM tgeometry
+                        WHERE collection_id = '{collection_id}'
+                        and mfeature_id = '{mfeature_id}'
+                        and tgeometry_id = '{tgeometry_id}'"""
+            elif (leaf != '' or leaf is not None) and \
+                    (not sub_temporal_value or sub_temporal_value == "false"):
+                # only leaf query parameter is used
+                leaf_condition = "tstzset('{"+leaf+"}')"
+                select_query = \
+                    f"""SELECT atTime(cumulativeLength(tgeog_property),{leaf_condition}) AS distance
+                        FROM tgeometry
+                        WHERE collection_id = '{collection_id}'
+                        and mfeature_id = '{mfeature_id}'
+                        and tgeometry_id = '{tgeometry_id}'"""
+            elif (leaf == '' or leaf is None) and \
+                    (sub_temporal_value or sub_temporal_value == "true"):
+                # only sub_temporal_value query parameter is used
+                select_query = \
+                    f"""SELECT atTime(cumulativeLength(tgeog_property), tstzspan('[{datetime}]')) AS distance
+                        FROM tgeometry
+                        WHERE collection_id = '{collection_id}'
+                        and mfeature_id = '{mfeature_id}'
+                        and tgeometry_id = '{tgeometry_id}'"""
             else:
-                select_query = f"""SELECT
-                valueAtTimestamp(cumulativeLength(tgeog_property),
-                                '{datetime}') AS distance,
-                interp(cumulativeLength(tgeog_property)) AS interp
-                FROM tgeometry
-                WHERE collection_id = '{collection_id}'
-                and mfeature_id = '{mfeature_id}'
-                and tgeometry_id = '{tgeometry_id}'"""
+               print("Not valid query parameters")
+
             cur.execute(select_query)
             result = cur.fetchall()
 
-        return self.to_tproperties(result, name, form, datetime)
+        return self.to_tproperties(result, name, form, leaf)
 
-    def get_acceleration(
-            self, collection_id, mfeature_id, tgeometry_id, datetime=None):
+    def get_acceleration(self, collection_id, mfeature_id, tgeometry_id,
+                         datetime='', leaf='', sub_temporal_value=False):
         """
        Get temporal property of acceleration
 
         :param collection_id: local identifier of a collection
         :param mfeature_id: local identifier of a moving feature
         :param tgeometry_id: local identifier of a geometry
-        :param datetime: array of strings <date-time> (default None)
+        :param datetime: either a date-time or an interval(datestamp or extent)
+        :param leaf: array of strings <date-time> (default None)
+                     only features that have a temporal geometry and property
+                     that intersects the given date-time are selected [optional]
+        :param sub_temporal_value: boolean, only features with a temporal property
+                                 intersecting the given time interval
+                                 will return (default False) [optional]
 
         :returns: TemporalProperty of acceleration
         """
@@ -1204,10 +1232,12 @@ class PostgresMobilityDB:
             "valueSequence": []
         }
         with self.connection.cursor() as cur:
-            select_query = f"""SELECT speed(tgeog_property) AS speed
-            FROM tgeometry WHERE collection_id = '{collection_id}'
-            and mfeature_id = '{mfeature_id}'
-            and tgeometry_id = '{tgeometry_id}'"""
+            select_query = \
+                f"""SELECT speed(tgeog_property) AS speed
+                    FROM tgeometry 
+                    WHERE collection_id = '{collection_id}'
+                    and mfeature_id = '{mfeature_id}'
+                    and tgeometry_id = '{tgeometry_id}'"""
             cur.execute(select_query)
             result = cur.fetchall()
 
@@ -1217,17 +1247,14 @@ class PostgresMobilityDB:
             interpolation = each_row_converted.interpolation().to_string()
 
             each_time = [
-                each_val.time().start_timestamp().strftime(
-                    '%Y-%m-%dT%H:%M:%S.%fZ')
+                each_val.time().start_timestamp().strftime('%Y-%m-%dT%H:%M:%S.%fZ')
                 for each_val in each_row_converted.instants()]
             if interpolation == "Step":
                 each_values = [0 for each_val in each_row_converted.instants()]
             else:
-                each_values = [each_val.value()
-                               for each_val in each_row_converted.instants()]
+                each_values = [each_val.value() for each_val in each_row_converted.instants()]
 
-            value_sequence = self.calculate_acceleration(
-                each_values, each_time, datetime)
+            value_sequence = self.calculate_acceleration(each_values, each_time, datetime)
             if value_sequence.get("values"):
                 if datetime is not None:
                     value_sequence["interpolation"] = "Discrete"
@@ -1238,14 +1265,14 @@ class PostgresMobilityDB:
             tProperty["valueSequence"].append(value_sequence)
         return tProperty
 
-    def to_tproperties(self, results, name, form, datetime):
+    def to_tproperties(self, results, name, form, leaf):
         """
-        Convert Temoral properties object
+        Convert Temporal properties object
 
         :param results: temporal property object of query
         :param name: temporal property name
         :param form: a unit of measurement
-        :param datetime: array of strings <date-time>
+        :param leaf: array of strings <date-time>
 
         :returns: TemporalProperty object
         """
@@ -1255,34 +1282,29 @@ class PostgresMobilityDB:
             "form": form,
             "valueSequence": []
         }
+
         pymeos_initialize()
         for each_row in results:
-            if datetime is None:
-                each_row_converted = None
-                if name == "velocity":
-                    each_row_converted = TFloatSeqSet(each_row[0])
-                else:
-                    each_row_converted = TFloatSeq(each_row[0])
-                each_values = [each_val.value()
-                               for each_val in each_row_converted.instants()]
-                each_time = [
-                    each_val.time().start_timestamp().strftime(
-                        '%Y-%m-%dT%H:%M:%S.%fZ')
-                    for each_val in each_row_converted.instants()]
-                interpolation = each_row_converted.interpolation().to_string()
-                value_sequence = {
-                    "datetimes": each_time,
-                    "values": each_values,
-                    "interpolation": interpolation
-                }
+            each_row_converted = None
+            if name == "velocity":
+                each_row_converted = TFloatSeqSet(each_row[0])
             else:
-                value_sequence = {
-                    "datetimes": [format_datetime(datetime)],
-                    "values": [each_row[0]],
-                    "interpolation": "Discrete"
-                }
+                each_row_converted = TFloatSeq(each_row[0])
+
+            each_values = [each_val.value() for each_val in each_row_converted.instants()]
+            each_time = [
+                each_val.time().start_timestamp().strftime('%Y-%m-%dT%H:%M:%S.%fZ')
+                for each_val in each_row_converted.instants()]
+            interpolation = each_row_converted.interpolation().to_string()
+
+            value_sequence = {
+                "datetimes": each_time,
+                "values": each_values,
+                "interpolation": interpolation
+            }
             tProperty["valueSequence"].append(value_sequence)
         return tProperty
+
 
     def calculate_acceleration(self, velocities, times, chk_dtime):
         """
