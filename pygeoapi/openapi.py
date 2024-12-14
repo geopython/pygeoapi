@@ -710,6 +710,7 @@ def get_config_schema():
     with open(schema_file) as fh2:
         return yaml_load(fh2)
 
+
 def get_post_resource(res):
     """
     Creates the payload for the POST resource admin request
@@ -722,7 +723,7 @@ def get_post_resource(res):
 
     newres = {newkey: {}}
     newres[newkey] = res[list(res.keys())[0]]
-    
+
     # remove temporal extent to prevent type conversion issues
     if 'temporal' in newres[newkey]['extents'].keys():
         del newres[newkey]['extents']['temporal']
