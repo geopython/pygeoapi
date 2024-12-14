@@ -1,12 +1,15 @@
 version: '3.0'
 services:
   mf-api:
+    container_name: pygeoapi-mf-api
     build: 
       context: .
       dockerfile: Dockerfile
     image: pygeoapi-mf-api
+    volumes:
+      - ./mf-api.config.yml:/pygeoapi/local.config.yml
     ports:
-      - 5000:80
+      - 5050:80
 
   mobilitydb:
     container_name: mobilitydb
