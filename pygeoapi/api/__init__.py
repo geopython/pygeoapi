@@ -1608,14 +1608,17 @@ def evaluate_limit(requested: Union[None, int], server_limits: dict,
         LOGGER.debug('Using collection defined limit')
         max_ = collection_limits.get('maxitems', 10)
         default = collection_limits.get('defaultitems', 10)
+        on_exceed = collection_limits.get('on_exceed', 'throttle')
     else:
         LOGGER.debug('Using server defined limit')
         max_ = server_limits.get('maxitems', 10)
         default = server_limits.get('defaultitems', 10)
+        on_exceed = server_limits.get('on_exceed', 'throttle')
 
     LOGGER.debug(f'Requested limit: {requested}')
     LOGGER.debug(f'Default limit: {default}')
     LOGGER.debug(f'Maximum limit: {max_}')
+    LOGGER.debug(f'On exceed: {on_exceed}')
 
     if requested is None:
         LOGGER.debug('no limit requested; returning default')
@@ -1627,8 +1630,8 @@ def evaluate_limit(requested: Union[None, int], server_limits: dict,
 
     if requested2 <= 0:
         raise ValueError('limit value should be strictly positive')
-    elif requested2 > max_ and default.get('on_exceed', 'throttle') == 'error':
-        raise RuntimeError('Limit exceeded')
+    elif requested2 > max_ and on_exceed == 'error':
+        raise RuntimeError('Limit exceeded; throwing errror')
     else:
         LOGGER.debug('limit requested')
         return min(requested2, max_)
