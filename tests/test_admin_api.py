@@ -31,11 +31,12 @@
 
 from datetime import datetime
 import time
-
-from pathlib import Path
 import unittest
 
+from pathlib import Path
 from requests import Session
+
+from pygeoapi.util import yaml_load
 
 THISDIR = Path(__file__).resolve().parent
 
@@ -111,8 +112,10 @@ class APITest(unittest.TestCase):
         content = self.http.get(url).json()
         self.assertEqual(len(content.keys()), 2)
 
-        dt = content['data2']['extents']['temporal']['begin']
-        self.assertIsInstance(dt, datetime)
+        with get_abspath('../../tests/pygeoapi-test-config-admin.yml') as fh:
+            d = yaml_load(fh)
+            temporal_extent_begin = d['data2']['extents']['temporal']['begin']
+            self.assertIsInstance(temporal_extent_begin, datetime)
 
         # PUT an existing resource
         url = f'{self.admin_endpoint}/resources/data2'
