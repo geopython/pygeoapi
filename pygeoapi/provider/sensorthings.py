@@ -518,6 +518,10 @@ class SensorThingsProvider(BaseProvider):
             LOGGER.debug('Using default @iot.id for id field')
             self.id_field = '@iot.id'
 
+        # Custom expand
+        if provider_def.get('expand'):
+            EXPAND[self.entity] = provider_def['expand']
+
         # Create intra-links
         self.intralink = provider_def.get('intralink', False)
         if self.intralink and provider_def.get('rel_link'):

@@ -138,3 +138,27 @@ def test_get(config):
     assert result['id'] == '9'
     assert result['properties']['name'] == 'Depth Below Surface'
     assert isinstance(result['properties']['Thing'], dict)
+
+
+def test_custom_expand(config):
+    p = SensorThingsProvider(config)
+    fields = p.get_fields()
+    assert 'Observations' in fields
+    assert 'ObservedProperty' in fields
+    assert 'Sensor' in fields
+
+    config['expand'] = 'Thing/Locations'
+    p = SensorThingsProvider(config)
+    fields = p.get_fields()
+    assert len(fields) == 12
+    assert 'Observations' not in fields
+    assert 'ObservedProperty' not in fields
+    assert 'Sensor' not in fields
+
+    config['expand'] = 'Thing/Locations,Observations'
+    p = SensorThingsProvider(config)
+    fields = p.get_fields()
+    assert len(fields) == 14
+    assert 'Observations' in fields
+    assert 'ObservedProperty' not in fields
+    assert 'Sensor' not in fields

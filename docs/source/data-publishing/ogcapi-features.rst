@@ -667,6 +667,10 @@ If ``intralink`` is true for an adjacent STA provider collection within a
 pygeoapi instance, the expanded entity is instead represented by an intra-pygeoapi
 link to the other entity or it's ``uri_field`` if declared.
 
+Additionally there is the optional field ``expand``. This field will overwrite the default
+pygeoapi expand behavior and instead implement the configured expand strategy. This is
+particularly useful if you have Datastreams with many observations.
+
 .. code-block:: yaml
 
    providers:
@@ -677,6 +681,7 @@ link to the other entity or it's ``uri_field`` if declared.
          entity: Datastreams
          time_field: phenomenonTime
          intralink: true
+         expand: Thing/Locations,Observations($select=result,phenomenonTime;$orderby=phenomenonTime desc;$top=1)
 
 If all three entities are configured, the STA provider will represent a complete STA
 endpoint as OGC-API feature collections. The ``Things`` features will include links
