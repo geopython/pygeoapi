@@ -114,7 +114,7 @@ class APITest(unittest.TestCase):
 
         with get_abspath('../../pygeoapi-test-config-admin.yml').open() as fh:
             d = yaml_load(fh)
-            temporal_extent_begin = d['data2']['extents']['temporal']['begin']
+            temporal_extent_begin = d['resources']['data2']['extents']['temporal']['begin']  # noqa
             self.assertIsInstance(temporal_extent_begin, datetime)
 
         # PUT an existing resource
