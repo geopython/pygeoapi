@@ -221,8 +221,8 @@ class Admin(API):
 
         try:
             data = json.loads(data)
-            for resource in data['resources']:
-                temporal_extents_str2datetime(resource.get('extents', {}))
+            for key, value in data.get('resources', {}).items():
+                temporal_extents_str2datetime(value.get('extents', {}))
         except (json.decoder.JSONDecodeError, TypeError) as err:
             # Input is not valid JSON
             LOGGER.error(err)
@@ -279,8 +279,8 @@ class Admin(API):
 
         try:
             data = json.loads(data)
-            for resource in data['resources']:
-                temporal_extents_str2datetime(resource.get('extents', {}))
+            for key, value in data.get('resources', {}).items():
+                temporal_extents_str2datetime(value.get('extents', {}))
         except (json.decoder.JSONDecodeError, TypeError) as err:
             # Input is not valid JSON
             LOGGER.error(err)
