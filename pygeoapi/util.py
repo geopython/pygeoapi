@@ -149,7 +149,7 @@ def get_typed_value(value: str) -> Union[bool, float, int, str]:
         elif len(value) > 1 and value.startswith('0'):
             value2 = value
         elif value.lower() in ['true', 'false']:
-            value2 = value.lower() == 'true'
+            value2 = str2bool(value)
         else:  # int?
             value2 = int(value)
     except ValueError:  # string (default)?
