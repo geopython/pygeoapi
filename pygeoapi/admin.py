@@ -371,7 +371,8 @@ class Admin(API):
 
         try:
             data = json.loads(data)
-            temporal_extents_str2datetime(data.get('extents', {}))
+            res = list(data.keys())[0]
+            temporal_extents_str2datetime(data[res].get('extents', {}))
         except (json.decoder.JSONDecodeError, TypeError) as err:
             # Input is not valid JSON
             LOGGER.error(err)
