@@ -3,7 +3,7 @@
 # Authors: Tom Kralidis <tomkralidis@gmail.com>
 # Authors: Benjamin Webb <benjamin.miller.webb@gmail.com>
 #
-# Copyright (c) 2023 Tom Kralidis
+# Copyright (c) 2024 Tom Kralidis
 # Copyright (c) 2023 Benjamin Webb
 #
 # Permission is hereby granted, free of charge, to any person
@@ -29,12 +29,14 @@
 #
 # =================================================================
 
+from datetime import datetime
 import time
-
-from pathlib import Path
 import unittest
 
+from pathlib import Path
 from requests import Session
+
+from pygeoapi.util import yaml_load
 
 THISDIR = Path(__file__).resolve().parent
 
@@ -110,12 +112,16 @@ class APITest(unittest.TestCase):
         content = self.http.get(url).json()
         self.assertEqual(len(content.keys()), 2)
 
+        with get_abspath('../../pygeoapi-test-config-admin.yml').open() as fh:
+            d = yaml_load(fh)
+            temporal_extent_begin = d['resources']['data2']['extents']['temporal']['begin']  # noqa
+            self.assertIsInstance(temporal_extent_begin, datetime)
+
         # PUT an existing resource
         url = f'{self.admin_endpoint}/resources/data2'
         with get_abspath('resource-put.json').open() as fh:
             post_data = fh.read()
-        print(url)
-        print(get_abspath('resource-put.json'))
+
         response = self.http.put(url, data=post_data)
         self.assertEqual(response.status_code, 204)
 
