@@ -112,7 +112,7 @@ class APITest(unittest.TestCase):
         content = self.http.get(url).json()
         self.assertEqual(len(content.keys()), 2)
 
-        with get_abspath('../../tests/pygeoapi-test-config-admin.yml').open() as fh:  # noqa
+        with get_abspath('../../pygeoapi-test-config-admin.yml').open() as fh:
             d = yaml_load(fh)
             temporal_extent_begin = d['data2']['extents']['temporal']['begin']
             self.assertIsInstance(temporal_extent_begin, datetime)
