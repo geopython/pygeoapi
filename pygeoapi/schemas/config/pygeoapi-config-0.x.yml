@@ -68,21 +68,28 @@ properties:
                 properties:
                     maxitems:
                         type: integer
+                        description: maximum limit of items to return for feature and record providers
                         minimum: 1
                         default: 10
-                        description: maximum limit of items to return for feature and record providers
                     defaultitems:
                         type: integer
+                        description: default limit of items to return for feature and record providers
                         minimum: 1
                         default: 10
-                        description: default limit of items to return for feature and record providers
                     maxdistance:
                         type: array
+                        description: maximum distance in x and y for all data providers
                         minItems: 2
                         maxItems: 2
                         items:
                             type: number
-                        description: maximum distance in x and y for all data providers
+                    on_exceed:
+                        type: string
+                        description: how to handle limit exceeding
+                        default: throttle
+                        enum:
+                            - error
+                            - throttle
             templates:
                 type: object
                 description: optional configuration to specify a different set of templates for HTML pages. Recommend using absolute paths. Omit this to use the default provided templates
