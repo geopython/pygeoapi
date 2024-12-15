@@ -72,6 +72,12 @@ def test_get_typed_value():
     value = util.get_typed_value('1.c2')
     assert isinstance(value, str)
 
+    value = util.get_typed_value('true')
+    assert isinstance(value, bool)
+
+    value = util.get_typed_value('false')
+    assert isinstance(value, bool)
+
 
 def test_yaml_load(config):
     assert isinstance(config, dict)
