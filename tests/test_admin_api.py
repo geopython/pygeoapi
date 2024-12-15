@@ -3,7 +3,7 @@
 # Authors: Tom Kralidis <tomkralidis@gmail.com>
 # Authors: Benjamin Webb <benjamin.miller.webb@gmail.com>
 #
-# Copyright (c) 2023 Tom Kralidis
+# Copyright (c) 2024 Tom Kralidis
 # Copyright (c) 2023 Benjamin Webb
 #
 # Permission is hereby granted, free of charge, to any person
@@ -29,6 +29,7 @@
 #
 # =================================================================
 
+from datetime import datetime
 import time
 
 from pathlib import Path
@@ -110,12 +111,14 @@ class APITest(unittest.TestCase):
         content = self.http.get(url).json()
         self.assertEqual(len(content.keys()), 2)
 
+        dt = content['data2']['extents']['temporal']['begin']
+        self.assertIsInstance(dt, datetime)
+
         # PUT an existing resource
         url = f'{self.admin_endpoint}/resources/data2'
         with get_abspath('resource-put.json').open() as fh:
             post_data = fh.read()
-        print(url)
-        print(get_abspath('resource-put.json'))
+
         response = self.http.put(url, data=post_data)
         self.assertEqual(response.status_code, 204)
 
