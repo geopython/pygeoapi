@@ -2,7 +2,7 @@
 #
 # Authors: Benjamin Webb <bwebb@lincolninst.edu>
 #
-# Copyright (c) 2022 Benjamin Webb
+# Copyright (c) 2024 Benjamin Webb
 #
 # Permission is hereby granted, free of charge, to any person
 # obtaining a copy of this software and associated documentation

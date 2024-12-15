@@ -3,7 +3,7 @@
 # Authors: Benjamin Webb <benjamin.miller.webb@gmail.com>
 # Authors: Tom Kralidis <tomkralidis@gmail.com>
 #
-# Copyright (c) 2023 Benjamin Webb
+# Copyright (c) 2024 Benjamin Webb
 # Copyright (c) 2022 Tom Kralidis
 #
 # Permission is hereby granted, free of charge, to any person
