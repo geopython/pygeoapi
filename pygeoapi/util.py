@@ -134,7 +134,7 @@ def dategetter(date_property: str, collection: dict) -> str:
     return value.isoformat()
 
 
-def get_typed_value(value: str) -> Union[float, int, str]:
+def get_typed_value(value: str) -> Union[bool, float, int, str]:
     """
     Derive true type from data value
 
@@ -148,6 +148,8 @@ def get_typed_value(value: str) -> Union[float, int, str]:
             value2 = float(value)
         elif len(value) > 1 and value.startswith('0'):
             value2 = value
+        elif value.lower() in ['true', 'false']:
+            value2 = value.lower() == 'true'
         else:  # int?
             value2 = int(value)
     except ValueError:  # string (default)?
