@@ -93,10 +93,6 @@ metadata:
         role: pointOfContact
 
 resources:
-    hello-world:
-        type: process
-        processor:
-            name: HelloWorld
     obs:
         type: collection
         title: Observations
@@ -140,4 +136,8 @@ resources:
             geometry:
                 x_field: long
                 y_field: lat
+    hello-world:
+        type: process
+        processor:
+            name: HelloWorld
 
