@@ -121,11 +121,11 @@ class ElasticsearchProvider(BaseProvider):
 
         self._fields = self.get_nested_fields(p, self._fields)
         return self._fields
-    
+
     def get_nested_fields(self, properties, fields, prev_field=None):
         """
         Get Elasticsearch fields (names, types) for all nested properties
-        
+
         :param properties: `dict` of Elasticsearch mappings properties
         :param fields: `dict` of fields in the current iteration
         :param prev_field: name of the parent field
@@ -135,7 +135,7 @@ class ElasticsearchProvider(BaseProvider):
         for k, v in properties['properties'].items():
 
             cur_field = k if prev_field is None else f'{prev_field}.{k}'
-            
+
             if isinstance(v, dict) and 'properties' in v:
                 fields = self.get_nested_fields(v, fields, cur_field)
             else:
