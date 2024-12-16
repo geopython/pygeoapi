@@ -119,19 +119,35 @@ class ElasticsearchProvider(BaseProvider):
                 LOGGER.warning('could not get fields; returning empty set')
                 return {}
 
-            for k, v in p['properties'].items():
-                if 'type' in v:
-                    if v['type'] == 'text':
-                        self._fields[k] = {'type': 'string'}
-                    elif v['type'] == 'date':
-                        self._fields[k] = {'type': 'string', 'format': 'date'}
-                    elif v['type'] in ('float', 'long'):
-                        self._fields[k] = {'type': 'number',
-                                           'format': v['type']}
-                    else:
-                        self._fields[k] = {'type': v['type']}
-
+        self._fields = self.get_nested_fields(p, self._fields)
         return self._fields
+    
+    def get_nested_fields(self, properties, fields, prev_field=None):
+        """
+        Get Elasticsearch fields (names, types) for all nested properties
+        
+        :param properties: `dict` of Elasticsearch mappings properties
+        :param fields: `dict` of fields in the current iteration
+        :param prev_field: name of the parent field
+
+        :returns: dict of fields
+        """
+        for k, v in properties['properties'].items():
+
+            cur_field = k if prev_field is None else f'{prev_field}.{k}'
+            
+            if isinstance(v, dict) and 'properties' in v:
+                fields = self.get_nested_fields(v, fields, cur_field)
+            else:
+                if v['type'] == 'text':
+                    fields[cur_field] = {'type': 'string'}
+                elif v['type'] == 'date':
+                    fields[cur_field] = {'type': 'string', 'format': 'date'}
+                elif v['type'] in ('float', 'long'):
+                    fields[cur_field] = {'type': 'number', 'format': v['type']}
+                else:
+                    fields[cur_field] = {'type': v['type']}
+        return fields
 
     @crs_transform
     def query(self, offset=0, limit=10, resulttype='results',
