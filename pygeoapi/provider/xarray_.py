@@ -46,7 +46,7 @@ from pygeoapi.provider.base import (BaseProvider,
                                     ProviderConnectionError,
                                     ProviderNoDataError,
                                     ProviderQueryError)
-from pygeoapi.util import get_crs_from_uri, read_data
+from pygeoapi.util import get_crs_from_uri
 
 LOGGER = logging.getLogger(__name__)
 
@@ -62,6 +62,9 @@ class XarrayProvider(BaseProvider):
         """
 
         super().__init__(provider_def)
+
+        self.supported_formats['netcdf'] = 'application/x-netcdf'
+        self.supported_formats['zarr'] = 'application/zip+zarr'
 
         try:
             if provider_def['data'].endswith('.zarr'):
@@ -137,13 +140,6 @@ class XarrayProvider(BaseProvider):
 
         :returns: coverage data as dict of CoverageJSON or native format
         """
-
-        if not properties and not subsets and format_ != 'json':
-            LOGGER.debug('No parameters specified, returning native data')
-            if format_ == 'zarr':
-                return _get_zarr_data(self._data)
-            else:
-                return read_data(self.data)
 
         if len(properties) < 1:
             properties = self.fields.keys()
@@ -231,26 +227,27 @@ class XarrayProvider(BaseProvider):
             # json does not support float32
             data = _convert_float32_to_float64(data)
 
-        out_meta = {
-            'bbox': [
-                data.coords[self.x_field].values[0],
-                data.coords[self.y_field].values[0],
-                data.coords[self.x_field].values[-1],
-                data.coords[self.y_field].values[-1]
-            ],
-            "driver": "xarray",
-            "height": data.sizes[self.y_field],
-            "width": data.sizes[self.x_field],
-            "variables": {var_name: var.attrs
-                          for var_name, var in data.variables.items()}
-        }
+            out_meta = {
+                'bbox': [
+                    data.coords[self.x_field].values[0],
+                    data.coords[self.y_field].values[0],
+                    data.coords[self.x_field].values[-1],
+                    data.coords[self.y_field].values[-1]
+                ],
+                "driver": "xarray",
+                "height": data.sizes[self.y_field],
+                "width": data.sizes[self.x_field],
+                "variables": {var_name: var.attrs
+                              for var_name, var in data.variables.items()}
+            }
 
-        if self.time_field is not None:
-            out_meta['time'] = [
-                _to_datetime_string(data.coords[self.time_field].values[0]),
-                _to_datetime_string(data.coords[self.time_field].values[-1]),
-            ]
-            out_meta["time_steps"] = data.sizes[self.time_field]
+            if self.time_field is not None:
+                time_values = data.coords[self.time_field].values
+                out_meta['time'] = [
+                    _to_datetime_string(time_values[0]),
+                    _to_datetime_string(time_values[-1]),
+                ]
+                out_meta["time_steps"] = data.sizes[self.time_field]
 
         LOGGER.debug('Serializing data in memory')
         if format_ == 'json':
