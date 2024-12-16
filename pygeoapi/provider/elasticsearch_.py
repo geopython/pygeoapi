@@ -119,7 +119,7 @@ class ElasticsearchProvider(BaseProvider):
                 LOGGER.warning('could not get fields; returning empty set')
                 return {}
 
-        self._fields = self.get_nested_fields(p, self._fields)
+            self._fields = self.get_nested_fields(p, self._fields)
         return self._fields
 
     def get_nested_fields(self, properties, fields, prev_field=None):
