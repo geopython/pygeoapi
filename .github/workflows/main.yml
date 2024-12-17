@@ -143,6 +143,7 @@ jobs:
         pytest tests/test_rasterio_provider.py
         pytest tests/test_sensorthings_provider.py
         pytest tests/test_socrata_provider.py
+        # pytest tests/test_socrata_provider_live.py.py  # NOTE: these are skipped in the file but listed here for completeness
         pytest tests/test_sqlite_geopackage_provider.py
         pytest tests/test_tinydb_catalogue_provider.py
         pytest tests/test_tinydb_manager_for_parallel_requests.py
