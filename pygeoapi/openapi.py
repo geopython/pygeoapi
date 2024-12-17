@@ -816,7 +816,7 @@ def get_admin(cfg: dict) -> dict:
                 'description': 'Adds resource to configuration',
                 'content': {
                     'application/json': {
-                        'example': {'new-collection': cfg['resources'][res_eg_key]},
+                        'example': {'new-collection': cfg['resources'][res_eg_key]}, # noqa
                         'schema': schema_dict['properties']['resources']['patternProperties']['^.*$']  # noqa
                     }
                 },
