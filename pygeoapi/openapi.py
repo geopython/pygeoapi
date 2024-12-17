@@ -711,22 +711,6 @@ def get_config_schema():
         return yaml_load(fh2)
 
 
-def get_post_resource(res):
-    """
-    Creates the payload for the POST resource admin request
-    :param res: configuration resource
-    :returns: new resource
-    """
-
-    # rename the key to prevent conflict
-    newkey = list(res.keys())[0] + '_'
-
-    newres = {newkey: {}}
-    newres[newkey] = res[list(res.keys())[0]]
-
-    return newres
-
-
 def get_admin(cfg: dict) -> dict:
 
     schema_dict = get_config_schema()
@@ -832,7 +816,7 @@ def get_admin(cfg: dict) -> dict:
                 'description': 'Adds resource to configuration',
                 'content': {
                     'application/json': {
-                        'example': get_post_resource(res_eg),
+                        'example': {'new-collection': cfg['resources'][res_eg_key]},
                         'schema': schema_dict['properties']['resources']['patternProperties']['^.*$']  # noqa
                     }
                 },
