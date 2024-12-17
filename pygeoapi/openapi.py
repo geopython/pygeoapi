@@ -552,13 +552,14 @@ def get_oas_30(cfg: dict, fail_on_invalid_collection: bool = True) -> dict:
         schema_dict = get_config_schema()
         oas['definitions'] = schema_dict['definitions']
         LOGGER.debug('Adding admin endpoints')
-        oas['paths'].update(get_admin())
+        oas['paths'].update(get_admin(cfg))
 
     return oas
 
 
 def get_oas_30_parameters(cfg: dict, locale_: str):
     server_locales = l10n.get_locales(cfg)
+
     return {
             'f': {
                 'name': 'f',
@@ -684,7 +685,8 @@ def get_oas_30_parameters(cfg: dict, locale_: str):
                 'description': 'Configuration resource identifier',
                 'required': True,
                 'schema': {
-                    'type': 'string'
+                    'type': 'string',
+                    'default': list(cfg['resources'].keys())[0]
                  }
             }
         }
@@ -709,11 +711,16 @@ def get_config_schema():
         return yaml_load(fh2)
 
 
-def get_admin():
+def get_admin(cfg: dict) -> dict:
 
     schema_dict = get_config_schema()
 
     paths = {}
+
+    res_eg_key = next(iter(cfg['resources']))
+    res_eg = {
+        res_eg_key: cfg['resources'][res_eg_key]
+    }
 
     paths['/admin/config'] = {
         'get': {
@@ -745,6 +752,7 @@ def get_admin():
                 'description': 'Updates admin configuration',
                 'content': {
                     'application/json': {
+                        'example': cfg,
                         'schema': schema_dict
                     }
                 },
@@ -765,6 +773,7 @@ def get_admin():
                 'description': 'Updates admin configuration',
                 'content': {
                     'application/json': {
+                        'example': {'metadata': cfg['metadata']},
                         'schema': schema_dict
                     }
                 },
@@ -807,6 +816,7 @@ def get_admin():
                 'description': 'Adds resource to configuration',
                 'content': {
                     'application/json': {
+                        'example': {'new-collection': cfg['resources'][res_eg_key]}, # noqa
                         'schema': schema_dict['properties']['resources']['patternProperties']['^.*$']  # noqa
                     }
                 },
@@ -853,6 +863,7 @@ def get_admin():
                 'description': 'Updates admin configuration resource',
                 'content': {
                     'application/json': {
+                        'example': res_eg[res_eg_key],
                         'schema': schema_dict['properties']['resources']['patternProperties']['^.*$']  # noqa
                     }
                 },
@@ -876,6 +887,7 @@ def get_admin():
                 'description': 'Updates admin configuration resource',
                 'content': {
                     'application/json': {
+                        'example': {'extents': res_eg[res_eg_key]['extents']},
                         'schema': schema_dict['properties']['resources']['patternProperties']['^.*$']  # noqa
                     }
                 },

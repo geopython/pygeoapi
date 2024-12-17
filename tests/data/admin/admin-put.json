@@ -61,12 +61,71 @@
       }
     },
     "resources": {
-      "hello-world": {
-        "type": "process",
-        "processor": {
-          "name": "HelloWorld"
+      
+"obs": {
+    "type": "collection",
+    "title": "Observations",
+    "description": "My cool observations",
+    "keywords": [
+      "observations",
+      "monitoring"
+    ],
+    "linked-data": {
+      "context": [
+        {
+          "datetime": "https://schema.org/DateTime"
+        },
+        {
+          "vocab": "https://example.com/vocab#",
+          "stn_id": "vocab:stn_id",
+          "value": "vocab:value"
+        }
+      ]
+    },
+    "links": [
+      {
+        "type": "text/csv",
+        "rel": "canonical",
+        "title": "data",
+        "href": "https://github.com/mapserver/mapserver/blob/branch-7-0/msautotest/wxs/data/obs.csv",
+        "hreflang": "en-US"
+      },
+      {
+        "type": "text/csv",
+        "rel": "alternate",
+        "title": "data",
+        "href": "https://raw.githubusercontent.com/mapserver/mapserver/branch-7-0/msautotest/wxs/data/obs.csv",
+        "hreflang": "en-US"
+      }
+    ],
+    "extents": {
+      "spatial": {
+        "bbox": [
+          -180,
+          -90,
+          180,
+          90
+        ],
+        "crs": "http://www.opengis.net/def/crs/OGC/1.3/CRS84"
+      },
+      "temporal": {
+        "begin": "2000-10-30T18:24:39+00:00",
+        "end": "2007-10-30T08:57:29+00:00"
+      }
+    },
+    "providers": [
+      {
+        "type": "feature",
+        "name": "CSV",
+        "data": "tests/data/obs.csv",
+        "id_field": "id",
+        "geometry": {
+          "x_field": "long",
+          "y_field": "lat"
         }
       }
+    ]
+  }
     }
   }
   
