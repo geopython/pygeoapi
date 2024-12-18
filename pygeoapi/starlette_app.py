@@ -50,6 +50,7 @@ from starlette.responses import (
 import uvicorn
 
 from pygeoapi.api import API, APIRequest, apply_gzip
+import pygeoapi.api as core_api
 import pygeoapi.api.coverages as coverages_api
 import pygeoapi.api.environmental_data_retrieval as edr_api
 import pygeoapi.api.itemtypes as itemtypes_api
@@ -57,6 +58,7 @@ import pygeoapi.api.maps as maps_api
 import pygeoapi.api.processes as processes_api
 import pygeoapi.api.stac as stac_api
 import pygeoapi.api.tiles as tiles_api
+import pygeoapi.admin as admin_api
 from pygeoapi.openapi import load_openapi_document
 from pygeoapi.config import get_config
 from pygeoapi.util import get_api_rules
@@ -102,28 +104,6 @@ def call_api_threadsafe(
     return api_call(*args)
 
 
-async def get_response(
-        api_call,
-        *args,
-) -> Union[Response, JSONResponse, HTMLResponse]:
-    """
-    Creates a Starlette Response object and updates matching headers.
-
-    Runs the core api handler in a separate thread in order to avoid
-    blocking the main event loop.
-
-    :param result: The result of the API call.
-                   This should be a tuple of (headers, status, content).
-
-    :returns: A Response instance.
-    """
-
-    loop = asyncio.get_running_loop()
-    headers, status, content = await loop.run_in_executor(
-        None, call_api_threadsafe, loop, api_call, *args)
-    return _to_response(headers, status, content)
-
-
 def _to_response(headers, status, content):
     if headers['Content-Type'] == 'text/html':
         response = HTMLResponse(content=content, status_code=status)
@@ -139,17 +119,20 @@ def _to_response(headers, status, content):
 
 
 async def execute_from_starlette(api_function, request: Request, *args,
-                                 skip_valid_check=False) -> Response:
-    api_request = await APIRequest.from_starlette(request, api_.locales)
+                                 skip_valid_check=False,
+                                 alternative_api=None
+                                 ) -> Response:
+    actual_api = api_ if alternative_api is None else alternative_api
+    api_request = await APIRequest.from_starlette(request, actual_api.locales)
     content: Union[str, bytes]
     if not skip_valid_check and not api_request.is_valid():
-        headers, status, content = api_.get_format_exception(api_request)
+        headers, status, content = actual_api.get_format_exception(api_request)
     else:
 
         loop = asyncio.get_running_loop()
         headers, status, content = await loop.run_in_executor(
             None, call_api_threadsafe, loop, api_function,
-            api_, api_request, *args)
+            actual_api, api_request, *args)
         # NOTE: that gzip currently doesn't work in starlette
         #       https://github.com/geopython/pygeoapi/issues/1591
         content = apply_gzip(headers, content)
@@ -167,7 +150,7 @@ async def landing_page(request: Request):
 
     :returns: Starlette HTTP Response
     """
-    return await get_response(api_.landing_page, request)
+    return await execute_from_starlette(core_api.landing_page, request)
 
 
 async def openapi(request: Request):
@@ -178,7 +161,7 @@ async def openapi(request: Request):
 
     :returns: Starlette HTTP Response
     """
-    return await get_response(api_.openapi_, request)
+    return await execute_from_starlette(core_api.openapi_, request)
 
 
 async def conformance(request: Request):
@@ -189,7 +172,7 @@ async def conformance(request: Request):
 
     :returns: Starlette HTTP Response
     """
-    return await get_response(api_.conformance, request)
+    return await execute_from_starlette(core_api.conformance, request)
 
 
 async def get_tilematrix_set(request: Request, tileMatrixSetId=None):
@@ -228,8 +211,8 @@ async def collection_schema(request: Request, collection_id=None):
     if 'collection_id' in request.path_params:
         collection_id = request.path_params['collection_id']
 
-    return await get_response(api_.get_collection_schema, request,
-                              collection_id)
+    return await execute_from_starlette(core_api.get_collection_schema,
+                                        request, collection_id)
 
 
 async def collection_queryables(request: Request, collection_id=None):
@@ -489,28 +472,6 @@ async def get_job_result(request: Request, job_id=None):
                                         request, job_id)
 
 
-async def get_job_result_resource(request: Request,
-                                  job_id=None, resource=None):
-    """
-    OGC API - Processes job result resource endpoint
-
-    :param request: Starlette Request instance
-    :param job_id: job identifier
-    :param resource: job resource
-
-    :returns: HTTP response
-    """
-
-    if 'job_id' in request.path_params:
-        job_id = request.path_params['job_id']
-    if 'resource' in request.path_params:
-        resource = request.path_params['resource']
-
-    # TODO: this api function currently doesn't exist
-    return await get_response(
-        api_.get_job_result_resource, request, job_id, resource)
-
-
 async def get_collection_edr_query(request: Request, collection_id=None, instance_id=None, location_id=None):  # noqa
     """
     OGC EDR API endpoints
@@ -552,8 +513,9 @@ async def collections(request: Request, collection_id=None):
     """
     if 'collection_id' in request.path_params:
         collection_id = request.path_params['collection_id']
-    return await get_response(
-        api_.describe_collections, request, collection_id)
+
+    return await execute_from_starlette(core_api.describe_collections, request,
+                                        collection_id)
 
 
 async def stac_catalog_root(request: Request):
@@ -587,11 +549,14 @@ async def admin_config(request: Request):
     """
 
     if request.method == 'GET':
-        return await get_response(ADMIN.get_config, request)
+        return await execute_from_starlette(admin_api.get_config, request,
+                                            alternative_api=ADMIN)
     elif request.method == 'PUT':
-        return await get_response(ADMIN.put_config, request)
+        return await execute_from_starlette(admin_api.put_config, request,
+                                            alternative_api=ADMIN)
     elif request.method == 'PATCH':
-        return await get_response(ADMIN.patch_config, request)
+        return await execute_from_starlette(admin_api.patch_config, request,
+                                            alternative_api=ADMIN)
 
 
 async def admin_config_resources(request: Request):
@@ -602,9 +567,11 @@ async def admin_config_resources(request: Request):
     """
 
     if request.method == 'GET':
-        return await get_response(ADMIN.get_resources, request)
+        return await execute_from_starlette(admin_api.get_resources, request,
+                                            alternative_api=ADMIN)
     elif request.method == 'POST':
-        return await get_response(ADMIN.put_resource, request)
+        return await execute_from_starlette(admin_api.put_resource, request,
+                                            alternative_api=ADMIN)
 
 
 async def admin_config_resource(request: Request, resource_id: str):
@@ -620,17 +587,21 @@ async def admin_config_resource(request: Request, resource_id: str):
         resource_id = request.path_params['resource_id']
 
     if request.method == 'GET':
-        return await get_response(
-            ADMIN.get_resource, request, resource_id)
+        return await execute_from_starlette(admin_api.get_resource, request,
+                                            resource_id,
+                                            alternative_api=ADMIN)
     elif request.method == 'PUT':
-        return await get_response(
-            ADMIN.put_resource, request, resource_id)
+        return await execute_from_starlette(admin_api.put_resource, request,
+                                            resource_id,
+                                            alternative_api=ADMIN)
     elif request.method == 'PATCH':
-        return await get_response(
-            ADMIN.patch_resource, request, resource_id)
+        return await execute_from_starlette(admin_api.patch_resource, request,
+                                            resource_id,
+                                            alternative_api=ADMIN)
     elif request.method == 'DELETE':
-        return await get_response(
-            ADMIN.delete_resource, request, resource_id)
+        return await execute_from_starlette(admin_api.delete_resource, request,
+                                            resource_id,
+                                            alternative_api=ADMIN)
 
 
 class ApiRulesMiddleware:
@@ -689,7 +660,6 @@ api_routes = [
     Route('/jobs/{job_id}', get_jobs, methods=['GET', 'DELETE']),
     Route('/processes/{process_id}/execution', execute_process_jobs, methods=['POST']),  # noqa
     Route('/jobs/{job_id}/results', get_job_result),
-    Route('/jobs/{job_id}/results/{resource}', get_job_result_resource),
     Route('/collections/{collection_id:path}/position', get_collection_edr_query),  # noqa
     Route('/collections/{collection_id:path}/area', get_collection_edr_query),
     Route('/collections/{collection_id:path}/cube', get_collection_edr_query),

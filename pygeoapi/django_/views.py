@@ -35,12 +35,13 @@
 
 """Integration module for Django"""
 
-from typing import Tuple, Dict, Mapping, Optional, Union
+from typing import Optional, Union
 
 from django.conf import settings
 from django.http import HttpRequest, HttpResponse
 
 from pygeoapi.api import API, APIRequest, apply_gzip
+import pygeoapi.api as core_api
 import pygeoapi.api.coverages as coverages_api
 import pygeoapi.api.environmental_data_retrieval as edr_api
 import pygeoapi.api.itemtypes as itemtypes_api
@@ -48,6 +49,7 @@ import pygeoapi.api.maps as maps_api
 import pygeoapi.api.processes as processes_api
 import pygeoapi.api.stac as stac_api
 import pygeoapi.api.tiles as tiles_api
+import pygeoapi.admin as admin_api
 
 
 def landing_page(request: HttpRequest) -> HttpResponse:
@@ -59,10 +61,7 @@ def landing_page(request: HttpRequest) -> HttpResponse:
     :returns: Django HTTP Response
     """
 
-    response_ = _feed_response(request, 'landing_page')
-    response = _to_django_response(*response_)
-
-    return response
+    return execute_from_django(core_api.landing_page, request)
 
 
 def openapi(request: HttpRequest) -> HttpResponse:
@@ -74,10 +73,7 @@ def openapi(request: HttpRequest) -> HttpResponse:
     :returns: Django HTTP Response
     """
 
-    response_ = _feed_response(request, 'openapi_')
-    response = _to_django_response(*response_)
-
-    return response
+    return execute_from_django(core_api.openapi_, request)
 
 
 def conformance(request: HttpRequest) -> HttpResponse:
@@ -88,11 +84,7 @@ def conformance(request: HttpRequest) -> HttpResponse:
 
     :returns: Django HTTP Response
     """
-
-    response_ = _feed_response(request, 'conformance')
-    response = _to_django_response(*response_)
-
-    return response
+    return execute_from_django(core_api.conformance, request)
 
 
 def tilematrixsets(request: HttpRequest,
@@ -126,9 +118,8 @@ def collections(request: HttpRequest,
     :returns: Django HTTP Response
     """
 
-    response_ = _feed_response(request, 'describe_collections', collection_id)
-
-    return _to_django_response(*response_)
+    return execute_from_django(core_api.describe_collections, request,
+                               collection_id)
 
 
 def collection_schema(request: HttpRequest,
@@ -142,7 +133,7 @@ def collection_schema(request: HttpRequest,
     :returns: Django HTTP Response
     """
 
-    return execute_from_django(itemtypes_api.get_collection_schema, request,
+    return execute_from_django(core_api.get_collection_schema, request,
                                collection_id)
 
 
@@ -484,13 +475,13 @@ def admin_config(request: HttpRequest) -> HttpResponse:
     """
 
     if request.method == 'GET':
-        return _feed_response(request, 'get_admin_config')
+        return execute_from_django(admin_api.get_config_, request)
 
     elif request.method == 'PUT':
-        return _feed_response(request, 'put_admin_config')
+        return execute_from_django(admin_api.put_config, request)
 
     elif request.method == 'PATCH':
-        return _feed_response(request, 'patch_admin_config')
+        return execute_from_django(admin_api.patch_config, request)
 
 
 def admin_config_resources(request: HttpRequest) -> HttpResponse:
@@ -501,10 +492,10 @@ def admin_config_resources(request: HttpRequest) -> HttpResponse:
     """
 
     if request.method == 'GET':
-        return _feed_response(request, 'get_admin_config_resources')
+        return execute_from_django(admin_api.get_resources, request)
 
     elif request.method == 'POST':
-        return _feed_response(request, 'put_admin_config_resources')
+        return execute_from_django(admin_api.put_resource, request)
 
 
 def admin_config_resource(request: HttpRequest,
@@ -516,36 +507,20 @@ def admin_config_resource(request: HttpRequest,
     """
 
     if request.method == 'GET':
-        return _feed_response(request, 'put_admin_config_resource',
-                              resource_id)
+        return execute_from_django(admin_api.get_resource, request,
+                                   resource_id)
 
     elif request.method == 'DELETE':
-        return _feed_response(request, 'delete_admin_config_resource',
-                              resource_id)
+        return execute_from_django(admin_api.delete_resource, request,
+                                   resource_id)
 
     elif request.method == 'PUT':
-        return _feed_response(request, 'put_admin_config_resource',
-                              resource_id)
+        return execute_from_django(admin_api.put_resource, request,
+                                   resource_id)
 
     elif request.method == 'PATCH':
-        return _feed_response(request, 'patch_admin_config_resource',
-                              resource_id)
-
-
-# TODO: remove this when all views have been refactored
-def _feed_response(request: HttpRequest, api_definition: str,
-                   *args, **kwargs) -> Tuple[Dict, int, str]:
-    """Use pygeoapi api to process the input request"""
-
-    if 'admin' in api_definition and settings.PYGEOAPI_CONFIG['server'].get('admin'):  # noqa
-        from pygeoapi.admin import Admin
-        api_ = Admin(settings.PYGEOAPI_CONFIG, settings.OPENAPI_DOCUMENT)
-    else:
-        api_ = API(settings.PYGEOAPI_CONFIG, settings.OPENAPI_DOCUMENT)
-
-    api = getattr(api_, api_definition)
-
-    return api(request, *args, **kwargs)
+        return execute_from_django(admin_api.patch_resource, request,
+                                   resource_id)
 
 
 def execute_from_django(api_function, request: HttpRequest, *args,
@@ -567,15 +542,8 @@ def execute_from_django(api_function, request: HttpRequest, *args,
         headers, status, content = api_function(api_, api_request, *args)
         content = apply_gzip(headers, content)
 
-    return _to_django_response(headers, status, content)
-
-
-# TODO: inline this to execute_from_django after refactoring
-def _to_django_response(headers: Mapping, status_code: int,
-                        content: Union[str, bytes]) -> HttpResponse:
-    """Convert API payload to a django response"""
-
-    response = HttpResponse(content, status=status_code)
+    # Convert API payload to a django response
+    response = HttpResponse(content, status=status)
 
     for key, value in headers.items():
         response[key] = value

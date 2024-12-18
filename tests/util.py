@@ -54,10 +54,9 @@ def get_test_file_path(filename: str) -> str:
         return f'tests/{filename}'
 
 
-def mock_request(params: dict = None, data=None, **headers) -> Request:
+def mock_request(params: dict | None = None, data=None, **headers) -> Request:
     """
-    Mocks a Request object so the @pre_process decorator can inject it
-    as an APIRequest.
+    Mocks a Request object for APIRequest testing.
 
     :param params: Optional query parameter dict for the request.
                    Will be set to {} if omitted.

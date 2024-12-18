@@ -81,7 +81,7 @@ def _create_request(name, message, locales):
         base_url='http://localhost:5000/processes/hello-world/execution',
         method="POST", json=data)
     req = Request(environ)
-    return APIRequest.with_data(req, locales)
+    return APIRequest.from_flask(req, locales)
 
 
 def test_async_hello_world_process_parallel(api_, config):

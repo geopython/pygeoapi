@@ -38,6 +38,7 @@ from flask import (Flask, Blueprint, make_response, request,
                    send_from_directory, Response, Request)
 
 from pygeoapi.api import API, APIRequest, apply_gzip
+import pygeoapi.api as core_api
 import pygeoapi.api.coverages as coverages_api
 import pygeoapi.api.environmental_data_retrieval as edr_api
 import pygeoapi.api.itemtypes as itemtypes_api
@@ -45,6 +46,7 @@ import pygeoapi.api.maps as maps_api
 import pygeoapi.api.processes as processes_api
 import pygeoapi.api.stac as stac_api
 import pygeoapi.api.tiles as tiles_api
+import pygeoapi.admin as admin_api
 from pygeoapi.openapi import load_openapi_document
 from pygeoapi.config import get_config
 from pygeoapi.util import get_mimetype, get_api_rules
@@ -118,27 +120,10 @@ if (OGC_SCHEMAS_LOCATION is not None and
                                    mimetype=get_mimetype(basename_))
 
 
-# TODO: inline in execute_from_flask when all views have been refactored
-def get_response(result: tuple):
-    """
-    Creates a Flask Response object and updates matching headers.
-
-    :param result: The result of the API call.
-                   This should be a tuple of (headers, status, content).
-
-    :returns: A Response instance
-    """
-
-    headers, status, content = result
-    response = make_response(content, status)
-
-    if headers:
-        response.headers = headers
-    return response
-
-
 def execute_from_flask(api_function, request: Request, *args,
-                       skip_valid_check=False) -> Response:
+                       skip_valid_check=False,
+                       alternative_api=None
+                       ) -> Response:
     """
     Executes API function from Flask
 
@@ -146,22 +131,28 @@ def execute_from_flask(api_function, request: Request, *args,
     :param request: request object
     :param *args: variable length additional arguments
     :param skip_validity_check: bool
+    :param alternative_api: specify custom api instance such as Admin
 
     :returns: A Response instance
     """
 
-    api_request = APIRequest.from_flask(request, api_.locales)
+    actual_api = api_ if alternative_api is None else alternative_api
+
+    api_request = APIRequest.from_flask(request, actual_api.locales)
 
     content: Union[str, bytes]
 
     if not skip_valid_check and not api_request.is_valid():
-        headers, status, content = api_.get_format_exception(api_request)
+        headers, status, content = actual_api.get_format_exception(api_request)
     else:
-        headers, status, content = api_function(api_, api_request, *args)
+        headers, status, content = api_function(actual_api, api_request, *args)
         content = apply_gzip(headers, content)
-        # handle jsonld too?
 
-    return get_response((headers, status, content))
+    response = make_response(content, status)
+
+    if headers:
+        response.headers = headers
+    return response
 
 
 @BLUEPRINT.route('/')
@@ -171,7 +162,7 @@ def landing_page():
 
     :returns: HTTP response
     """
-    return get_response(api_.landing_page(request))
+    return execute_from_flask(core_api.landing_page, request)
 
 
 @BLUEPRINT.route('/openapi')
@@ -182,7 +173,7 @@ def openapi():
     :returns: HTTP response
     """
 
-    return get_response(api_.openapi_(request))
+    return execute_from_flask(core_api.openapi_, request)
 
 
 @BLUEPRINT.route('/conformance')
@@ -193,7 +184,7 @@ def conformance():
     :returns: HTTP response
     """
 
-    return get_response(api_.conformance(request))
+    return execute_from_flask(core_api.conformance, request)
 
 
 @BLUEPRINT.route('/TileMatrixSets/<tileMatrixSetId>')
@@ -232,7 +223,8 @@ def collections(collection_id=None):
     :returns: HTTP response
     """
 
-    return get_response(api_.describe_collections(request, collection_id))
+    return execute_from_flask(core_api.describe_collections, request,
+                              collection_id)
 
 
 @BLUEPRINT.route('/collections/<path:collection_id>/schema')
@@ -245,7 +237,8 @@ def collection_schema(collection_id):
     :returns: HTTP response
     """
 
-    return get_response(api_.get_collection_schema(request, collection_id))
+    return execute_from_flask(core_api.get_collection_schema, request,
+                              collection_id)
 
 
 @BLUEPRINT.route('/collections/<path:collection_id>/queryables')
@@ -466,23 +459,6 @@ def get_job_result(job_id=None):
     return execute_from_flask(processes_api.get_job_result, request, job_id)
 
 
-@BLUEPRINT.route('/jobs/<job_id>/results/<resource>',
-                 methods=['GET'])
-def get_job_result_resource(job_id, resource):
-    """
-    OGC API - Processes job result resource endpoint
-
-    :param job_id: job identifier
-    :param resource: job resource
-
-    :returns: HTTP response
-    """
-
-    # TODO: this does not seem to exist?
-    return get_response(api_.get_job_result_resource(
-        request, job_id, resource))
-
-
 @BLUEPRINT.route('/collections/<path:collection_id>/position')
 @BLUEPRINT.route('/collections/<path:collection_id>/area')
 @BLUEPRINT.route('/collections/<path:collection_id>/cube')
@@ -556,13 +532,16 @@ def admin_config():
     """
 
     if request.method == 'GET':
-        return get_response(admin_.get_config(request))
+        return execute_from_flask(admin_api.get_config_, request,
+                                  alternative_api=admin_)
 
     elif request.method == 'PUT':
-        return get_response(admin_.put_config(request))
+        return execute_from_flask(admin_api.put_config, request,
+                                  alternative_api=admin_)
 
     elif request.method == 'PATCH':
-        return get_response(admin_.patch_config(request))
+        return execute_from_flask(admin_api.patch_config, request,
+                                  alternative_api=admin_)
 
 
 @ADMIN_BLUEPRINT.route('/admin/config/resources', methods=['GET', 'POST'])
@@ -574,10 +553,12 @@ def admin_config_resources():
     """
 
     if request.method == 'GET':
-        return get_response(admin_.get_resources(request))
+        return execute_from_flask(admin_api.get_resources, request,
+                                  alternative_api=admin_)
 
     elif request.method == 'POST':
-        return get_response(admin_.post_resource(request))
+        return execute_from_flask(admin_api.post_resource, request,
+                                  alternative_api=admin_)
 
 
 @ADMIN_BLUEPRINT.route(
@@ -591,16 +572,24 @@ def admin_config_resource(resource_id):
     """
 
     if request.method == 'GET':
-        return get_response(admin_.get_resource(request, resource_id))
+        return execute_from_flask(admin_api.get_resource, request,
+                                  resource_id,
+                                  alternative_api=admin_)
 
     elif request.method == 'DELETE':
-        return get_response(admin_.delete_resource(request, resource_id))
+        return execute_from_flask(admin_api.delete_resource, request,
+                                  resource_id,
+                                  alternative_api=admin_)
 
     elif request.method == 'PUT':
-        return get_response(admin_.put_resource(request, resource_id))
+        return execute_from_flask(admin_api.put_resource, request,
+                                  resource_id,
+                                  alternative_api=admin_)
 
     elif request.method == 'PATCH':
-        return get_response(admin_.patch_resource(request, resource_id))
+        return execute_from_flask(admin_api.patch_resource, request,
+                                  resource_id,
+                                  alternative_api=admin_)
 
 
 APP.register_blueprint(BLUEPRINT)
