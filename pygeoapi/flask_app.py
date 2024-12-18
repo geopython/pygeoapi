@@ -465,8 +465,8 @@ def get_job_result(job_id=None):
 @BLUEPRINT.route('/collections/<path:collection_id>/radius')
 @BLUEPRINT.route('/collections/<path:collection_id>/trajectory')
 @BLUEPRINT.route('/collections/<path:collection_id>/corridor')
-@BLUEPRINT.route('/collections/<path:collection_id>/locations/<location_id>')  # noqa
-@BLUEPRINT.route('/collections/<path:collection_id>/locations')  # noqa
+@BLUEPRINT.route('/collections/<path:collection_id>/locations/<location_id>')
+@BLUEPRINT.route('/collections/<path:collection_id>/locations')
 @BLUEPRINT.route('/collections/<path:collection_id>/instances/<instance_id>/position')  # noqa
 @BLUEPRINT.route('/collections/<path:collection_id>/instances/<instance_id>/area')  # noqa
 @BLUEPRINT.route('/collections/<path:collection_id>/instances/<instance_id>/cube')  # noqa
@@ -475,6 +475,8 @@ def get_job_result(job_id=None):
 @BLUEPRINT.route('/collections/<path:collection_id>/instances/<instance_id>/corridor')  # noqa
 @BLUEPRINT.route('/collections/<path:collection_id>/instances/<instance_id>/locations/<location_id>')  # noqa
 @BLUEPRINT.route('/collections/<path:collection_id>/instances/<instance_id>/locations')  # noqa
+@BLUEPRINT.route('/collections/<path:collection_id>/instances/<instance_id>')
+@BLUEPRINT.route('/collections/<path:collection_id>/instances')
 def get_collection_edr_query(collection_id, instance_id=None,
                              location_id=None):
     """
@@ -487,6 +489,14 @@ def get_collection_edr_query(collection_id, instance_id=None,
     :returns: HTTP response
     """
 
+    if (request.path.endswith('instances') or
+            (instance_id is not None and
+             request.path.endswith(instance_id))):
+        return execute_from_flask(
+            edr_api.get_collection_edr_instances, request, collection_id,
+            instance_id
+        )
+
     if location_id:
         query_type = 'locations'
     else:
@@ -494,8 +504,7 @@ def get_collection_edr_query(collection_id, instance_id=None,
 
     return execute_from_flask(
         edr_api.get_collection_edr_query, request, collection_id, instance_id,
-        query_type, location_id,
-        skip_valid_check=True,
+        query_type, location_id, skip_valid_check=True
     )
 
 
