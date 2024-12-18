@@ -26,6 +26,7 @@ parameters.
    `GeoJSON`_,✅/✅,results/hits,❌,❌,❌,✅,❌,❌,✅
    `MongoDB`_,✅/❌,results,✅,✅,✅,✅,❌,❌,✅
    `OGR`_,✅/❌,results/hits,✅,❌,❌,✅,❌,❌,✅
+   `OpenSearch`_,✅/✅,results/hits,✅,✅,✅,✅,✅,✅,✅
    `Oracle`_,✅/✅,results/hits,✅,❌,✅,✅,❌,❌,✅
    `Parquet`_,✅/✅,results/hits,✅,✅,❌,✅,❌,❌,✅
    `PostgreSQL`_,✅/✅,results/hits,✅,✅,✅,✅,✅,❌,✅
@@ -321,6 +322,44 @@ The OGR provider requires a recent (3+) version of GDAL to be installed.
    the default applies).
    The `crs` query parameter is used as follows:
    e.g. ``http://localhost:5000/collections/foo/items?crs=http%3A%2F%2Fwww.opengis.net%2Fdef%2Fcrs%2FEPSG%2F0%2F28992``.
+
+.. _OpenSearch:
+
+OpenSearch
+^^^^^^^^^^
+
+.. note::
+   Requires Python package opensearch-py
+
+To publish an OpenSearch index, the following are required in your index:
+
+* indexes must be documents of valid GeoJSON Features
+* index mappings must define the GeoJSON ``geometry`` as a ``geo_shape``
+
+.. code-block:: yaml
+
+   providers:
+       - type: feature
+         name: OpenSearch
+         editable: true|false  # optional, default is false
+         data: http://localhost:9200/ne_110m_populated_places_simple
+         id_field: geonameid
+         time_field: datetimefield
+
+.. note::
+
+   For OpenSearch indexes that are password protect, a RFC1738 URL can be used as follows:
+
+   ``data: http://username:password@localhost:9200/ne_110m_populated_places_simple``
+
+   To further conceal authentication credentials, environment variables can be used:
+
+   ``data: http://${MY_USERNAME}:${MY_PASSWORD}@localhost:9200/ne_110m_populated_places_simple``
+
+The OpenSearch provider also has the support for the CQL queries as indicated in the table above.
+
+.. seealso::
+  :ref:`cql` for more details on how to use Common Query Language (CQL) to filter the collection with specific queries.
 
 .. _Oracle:
 
@@ -628,6 +667,10 @@ If ``intralink`` is true for an adjacent STA provider collection within a
 pygeoapi instance, the expanded entity is instead represented by an intra-pygeoapi
 link to the other entity or it's ``uri_field`` if declared.
 
+Additionally there is the optional field ``expand``. This field will overwrite the default
+pygeoapi expand behavior and instead implement the configured expand strategy. This is
+particularly useful if you have Datastreams with many observations.
+
 .. code-block:: yaml
 
    providers:
@@ -638,6 +681,7 @@ link to the other entity or it's ``uri_field`` if declared.
          entity: Datastreams
          time_field: phenomenonTime
          intralink: true
+         expand: Thing/Locations,Observations($select=result,phenomenonTime;$orderby=phenomenonTime desc;$top=1)
 
 If all three entities are configured, the STA provider will represent a complete STA
 endpoint as OGC-API feature collections. The ``Things`` features will include links
@@ -774,7 +818,7 @@ Data access examples
 .. _`Feature Service`: https://enterprise.arcgis.com/en/server/latest/publish-services/windows/what-is-a-feature-service-.htm
 .. _`Map Service`: https://enterprise.arcgis.com/en/server/latest/publish-services/windows/what-is-a-map-service.htm
 .. _`Google Cloud SQL`: https://cloud.google.com/sql
-.. _`OGC API - Features`: https://www.ogc.org/standards/ogcapi-features
+.. _`OGC API - Features`: https://ogcapi.ogc.org/features
 .. _`Socrata Open Data API (SODA)`: https://dev.socrata.com
 .. _`sodapy`: https://github.com/xmunoz/sodapy
 .. _`Tabledap`: https://coastwatch.pfeg.noaa.gov/erddap/tabledap/documentation.html

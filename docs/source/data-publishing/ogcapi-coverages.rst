@@ -148,7 +148,7 @@ Data access examples
    ``.../coverage`` queries which return an alternative representation to CoverageJSON (which prompt a download)
    will have the response filename matching the collection name and appropriate file extension (e.g. ``my-dataset.nc``)
 
-.. _`OGC API - Coverages`: https://github.com/opengeospatial/ogcapi-coverages
+.. _`OGC API - Coverages`: https://ogcapi.ogc.org/coverages
 .. _`Rasterio`: https://rasterio.readthedocs.io
 .. _`Xarray`: https://docs.xarray.dev/en/stable
 .. _`NetCDF`: https://en.wikipedia.org/wiki/NetCDF

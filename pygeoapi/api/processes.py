@@ -214,6 +214,7 @@ def describe_processes(api: API, request: APIRequest,
 
     if request.format == F_HTML:  # render
         if process is not None:
+            api.set_dataset_templates(process)
             response = render_j2_template(api.tpl_config,
                                           'processes/process.html',
                                           response, request.locale)

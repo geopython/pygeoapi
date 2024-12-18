@@ -3,7 +3,7 @@
 # Authors: Tom Kralidis <tomkralidis@gmail.com>
 #          Benjamin Webb <benjamin.miller.webb@gmail.com>
 #
-# Copyright (c) 2023 Tom Kralidis
+# Copyright (c) 2024 Tom Kralidis
 # Copyright (c) 2023 Benjamin Webb
 #
 # Permission is hereby granted, free of charge, to any person
@@ -32,16 +32,16 @@
 from copy import deepcopy
 import os
 import json
-from jsonpatch import make_patch
-from jsonschema.exceptions import ValidationError
 import logging
 from typing import Tuple
 
-from pygeoapi.api import API, APIRequest, F_HTML
+from dateutil.parser import parse as parse_date
+from jsonpatch import make_patch
+from jsonschema.exceptions import ValidationError
 
+from pygeoapi.api import API, APIRequest, F_HTML
 from pygeoapi.config import get_config, validate_config
 from pygeoapi.openapi import get_oas
-# from pygeoapi.openapi import validate_openapi_document
 from pygeoapi.util import to_json, render_j2_template, yaml_dump
 
 
@@ -215,6 +215,8 @@ def put_config(
 
     try:
         data = json.loads(data)
+        for key, value in data.get('resources', {}).items():
+            temporal_extents_str2datetime(value.get('extents', {}))
     except (json.decoder.JSONDecodeError, TypeError) as err:
         # Input is not valid JSON
         LOGGER.error(err)
@@ -268,6 +270,8 @@ def patch_config(
 
     try:
         data = json.loads(data)
+        for key, value in data.get('resources', {}).items():
+            temporal_extents_str2datetime(value.get('extents', {}))
     except (json.decoder.JSONDecodeError, TypeError) as err:
         # Input is not valid JSON
         LOGGER.error(err)
@@ -352,6 +356,8 @@ def post_resource(
 
     try:
         data = json.loads(data)
+        res = list(data.keys())[0]
+        temporal_extents_str2datetime(data[res].get('extents', {}))
     except (json.decoder.JSONDecodeError, TypeError) as err:
         # Input is not valid JSON
         LOGGER.error(err)
@@ -504,6 +510,7 @@ def put_resource(
 
     try:
         data = json.loads(data)
+        temporal_extents_str2datetime(data.get('extents', {}))
     except (json.decoder.JSONDecodeError, TypeError) as err:
         # Input is not valid JSON
         LOGGER.error(err)
@@ -567,6 +574,7 @@ def patch_resource(
 
     try:
         data = json.loads(data)
+        temporal_extents_str2datetime(data.get('extents', {}))
     except (json.decoder.JSONDecodeError, TypeError) as err:
         # Input is not valid JSON
         LOGGER.error(err)
@@ -594,3 +602,19 @@ def patch_resource(
     content = to_json(resource, admin.pretty_print)
 
     return headers, 204, content
+
+
+def temporal_extents_str2datetime(extents: dict) -> None:
+    """
+    Helper function to coerce datetime strings into datetime objects
+
+    :extents: `dict` of pygeoapi resource extents object
+
+    :returns: `None` (changes made directly)
+    """
+
+    try:
+        extents['temporal']['begin'] = parse_date(extents['temporal']['begin'])
+        extents['temporal']['end'] = parse_date(extents['temporal']['end'])
+    except (KeyError, TypeError):
+        LOGGER.debug('No temporal extents found')

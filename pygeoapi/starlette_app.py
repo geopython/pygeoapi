@@ -472,12 +472,13 @@ async def get_job_result(request: Request, job_id=None):
                                         request, job_id)
 
 
-async def get_collection_edr_query(request: Request, collection_id=None, instance_id=None):  # noqa
+async def get_collection_edr_query(request: Request, collection_id=None, instance_id=None, location_id=None):  # noqa
     """
     OGC EDR API endpoints
 
     :param collection_id: collection identifier
     :param instance_id: instance identifier
+    :param location_id: location id of a /locations/<location_id> query
 
     :returns: HTTP response
     """
@@ -488,10 +489,15 @@ async def get_collection_edr_query(request: Request, collection_id=None, instanc
     if 'instance_id' in request.path_params:
         instance_id = request.path_params['instance_id']
 
-    query_type = request["path"].split('/')[-1]  # noqa
+    if 'location_id' in request.path_params:
+        location_id = request.path_params['location_id']
+        query_type = 'locations'
+    else:
+        query_type = request['path'].split('/')[-1]
+
     return await execute_from_starlette(
         edr_api.get_collection_edr_query, request, collection_id,
-        instance_id, query_type,
+        instance_id, query_type, location_id,
         skip_valid_check=True,
     )
 

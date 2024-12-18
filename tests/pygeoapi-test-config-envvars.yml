@@ -31,7 +31,7 @@ server:
     bind:
         host: 0.0.0.0
         port: ${PYGEOAPI_PORT}
-    url: http://localhost:5000/
+    url: ${PYGEOAPI_SERVER_URL:-http://localhost:5000/}
     mimetype: application/json; charset=UTF-8
     encoding: utf-8
     language: en-US
@@ -43,6 +43,8 @@ server:
     map:
         url: https://tile.openstreetmap.org/{z}/{x}/{y}.png
         attribution: '&copy; <a href="https://openstreetmap.org/copyright">OpenStreetMap contributors</a>'
+    api_rules:  # optional API design rules to which pygeoapi should adhere
+      url_prefix: ${PYGEOAPI_PREFIX:-}
 
 logging:
     level: DEBUG

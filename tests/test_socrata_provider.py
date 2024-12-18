@@ -1,8 +1,10 @@
 # =================================================================
 #
 # Authors: Benjamin Webb <bwebb@lincolninst.edu>
+# Authors: Bernhard Mallinger <bernhard.mallinger@eox.at>
 #
 # Copyright (c) 2022 Benjamin Webb
+# Copyright (c) 2024 Bernhard Mallinger
 #
 # Permission is hereby granted, free of charge, to any person
 # obtaining a copy of this software and associated documentation
@@ -27,6 +29,9 @@
 #
 # =================================================================
 
+import copy
+from unittest import mock
+
 import pytest
 
 from pygeoapi.provider.socrata import SODAServiceProvider
@@ -41,7 +46,7 @@ def config():
     return {
         'name': 'SODAServiceProvider',
         'type': 'feature',
-        'data': 'https://soda.demo.socrata.com/',
+        'data': 'https://example.com/',
         'resource_id': 'emdb-u46w',
         'id_field': 'earthquake_id',
         'time_field': 'datetime',
@@ -49,7 +54,121 @@ def config():
     }
 
 
-def test_query(config):
+@pytest.fixture
+def mock_socrata(dataset):
+
+    def fake_get(*args, **kwargs):
+        if kwargs.get('select') == 'count(*)':
+            count = 19 if kwargs.get('where') == 'region = "Nevada"' else 1006
+            return [{'count': str(count)}]
+        else:
+            # get features
+            if kwargs.get('order') == 'datetime ASC':
+                dt = '2012-09-07T23:00:42.000'
+            else:
+                dt = '2012-09-14T22:38:01.000'
+            feature = {
+                'type': 'Feature',
+                'geometry': {
+                    'type': 'Point',
+                    'coordinates': [-117.6135, 41.1085],
+                },
+                'properties': {
+                    'earthquake_id': '00388610',
+                    'datetime': dt,
+                    'magnitude': '2.7',
+                },
+            }
+            return {
+                'type': 'FeatureCollection',
+                'features': [
+                    copy.deepcopy(feature)
+                    for _ in range(kwargs.get('limit', 10))
+                ],
+                'crs': {
+                    'type': 'name',
+                    'properties': {
+                        'name': 'urn:ogc:def:crs:OGC:1.3:CRS84',
+                    }
+                }
+            }
+
+    with mock.patch(
+        'sodapy.socrata.Socrata.get', new=fake_get,
+    ) as mock_get, mock.patch(
+        'sodapy.socrata.Socrata.datasets', return_value=[dataset],
+    ):
+        yield mock_get
+
+
+@pytest.fixture()
+def dataset():
+    return {
+        'resource': {
+            'columns_datatype': ['Point',
+                                 'Text',
+                                 'Text',
+                                 'Text',
+                                 'Text',
+                                 'Number',
+                                 'Text',
+                                 'Number',
+                                 'Number',
+                                 'Calendar date'],
+            'columns_description': ['',
+                                    '',
+                                    '',
+                                    '',
+                                    '',
+                                    'This column was automatically created '
+                                    'in order to record in what polygon from '
+                                    "the dataset 'Zip Codes' (k83t-ady5) the "
+                                    "point in column 'location' is located. "
+                                    'This enables the creation of region '
+                                    'maps (choropleths) in the visualization '
+                                    'canvas and data lens.',
+                                    '',
+                                    '',
+                                    '',
+                                    ''],
+            'columns_field_name': ['location',
+                                   'earthquake_id',
+                                   'location_zip',
+                                   'location_city',
+                                   'location_address',
+                                   ':@computed_region_k83t_ady5',
+                                   'location_state',
+                                   'depth',
+                                   'magnitude',
+                                   'datetime'],
+            'columns_format': [{},
+                               {},
+                               {},
+                               {},
+                               {},
+                               {},
+                               {},
+                               {},
+                               {},
+                               {}],
+            'columns_name': ['Location',
+                             'Earthquake ID',
+                             'Location (zip)',
+                             'Location (city)',
+                             'Location (address)',
+                             'Zip Codes',
+                             'Location (state)',
+                             'Depth',
+                             'Magnitude',
+                             'Datetime'],
+            'contact_email': None,
+            'type': 'dataset',
+            'updatedAt': '2019-02-13T23:37:38.000Z'
+        }
+    }
+
+
+def test_query(config, mock_socrata):
     p = SODAServiceProvider(config)
 
     results = p.query()
@@ -72,7 +191,7 @@ def test_query(config):
     assert results['numberMatched'] == 1006
 
 
-def test_geometry(config):
+def test_geometry(config, mock_socrata):
     p = SODAServiceProvider(config)
 
     results = p.query()
@@ -82,56 +201,19 @@ def test_geometry(config):
     results = p.query(skip_geometry=True)
     assert results['features'][0]['geometry'] is None
 
-    bbox = [-109, 37, -102, 41]
-    results = p.query(bbox=bbox)
-    assert results['numberMatched'] == 0
 
-    bbox = [-178.2, 18.9, -66.9, 71.4]
-    results = p.query(bbox=bbox)
-    assert results['numberMatched'] == 817
-
-    feature = results['features'][0]
-    x, y = feature['geometry']['coordinates']
-    xmin, ymin, xmax, ymax = bbox
-    assert xmin <= x <= xmax
-    assert ymin <= y <= ymax
-
-
-def test_query_properties(config):
+def test_query_properties(config, mock_socrata):
     p = SODAServiceProvider(config)
 
     results = p.query()
-    assert len(results['features'][0]['properties']) == 11
+    assert len(results['features'][0]['properties']) == 2
 
     # Query by property
     results = p.query(properties=[('region', 'Nevada'), ])
     assert results['numberMatched'] == 19
 
-    results = p.query(properties=[('region', 'Northern California'), ])
-    assert results['numberMatched'] == 119
 
-    # Query for property
-    results = p.query(select_properties=['magnitude', ])
-    assert len(results['features'][0]['properties']) == 1
-    assert 'magnitude' in results['features'][0]['properties']
-
-    # Query with configured properties
-    config['properties'] = ['region', 'datetime', 'magnitude']
-    p = SODAServiceProvider(config)
-
-    results = p.query()
-    props = results['features'][0]['properties']
-    assert all(p in props for p in config['properties'])
-    assert len(props) == 3
-
-    results = p.query(properties=[('region', 'Central California'), ])
-    assert results['numberMatched'] == 92
-
-    results = p.query(select_properties=['region', ])
-    assert len(results['features'][0]['properties']) == 1
-
-
-def test_query_sortby_datetime(config):
+def test_query_sortby_datetime(config, mock_socrata):
     p = SODAServiceProvider(config)
 
     results = p.query(sortby=[{'property': 'datetime', 'order': '+'}])
@@ -142,18 +224,8 @@ def test_query_sortby_datetime(config):
     dt = results['features'][0]['properties']['datetime']
     assert dt == '2012-09-14T22:38:01.000'
 
-    results = p.query(datetime_='../2012-09-10T00:00:00.00Z',
-                      sortby=[{'property': 'datetime', 'order': '-'}])
-    dt = results['features'][0]['properties']['datetime']
-    assert dt == '2012-09-09T23:57:50.000'
 
-    results = p.query(datetime_='2012-09-10T00:00:00.00Z/..',
-                      sortby=[{'property': 'datetime', 'order': '+'}])
-    dt = results['features'][0]['properties']['datetime']
-    assert dt == '2012-09-10T00:04:44.000'
-
-
-def test_get(config):
+def test_get(config, mock_socrata):
     p = SODAServiceProvider(config)
 
     result = p.get('00388610')

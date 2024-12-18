@@ -198,6 +198,8 @@ def get_collection_edr_query(api: API, request: APIRequest,
             err.ogc_exception_code, err.message)
 
     if request.format == F_HTML:  # render
+        api.set_dataset_templates(dataset)
+
         uri = f'{api.get_collections_url()}/{dataset}/{query_type}'
         serialized_query_params = ''
         for k, v in request.params.items():

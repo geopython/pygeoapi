@@ -177,6 +177,8 @@ def get_collection_queryables(api: API, request: Union[APIRequest, Any],
                 queryables['properties'][k]['x-ogc-role'] = 'primary-instant'  # noqa
 
     if request.format == F_HTML:  # render
+        api.set_dataset_templates(dataset)
+
         queryables['title'] = l10n.translate(
             api.config['resources'][dataset]['title'], request.locale)
 
@@ -507,9 +509,12 @@ def get_collection_items(
             serialized_query_params += '='
             serialized_query_params += urllib.parse.quote(str(v), safe=',')
 
+    if 'links' not in content:
+        content['links'] = []
+
     # TODO: translate titles
     uri = f'{api.get_collections_url()}/{dataset}/items'
-    content['links'] = [{
+    content['links'].extend([{
         'type': 'application/geo+json',
         'rel': request.get_linkrel(F_JSON),
         'title': l10n.translate('This document as GeoJSON', request.locale),
@@ -524,7 +529,7 @@ def get_collection_items(
         'rel': request.get_linkrel(F_HTML),
         'title': l10n.translate('This document as HTML', request.locale),
         'href': f'{uri}?f={F_HTML}{serialized_query_params}'
-    }]
+    }])
 
     if offset > 0:
         prev = max(0, offset - limit)
@@ -572,6 +577,7 @@ def get_collection_items(
     l10n.set_response_language(headers, prv_locale, request.locale)
 
     if request.format == F_HTML:  # render
+        api.set_dataset_templates(dataset)
         # For constructing proper URIs to items
 
         content['items_path'] = uri
@@ -889,7 +895,7 @@ def post_collection_items(
                 HTTPStatus.BAD_REQUEST, headers, request.format,
                 'InvalidParameterValue', msg)
     else:
-        LOGGER.debug('processing Elasticsearch CQL_JSON data')
+        LOGGER.debug('processing CQL_JSON data')
         try:
             filter_ = CQLModel.parse_raw(data)
         except Exception:
@@ -1174,6 +1180,7 @@ def get_collection_item(api: API, request: APIRequest,
     l10n.set_response_language(headers, prv_locale, request.locale)
 
     if request.format == F_HTML:  # render
+        api.set_dataset_templates(dataset)
         content['title'] = l10n.translate(collections[dataset]['title'],
                                           request.locale)
         content['id_field'] = p.id_field

@@ -5,7 +5,7 @@ HTML Templating
 
 pygeoapi uses `Jinja`_ as its templating engine to render HTML and `Flask`_ to provide route paths of the API that returns HTTP responses. For complete details on how to use these modules, refer to the `Jinja documentation`_ and the `Flask documentation`_.
 
-The default pygeoapi configuration has ``server.templates`` commented out and defaults to the pygeoapi ``pygeoapi/templates`` and ``pygeoapi/static`` folder. To point to a different set of template configuration, you can edit your configuration:
+The default pygeoapi configuration has ``server.templates`` commented out and defaults to the pygeoapi ``pygeoapi/templates`` and ``pygeoapi/static`` folder. To point to a different set of template configuration, you can edit your configuration as follows:
 
 .. code-block:: yaml
 
@@ -20,9 +20,9 @@ Your templates folder should mimic the same file names and structure of the defa
 
 Note that you need only copy and edit the templates you are interested in updating.  For example,
 if you are only interested in updating the ``landing_page.html`` template, then create your own version
-of the only that same file.  When pygeoapi detects that a custom HTML template is being used,
-it will look for the custom template in ``server.templates.path``.  If it does not exists, pygeoapi
-will render the default HTML template for the given endpoint/requuest.
+of only that same file.  When pygeoapi detects that a custom HTML template is being used,
+it will look for the custom template in ``server.templates.path``.  If it does not exist, pygeoapi
+will render the default HTML template for the given endpoint/request.
 
 Linking to a static file in your HTML templates can be done using Jinja syntax and the exposed ``config['server']['url']``:
 
@@ -35,9 +35,39 @@ Linking to a static file in your HTML templates can be done using Jinja syntax a
   <!-- Image example with metadata -->
   <img src="{{ config['server']['url'] }}/static/img/logo.png" title="{{ config['metadata']['identification']['title'] }}" />
 
+Dataset level templates
+-----------------------
+
+The ``templates`` configuration directive is applied to the entire server by default.  It can also be used for a dataset specific look and feel.  As example use case is defining a template for a specific dataset to be able to add custom UI/UX functionality (e.g. search/filter widget).
+
+.. note::
+
+   Dataset level templates apply to ``/collections/{collectionId}`` and below.
+
+
+Example
+^^^^^^^
+
+The below is an example dataset specific template using pygeoapi's default theme:
+
+
+.. code-block:: html
+
+   {% extends "_base.html" %}
+
+   {% block body %}
+
+   <h1>My cool dataset</h1>
+
+   {% endblock %}
+
+.. note::
+
+   You can choose to use pygeoapi's default base theme, or your own as desired.
+
 
 Featured themes
-----------------
+---------------
 
 Community based themes can be found on the `pygeoapi Community Plugins and Themes wiki page`_.
 

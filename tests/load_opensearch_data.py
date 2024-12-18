@@ -2,7 +2,7 @@
 #
 # Authors: Tom Kralidis <tomkralidis@gmail.com>
 #
-# Copyright (c) 2023 Tom Kralidis
+# Copyright (c) 2024 Tom Kralidis
 #
 # Permission is hereby granted, free of charge, to any person
 # obtaining a copy of this software and associated documentation
@@ -31,8 +31,9 @@ import json
 from pathlib import Path
 import sys
 
-from elasticsearch import Elasticsearch, helpers
-es = Elasticsearch('http://localhost:9200')
+from opensearchpy import OpenSearch, helpers
+
+os_ = OpenSearch(['localhost:9209'])
 
 if len(sys.argv) < 3:
     print(f'Usage: {sys.argv[0]} <path/to/data.geojson> <id-field>')
@@ -41,27 +42,30 @@ if len(sys.argv) < 3:
 index_name = Path(sys.argv[1]).stem.lower()
 id_field = sys.argv[2]
 
-if es.indices.exists(index=index_name):
-    es.indices.delete(index=index_name)
+if os_.indices.exists(index=index_name):
+    os_.indices.delete(index=index_name)
 
 # index settings
-settings = {
-    'number_of_shards': 1,
-    'number_of_replicas': 0
-}
-
-mappings = {
-    'properties': {
-        'geometry': {
-            'type': 'geo_shape'
-        },
+body = {
+    'settings': {
+        'index': {
+            'number_of_shards': 1,
+            'number_of_replicas': 0
+        }
+    },
+    'mappings': {
         'properties': {
+            'geometry': {
+                'type': 'geo_shape'
+            },
             'properties': {
-                'nameascii': {
-                    'type': 'text',
-                    'fields': {
-                        'raw': {
-                            'type': 'keyword'
+                'properties': {
+                    'nameascii': {
+                        'type': 'text',
+                        'fields': {
+                            'raw': {
+                                'type': 'keyword'
+                            }
                         }
                     }
                 }
@@ -89,11 +93,10 @@ def gendata(data):
 
 
 # create index
-es.options(request_timeout=90).indices.create(
-    index=index_name, settings=settings, mappings=mappings)
+os_.indices.create(index=index_name, body=body)
 
 with open(sys.argv[1], encoding='utf-8') as fh:
     d = json.load(fh)
 
-    # call generator function to yield features into ES bulk API
-    helpers.bulk(es, gendata(d))
+    # call generator function to yield features into OpenSearch bulk API
+    helpers.bulk(os_, gendata(d))

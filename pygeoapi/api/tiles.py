@@ -141,12 +141,17 @@ def get_collection_tiles(api: API, request: APIRequest,
 
     tiling_schemes = p.get_tiling_schemes()
 
+    datatype = 'vector'
+
+    if t['format']['mimetype'].startswith('image'):
+        datatype = 'map'
+
     for matrix in tiling_schemes:
         tile_matrix = {
             'title': dataset,
             'tileMatrixSetURI': matrix.tileMatrixSetURI,
             'crs': matrix.crs,
-            'dataType': 'vector',
+            'dataType': datatype,
             'links': []
         }
         tile_matrix['links'].append({
@@ -171,6 +176,7 @@ def get_collection_tiles(api: API, request: APIRequest,
         tiles['tilesets'].append(tile_matrix)
 
     if request.format == F_HTML:  # render
+        api.set_dataset_templates(dataset)
         tiles['id'] = dataset
         tiles['title'] = l10n.translate(
             api.config['resources'][dataset]['title'], SYSTEM_LOCALE)
@@ -317,6 +323,7 @@ def get_collection_tiles_metadata(
         language=prv_locale)
 
     if request.format == F_HTML:  # render
+        api.set_dataset_templates(dataset)
         content = render_j2_template(api.tpl_config,
                                      'collections/tiles/metadata.html',
                                      tiles_metadata, request.locale)
@@ -462,12 +469,17 @@ def get_oas_30(cfg: dict, locale: str) -> tuple[list[dict[str, str]], dict[str, 
             title = l10n.translate(v['title'], locale)
             description = l10n.translate(v['description'], locale)
 
+            datatype = 'vector'
+
+            if tile_extension['format']['mimetype'].startswith('image'):
+                datatype = 'map'
+
             paths[tiles_path] = {
                 'get': {
                     'summary': f'Fetch a {title} tiles description',
                     'description': description,
                     'tags': [k],
-                    'operationId': f'describe{k.capitalize()}Tiles',
+                    'operationId': f'describe{k.capitalize()}.collection.{datatype}.getTileSetsList',  # noqa
                     'parameters': [
                         {'$ref': '#/components/parameters/f'},
                         {'$ref': '#/components/parameters/lang'}
@@ -488,7 +500,7 @@ def get_oas_30(cfg: dict, locale: str) -> tuple[list[dict[str, str]], dict[str, 
                     'summary': f'Get a {title} tile',
                     'description': description,
                     'tags': [k],
-                    'operationId': f'get{k.capitalize()}Tiles',
+                    'operationId': f'get{k.capitalize()}.collection.{datatype}.getTile',  # noqa
                     'parameters': [
                         {'$ref': f"{OPENAPI_YAML['oapit']}#/components/parameters/tileMatrixSetId"}, # noqa
                         {'$ref': f"{OPENAPI_YAML['oapit']}#/components/parameters/tileMatrix"},  # noqa

@@ -52,6 +52,8 @@ For more information related to API design rules (the ``api_rules`` property in 
     limit: 10  # server limit on number of items to return
     admin: false  # whether to enable the Admin API
 
+    # optional configuration to specify a different set of templates for HTML pages. Recommend using absolute paths. Omit this to use the default provided templates
+    # This property can also be defined at the resource level to override global server settings for specific datasets
     templates: # optional configuration to specify a different set of templates for HTML pages. Recommend using absolute paths. Omit this to use the default provided templates
       path: /path/to/jinja2/templates/folder # path to templates folder containing the Jinja2 template HTML files
       static: /path/to/static/folder # path to static folder containing css, js, images and other static files referenced by the template
@@ -129,7 +131,7 @@ The ``metadata`` section provides settings for overall service metadata and desc
               - api
           keywords_type: theme  # keyword type as per the ISO 19115 MD_KeywordTypeCode codelist. Accepted values are discipline, temporal, place, theme, stratum
           terms_of_service: https://creativecommons.org/licenses/by/4.0/  # terms of service
-          url: http://example.org  # informative URL about the service
+          url: https://example.org  # informative URL about the service
       license:  # licensing details
           name: CC-BY 4.0 license
           url: https://creativecommons.org/licenses/by/4.0/
@@ -646,5 +648,5 @@ At this point, you have the configuration ready to administer the server.
 .. _`JSON-LD`: https://json-ld.org
 .. _`Google Structured Data Testing Tool`: https://search.google.com/structured-data/testing-tool#url=https%3A%2F%2Fdemo.pygeoapi.io%2Fmaster
 .. _`Google Dataset Search`: https://developers.google.com/search/docs/appearance/structured-data/dataset
-.. _RotatingFileHandler: http://docs.python.org/3/library/logging.handlers.html#rotatingfilehandler
-.. _TimedRotatingFileHandler: http://docs.python.org/3/library/logging.handlers.html#timedrotatingfilehandler
+.. _RotatingFileHandler: https://docs.python.org/3/library/logging.handlers.html#rotatingfilehandler
+.. _TimedRotatingFileHandler: https://docs.python.org/3/library/logging.handlers.html#timedrotatingfilehandler

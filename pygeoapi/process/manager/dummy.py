@@ -116,7 +116,8 @@ class DummyManager(BaseManager):
         self._send_in_progress_notification(subscriber)
         processor = self.get_processor(process_id)
         try:
-            jfmt, outputs = processor.execute(data_dict)
+            jfmt, outputs = processor.execute(
+                data_dict, outputs=requested_outputs)
             current_status = JobStatus.successful
             self._send_success_notification(subscriber, outputs)
         except Exception as err:

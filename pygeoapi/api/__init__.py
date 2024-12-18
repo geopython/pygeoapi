@@ -622,6 +622,10 @@ class API:
     def get_collections_url(self):
         return f"{self.base_url}/collections"
 
+    def set_dataset_templates(self, dataset):
+        if 'templates' in self.config['resources'][dataset]:
+           self.tpl_config['server']['templates'] = self.config['resources'][dataset]['templates']  # noqa
+
     @staticmethod
     def _create_crs_transform_spec(
         config: dict,
@@ -1299,13 +1303,14 @@ def describe_collections(api: API, request: APIRequest,
     if request.format == F_HTML:  # render
         fcm['collections_path'] = api.get_collections_url()
         if dataset is not None:
+            api.set_dataset_templates(dataset)
             content = render_j2_template(api.tpl_config,
                                          'collections/collection.html',
                                          fcm, request.locale)
         else:
             content = render_j2_template(api.tpl_config,
-                                         'collections/index.html', fcm,
-                                         request.locale)
+                                         'collections/index.html',
+                                         fcm, request.locale)
 
         return headers, HTTPStatus.OK, content
 
@@ -1324,7 +1329,7 @@ def describe_collections(api: API, request: APIRequest,
     return headers, HTTPStatus.OK, to_json(fcm, api.pretty_print)
 
 
-def get_collection_schema(self, request: Union[APIRequest, Any],
+def get_collection_schema(api: API, request: Union[APIRequest, Any],
                           dataset) -> Tuple[dict, int, str]:
     """
     Returns a collection schema
@@ -1335,42 +1340,42 @@ def get_collection_schema(self, request: Union[APIRequest, Any],
     :returns: tuple of headers, status code, content
     """
 
-    headers = request.get_response_headers(**self.api_headers)
+    headers = request.get_response_headers(**api.api_headers)
 
     if any([dataset is None,
-            dataset not in self.config['resources'].keys()]):
+            dataset not in api.config['resources'].keys()]):
 
         msg = 'Collection not found'
-        return self.get_exception(
+        return api.get_exception(
             HTTPStatus.NOT_FOUND, headers, request.format, 'NotFound', msg)
 
     LOGGER.debug('Creating collection schema')
     try:
         LOGGER.debug('Loading feature provider')
         p = load_plugin('provider', get_provider_by_type(
-            self.config['resources'][dataset]['providers'], 'feature'))
+            api.config['resources'][dataset]['providers'], 'feature'))
     except ProviderTypeError:
         try:
             LOGGER.debug('Loading coverage provider')
             p = load_plugin('provider', get_provider_by_type(
-                self.config['resources'][dataset]['providers'], 'coverage'))  # noqa
+                api.config['resources'][dataset]['providers'], 'coverage'))  # noqa
         except ProviderTypeError:
             LOGGER.debug('Loading record provider')
             p = load_plugin('provider', get_provider_by_type(
-                self.config['resources'][dataset]['providers'], 'record'))
+                api.config['resources'][dataset]['providers'], 'record'))
     except ProviderGenericError as err:
         LOGGER.error(err)
-        return self.get_exception(
+        return api.get_exception(
             err.http_status_code, headers, request.format,
             err.ogc_exception_code, err.message)
 
     schema = {
         'type': 'object',
         'title': l10n.translate(
-            self.config['resources'][dataset]['title'], request.locale),
+            api.config['resources'][dataset]['title'], request.locale),
         'properties': {},
         '$schema': 'http://json-schema.org/draft/2019-09/schema',
-        '$id': f'{self.get_collections_url()}/{dataset}/schema'
+        '$id': f'{api.get_collections_url()}/{dataset}/schema'
     }
 
     if p.type != 'coverage':
@@ -1390,13 +1395,14 @@ def get_collection_schema(self, request: Union[APIRequest, Any],
             schema['properties'][k]['x-ogc-role'] = 'primary-instant'
 
     if request.format == F_HTML:  # render
+        api.set_dataset_templates(dataset)
         schema['title'] = l10n.translate(
-            self.config['resources'][dataset]['title'], request.locale)
+            api.config['resources'][dataset]['title'], request.locale)
 
-        schema['collections_path'] = self.get_collections_url()
-        schema['dataset_path'] = f'{self.get_collections_url()}/{dataset}'
+        schema['collections_path'] = api.get_collections_url()
+        schema['dataset_path'] = f'{api.get_collections_url()}/{dataset}'
 
-        content = render_j2_template(self.tpl_config,
+        content = render_j2_template(api.tpl_config,
                                      'collections/schema.html',
                                      schema, request.locale)
 
@@ -1404,7 +1410,7 @@ def get_collection_schema(self, request: Union[APIRequest, Any],
 
     headers['Content-Type'] = 'application/schema+json'
 
-    return headers, HTTPStatus.OK, to_json(schema, self.pretty_print)
+    return headers, HTTPStatus.OK, to_json(schema, api.pretty_print)
 
 
 def validate_bbox(value=None) -> list:

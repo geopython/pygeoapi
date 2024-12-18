@@ -83,6 +83,27 @@ info:
     email: you@example.org
     name: Organization Name
     url: https://pygeoapi.io
+    x-ogc-serviceContact:
+      addresses:
+      - administrativeArea: Country
+        city:
+        - City
+        deliveryPoint:
+        - Mailing Address
+      contactInstructions: During hours of service. Off on weekends.
+      emails:
+      - value: you@example.org
+      hoursOfService: pointOfContact
+      links:
+      - href: Contact URL
+        type: text/html
+      name: Lastname, Firstname
+      phones:
+      - type: main
+        value: +xx-xxx-xxx-xxxx
+      - type: fax
+        value: +xx-xxx-xxx-xxxx
+      position: Position Title
   description: pygeoapi provides an API to geospatial data
   license:
     name: CC-BY 4.0 license
