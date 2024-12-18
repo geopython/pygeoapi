@@ -1,0 +1,29 @@
+{% extends "_base.html" %}
+{% block title %}{{ super() }} {{ data['title'] }} {% endblock %}
+{% block crumbs %}{{ super() }}
+/ <a href="{{ data['collections_path'] }}">{% trans %}Collections{% endtrans %}</a>
+{% for link in data['links'] %}
+  {% if link.rel == 'collection' %} /
+    <a href="{{ data['dataset_path'] }}">{{ link['title'] | truncate( 25 ) }}</a>
+    {% set col_title = link['title'] %}
+  {% endif %}
+{% endfor %}
+/ <a href="{{ data['dataset_path'] }}/instances">{% trans %}Instances{% endtrans %}</a>
+{% endblock %}
+{% block body %}
+    <section id="collection">
+      <h1>{{ data['title'] }}</h1>
+      <p>{{ data['description'] }}</p>
+      <p>
+        {% for kw in data['keywords'] %}
+          <span class="badge text-bg-primary bg-primary">{{ kw }}</span>
+        {% endfor %}
+      </p>
+      <h3>{% trans %}Instances{% endtrans %}</h3>
+      <ul>
+      {% for instance in data['instances'] %}
+        <li><a href="./instances/{{ instance['id'] }}">{{ instance['id'] }} </a></li>
+      {% endfor %}
+      </ul>
+    </section>
+{% endblock %}
