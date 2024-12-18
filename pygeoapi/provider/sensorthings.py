@@ -213,7 +213,7 @@ class SensorThingsProvider(BaseProvider):
 
                 # Ensure we only use provided network location
                 next_ = next_.replace(urlparse(next_).netloc,
-                                        urlparse(self.data).netloc)
+                                      urlparse(self.data).netloc)
 
                 response = self._get_response(next_)
                 v.extend(response['value'])
