@@ -54,7 +54,7 @@ class BaseEDRProvider(BaseProvider):
 
         super().__init__(provider_def)
 
-        self.instances = []
+#        self.instances = []
 
     @classmethod
     def register(cls):
