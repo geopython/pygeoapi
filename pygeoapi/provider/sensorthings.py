@@ -32,6 +32,7 @@
 from json.decoder import JSONDecodeError
 import logging
 from requests import Session
+from urllib.parse import urlparse
 
 from pygeoapi.config import get_config
 from pygeoapi.provider.base import (
@@ -209,6 +210,11 @@ class SensorThingsProvider(BaseProvider):
             try:
                 LOGGER.debug('Fetching next set of values')
                 next_ = response['@iot.nextLink']
+
+                # Ensure we only use provided network location
+                next_ = next_.replace(urlparse(next_).netloc,
+                                      urlparse(self.data).netloc)
+
                 response = self._get_response(next_)
                 v.extend(response['value'])
             except (ProviderConnectionError, KeyError):
