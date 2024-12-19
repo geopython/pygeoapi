@@ -150,6 +150,7 @@ jobs:
         pytest tests/test_util.py
         pytest tests/test_xarray_netcdf_provider.py
         pytest tests/test_xarray_zarr_provider.py
+        pytest tests/test_admin_api.py
     - name: failed tests 🚩
       if: ${{ failure() }}
       run: |
