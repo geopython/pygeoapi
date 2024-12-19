@@ -2,8 +2,10 @@
 # =================================================================
 #
 # Authors: Just van den Broecke <justb4@gmail.com>
+#          Benjamin Webb <benjamin.miller.webb@gmail.com>
 #
 # Copyright (c) 2019 Just van den Broecke
+# Copyright (c) 2024 Benjamin Webb
 #
 # Permission is hereby granted, free of charge, to any person
 # obtaining a copy of this software and associated documentation
@@ -102,8 +104,30 @@ case ${entry_cmd} in
 				--bind ${CONTAINER_HOST}:${CONTAINER_PORT} \
 				pygeoapi.flask_app:APP
 	  ;;
+
+	# Run pygeoapi server with hot reload
+	hot-reload)
+		# Lock all Python files (for gunicorn hot reload)
+		find . -type f -name "*.py" | xargs chmod 0444
+
+		# SCRIPT_NAME should not have value '/'
+		[[ "${SCRIPT_NAME}" = '/' ]] && export SCRIPT_NAME="" && echo "make SCRIPT_NAME empty from /"
+
+		echo "Start gunicorn name=${CONTAINER_NAME} on ${CONTAINER_HOST}:${CONTAINER_PORT} with ${WSGI_WORKERS} workers and SCRIPT_NAME=${SCRIPT_NAME}"
+		exec gunicorn --workers ${WSGI_WORKERS} \
+				--worker-class=${WSGI_WORKER_CLASS} \
+				--timeout ${WSGI_WORKER_TIMEOUT} \
+				--name=${CONTAINER_NAME} \
+				--bind ${CONTAINER_HOST}:${CONTAINER_PORT} \
+				--reload \
+				--reload-extra-file ${PYGEOAPI_CONFIG} \
+				pygeoapi.flask_app:APP
+			
+		touch ${PYGEOAPI_CONFIG}
+	  ;;
+
 	*)
-	  error "unknown command arg: must be run (default) or test"
+	  error "unknown command arg: must be run (default), hot-reload, or test"
 	  ;;
 esac
 
