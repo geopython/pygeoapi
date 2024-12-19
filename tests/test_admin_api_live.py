@@ -41,6 +41,10 @@ from pygeoapi.util import yaml_load
 THISDIR = Path(__file__).resolve().parent
 
 
+# NOTE: this test is not executed in CI by default because it requires
+#       a running server
+
+
 class APITest(unittest.TestCase):
     def setUp(self):
         """setup test fixtures, etc."""
