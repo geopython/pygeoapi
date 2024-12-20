@@ -46,7 +46,6 @@ import pygeoapi.api.maps as maps_api
 import pygeoapi.api.processes as processes_api
 import pygeoapi.api.stac as stac_api
 import pygeoapi.api.tiles as tiles_api
-import pygeoapi.admin as admin_api
 from pygeoapi.openapi import load_openapi_document
 from pygeoapi.config import get_config
 from pygeoapi.util import get_mimetype, get_api_rules
@@ -58,6 +57,7 @@ OPENAPI = load_openapi_document()
 API_RULES = get_api_rules(CONFIG)
 
 if CONFIG['server'].get('admin'):
+    import pygeoapi.admin as admin_api
     from pygeoapi.admin import Admin
 
 STATIC_FOLDER = 'static'
