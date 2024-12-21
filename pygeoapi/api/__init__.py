@@ -40,7 +40,7 @@ Root level code of pygeoapi, parsing content provided by web framework.
 Returns content from plugins and sets responses.
 """
 
-from collections import OrderedDict
+from collections import ChainMap, OrderedDict
 from copy import deepcopy
 from datetime import datetime
 from functools import partial
@@ -1604,16 +1604,11 @@ def evaluate_limit(requested: Union[None, int], server_limits: dict,
     :returns: `int` of evaluated limit
     """
 
-    if collection_limits:
-        LOGGER.debug('Using collection defined limit')
-        max_ = collection_limits.get('maxitems', 10)
-        default = collection_limits.get('defaultitems', 10)
-        on_exceed = collection_limits.get('on_exceed', 'throttle')
-    else:
-        LOGGER.debug('Using server defined limit')
-        max_ = server_limits.get('maxitems', 10)
-        default = server_limits.get('defaultitems', 10)
-        on_exceed = server_limits.get('on_exceed', 'throttle')
+    effective_limits = ChainMap(collection_limits, server_limits)
+
+    default = effective_limits.get('defaultitems', 10)
+    max_ = effective_limits.get('maxitems', 10)
+    on_exceed = effective_limits.get('on_exceed', 'throttle')
 
     LOGGER.debug(f'Requested limit: {requested}')
     LOGGER.debug(f'Default limit: {default}')

@@ -881,3 +881,9 @@ def test_evaluate_limit():
 
     with pytest.raises(RuntimeError):
         assert evaluate_limit('40', server, collection) == 40
+
+    collection = {'defaultitems': 10}
+    server = {'defaultitems': 2, 'maxitems': 3}
+
+    assert evaluate_limit(None, server, collection) == 10
+    assert evaluate_limit('40', server, collection) == 3
