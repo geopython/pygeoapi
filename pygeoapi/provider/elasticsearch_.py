@@ -489,7 +489,7 @@ class ElasticsearchProvider(BaseProvider):
                 try:
                     feature_thinned['properties'][p] = feature_['properties'][p]  # noqa
                 except KeyError as err:
-                    msg = f'Property missing {err}; continuing')
+                    msg = f'Property missing {err}; continuing'
                     LOGGER.warning(msg)
 
         if feature_thinned:
