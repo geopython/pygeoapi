@@ -31,6 +31,7 @@
 #
 # =================================================================
 
+from datetime import datetime
 import os
 
 from pathlib import Path
@@ -38,7 +39,10 @@ import pytest
 import json
 
 from pygeoapi.util import yaml_load
-from pygeoapi.admin import Admin, get_config_, patch_config, put_config
+from pygeoapi.admin import (
+    Admin, delete_resource, get_config_, get_resource,
+    get_resources, patch_config, patch_resource, post_resource,
+    put_config, put_resource)
 from tests.util import mock_api_request
 
 THISDIR = Path(__file__).resolve().parent
@@ -107,6 +111,68 @@ def test_admin(monkeypatch, admin_config_path, openapi):
     admin_api = reload_api(admin_config_path, monkeypatch, openapi)
 
     assert json.loads(content)['logging']['level'] == 'DEBUG'
+
+
+def test_resources_crud(monkeypatch, admin_config_path, openapi):
+    admin_api = reload_api(admin_config_path, monkeypatch, openapi)
+
+    empty_req = mock_api_request()
+    headers, status_code, content = get_resources(admin_api, empty_req)
+    assert len(json.loads(content).keys()) == 1
+
+    # POST a new resource
+    with get_abspath('resource-post.json').open() as fh:
+        post_data = fh.read()
+
+    req = mock_api_request(data=post_data)
+    headers, status_code, content = post_resource(admin_api, req)
+    assert status_code == 201
+    assert content == 'Location: //data2'
+
+    admin_api = reload_api(admin_config_path, monkeypatch, openapi)
+
+    headers, status_code, content = get_resources(admin_api, empty_req)
+    assert len(json.loads(content).keys()) == 2
+
+    d = yaml_load(admin_config_path.read_text())
+    temporal_extent_begin = d['resources']['data2']['extents']['temporal']['begin']  # noqa
+    assert isinstance(temporal_extent_begin, datetime)
+
+    # PUT an existing resource
+    with get_abspath('resource-put.json').open() as fh:
+        post_data = fh.read()
+
+    req = mock_api_request(data=post_data)
+    headers, status_code, content = put_resource(admin_api, req, 'data2')
+    assert status_code == 204
+
+    headers, status_code, content = get_resource(admin_api, empty_req, 'data2')
+    assert (
+        json.loads(content)['title']['en'] ==
+        'Data assets, updated by HTTP PUT'
+    )
+
+    # PATCH an existing resource
+    with get_abspath('resource-patch.json').open() as fh:
+        post_data = fh.read()
+
+    req = mock_api_request(data=post_data)
+    headers, status_code, content = patch_resource(admin_api, req, 'data2')
+    assert status_code == 204
+
+    headers, status_code, content = get_resource(admin_api, empty_req, 'data2')
+    assert (
+        json.loads(content)['title']['en'] ==
+        'Data assets, updated by HTTP PATCH'
+    )
+
+    # DELETE an existing new resource
+    headers, status_code, content = \
+        delete_resource(admin_api, empty_req, 'data2')
+    assert status_code == 204
+
+    headers, status_code, content = get_resources(admin_api, empty_req)
+    assert len(json.loads(content).keys()) == 1
 
 
 def get_abspath(filepath):
