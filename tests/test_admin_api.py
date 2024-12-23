@@ -50,8 +50,7 @@ THISDIR = Path(__file__).resolve().parent
 
 @pytest.fixture()
 def admin_config_path(tmp_path, monkeypatch):
-    # create a temporary config file because the test
-    # will modify it in placae
+    # create a temporary config file because the test will modify it in place
     config_path = tmp_path / "config.yml"
     config_path.write_text(
         (Path(THISDIR) / "pygeoapi-test-config-admin.yml").read_text()
