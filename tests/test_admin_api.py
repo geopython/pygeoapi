@@ -2,9 +2,11 @@
 #
 # Authors: Tom Kralidis <tomkralidis@gmail.com>
 # Authors: Benjamin Webb <benjamin.miller.webb@gmail.com>
+# Authors: Bernhard Mallinger <bernhard.mallinger@eox.at>
 #
 # Copyright (c) 2024 Tom Kralidis
 # Copyright (c) 2023 Benjamin Webb
+# Copyright (c) 2024 Bernhard Mallinger
 #
 # Permission is hereby granted, free of charge, to any person
 # obtaining a copy of this software and associated documentation
@@ -30,137 +32,150 @@
 # =================================================================
 
 from datetime import datetime
-import time
-import unittest
+import json
+import os
 
 from pathlib import Path
-from requests import Session
+import pytest
 
 from pygeoapi.util import yaml_load
+from pygeoapi.admin import (
+    Admin, delete_resource, get_config_, get_resource,
+    get_resources, patch_config, patch_resource, post_resource,
+    put_config, put_resource)
+
+from tests.util import mock_api_request
 
 THISDIR = Path(__file__).resolve().parent
 
 
-class APITest(unittest.TestCase):
-    def setUp(self):
-        """setup test fixtures, etc."""
+@pytest.fixture()
+def admin_config_path(tmp_path, monkeypatch):
+    # create a temporary config file because the test will modify it in place
+    config_path = tmp_path / "config.yml"
+    config_path.write_text(
+        (Path(THISDIR) / "pygeoapi-test-config-admin.yml").read_text()
+    )
 
-        self.admin_endpoint = 'http://localhost:5000/admin/config'
-        self.http = Session()
-        self.http.headers.update({
-            'Content-type': 'application/json',
-            'Accept': 'application/json'
-        })
+    # get_config() reads the config directly, so we need to patch os.environ
+    monkeypatch.setitem(os.environ, "PYGEOAPI_CONFIG", str(config_path))
 
-    def tearDown(self):
-        """return to pristine state"""
+    return config_path
 
-        pass
 
-    def test_admin(self):
+def reload_api(config_path, monkeypatch, openapi):
+    # initialize admin api with current config contents
+    with config_path.open() as config_handle:
+        admin = Admin(yaml_load(config_handle), openapi)
 
-        url = f'{self.admin_endpoint}'
-        content = self.http.get(url).json()
+    # the config paths are set on a class level, so they are set before
+    # we can patch os.environ and need to patch them directly
+    monkeypatch.setattr(admin, "PYGEOAPI_CONFIG", str(config_path))
+    openapi_filename = str(config_path).replace("config.yml", "openapi.yml")
+    monkeypatch.setattr(admin, "PYGEOAPI_OPENAPI", openapi_filename)
 
-        keys = ['logging', 'metadata', 'resources', 'server']
-        self.assertEqual(sorted(content.keys()), keys)
+    return admin
 
-        # PUT configuration
-        with get_abspath('admin-put.json').open() as fh:
-            put = fh.read()
-        response = self.http.put(url, data=put)
-        self.assertEqual(response.status_code, 204)
 
-        # NOTE: we sleep 5 between CRUD requests so as to let gunicorn
-        # restart with the refreshed configuration
-        time.sleep(5)
+def test_admin(monkeypatch, admin_config_path, openapi):
 
-        content = self.http.get(url).json()
-        self.assertEqual(content['logging']['level'], 'INFO')
+    admin_api = reload_api(admin_config_path, monkeypatch, openapi)
 
-        # PATCH configuration
-        with get_abspath('admin-patch.json').open() as fh:
-            patch = fh.read()
+    req = mock_api_request()
+    headers, status_code, content = get_config_(admin_api, req)
 
-        response = self.http.patch(url, data=patch)
-        self.assertEqual(response.status_code, 204)
+    keys = {'logging', 'metadata', 'resources', 'server'}
+    assert set(json.loads(content).keys()) == keys
 
-        time.sleep(5)
+    # PUT configuration
+    with get_abspath('admin-put.json').open() as fh:
+        put = fh.read()
+    req = mock_api_request(data=put)
+    headers, status_code, content = put_config(admin_api, req)
+    assert status_code == 204
 
-        content = self.http.get(url).json()
-        self.assertEqual(content['logging']['level'], 'DEBUG')
+    admin_api = reload_api(admin_config_path, monkeypatch, openapi)
 
-    def test_resources_crud(self):
+    req = mock_api_request()
+    headers, status_code, content = get_config_(admin_api, req)
+    assert json.loads(content)['logging']['level'] == 'INFO'
 
-        url = f'{self.admin_endpoint}/resources'
-        content = self.http.get(url).json()
-        self.assertEqual(len(content.keys()), 1)
+    # PATCH configuration
+    with get_abspath('admin-patch.json').open() as fh:
+        patch = fh.read()
 
-        # POST a new resource
-        with get_abspath('resource-post.json').open() as fh:
-            post_data = fh.read()
+    req = mock_api_request(data=patch)
+    headers, status_code, content = patch_config(admin_api, req)
+    assert status_code == 204
 
-        response = self.http.post(url, data=post_data)
-        self.assertEqual(response.status_code, 201)
-        self.assertEqual(response.text,
-                         'Location: /admin/config/resources/data2')
+    admin_api = reload_api(admin_config_path, monkeypatch, openapi)
 
-        # NOTE: we sleep 5 between CRUD requests so as to let gunicorn
-        # restart with the refreshed configuration
-        time.sleep(5)
+    assert json.loads(content)['logging']['level'] == 'DEBUG'
 
-        content = self.http.get(url).json()
-        self.assertEqual(len(content.keys()), 2)
 
-        with get_abspath('../../pygeoapi-test-config-admin.yml').open() as fh:
-            d = yaml_load(fh)
-            temporal_extent_begin = d['resources']['data2']['extents']['temporal']['begin']  # noqa
-            self.assertIsInstance(temporal_extent_begin, datetime)
+def test_resources_crud(monkeypatch, admin_config_path, openapi):
+    admin_api = reload_api(admin_config_path, monkeypatch, openapi)
 
-        # PUT an existing resource
-        url = f'{self.admin_endpoint}/resources/data2'
-        with get_abspath('resource-put.json').open() as fh:
-            post_data = fh.read()
+    empty_req = mock_api_request()
+    headers, status_code, content = get_resources(admin_api, empty_req)
+    assert len(json.loads(content).keys()) == 1
 
-        response = self.http.put(url, data=post_data)
-        self.assertEqual(response.status_code, 204)
+    # POST a new resource
+    with get_abspath('resource-post.json').open() as fh:
+        post_data = fh.read()
 
-        time.sleep(5)
+    req = mock_api_request(data=post_data)
+    headers, status_code, content = post_resource(admin_api, req)
+    assert status_code == 201
+    assert content == 'Location: //data2'
 
-        content = self.http.get(url).json()
-        self.assertEqual(content['title']['en'],
-                         'Data assets, updated by HTTP PUT')
+    admin_api = reload_api(admin_config_path, monkeypatch, openapi)
 
-        # PATCH an existing resource
-        url = f'{self.admin_endpoint}/resources/data2'
-        with get_abspath('resource-patch.json').open() as fh:
-            post_data = fh.read()
+    headers, status_code, content = get_resources(admin_api, empty_req)
+    assert len(json.loads(content).keys()) == 2
 
-        response = self.http.patch(url, data=post_data)
-        self.assertEqual(response.status_code, 204)
+    d = yaml_load(admin_config_path.read_text())
+    temporal_extent_begin = d['resources']['data2']['extents']['temporal']['begin']  # noqa
+    assert isinstance(temporal_extent_begin, datetime)
 
-        time.sleep(5)
+    # PUT an existing resource
+    with get_abspath('resource-put.json').open() as fh:
+        post_data = fh.read()
 
-        content = self.http.get(url).json()
-        self.assertEqual(content['title']['en'],
-                         'Data assets, updated by HTTP PATCH')
+    req = mock_api_request(data=post_data)
+    headers, status_code, content = put_resource(admin_api, req, 'data2')
+    assert status_code == 204
 
-        # DELETE an existing new resource
-        response = self.http.delete(url)
-        self.assertEqual(response.status_code, 204)
+    headers, status_code, content = get_resource(admin_api, empty_req, 'data2')
+    assert (
+        json.loads(content)['title']['en'] ==
+        'Data assets, updated by HTTP PUT'
+    )
 
-        time.sleep(5)
+    # PATCH an existing resource
+    with get_abspath('resource-patch.json').open() as fh:
+        post_data = fh.read()
 
-        url = f'{self.admin_endpoint}/resources'
-        content = self.http.get(url).json()
-        self.assertEqual(len(content.keys()), 1)
+    req = mock_api_request(data=post_data)
+    headers, status_code, content = patch_resource(admin_api, req, 'data2')
+    assert status_code == 204
+
+    headers, status_code, content = get_resource(admin_api, empty_req, 'data2')
+    assert (
+        json.loads(content)['title']['en'] ==
+        'Data assets, updated by HTTP PATCH'
+    )
+
+    # DELETE an existing new resource
+    headers, status_code, content = \
+        delete_resource(admin_api, empty_req, 'data2')
+    assert status_code == 204
+
+    headers, status_code, content = get_resources(admin_api, empty_req)
+    assert len(json.loads(content).keys()) == 1
 
 
 def get_abspath(filepath):
     """helper function absolute file access"""
 
     return Path(THISDIR) / 'data' / 'admin' / filepath
-
-
-if __name__ == '__main__':
-    unittest.main()
