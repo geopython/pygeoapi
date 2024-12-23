@@ -32,17 +32,18 @@
 # =================================================================
 
 from datetime import datetime
+import json
 import os
 
 from pathlib import Path
 import pytest
-import json
 
 from pygeoapi.util import yaml_load
 from pygeoapi.admin import (
     Admin, delete_resource, get_config_, get_resource,
     get_resources, patch_config, patch_resource, post_resource,
     put_config, put_resource)
+
 from tests.util import mock_api_request
 
 THISDIR = Path(__file__).resolve().parent
