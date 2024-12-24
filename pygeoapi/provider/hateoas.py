@@ -120,7 +120,7 @@ class HateoasProvider(BaseProvider):
             try:
                 jsondata = _get_json_data(f'{data_path}/collection.json')
                 resource_type = 'Collection'
-                for key in ['license', 'extent']:
+                for key in ['license', 'extent', 'id']:
                     if key in jsondata:
                         content[key] = jsondata[key]
             except Exception:
@@ -151,7 +151,7 @@ class HateoasProvider(BaseProvider):
                     child_links.append({
                         'rel': 'child',
                         'href': newpath,
-                        'type': 'text/html',
+                        'type': 'application/json',
                         'created': "-",
                         'entry:type': 'Catalog'
                     })
@@ -159,7 +159,7 @@ class HateoasProvider(BaseProvider):
                     child_links.append({
                         'rel': 'child',
                         'href': newpath,
-                        'type': 'text/html',
+                        'type': 'application/json',
                         'created': "-",
                         'entry:type': 'Collection'
                     })
