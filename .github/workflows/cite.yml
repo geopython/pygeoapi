@@ -46,8 +46,8 @@ jobs:
       - name: test ogcapi-features compliancy
         uses: OSGEO/ogc-cite-action@main
         with:
-          test-suite-identifier: ${{ matrix.test-suite.suite-id }}
-          test-session-arguments: ${{ matrix.test-suite.arguments }}
+          test_suite_identifier: ${{ matrix.test-suite.suite-id }}
+          test_session_arguments: ${{ matrix.test-suite.arguments }}
         env:
           teamengine_username: ${{ secrets.TEAMENGINE_USERNAME }}
           teamengine_password: ${{ secrets.TEAMENGINE_PASSWORD }}
