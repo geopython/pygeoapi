@@ -5,11 +5,13 @@
 #          John A Stevenson <jostev@bgs.ac.uk>
 #          Colin Blackburn <colb@bgs.ac.uk>
 #          Francesco Bartoli <xbartolone@gmail.com>
+#          Bernhard Mallinger <bernhard.mallinger@eox.at>
 #
 # Copyright (c) 2019 Just van den Broecke
 # Copyright (c) 2024 Tom Kralidis
 # Copyright (c) 2022 John A Stevenson and Colin Blackburn
 # Copyright (c) 2023 Francesco Bartoli
+# Copyright (c) 2024 Bernhard Mallinger
 #
 # Permission is hereby granted, free of charge, to any person
 # obtaining a copy of this software and associated documentation
@@ -48,7 +50,8 @@ from pygeofilter.parsers.ecql import parse
 
 from pygeoapi.api import API
 from pygeoapi.api.itemtypes import (
-    get_collection_items, get_collection_item, post_collection_items
+    get_collection_items, get_collection_item, manage_collection_item,
+    post_collection_items
 )
 from pygeoapi.provider.base import (
     ProviderConnectionError,
@@ -105,6 +108,25 @@ def config_types():
         'table': 'foo',
         'geom_field': 'the_geom'
     }
+
+
+@pytest.fixture()
+def data():
+    return json.dumps({
+        'type': 'Feature',
+        'geometry': {
+            'type': 'MultiLineString',
+            'coordinates': [
+                [[100.0, 0.0], [101.0, 0.0]],
+                [[101.0, 0.0], [100.0, 1.0]],
+            ]
+        },
+        'properties': {
+            'identifier': 123,
+            'name': 'Flowy McFlow',
+            'waterway': 'river'
+        }
+    })
 
 
 @pytest.fixture()
@@ -795,3 +817,44 @@ def test_get_collection_items_postgresql_automap_naming_conflicts(pg_api_):
     assert code == HTTPStatus.OK
     features = json.loads(response).get('features')
     assert len(features) == 0
+
+
+def test_transaction_basic_workflow(pg_api_, data):
+    # create
+    req = mock_api_request(data=data)
+    headers, code, content = manage_collection_item(
+        pg_api_, req, action='create', dataset='hot_osm_waterways')
+    assert code == HTTPStatus.CREATED
+
+    # update
+    data_parsed = json.loads(data)
+    new_name = data_parsed['properties']['name'] + ' Flow'
+    data_parsed['properties']['name'] = new_name
+    req = mock_api_request(data=json.dumps(data_parsed))
+    headers, code, content = manage_collection_item(
+        pg_api_, req, action='update', dataset='hot_osm_waterways',
+        identifier=123)
+    assert code == HTTPStatus.NO_CONTENT
+
+    # verify update
+    req = mock_api_request()
+    headers, code, content = get_collection_item(
+        pg_api_, req, 'hot_osm_waterways', 123)
+    assert json.loads(content)['properties']['name'] == new_name
+
+    # delete
+    req = mock_api_request(data=data)
+    headers, code, content = manage_collection_item(
+        pg_api_, req, action='delete', dataset='hot_osm_waterways',
+        identifier=123)
+    assert code == HTTPStatus.OK
+
+
+def test_transaction_create_handles_invalid_input_data(pg_api_, data):
+    data_parsed = json.loads(data)
+    data_parsed['properties']['invalid-column'] = 'foo'
+
+    req = mock_api_request(data=json.dumps(data_parsed))
+    headers, code, content = manage_collection_item(
+        pg_api_, req, action='create', dataset='hot_osm_waterways')
+    assert 'generic error' in content
