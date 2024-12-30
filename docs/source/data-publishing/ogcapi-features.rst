@@ -29,7 +29,7 @@ parameters.
    `OpenSearch`_,✅/✅,results/hits,✅,✅,✅,✅,✅,✅,✅
    `Oracle`_,✅/✅,results/hits,✅,❌,✅,✅,❌,❌,✅
    `Parquet`_,✅/✅,results/hits,✅,✅,❌,✅,❌,❌,✅
-   `PostgreSQL`_,✅/✅,results/hits,✅,✅,✅,✅,✅,❌,✅
+   `PostgreSQL`_,✅/✅,results/hits,✅,✅,✅,✅,✅,✅,✅
    `SQLiteGPKG`_,✅/❌,results/hits,✅,❌,❌,✅,❌,❌,✅
    `SensorThings API`_,✅/✅,results/hits,✅,✅,✅,✅,❌,❌,✅
    `Socrata`_,✅/✅,results/hits,✅,✅,✅,✅,❌,❌,✅

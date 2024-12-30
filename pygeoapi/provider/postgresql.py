@@ -6,11 +6,13 @@
 #          John A Stevenson <jostev@bgs.ac.uk>
 #          Colin Blackburn <colb@bgs.ac.uk>
 #          Francesco Bartoli <xbartolone@gmail.com>
+#          Bernhard Mallinger <bernhard.mallinger@eox.at>
 #
 # Copyright (c) 2018 Jorge Samuel Mendes de Jesus
 # Copyright (c) 2024 Tom Kralidis
 # Copyright (c) 2022 John A Stevenson and Colin Blackburn
 # Copyright (c) 2023 Francesco Bartoli
+# Copyright (c) 2024 Bernhard Mallinger
 #
 # Permission is hereby granted, free of charge, to any person
 # obtaining a copy of this software and associated documentation
@@ -56,11 +58,12 @@ import logging
 
 from geoalchemy2 import Geometry  # noqa - this isn't used explicitly but is needed to process Geometry columns
 from geoalchemy2.functions import ST_MakeEnvelope
-from geoalchemy2.shape import to_shape
+from geoalchemy2.shape import to_shape, from_shape
 from pygeofilter.backends.sqlalchemy.evaluate import to_filter
 import pyproj
 import shapely
-from sqlalchemy import create_engine, MetaData, PrimaryKeyConstraint, asc, desc
+from sqlalchemy import create_engine, MetaData, PrimaryKeyConstraint, asc, \
+    desc, delete
 from sqlalchemy.engine import URL
 from sqlalchemy.exc import ConstraintColumnNotFoundError, \
     InvalidRequestError, OperationalError
@@ -69,7 +72,8 @@ from sqlalchemy.orm import Session, load_only
 from sqlalchemy.sql.expression import and_
 
 from pygeoapi.provider.base import BaseProvider, \
-    ProviderConnectionError, ProviderQueryError, ProviderItemNotFoundError
+    ProviderConnectionError, ProviderInvalidDataError, ProviderQueryError, \
+    ProviderItemNotFoundError
 from pygeoapi.util import get_transform_from_crs
 
 
@@ -307,6 +311,65 @@ class PostgreSQLProvider(BaseProvider):
 
         return feature
 
+    def create(self, item):
+        """
+        Create a new item
+
+        :param item: `dict` of new item
+
+        :returns: identifier of created item
+        """
+
+        identifier, json_data = self._load_and_prepare_item(
+            item, accept_missing_identifier=True)
+
+        new_instance = self._feature_to_sqlalchemy(json_data, identifier)
+        with Session(self._engine) as session:
+            session.add(new_instance)
+            session.commit()
+            result_id = getattr(new_instance, self.id_field)
+
+        # NOTE: need to use id from instance in case it's generated
+        return result_id
+
+    def update(self, identifier, item):
+        """
+        Updates an existing item
+
+        :param identifier: feature id
+        :param item: `dict` of partial or full item
+
+        :returns: `bool` of update result
+        """
+
+        identifier, json_data = self._load_and_prepare_item(
+            item, raise_if_exists=False)
+
+        new_instance = self._feature_to_sqlalchemy(json_data, identifier)
+        with Session(self._engine) as session:
+            session.merge(new_instance)
+            session.commit()
+
+        return True
+
+    def delete(self, identifier):
+        """
+        Deletes an existing item
+
+        :param identifier: item id
+
+        :returns: `bool` of deletion result
+        """
+        with Session(self._engine) as session:
+            id_column = getattr(self.table_model, self.id_field)
+            result = session.execute(
+                delete(self.table_model)
+                .where(id_column == identifier)
+            )
+            session.commit()
+
+        return result.rowcount > 0
+
     def _store_db_parameters(self, parameters, options):
         self.db_user = parameters.get('user')
         self.db_host = parameters.get('host')
@@ -342,6 +405,26 @@ class PostgreSQLProvider(BaseProvider):
             feature['geometry'] = None
 
         return feature
+
+    def _feature_to_sqlalchemy(self, json_data, identifier=None):
+        attributes = {**json_data['properties']}
+        # 'identifier' key maybe be present in geojson properties, but might
+        # not be a valid db field
+        attributes.pop('identifier', None)
+        attributes[self.geom] = from_shape(
+            shapely.geometry.shape(json_data['geometry']),
+            # NOTE: for some reason, postgis in the github action requires
+            # explicit crs information. i think it's valid to assume 4326:
+            # https://portal.ogc.org/files/108198#feature-crs
+            srid=4326
+        )
+        attributes[self.id_field] = identifier
+
+        try:
+            return self.table_model(**attributes)
+        except Exception as e:
+            LOGGER.exception('Failed to create db model')
+            raise ProviderInvalidDataError(str(e))
 
     def _get_order_by_clauses(self, sort_by, table_model):
         # Build sort_by clauses if provided

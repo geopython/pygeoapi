@@ -134,6 +134,7 @@ resources:
                 user: postgres
                 password: postgres
                 search_path: [osm, public]
+            editable: true
             options:
                 # Maximum time to wait while connecting, in seconds.
                 connect_timeout: 10
