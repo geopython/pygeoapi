@@ -31,6 +31,7 @@
 
 from json.decoder import JSONDecodeError
 import logging
+import re
 from requests import Session
 from urllib.parse import urlparse
 
@@ -38,7 +39,8 @@ from pygeoapi.config import get_config
 from pygeoapi.provider.base import (
     BaseProvider, ProviderQueryError, ProviderConnectionError)
 from pygeoapi.util import (
-    url_join, get_provider_default, crs_transform, get_base_url)
+    url_join, get_provider_default, crs_transform, get_base_url,
+    get_typed_value)
 
 LOGGER = logging.getLogger(__name__)
 
@@ -154,6 +156,60 @@ class SensorThingsProvider(BaseProvider):
         """
         response = self._get_response(f'{self._url}({identifier})')
         return self._make_feature(response)
+
+    def create(self, item):
+        """
+        Create a new item
+
+        :param item: `dict` of new item
+
+        :returns: identifier of created item
+        """
+        response = self.http.post(self._url, json=item)
+
+        if response.status_code == 201:
+            location = response.headers.get("Location")
+            iotid = location[location.find("(")+1:location.find(")")]
+
+            LOGGER.debug(f'Feature created with @iot.id: {iotid}')
+            return get_typed_value(iotid)
+        else:
+            raise ProviderConnectionError(f"Failed to create item: {response.text}")
+
+    def update(self, identifier, item):
+        """
+        Updates an existing item
+
+        :param identifier: feature id
+        :param item: `dict` of partial or full item
+
+        :returns: `bool` of update result
+        """
+        id = f"'{identifier}'" if isinstance(identifier, str) else str(identifier)
+        LOGGER.debug(f'Updating @iot.id: {id}')
+        response = self.http.patch(f"{self._url}({id})", json=item)
+
+        if response.status_code == 200:
+            return True
+        else:
+            raise ProviderConnectionError(f"Failed to update item: {response.text}")
+
+    def delete(self, identifier):
+        """
+        Deletes an existing item
+
+        :param identifier: item id
+
+        :returns: `bool` of deletion result
+        """
+        id = f"'{identifier}'" if isinstance(identifier, str) else str(identifier)
+        LOGGER.debug(f'Deleting @iot.id: {id}')
+        response = self.http.delete(f"{self._url}({id})")
+
+        if response.status_code == 200:
+            return True
+        else:
+            raise ProviderConnectionError(f"Failed to delete item: {response.text}")
 
     def _load(self, offset=0, limit=10, resulttype='results',
               bbox=[], datetime_=None, properties=[], sortby=[],

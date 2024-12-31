@@ -162,3 +162,45 @@ def test_custom_expand(config):
     assert 'Observations' in fields
     assert 'ObservedProperty' not in fields
     assert 'Sensor' not in fields
+
+POST_BODY = {
+    "@iot.id": 121,
+    "name": "Temperature Datastream",
+    "description": "Datastream for measuring temperature in Celsius.",
+    "observationType": "http://www.opengis.net/def/observationType/OGC-OM/2.0/OM_Measurement",
+    "unitOfMeasurement": {
+        "name": "Degree Celsius",
+        "symbol": "degC",
+        "definition": "http://www.qudt.org/qudt/owl/1.0.0/unit/Instances.html#DegreeCelsius"
+    },
+    "Thing": {"@iot.id": 2},
+    "ObservedProperty": {
+        "name": "Area Temperature",
+        "description": "The degree or intensity of heat present in the area",
+        "definition": "http://www.qudt.org/qudt/owl/1.0.0/quantity/Instances.html#AreaTemperature"
+    },
+    "Sensor": {"@iot.id": 5},
+    "properties": {
+        "uri": "test"
+    }
+}
+
+def test_transactions(config):
+    p = SensorThingsProvider(config)
+    results = p.query(resulttype='hits')
+    assert results['numberMatched'] == 120
+
+    id = p.create(POST_BODY)
+    assert id == 121
+    results = p.query(resulttype='hits')
+    assert results['numberMatched'] == 121
+
+    result = p.update(id, {"name": "Temperature"})
+    assert result == True
+
+    datastream = p.get(121)
+    assert datastream['properties']['name'] == 'Temperature'
+
+    assert p.delete(id)
+    results = p.query(resulttype='hits')
+    assert results['numberMatched'] == 120
