@@ -31,13 +31,13 @@
 
 from json.decoder import JSONDecodeError
 import logging
-import re
 from requests import Session
 from urllib.parse import urlparse
 
 from pygeoapi.config import get_config
 from pygeoapi.provider.base import (
-    BaseProvider, ProviderQueryError, ProviderConnectionError)
+    BaseProvider, ProviderQueryError, ProviderConnectionError,
+    ProviderInvalidDataError)
 from pygeoapi.util import (
     url_join, get_provider_default, crs_transform, get_base_url,
     get_typed_value)
@@ -174,7 +174,8 @@ class SensorThingsProvider(BaseProvider):
             LOGGER.debug(f'Feature created with @iot.id: {iotid}')
             return get_typed_value(iotid)
         else:
-            raise ProviderConnectionError(f"Failed to create item: {response.text}")
+            msg = f"Failed to create item: {response.text}"
+            raise ProviderInvalidDataError(msg)
 
     def update(self, identifier, item):
         """
@@ -185,14 +186,16 @@ class SensorThingsProvider(BaseProvider):
 
         :returns: `bool` of update result
         """
-        id = f"'{identifier}'" if isinstance(identifier, str) else str(identifier)
+        id = f"'{identifier}'" \
+             if isinstance(identifier, str) else str(identifier)
         LOGGER.debug(f'Updating @iot.id: {id}')
         response = self.http.patch(f"{self._url}({id})", json=item)
 
         if response.status_code == 200:
             return True
         else:
-            raise ProviderConnectionError(f"Failed to update item: {response.text}")
+            msg = f'Failed to update item: {response.text}'
+            raise ProviderConnectionError(msg)
 
     def delete(self, identifier):
         """
@@ -202,14 +205,16 @@ class SensorThingsProvider(BaseProvider):
 
         :returns: `bool` of deletion result
         """
-        id = f"'{identifier}'" if isinstance(identifier, str) else str(identifier)
+        id = f"'{identifier}'" \
+             if isinstance(identifier, str) else str(identifier)
         LOGGER.debug(f'Deleting @iot.id: {id}')
         response = self.http.delete(f"{self._url}({id})")
 
         if response.status_code == 200:
             return True
         else:
-            raise ProviderConnectionError(f"Failed to delete item: {response.text}")
+            msg = f"Failed to delete item: {response.text}"
+            raise ProviderConnectionError(msg)
 
     def _load(self, offset=0, limit=10, resulttype='results',
               bbox=[], datetime_=None, properties=[], sortby=[],
@@ -266,7 +271,8 @@ class SensorThingsProvider(BaseProvider):
             try:
                 # Ensure we only use provided network location
                 next_ = urlparse(response['@iot.nextLink'])._replace(
-                    scheme=self.parsed_url.scheme, netloc=self.parsed_url.netloc
+                    scheme=self.parsed_url.scheme,
+                    netloc=self.parsed_url.netloc
                 ).geturl()
 
                 LOGGER.debug('Fetching next set of values')
