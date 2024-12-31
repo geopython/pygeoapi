@@ -264,13 +264,12 @@ class SensorThingsProvider(BaseProvider):
         v = response.get('value')
         while len(v) < limit:
             try:
-                LOGGER.debug('Fetching next set of values')
-                next_ = response['@iot.nextLink']
-
                 # Ensure we only use provided network location
-                next_ = next_.replace(urlparse(next_).netloc,
-                                      urlparse(self.data).netloc)
+                next_ = urlparse(response['@iot.nextLink'])._replace(
+                    scheme=self.parsed_url.scheme, netloc=self.parsed_url.netloc
+                ).geturl()
 
+                LOGGER.debug('Fetching next set of values')
                 response = self._get_response(next_)
                 v.extend(response['value'])
             except (ProviderConnectionError, KeyError):
@@ -572,6 +571,8 @@ class SensorThingsProvider(BaseProvider):
             self.entity = self._get_entity(self.data)
             self._url = self.data
             self.data = self._url.rstrip(f'/{self.entity}')
+
+        self.parsed_url = urlparse(self.data)
 
         # Default id
         if self.id_field:
