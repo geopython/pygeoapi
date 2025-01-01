@@ -378,7 +378,7 @@ async def collection_coverage(request: Request, collection_id=None):
         skip_valid_check=True)
 
 
-async def collection_map(request: Request, collection_id, style_id=None):
+async def collection_map(request: Request, collection_id=None, style_id=None):
     """
     OGC API - Maps map render endpoint
 
@@ -488,6 +488,14 @@ async def get_collection_edr_query(request: Request, collection_id=None, instanc
 
     if 'instance_id' in request.path_params:
         instance_id = request.path_params['instance_id']
+
+    if (request.url.path.endswith('instances') or
+            (instance_id is not None and
+             request.url.path.endswith(instance_id))):
+        return await execute_from_starlette(
+            edr_api.get_collection_edr_instances, request, collection_id,
+            instance_id
+        )
 
     if 'location_id' in request.path_params:
         location_id = request.path_params['location_id']
@@ -668,6 +676,8 @@ api_routes = [
     Route('/collections/{collection_id:path}/corridor', get_collection_edr_query),  # noqa
     Route('/collections/{collection_id:path}/locations', get_collection_edr_query),  # noqa
     Route('/collections/{collection_id:path}/locations/{location_id}', get_collection_edr_query),  # noqa
+    Route('/collections/{collection_id:path}/instances', get_collection_edr_query),  # noqa
+    Route('/collections/{collection_id:path}/instances/{instance_id}', get_collection_edr_query),  # noqa
     Route('/collections/{collection_id:path}/instances/{instance_id}/position', get_collection_edr_query),  # noqa
     Route('/collections/{collection_id:path}/instances/{instance_id}/area', get_collection_edr_query),  # noqa
     Route('/collections/{collection_id:path}/instances/{instance_id}/cube', get_collection_edr_query),  # noqa
@@ -679,7 +689,7 @@ api_routes = [
     Route('/collections', collections),
     Route('/collections/{collection_id:path}', collections),
     Route('/stac', stac_catalog_root),
-    Route('/stac/{path:path}', stac_catalog_path),
+    Route('/stac/{path:path}', stac_catalog_path)
 ]
 
 admin_routes = [

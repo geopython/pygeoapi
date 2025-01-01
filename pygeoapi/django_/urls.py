@@ -193,6 +193,16 @@ urlpatterns = [
         name='collection-edr-corridor',
     ),
     path(
+        'collections/<str:collection_id>/instances/<str:instance_id>',
+        views.get_collection_edr_query,
+        name='collection-edr-instance',
+    ),
+    path(
+        'collections/<str:collection_id>/instances',
+        views.get_collection_edr_query,
+        name='collection-edr-instances',
+    ),
+    path(
         'collections/<str:collection_id>/instances/<str:instance_id>/position',
         views.get_collection_edr_query,
         name='collection-edr-instance-position',

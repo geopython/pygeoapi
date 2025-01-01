@@ -1,0 +1,42 @@
+{% extends "_base.html" %}
+{% block title %}{{ super() }} {{ data['title'] }} {% endblock %}
+{% block crumbs %}{{ super() }}
+/ <a href="{{ data['collections_path'] }}">{% trans %}Collections{% endtrans %}</a>
+{% for link in data['links'] %}
+  {% if link.rel == 'collection' %} /
+    <a href="{{ data['dataset_path'] }}">{{ link['title'] | truncate( 25 ) }}</a>
+    {% set col_title = link['title'] %}
+  {% endif %}
+{% endfor %}
+/ <a href="{{ data['dataset_path'] }}/instances">{% trans %}Instances{% endtrans %}</a>
+/ <a href="{{ data['dataset_path'] }}/instances/{{ data['id'] }}">{{ data['id'] }}</a>
+{% endblock %}
+{% block body %}
+    <section id="collection">
+      <h1>{{ data['title'] }}</h1>
+      <p>{{ data['description'] }}</p>
+      <p>
+        {% for kw in data['keywords'] %}
+          <span class="badge text-bg-primary bg-primary">{{ kw }}</span>
+        {% endfor %}
+      </p>
+      <h3>{% trans %}Instance{% endtrans %} {{ data['id'] }}</h3>
+    </section>
+    <h3>{% trans %}Links{% endtrans %}</h3>
+    <ul>
+    {% for key, value in data['data_queries'].items() %}
+        <li>
+          <a title="{{ value['link']['rel'] }}" href="{{ value['link']['href'] }}">
+          <span>{{ value['link']['title'] }}</span>
+          </a>
+        </li>
+    {% endfor %}
+    {% for link in data['links'] %}
+        <li>
+          <a title="{{ link['rel'] }}" href="{{ link['href'] }}">
+          <span>{{ link['title'] }}</span> (<span>{{ link['type'] }}</span>)
+          </a>
+        </li>
+   {% endfor %}
+    </ul>
+{% endblock %}
