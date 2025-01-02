@@ -4,6 +4,9 @@ on:
   push:
   pull_request:
 
+env:
+  COLUMNS: 120
+
 
 jobs:
 
@@ -48,10 +51,5 @@ jobs:
         with:
           test_suite_identifier: ${{ matrix.test-suite.suite-id }}
           test_session_arguments: ${{ matrix.test-suite.arguments }}
-          treat_skipped_tests_as_failures: "true"
-          exit_with_error_on_suite_failed_result: "true"
-        env:
-          teamengine_username: ${{ secrets.TEAMENGINE_USERNAME }}
-          teamengine_password: ${{ secrets.TEAMENGINE_PASSWORD }}
           treat_skipped_tests_as_failures: "true"
           exit_with_error_on_suite_failed_result: "true"
