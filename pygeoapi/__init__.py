@@ -5,7 +5,7 @@
 #
 # Copyright (c) 2021 Tom Kralidis
 # Copyright (c) 2023 Ricardo Garcia Silva
-# Copyright (c) 2024 Angelos Tzotsos
+# Copyright (c) 2025 Angelos Tzotsos
 #
 # Permission is hereby granted, free of charge, to any person
 # obtaining a copy of this software and associated documentation
@@ -30,7 +30,7 @@
 #
 # =================================================================
 
-__version__ = '0.19.dev0'
+__version__ = '0.19.0'
 
 import click
 try:
