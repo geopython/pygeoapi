@@ -451,9 +451,26 @@ def get_oas_30(cfg: dict, locale: str) -> tuple[list[dict[str, str]], dict[str, 
 
             for eqe in edr_query_endpoints:
                 if eqe['qt'] == 'cube':
-                    spatial_parameter = 'bbox'
+                    spatial_parameter = {
+                        'description': 'Only features that have a geometry that intersects the bounding box are selected.The bounding box is provided as four or six numbers, depending on whether the coordinate reference system includes a vertical axis (height or depth).',  # noqa
+                        'explode': False,
+                        'in': 'query',
+                        'name': 'bbox',
+                        'required': True,
+                        'schema': {
+                            'items': {
+                                'type': 'number'
+                            },
+                            'maxItems': 6,
+                            'minItems': 4,
+                            'type': 'array'
+                        },
+                        'style': 'form'
+                    }
                 else:
-                    spatial_parameter = f"{eqe['qt']}Coords"
+                    spatial_parameter = {
+                        '$ref': f"{OPENAPI_YAML['oaedr']}/parameters/{eqe['qt']}Coords.yaml"  # noqa
+                    }
                 paths[eqe['path']] = {
                     'get': {
                         'summary': f"query {v['description']} by {eqe['qt']}",
@@ -461,7 +478,7 @@ def get_oas_30(cfg: dict, locale: str) -> tuple[list[dict[str, str]], dict[str, 
                         'tags': [k],
                         'operationId': eqe['op_id'],
                         'parameters': [
-                            {'$ref': f"{OPENAPI_YAML['oaedr']}/parameters/{spatial_parameter}.yaml"},  # noqa
+                            spatial_parameter,
                             {'$ref': f"{OPENAPI_YAML['oapif-1']}#/components/parameters/datetime"},  # noqa
                             {'$ref': f"{OPENAPI_YAML['oaedr']}/parameters/parameter-name.yaml"},  # noqa
                             {'$ref': f"{OPENAPI_YAML['oaedr']}/parameters/z.yaml"},  # noqa
