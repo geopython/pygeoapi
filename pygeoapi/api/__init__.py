@@ -1113,12 +1113,12 @@ def describe_collections(api: API, request: APIRequest,
                 'href': f'{api.get_collections_url()}/{k}/items?f={F_HTML}'  # noqa
             })
 
-            # OAPIF Part 2 - list supported CRSs and StorageCRS
-            if collection_data_type == 'feature':
-                collection['crs'] = get_supported_crs_list(collection_data, DEFAULT_CRS_LIST) # noqa
-                collection['storageCRS'] = collection_data.get('storage_crs', DEFAULT_STORAGE_CRS) # noqa
-                if 'storage_crs_coordinate_epoch' in collection_data:
-                    collection['storageCrsCoordinateEpoch'] = collection_data.get('storage_crs_coordinate_epoch') # noqa
+        # OAPIF Part 2 - list supported CRSs and StorageCRS
+        if collection_data_type in ['edr', 'feature']:
+            collection['crs'] = get_supported_crs_list(collection_data, DEFAULT_CRS_LIST) # noqa
+            collection['storageCRS'] = collection_data.get('storage_crs', DEFAULT_STORAGE_CRS) # noqa
+            if 'storage_crs_coordinate_epoch' in collection_data:
+                collection['storageCrsCoordinateEpoch'] = collection_data.get('storage_crs_coordinate_epoch') # noqa
 
         elif collection_data_type == 'coverage':
             # TODO: translate
@@ -1235,6 +1235,12 @@ def describe_collections(api: API, request: APIRequest,
                         'id': key,
                         'type': 'Parameter',
                         'name': value['title'],
+                        'observedProperty': {
+                            'label': {
+                                'id': key,
+                                'en': value['title']
+                            },
+                        },
                         'unit': {
                             'label': {
                                 'en': value['title']
@@ -1250,8 +1256,11 @@ def describe_collections(api: API, request: APIRequest,
                 data_query = {
                     'link': {
                         'href': f'{api.get_collections_url()}/{k}/{qt}',
-                        'rel': 'data'
-                     }
+                        'rel': 'data',
+                        'variables': {
+                            'query_type': qt
+                        }
+                    }
                 }
                 collection['data_queries'][qt] = data_query
 
@@ -1264,13 +1273,13 @@ def describe_collections(api: API, request: APIRequest,
                     'type': 'application/json',
                     'rel': 'data',
                     'title': title1,
-                    'href': f'{api.get_collections_url()}/{k}/{qt}?f={F_JSON}'  # noqa
+                    'href': f'{api.get_collections_url()}/{k}/{qt}?f={F_JSON}'
                 })
                 collection['links'].append({
                     'type': FORMAT_TYPES[F_HTML],
                     'rel': 'data',
                     'title': title2,
-                    'href': f'{api.get_collections_url()}/{k}/{qt}?f={F_HTML}'  # noqa
+                    'href': f'{api.get_collections_url()}/{k}/{qt}?f={F_HTML}'
                 })
 
         if dataset is not None and k == dataset:

@@ -56,6 +56,35 @@ metadata:
         role: pointOfContact
 
 resources:
+    icoads-sst:
+        type: collection
+        title: International Comprehensive Ocean-Atmosphere Data Set (ICOADS)
+        description: International Comprehensive Ocean-Atmosphere Data Set (ICOADS)
+        keywords:
+            - icoads
+            - sst
+            - air temperature
+        extents:
+            spatial:
+                bbox: [-180,-90,180,90]
+                crs: http://www.opengis.net/def/crs/OGC/1.3/CRS84
+            temporal:
+                begin: 2000-01-16T06:00:00Z
+                end: 2000-12-16T01:20:06Z
+        links:
+            - type: text/html
+              rel: canonical
+              title: information
+              href: https://psl.noaa.gov/data/gridded/data.coads.1deg.html
+              hreflang: en-US
+        providers:
+            - type: edr
+              name: xarray-edr
+              data: ../data/coads_sst.nc
+              format:
+                  name: NetCDF
+                  mimetype: application/x-netcdf
+
     canada-hydat-daily-mean-02hc003:
         type: collection
         title: Daily Mean of Water Level or Flow
