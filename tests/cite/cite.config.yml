@@ -125,10 +125,6 @@ resources:
                 begin: 2011-11-11T00:00:00Z
                 end: null  # or empty
         providers:
-            - type: feature
-              name: GeoJSON
-              data: ../data/ne_110m_lakes.geojson
-              id_field: id
             - type: tile
               name: MVT-tippecanoe
               data: ../data/tiles/ne_110m_lakes
