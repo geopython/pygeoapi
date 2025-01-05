@@ -426,6 +426,14 @@ def get_collection_edr_query(
     :returns: Django HTTP response
     """
 
+    if (request.path.endswith('instances') or
+            (instance_id is not None and
+             request.path.endswith(instance_id))):
+        return execute_from_django(
+            edr_api.get_collection_edr_instances, request, collection_id,
+            instance_id
+        )
+
     if location_id:
         query_type = 'locations'
     else:

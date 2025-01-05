@@ -48,13 +48,14 @@ from shapely.wkt import loads as shapely_loads
 
 from pygeoapi import l10n
 from pygeoapi.plugin import load_plugin, PLUGINS
-from pygeoapi.provider.base import ProviderGenericError
+from pygeoapi.provider.base import (
+    ProviderGenericError, ProviderItemNotFoundError)
 from pygeoapi.util import (
     filter_providers_by_type, get_provider_by_type, render_j2_template,
     to_json, filter_dict_by_key_value
 )
 
-from . import (APIRequest, API, F_COVERAGEJSON, F_HTML, F_JSONLD,
+from . import (APIRequest, API, F_COVERAGEJSON, F_HTML, F_JSON, F_JSONLD,
                validate_datetime, validate_bbox)
 
 LOGGER = logging.getLogger(__name__)
@@ -62,6 +63,172 @@ LOGGER = logging.getLogger(__name__)
 CONFORMANCE_CLASSES = [
     'http://www.opengis.net/spec/ogcapi-edr-1/1.0/conf/core'
 ]
+
+
+def get_collection_edr_instances(api: API, request: APIRequest, dataset,
+                                 instance_id=None) -> Tuple[dict, int, str]:
+    """
+    Queries collection EDR instances
+
+    :param request: APIRequest instance with query params
+    :param dataset: dataset name
+
+    :returns: tuple of headers, status code, content
+    """
+
+    data = {
+        'instances': [],
+        'links': []
+    }
+
+    if not request.is_valid(PLUGINS['formatter'].keys()):
+        return api.get_format_exception(request)
+    headers = request.get_response_headers(api.default_locale,
+                                           **api.api_headers)
+    collections = filter_dict_by_key_value(api.config['resources'],
+                                           'type', 'collection')
+
+    if dataset not in collections.keys():
+        msg = 'Collection not found'
+        return api.get_exception(
+            HTTPStatus.NOT_FOUND, headers, request.format, 'NotFound', msg)
+
+    uri = f'{api.get_collections_url()}/{dataset}'
+
+    LOGGER.debug('Loading provider')
+    try:
+        p = load_plugin('provider', get_provider_by_type(
+            collections[dataset]['providers'], 'edr'))
+    except ProviderGenericError as err:
+        return api.get_exception(
+            err.http_status_code, headers, request.format,
+            err.ogc_exception_code, err.message)
+
+    if instance_id is not None:
+        try:
+            instances = [p.get_instance(instance_id)]
+        except ProviderItemNotFoundError:
+            msg = 'Instance not found'
+            return api.get_exception(
+                HTTPStatus.NOT_FOUND, headers, request.format, 'NotFound', msg)
+    else:
+        instances = p.instances()
+
+    for instance in instances:
+        instance_dict = {
+            'id': instance,
+            'links': [{
+                'href': f'{uri}/instances/{instance}?f={F_JSON}',
+                'rel': request.get_linkrel(F_JSON),
+                'type': 'application/json'
+            }, {
+                'href': f'{uri}/instances/{instance}?f={F_HTML}',
+                'rel': request.get_linkrel(F_HTML),
+                'type': 'text/html'
+            }, {
+                'href': f'{uri}?f={F_HTML}',
+                'rel': 'collection',
+                'title': collections[dataset]['title'],
+                'type': 'text/html'
+            }, {
+                'href': f'{uri}?f={F_JSON}',
+                'rel': 'collection',
+                'title': collections[dataset]['title'],
+                'type': 'application/json'
+            }],
+            'data_queries': {}
+        }
+
+        for qt in p.get_query_types():
+            if qt == 'instances':
+                continue
+            data_query = {
+                'link': {
+                    'href': f'{uri}/instances/{instance}/{qt}',
+                    'rel': 'data',
+                    'title': f'{qt} query'
+                 }
+            }
+            instance_dict['data_queries'][qt] = data_query
+
+        data['instances'].append(instance_dict)
+
+        if instance_id is not None:
+            data = data['instances'][0]
+            data.pop('instances', None)
+            links_uri = f'{uri}/instances/{instance_id}'
+        else:
+            links_uri = f'{uri}/instances'
+
+        if instance_id is None:
+            data['links'].extend([{
+                'href': f'{links_uri}?f={F_JSON}',
+                'rel': request.get_linkrel(F_JSON),
+                'type': 'application/json'
+                }, {
+                'href': f'{links_uri}?f={F_HTML}',
+                'rel': request.get_linkrel(F_HTML),
+                'type': 'text/html'
+            }])
+
+    if request.format == F_HTML:  # render
+        api.set_dataset_templates(dataset)
+
+        serialized_query_params = ''
+        for k, v in request.params.items():
+            if k != 'f':
+                serialized_query_params += '&'
+                serialized_query_params += urllib.parse.quote(k, safe='')
+                serialized_query_params += '='
+                serialized_query_params += urllib.parse.quote(str(v), safe=',')
+
+        if instance_id is None:
+            uri = f'{uri}/instances'
+        else:
+            uri = f'{uri}/instances/{instance_id}'
+
+        data['query_type'] = 'instances'
+        data['query_path'] = uri
+        data['title'] = collections[dataset]['title']
+        data['description'] = collections[dataset]['description']
+        data['keywords'] = collections[dataset]['keywords']
+        data['collections_path'] = api.get_collections_url()
+
+        if instance_id is None:
+            data['dataset_path'] = data['collections_path'] + '/' + uri.split('/')[-2]  # noqa
+            template = 'collections/edr/instances.html'
+        else:
+            data['dataset_path'] = data['collections_path'] + '/' + uri.split('/')[-3]  # noqa
+            template = 'collections/edr/instance.html'
+
+        data['links'] = [{
+            'rel': 'collection',
+            'title': collections[dataset]['title'],
+            'href': f"{data['dataset_path']}?f={F_JSON}",
+            'type': 'text/html'
+        }, {
+            'rel': 'collection',
+            'title': collections[dataset]['title'],
+            'href': f"{data['dataset_path']}?f={F_HTML}",
+            'type': 'application/json'
+        }, {
+            'type': 'application/json',
+            'rel': 'alternate',
+            'title': l10n.translate('This document as JSON', request.locale),
+            'href': f'{uri}?f={F_JSON}{serialized_query_params}'
+        }, {
+            'type': 'application/ld+json',
+            'rel': 'alternate',
+            'title': l10n.translate('This document as JSON-LD', request.locale),  # noqa
+            'href': f'{uri}?f={F_JSONLD}{serialized_query_params}'
+        }]
+
+        content = render_j2_template(api.tpl_config, template, data,
+                                     api.default_locale)
+    else:
+        content = to_json(data, api.pretty_print)
+
+    return headers, HTTPStatus.OK, content
 
 
 def get_collection_edr_query(api: API, request: APIRequest,
@@ -275,7 +442,7 @@ def get_oas_30(cfg: dict, locale: str) -> tuple[list[dict[str, str]], dict[str, 
                     'qt': qt,
                     'op_id': f'query{qt.capitalize()}{k.capitalize()}'
                 })
-                if ep.instances:
+                if 'instances' in ep.get_query_types() and qt != 'instances':
                     edr_query_endpoints.append({
                         'path': f'{collection_name_path}/instances/{{instanceId}}/{qt}',  # noqa
                         'qt': qt,
@@ -314,13 +481,51 @@ def get_oas_30(cfg: dict, locale: str) -> tuple[list[dict[str, str]], dict[str, 
                         }
                     }
                 }
+                if 'instanceId' in eqe['path']:
+                    paths[eqe['path']]['get']['parameters'].insert(0, {
+                        '$ref': f"{OPENAPI_YAML['oaedr']}/parameters/instanceId.yaml"}  # noqa
+                    )
+
+            if 'instances' in ep.get_query_types():
+                paths[f'{collection_name_path}/instances'] = {
+                    'get': {
+                        'summary': f"Get pre-defined instances of {v['description']}",  # noqa
+                        'description': v['description'],
+                        'tags': [k],
+                        'operationId': f'getInstances{k.capitalize()}',
+                        'parameters': [
+                            {'$ref': '#/components/parameters/f'}
+                        ],
+                        'responses': {
+                            '200': {'$ref': f"{OPENAPI_YAML['oapif-1']}#/components/responses/Features"},  # noqa
+                            '400': {'$ref': f"{OPENAPI_YAML['oapif-1']}#/components/responses/InvalidParameter"},  # noqa
+                            '500': {'$ref': f"{OPENAPI_YAML['oapif-1']}#/components/responses/ServerError"}  # noqa
+                        }
+                    }
+                }
+                paths[f'{collection_name_path}/instances/{{instanceId}}'] = {
+                    'get': {
+                        'summary': f"Get {v['description']} instance",
+                        'description': v['description'],
+                        'tags': [k],
+                        'operationId': f'getInstance{k.capitalize()}',
+                        'parameters': [
+                            {'$ref': f"{OPENAPI_YAML['oaedr']}/parameters/instanceId.yaml"},  # noqa
+                            {'$ref': '#/components/parameters/f'}
+                        ],
+                        'responses': {
+                            '200': {'$ref': f"{OPENAPI_YAML['oapif-1']}#/components/responses/Features"},  # noqa
+                        }
+                    }
+                }
+
             if 'locations' in ep.get_query_types():
                 paths[f'{collection_name_path}/locations'] = {
                     'get': {
                         'summary': f"Get pre-defined locations of {v['description']}",  # noqa
                         'description': v['description'],
                         'tags': [k],
-                        'operationId': f'queryLOCATIONS{k.capitalize()}',
+                        'operationId': f'getLocations{k.capitalize()}',
                         'parameters': [
                             {'$ref': f"{OPENAPI_YAML['oaedr']}/parameters/bbox.yaml"},  # noqa
                             {'$ref': f"{OPENAPI_YAML['oapif-1']}#/components/parameters/datetime"},  # noqa
@@ -338,7 +543,7 @@ def get_oas_30(cfg: dict, locale: str) -> tuple[list[dict[str, str]], dict[str, 
                         'summary': f"query {v['description']} by location",
                         'description': v['description'],
                         'tags': [k],
-                        'operationId': f'queryLOCATIONSBYID{k.capitalize()}',
+                        'operationId': f'getLocation{k.capitalize()}',
                         'parameters': [
                             {'$ref': f"{OPENAPI_YAML['oaedr']}/parameters/locationId.yaml"},  # noqa
                             {'$ref': f"{OPENAPI_YAML['oapif-1']}#/components/parameters/datetime"},  # noqa
