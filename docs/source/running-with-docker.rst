@@ -92,7 +92,7 @@ The base Docker image supports two additional environment variables for configur
 
       docker run -p 5000:80 -e PYGEOAPI_SERVER_ADMIN=true -it geopython/pygeoapi
 
-   This does not enable hot reloading of the `pygoeapi` configuration. To learn more about the Admin API see :ref:`admin-api`.
+   This does not enable hot reloading of the `pygeoapi` configuration. To learn more about the Admin API see :ref:`admin-api`.
 
 
 Deploying on a sub-path
