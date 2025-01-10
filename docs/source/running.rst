@@ -100,7 +100,7 @@ To integrate pygeoapi as part of another Starlette application:
    from starlette.applications import Starlette
    from starlette.responses import PlainTextResponse
    from starlette.routing import Route
-   from pygeoapi.starlette_app import app as pygeoapi_app
+   from pygeoapi.starlette_app import APP as pygeoapi_app
 
 
    async def homepage(request):
