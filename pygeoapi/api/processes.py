@@ -484,7 +484,8 @@ def execute_process(api: API, request: APIRequest,
             process_id, data_dict, execution_mode=execution_mode,
             requested_outputs=requested_outputs,
             subscriber=subscriber,
-            requested_response=requested_response)
+            requested_response=requested_response,
+            request_headers=request.headers)
         job_id, mime_type, outputs, status, additional_headers = result
         headers.update(additional_headers or {})
 

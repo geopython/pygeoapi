@@ -53,6 +53,7 @@ class BaseProcessor:
         self.name = processor_def['name']
         self.metadata = process_metadata
         self.supports_outputs = False
+        self.supports_request_headers = False
 
     def set_job_id(self, job_id: str) -> None:
         """
@@ -70,7 +71,8 @@ class BaseProcessor:
 
         pass
 
-    def execute(self, data: dict, outputs: Optional[dict] = None
+    def execute(self, data: dict, outputs: Optional[dict] = None,
+                request_headers: Optional[dict] = None
                 ) -> Tuple[str, Any]:
         """
         execute the process
@@ -81,6 +83,8 @@ class BaseProcessor:
                         required outputs - defaults to all outputs.
                         The value of any key may be an object and include the
                         property `transmissionMode` - defaults to `value`.
+        :param request_headers: `dict` optionally specifying the headers from
+                                the request
         :returns: tuple of MIME type and process response
                   (string or bytes, or dict)
         """
