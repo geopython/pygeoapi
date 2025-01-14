@@ -249,7 +249,7 @@ class ShapelyFunctionsProcessor(BaseProcessor):
         self.supported_formats = [fmt.value for fmt in SupportedFormats]
         super().__init__(processor_def, PROCESS_METADATA)
 
-    def execute(self, data) -> Tuple[str, Dict[str, Any]]:
+    def execute(self, data, outputs=None) -> Tuple[str, Dict[str, Any]]:
         mimetype = "application/json"
         operation = data.get("operation")
         output_format = data.get("output_format")
