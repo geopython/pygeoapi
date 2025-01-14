@@ -326,7 +326,7 @@ async def collection_items(request: Request, collection_id=None, item_id=None):
                         'create', collection_id, skip_valid_check=True)
                 else:
                     return await execute_from_starlette(
-                        itemtypes_api.post_collection_items,
+                        itemtypes_api.get_collection_items,
                         request,
                         collection_id,
                         skip_valid_check=True,

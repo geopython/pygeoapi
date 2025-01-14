@@ -8,7 +8,7 @@
 #          Bernhard Mallinger <bernhard.mallinger@eox.at>
 #
 # Copyright (c) 2019 Just van den Broecke
-# Copyright (c) 2024 Tom Kralidis
+# Copyright (c) 2025 Tom Kralidis
 # Copyright (c) 2022 John A Stevenson and Colin Blackburn
 # Copyright (c) 2023 Francesco Bartoli
 # Copyright (c) 2024 Bernhard Mallinger
@@ -580,7 +580,7 @@ def test_get_collection_items_postgresql_cql_bad_cql(pg_api_, bad_cql):
     assert error_response['description'] == 'Bad CQL text'
 
 
-def test_post_collection_items_postgresql_cql(pg_api_):
+def test_get_collection_items_postgresql_cql_json(pg_api_):
     """
     Test for PostgreSQL CQL - requires local PostgreSQL with appropriate
     data.  See pygeoapi/provider/postgresql.py for details.
@@ -625,7 +625,7 @@ def test_post_collection_items_postgresql_cql(pg_api_):
     assert ids == expected_ids
 
 
-def test_post_collection_items_postgresql_cql_invalid_filter_language(pg_api_):
+def test_get_collection_items_postgresql_cql_json_invalid_filter_language(pg_api_):  # noqa
     """
     Test for PostgreSQL CQL - requires local PostgreSQL with appropriate
     data.  See pygeoapi/provider/postgresql.py for details.
@@ -657,7 +657,7 @@ def test_post_collection_items_postgresql_cql_invalid_filter_language(pg_api_):
     # At some point this may return UnexpectedEOF
     '{"in": {"value": {"property": "id"}, "list": [1, 2}}'
 ])
-def test_post_collection_items_postgresql_cql_bad_cql(pg_api_, bad_cql):
+def test_get_collection_items_postgresql_cql_json_bad_cql(pg_api_, bad_cql):
     """
     Test for PostgreSQL CQL - requires local PostgreSQL with appropriate
     data.  See pygeoapi/provider/postgresql.py for details.
