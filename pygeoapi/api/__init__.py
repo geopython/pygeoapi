@@ -1161,6 +1161,16 @@ def describe_collections(api: API, request: APIRequest,
                         'cellsCount': p._coverage_properties['height'],
                         'resolution': p._coverage_properties['resy']
                     }]
+                    if 'time_range' in p._coverage_properties:
+                        collection['extent']['temporal'] = {
+                            'interval': [p._coverage_properties['time_range']]
+                        }
+                        if 'restime' in p._coverage_properties:
+                            collection['extent']['temporal']['grid'] = {
+                                'resolution': p._coverage_properties['restime']  # noqa
+                            }
+                    if 'uad' in p._coverage_properties:
+                        collection['extent'].update(p._coverage_properties['uad'])  # noqa
 
         try:
             tile = get_provider_by_type(v['providers'], 'tile')
