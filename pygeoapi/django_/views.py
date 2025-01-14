@@ -8,7 +8,7 @@
 # Copyright (c) 2022 Francesco Bartoli
 # Copyright (c) 2022 Luca Delucchi
 # Copyright (c) 2022 Krishna Lodha
-# Copyright (c) 2024 Tom Kralidis
+# Copyright (c) 2025 Tom Kralidis
 #
 # Permission is hereby granted, free of charge, to any person
 # obtaining a copy of this software and associated documentation
@@ -49,7 +49,9 @@ import pygeoapi.api.maps as maps_api
 import pygeoapi.api.processes as processes_api
 import pygeoapi.api.stac as stac_api
 import pygeoapi.api.tiles as tiles_api
-import pygeoapi.admin as admin_api
+
+if settings.PYGEOAPI_CONFIG['server'].get('admin'):
+    import pygeoapi.admin as admin_api
 
 
 def landing_page(request: HttpRequest) -> HttpResponse:

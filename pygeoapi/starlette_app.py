@@ -5,7 +5,7 @@
 #          Abdulazeez Abdulazeez Adeshina <youngestdev@gmail.com>
 #
 # Copyright (c) 2020 Francesco Bartoli
-# Copyright (c) 2024 Tom Kralidis
+# Copyright (c) 2025 Tom Kralidis
 # Copyright (c) 2022 Abdulazeez Abdulazeez Adeshina
 #
 # Permission is hereby granted, free of charge, to any person
@@ -58,7 +58,6 @@ import pygeoapi.api.maps as maps_api
 import pygeoapi.api.processes as processes_api
 import pygeoapi.api.stac as stac_api
 import pygeoapi.api.tiles as tiles_api
-import pygeoapi.admin as admin_api
 from pygeoapi.openapi import load_openapi_document
 from pygeoapi.config import get_config
 from pygeoapi.util import get_api_rules
@@ -71,6 +70,7 @@ if 'PYGEOAPI_OPENAPI' not in os.environ:
 OPENAPI = load_openapi_document()
 
 if CONFIG['server'].get('admin'):
+    import pygeoapi.admin as admin_api
     from pygeoapi.admin import Admin
 
 p = Path(__file__)
