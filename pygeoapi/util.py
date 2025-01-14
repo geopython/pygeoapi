@@ -128,10 +128,10 @@ def dategetter(date_property: str, collection: dict) -> str:
 
     value = collection.get(date_property)
 
-    if value is None:
-        return None
-
-    return value.isoformat()
+    if value is None or isinstance(value, str):
+        return value
+    else:
+        return value.isoformat()
 
 
 def get_typed_value(value: str) -> Union[bool, float, int, str]:
