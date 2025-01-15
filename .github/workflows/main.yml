@@ -65,7 +65,7 @@ jobs:
     - name: Install and run OpenSearch 📦
       uses: esmarkowski/opensearch-github-action@v1.0.0
       with:
-        version: 2.12.0
+        version: 2.18.0
         security-disabled: true
         port: 9209
     - name: Install and run MongoDB

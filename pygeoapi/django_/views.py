@@ -180,7 +180,7 @@ def collection_items(request: HttpRequest, collection_id: str) -> HttpResponse:
                     'create', collection_id, skip_valid_check=True)
             else:
                 response_ = execute_from_django(
-                    itemtypes_api.post_collection_items,
+                    itemtypes_api.get_collection_items,
                     request, collection_id, skip_valid_check=True,)
     elif request.method == 'OPTIONS':
         response_ = execute_from_django(itemtypes_api.manage_collection_item,

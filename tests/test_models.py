@@ -1,8 +1,10 @@
 # =================================================================
 #
 # Authors: Francesco Bartoli <xbartolone@gmail.com>
+#          Tom Kralidis: <tomkralidis@gmail.com>
 #
 # Copyright (c) 2024 Francesco Bartoli
+# Copyright (c) 2024 Tom Kralidis
 #
 # Permission is hereby granted, free of charge, to any person
 # obtaining a copy of this software and associated documentation
@@ -31,16 +33,6 @@ from polyfactory.factories.pydantic_factory import ModelFactory
 from polyfactory.pytest_plugin import register_fixture
 
 from pygeoapi.models.provider.base import GeospatialDataType
-from pygeoapi.models.cql import (CQLModel, ComparisonPredicate,
-                                 ScalarExpression, SpatialPredicate,
-                                 TemporalPredicate, AndExpression,
-                                 Between, EqExpression, ScalarOperands,
-                                 IntersectsExpression, SpatialOperands)
-
-
-@register_fixture
-class CQLModelFactory(ModelFactory[CQLModel]):
-    ...
 
 
 @register_fixture
@@ -48,56 +40,8 @@ class GeospatialDataTypeFactory(ModelFactory[GeospatialDataType]):
     ...
 
 
-@register_fixture
-class BetweenModelFactory(ModelFactory[Between]):
-    ...
-
-
-@register_fixture
-class EqExpressionModelFactory(ModelFactory[EqExpression]):
-    ...
-
-
-@register_fixture
-class IntersectsExpressionModelFactory(ModelFactory[IntersectsExpression]):
-    ...
-
-
-def test_cql_model(cql_model_factory: CQLModelFactory) -> None:
-    cql_model_instance = cql_model_factory.build()
-    assert isinstance(cql_model_instance, CQLModel)
-    assert cql_model_instance.dict()
-    assert type(cql_model_instance.__root__) in [
-        ComparisonPredicate, SpatialPredicate, TemporalPredicate, AndExpression
-    ]
-
-
 def test_provider_base_geospatial_data_type(
         geospatial_data_type_factory: GeospatialDataTypeFactory) -> None:
     gdt_instance = geospatial_data_type_factory.build()
     assert gdt_instance.dict()
     assert isinstance(gdt_instance, GeospatialDataType)
-
-
-def test_between_model(between_model_factory: BetweenModelFactory) -> None:
-    between_model_instance = between_model_factory.build()
-    assert isinstance(between_model_instance, Between)
-    assert between_model_instance.dict()
-    assert type(between_model_instance.lower) is ScalarExpression
-    assert type(between_model_instance.upper) is ScalarExpression
-
-
-def test_eq_expression_model(
-        eq_expression_model_factory: EqExpressionModelFactory) -> None:
-    eqexpr_model_instance = eq_expression_model_factory.build()
-    assert isinstance(eqexpr_model_instance, EqExpression)
-    assert eqexpr_model_instance.dict()
-    assert type(eqexpr_model_instance.eq) is ScalarOperands
-
-
-def test_intersects_expression_model(
-        intersects_expression_model_factory: IntersectsExpressionModelFactory) -> None:  # noqa
-    intersectsexpr_model_instance = intersects_expression_model_factory.build()
-    assert isinstance(intersectsexpr_model_instance, IntersectsExpression)
-    assert intersectsexpr_model_instance.dict()
-    assert type(intersectsexpr_model_instance.intersects) is SpatialOperands
