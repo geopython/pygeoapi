@@ -7,8 +7,8 @@ jobs:
   flake8_py3:
     runs-on: ubuntu-22.04
     steps:
-      - uses: actions/checkout@v3
-      - uses: actions/setup-python@v3
+      - uses: actions/checkout@master
+      - uses: actions/setup-python@v5
         name: setup Python
         with:
           python-version: '3.10'
