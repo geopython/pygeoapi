@@ -115,7 +115,7 @@ class EchoProcessor(BaseProcessor):
 
         super().__init__(processor_def, PROCESS_METADATA)
 
-    def execute(self, data, outputs=None):
+    def execute(self, data, **kwargs):
 
         mimetype = 'application/json'
 
