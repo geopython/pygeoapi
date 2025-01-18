@@ -181,7 +181,11 @@ class TinyDBProvider(BaseProvider):
         if properties:
             LOGGER.debug('processing properties')
             for prop in properties:
-                QUERY.append(f"(Q.properties['{prop[0]}']=={prop[1]})")
+                if isinstance(prop[1], str):
+                    value = f"'{prop[1]}'"
+                else:
+                    value = prop[1]
+                QUERY.append(f"(Q.properties['{prop[0]}']=={value})")
 
         QUERY = self._add_search_query(QUERY, q)
 
