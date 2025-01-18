@@ -111,6 +111,16 @@ def test_query(config):
     assert results['numberMatched'] == 1
     assert results['numberReturned'] == 1
 
+    results = p.query(properties=[('STATION_NAME', 'HUMBER RIVER AT WESTON')])
+    assert len(results['features']) == 10
+    assert results['numberMatched'] == 50
+    assert results['numberReturned'] == 10
+
+    results = p.query(properties=[('IDENTIFIER', '02HC003.1975-10-03')])
+    assert len(results['features']) == 1
+    assert results['numberMatched'] == 1
+    assert results['numberReturned'] == 1
+
     results = p.query(limit=1)
     assert len(results['features']) == 1
     assert results['features'][0]['id'] == '02HC003.1975-10-03'
