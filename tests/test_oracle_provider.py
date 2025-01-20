@@ -70,6 +70,7 @@ class SqlManipulator:
 
         if sql_query.find(" WHERE ") == -1:
             sql_query = sql_query.replace("#WHERE#", f" WHERE {sql}")
+
         else:
             sql_query = sql_query.replace("#WHERE#", f" AND {sql}")
 
@@ -642,6 +643,14 @@ def test_extra_params_are_passed_to_sql_manipulator(config_manipulator):
     response = p.query(properties=extra_params)
 
     assert not response['features']
+
+
+def test_query_count_sql_manipulator(config_manipulator):
+    """Test query number of hits"""
+    p = OracleProvider(config_manipulator)
+    result = p.query(resulttype="hits")
+
+    assert result.get("numberMatched") == 1
 
 
 @pytest.fixture()
