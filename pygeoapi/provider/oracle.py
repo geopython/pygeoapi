@@ -626,23 +626,19 @@ class OracleProvider(BaseProvider):
         :param query_args: Other dynamic arguments required for processing
         :return: Processed SQL query and bind variables
         """
-        if not self.sql_manipulator:
-            for placeholder in ["#HINTS#", "#JOIN#", "#WHERE#"]:
-                sql_query = sql_query.replace(placeholder, "")
-            return sql_query, bind_variables
+        if self.sql_manipulator:
+            LOGGER.debug(f"sql_manipulator: {self.sql_manipulator}")
+            manipulation_class = _class_factory(self.sql_manipulator)
 
-        LOGGER.debug(f"sql_manipulator: {self.sql_manipulator}")
-        manipulation_class = _class_factory(self.sql_manipulator)
-
-        # Pass all arguments to the process_query method
-        sql_query, bind_variables = manipulation_class.process_query(
-            db=db,
-            sql_query=sql_query,
-            bind_variables=bind_variables,
-            sql_manipulator_options=self.sql_manipulator_options,
-            **query_args,
-            extra_params=extra_params,
-        )
+            # Pass all arguments to the process_query method
+            sql_query, bind_variables = manipulation_class.process_query(
+                db=db,
+                sql_query=sql_query,
+                bind_variables=bind_variables,
+                sql_manipulator_options=self.sql_manipulator_options,
+                **query_args,
+                extra_params=extra_params,
+            )
 
         for placeholder in ["#HINTS#", "#JOIN#", "#WHERE#"]:
             sql_query = sql_query.replace(placeholder, "")
