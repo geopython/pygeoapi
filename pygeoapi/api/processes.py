@@ -283,7 +283,7 @@ def get_jobs(api: API, request: APIRequest,
         #       Here we do sort again in case the provider doesn't support
         #       pagination yet and always returns all jobs.
         jobs = sorted(jobs_data['jobs'],
-                      key=lambda k: k['job_start_datetime'],
+                      key=lambda k: k['started'],
                       reverse=True)
         numberMatched = jobs_data['numberMatched']
 
@@ -319,8 +319,8 @@ def get_jobs(api: API, request: APIRequest,
             'message': job_['message'],
             'progress': job_['progress'],
             'parameters': job_.get('parameters'),
-            'job_start_datetime': job_['job_start_datetime'],
-            'job_end_datetime': job_['job_end_datetime']
+            'started': job_['started'],
+            'finished': job_['finished']
         }
 
         # TODO: translate
