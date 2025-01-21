@@ -35,7 +35,7 @@ from filelock import FileLock
 import functools
 from functools import partial
 from dataclasses import dataclass
-from datetime import date, datetime, time
+from datetime import date, datetime, time, timezone
 from decimal import Decimal
 from enum import Enum
 import json
@@ -300,6 +300,11 @@ def format_datetime(value: str, format_: str = DATETIME_FORMAT) -> str:
         return ''
 
     return dateutil.parser.isoparse(value).strftime(format_)
+
+
+def get_current_datetime(tz: timezone = timezone.utc,
+                         format_: str = DATETIME_FORMAT) -> str:
+    return datetime.now(tz).strftime(format_)
 
 
 def file_modified_iso8601(filepath: Path) -> str:

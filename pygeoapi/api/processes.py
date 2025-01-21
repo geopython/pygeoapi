@@ -319,8 +319,10 @@ def get_jobs(api: API, request: APIRequest,
             'message': job_['message'],
             'progress': job_['progress'],
             'parameters': job_.get('parameters'),
+            'created': job_['created'],
             'started': job_['started'],
-            'finished': job_['finished']
+            'finished': job_['finished'],
+            'updated': job_['updated']
         }
 
         # TODO: translate
