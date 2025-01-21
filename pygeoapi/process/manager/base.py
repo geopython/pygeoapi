@@ -305,7 +305,7 @@ class BaseManager:
             current_status = JobStatus.successful
 
             job_update_metadata = {
-                'job_end_datetime': datetime.utcnow().strftime(
+                'finished': datetime.utcnow().strftime(
                     DATETIME_FORMAT),
                 'status': current_status.value,
                 'location': str(job_filename),
@@ -336,7 +336,7 @@ class BaseManager:
             }
             LOGGER.exception(err)
             job_metadata = {
-                'job_end_datetime': datetime.utcnow().strftime(
+                'finished': datetime.utcnow().strftime(
                     DATETIME_FORMAT),
                 'status': current_status.value,
                 'location': None,
@@ -432,8 +432,8 @@ class BaseManager:
             'type': 'process',
             'identifier': job_id,
             'process_id': process_id,
-            'job_start_datetime': datetime.utcnow().strftime(DATETIME_FORMAT),
-            'job_end_datetime': None,
+            'started': datetime.utcnow().strftime(DATETIME_FORMAT),
+            'finished': None,
             'status': current_status.value,
             'location': None,
             'mimetype': 'application/octet-stream',
