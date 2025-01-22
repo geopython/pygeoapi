@@ -8,7 +8,7 @@
 #          Bernhard Mallinger <bernhard.mallinger@eox.at>
 #
 # Copyright (c) 2019 Just van den Broecke
-# Copyright (c) 2024 Tom Kralidis
+# Copyright (c) 2025 Tom Kralidis
 # Copyright (c) 2022 John A Stevenson and Colin Blackburn
 # Copyright (c) 2023 Francesco Bartoli
 # Copyright (c) 2024 Bernhard Mallinger
@@ -50,8 +50,7 @@ from pygeofilter.parsers.ecql import parse
 
 from pygeoapi.api import API
 from pygeoapi.api.itemtypes import (
-    get_collection_items, get_collection_item, manage_collection_item,
-    post_collection_items
+    get_collection_items, get_collection_item, manage_collection_item
 )
 from pygeoapi.provider.base import (
     ProviderConnectionError,
@@ -542,7 +541,7 @@ def test_get_collection_items_postgresql_cql_invalid_filter_language(pg_api_):
 
     # Act
     req = mock_api_request({
-        'filter-lang': 'cql-json',  # Only cql-text is valid for GET
+        'filter-lang': 'cql-jsonfoo',
         'filter': cql_query
     })
     rsp_headers, code, response = get_collection_items(
@@ -581,16 +580,31 @@ def test_get_collection_items_postgresql_cql_bad_cql(pg_api_, bad_cql):
     assert error_response['description'] == 'Bad CQL text'
 
 
-def test_post_collection_items_postgresql_cql(pg_api_):
+def test_get_collection_items_postgresql_cql_json(pg_api_):
     """
     Test for PostgreSQL CQL - requires local PostgreSQL with appropriate
     data.  See pygeoapi/provider/postgresql.py for details.
     """
     # Arrange
-    cql = {"and": [{"between": {"value": {"property": "osm_id"},
-                                "lower": 80800000,
-                                "upper": 80900000}},
-                   {"isNull": {"property": "name"}}]}
+    cql = {
+        'op': 'and',
+        'args': [{
+            'op': 'between',
+            'args': [
+                {'property': 'osm_id'},
+                [80800000, 80900000]
+            ]
+            }, {
+            # FIXME: the below query is in CQL style, not CQL2
+            # needs a fix in pygeofilter
+            # 'op': 'isNull',
+            # 'args': [
+            #    {'property': 'name'}
+            # ]
+            'op': 'isNull',
+            'args': {'property': 'name'}
+            }]
+    }
     # werkzeug requests use a value of CONTENT_TYPE 'application/json'
     # to create Content-Type in the Request object. So here we need to
     # overwrite the default CONTENT_TYPE with the required one.
@@ -601,7 +615,7 @@ def test_post_collection_items_postgresql_cql(pg_api_):
     req = mock_api_request({
         'filter-lang': 'cql-json'
     }, data=cql, **headers)
-    rsp_headers, code, response = post_collection_items(
+    rsp_headers, code, response = get_collection_items(
         pg_api_, req, 'hot_osm_waterways')
 
     # Assert
@@ -611,7 +625,7 @@ def test_post_collection_items_postgresql_cql(pg_api_):
     assert ids == expected_ids
 
 
-def test_post_collection_items_postgresql_cql_invalid_filter_language(pg_api_):
+def test_get_collection_items_postgresql_cql_json_invalid_filter_language(pg_api_):  # noqa
     """
     Test for PostgreSQL CQL - requires local PostgreSQL with appropriate
     data.  See pygeoapi/provider/postgresql.py for details.
@@ -627,14 +641,14 @@ def test_post_collection_items_postgresql_cql_invalid_filter_language(pg_api_):
     req = mock_api_request({
         'filter-lang': 'cql-text'  # Only cql-json is valid for POST
     }, data=cql, **headers)
-    rsp_headers, code, response = post_collection_items(
+    rsp_headers, code, response = get_collection_items(
         pg_api_, req, 'hot_osm_waterways')
 
     # Assert
     assert code == HTTPStatus.BAD_REQUEST
     error_response = json.loads(response)
     assert error_response['code'] == 'InvalidParameterValue'
-    assert error_response['description'] == 'Invalid filter language'
+    assert error_response['description'] == 'Bad CQL JSON'
 
 
 @pytest.mark.parametrize("bad_cql", [
@@ -643,7 +657,7 @@ def test_post_collection_items_postgresql_cql_invalid_filter_language(pg_api_):
     # At some point this may return UnexpectedEOF
     '{"in": {"value": {"property": "id"}, "list": [1, 2}}'
 ])
-def test_post_collection_items_postgresql_cql_bad_cql(pg_api_, bad_cql):
+def test_get_collection_items_postgresql_cql_json_bad_cql(pg_api_, bad_cql):
     """
     Test for PostgreSQL CQL - requires local PostgreSQL with appropriate
     data.  See pygeoapi/provider/postgresql.py for details.
@@ -657,14 +671,14 @@ def test_post_collection_items_postgresql_cql_bad_cql(pg_api_, bad_cql):
     req = mock_api_request({
         'filter-lang': 'cql-json'
     }, data=bad_cql, **headers)
-    rsp_headers, code, response = post_collection_items(
+    rsp_headers, code, response = get_collection_items(
         pg_api_, req, 'hot_osm_waterways')
 
     # Assert
     assert code == HTTPStatus.BAD_REQUEST
     error_response = json.loads(response)
     assert error_response['code'] == 'InvalidParameterValue'
-    assert error_response['description'] == 'Bad CQL text'
+    assert error_response['description'] == 'Bad CQL JSON'
 
 
 def test_get_collection_items_postgresql_crs(pg_api_):

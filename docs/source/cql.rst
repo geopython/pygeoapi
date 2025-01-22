@@ -3,15 +3,18 @@
 CQL support
 ===========
 
+OGC Common Query Language (`CQL2`_) is a generic language designed to provide enhanced query and subset/filtering to (primarily) feature and record data.
+
 Providers
 ---------
 
-As of now the available providers supported for CQL filtering are limited to :ref:`Elasticsearch <Elasticsearch>` and :ref:`PostgreSQL <PostgreSQL>`.
- 
+CQL2 support is implemented in various pygeoapi feature and record providers.  See the :ref:`feature <ogcapi-features>` and :ref:`metadata <ogcapi-records>` provider sections
+for current provider support.
+
 Limitations
 -----------
 
-Support of CQL is limited to `Simple CQL filter <https://portal.ogc.org/files/96288#cql-core>`_ and thus it allows to query with the
+Support of CQL is limited to `Basic CQL2 <https://docs.ogc.org/is/21-065r2/21-065r2.html#cql2-core>`_ and thus it allows to query with the
 following predicates:
 
 * comparison predicates
@@ -21,20 +24,20 @@ following predicates:
 Formats
 -------
 
-At the moment Elasticsearch supports only the CQL dialect with the JSON encoding `CQL-JSON <https://portal.ogc.org/files/96288#simple-cql-JSON>`_.
+Supported providers leverage the CQL2 dialect with the JSON encoding `CQL-JSON <https://docs.ogc.org/is/21-065r2/21-065r2.html#cql2-json>`_.
 
-PostgreSQL supports both CQL-JSON and CQL-text dialects, `CQL-JSON <https://portal.ogc.org/files/96288#simple-cql-JSON>`_ and `CQL-TEXT <https://portal.ogc.org/files/96288#simple-cql-text>`_
+PostgreSQL supports both `CQL2 JSON <https://docs.ogc.org/is/21-065r2/21-065r2.html#cql2-json>`_ and `CQL text <https://docs.ogc.org/is/21-065r2/21-065r2.html#cql2-text>`_ dialects.
 
 Queries
 ^^^^^^^
 
 The PostgreSQL provider uses `pygeofilter <https://github.com/geopython/pygeofilter>`_ allowing a range of filter expressions, see examples for:
 
-* `Comparison predicates <https://portal.ogc.org/files/96288#simple-cql_comparison-predicates>`_
-* `Spatial predicates <https://portal.ogc.org/files/96288#enhanced-spatial-operators>`_
-* `Temporal predicates <https://portal.ogc.org/files/96288#simple-cql_temporal>`_
+* `Comparison predicates (`Advanced <https://docs.ogc.org/is/21-065r2/21-065r2.html#advanced-comparison-operators>`_, `Case-insensitive <https://docs.ogc.org/is/21-065r2/21-065r2.html#case-insensitive-comparison>`_)
+* `Spatial predicates <https://docs.ogc.org/is/21-065r2/21-065r2.html#spatial-functions>`_
+* `Temporal predicates <https://docs.ogc.org/is/21-065r2/21-065r2.html#temporal-functions>`_
 
-Using Elasticsearch the following type of queries are supported right now:
+Using Elasticsearch the following type of queries are supported currently:
 
 * ``between`` predicate query
 * Logical ``and`` query with ``between`` and ``eq`` expression
@@ -59,11 +62,11 @@ A ``BETWEEN`` example for a specific property through an HTTP POST request:
   curl --location --request POST 'http://localhost:5000/collections/nhsl_hazard_threat_all_indicators_s_bc/items?f=json&limit=50&filter-lang=cql-json' \
   --header 'Content-Type: application/query-cql-json' \
   --data-raw '{
-    "between": {
-      "value": { "property": "properties.MHn_Intensity" },
-      "lower": 0.59,
-      "upper": 0.60
-    }
+    "op": "between",
+    "args": [
+        {"property": "properties.MHn_Intensity"},
+        [0.59, 0.60]
+    ]
   }'
 
 Or 
@@ -73,11 +76,11 @@ Or
   curl --location --request POST 'http://localhost:5000/collections/recentearthquakes/items?f=json&limit=10&filter-lang=cql-json' 
   --header 'Content-Type: application/query-cql-json' 
   --data-raw '{ 
-    "between":{
-      "value":{"property": "ml"},
-      "lower":4,
-      "upper":4.5
-    }
+    "op": "between",
+    "args": [
+        {"property": "ml"},
+        [4, 4.5]
+    ]
   }'
 
 The same ``BETWEEN`` query using HTTP GET request formatted as CQL text and URL encoded as below:
@@ -93,7 +96,11 @@ An ``EQUALS`` example for a specific property:
   curl --location --request POST 'http://localhost:5000/collections/recentearthquakes/items?f=json&limit=10&filter-lang=cql-json' 
   --header 'Content-Type: application/query-cql-json' 
   --data-raw '{
-      "eq":[{"property": "user_entered"},"APBE"]
+    "op": "=",
+    "args": [
+      {"property": "user_entered"},
+      "APBE"
+    ]
   }'
 
 A ``CROSSES`` example via an HTTP GET request.  The CQL text is passed via the ``filter`` parameter.
@@ -115,7 +122,6 @@ The same example, but this time providing a geometry in EWKT format:
 
   curl "http://localhost:5000/collections/beni/items?filter=DWITHIN(geometry,SRID=3857;POINT(1392921%205145517),100,meters)"
 
-
-
-
 Note that the CQL text has been URL encoded. This is required in curl commands but when entering in a browser, plain text can be used e.g. ``CROSSES(foo_geom, LINESTRING(28 -2, 30 -4))``.
+
+.. _`CQL2`: https://docs.ogc.org/is/21-065r2/21-065r2.html

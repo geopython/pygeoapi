@@ -44,7 +44,7 @@ from typing import Any, Tuple, Union, Optional
 import urllib.parse
 
 from pygeofilter.parsers.ecql import parse as parse_ecql_text
-from pygeofilter.parsers.cql_json import parse as parse_cql_json
+from pygeofilter.parsers.cql2_json import parse as parse_cql2_json
 from pyproj.exceptions import CRSError
 
 from pygeoapi import l10n
@@ -54,7 +54,6 @@ from pygeoapi.plugin import load_plugin, PLUGINS
 from pygeoapi.provider.base import (
     ProviderGenericError, ProviderTypeError, SchemaType)
 
-from pygeoapi.models.cql import CQLModel
 from pygeoapi.util import (CrsTransformSpec, filter_providers_by_type,
                            filter_dict_by_key_value, get_crs_from_uri,
                            get_provider_by_type, get_supported_crs_list,
@@ -438,8 +437,10 @@ def get_collection_items(
 
     LOGGER.debug('Processing filter-crs parameter')
     filter_crs_uri = request.params.get('filter-crs', DEFAULT_CRS)
+
     LOGGER.debug('processing filter parameter')
     cql_text = request.params.get('filter')
+
     if cql_text is not None:
         try:
             filter_ = parse_ecql_text(cql_text)
@@ -455,13 +456,29 @@ def get_collection_items(
             return api.get_exception(
                 HTTPStatus.BAD_REQUEST, headers, request.format,
                 'InvalidParameterValue', msg)
+    elif request.data:
+        try:
+            request_data = request.data.decode()
+            filter_ = parse_cql2_json(request_data)
+            filter_ = modify_pygeofilter(
+                filter_,
+                filter_crs_uri=filter_crs_uri,
+                storage_crs_uri=provider_def.get('storage_crs'),
+                geometry_column_name=provider_def.get('geom_field'),
+            )
+        except Exception:
+            msg = 'Bad CQL JSON'
+            LOGGER.error(f'{msg}: {request_data}')
+            return api.get_exception(
+                HTTPStatus.BAD_REQUEST, headers, request.format,
+                'InvalidParameterValue', msg)
     else:
         filter_ = None
 
     LOGGER.debug('Processing filter-lang parameter')
     filter_lang = request.params.get('filter-lang')
     # Currently only cql-text is handled, but it is optional
-    if filter_lang not in [None, 'cql-text']:
+    if filter_lang not in [None, 'cql-json', 'cql-text']:
         msg = 'Invalid filter language'
         return api.get_exception(
             HTTPStatus.BAD_REQUEST, headers, request.format,
@@ -633,291 +650,6 @@ def get_collection_items(
         content = geojson2jsonld(
             api, content, dataset, id_field=(p.uri_field or 'id')
         )
-
-    return headers, HTTPStatus.OK, to_json(content, api.pretty_print)
-
-
-def post_collection_items(
-        api: API, request: APIRequest, dataset) -> Tuple[dict, int, str]:
-    """
-    Queries collection or filter an item
-
-    :param request: A request object
-    :param dataset: dataset name
-
-    :returns: tuple of headers, status code, content
-    """
-
-    request_headers = request.headers
-
-    if not request.is_valid(PLUGINS['formatter'].keys()):
-        return api.get_format_exception(request)
-
-    # Set Content-Language to system locale until provider locale
-    # has been determined
-    headers = request.get_response_headers(SYSTEM_LOCALE, **api.api_headers)
-
-    properties = []
-    reserved_fieldnames = ['bbox', 'f', 'limit', 'offset',
-                           'resulttype', 'datetime', 'sortby',
-                           'properties', 'skipGeometry', 'q',
-                           'filter-lang', 'filter-crs']
-
-    collections = filter_dict_by_key_value(api.config['resources'],
-                                           'type', 'collection')
-
-    if dataset not in collections.keys():
-        msg = 'Invalid collection'
-        return api.get_exception(
-            HTTPStatus.BAD_REQUEST, headers, request.format,
-            'InvalidParameterValue', msg)
-
-    LOGGER.debug('Processing query parameters')
-
-    LOGGER.debug('Processing offset parameter')
-    try:
-        offset = int(request.params.get('offset'))
-        if offset < 0:
-            msg = 'offset value should be positive or zero'
-            return api.get_exception(
-                HTTPStatus.BAD_REQUEST, headers, request.format,
-                'InvalidParameterValue', msg)
-    except TypeError as err:
-        LOGGER.warning(err)
-        offset = 0
-    except ValueError:
-        msg = 'offset value should be an integer'
-        return api.get_exception(
-            HTTPStatus.BAD_REQUEST, headers, request.format,
-            'InvalidParameterValue', msg)
-
-    LOGGER.debug('Processing limit parameter')
-    try:
-        limit = int(request.params.get('limit'))
-        # TODO: We should do more validation, against the min and max
-        # allowed by the server configuration
-        if limit <= 0:
-            msg = 'limit value should be strictly positive'
-            return api.get_exception(
-                HTTPStatus.BAD_REQUEST, headers, request.format,
-                'InvalidParameterValue', msg)
-    except TypeError as err:
-        LOGGER.warning(err)
-        limit = int(api.config['server']['limit'])
-    except ValueError:
-        msg = 'limit value should be an integer'
-        return api.get_exception(
-            HTTPStatus.BAD_REQUEST, headers, request.format,
-            'InvalidParameterValue', msg)
-
-    resulttype = request.params.get('resulttype') or 'results'
-
-    LOGGER.debug('Processing bbox parameter')
-
-    bbox = request.params.get('bbox')
-
-    if bbox is None:
-        bbox = []
-    else:
-        try:
-            bbox = validate_bbox(bbox)
-        except ValueError as err:
-            msg = str(err)
-            return api.get_exception(
-                HTTPStatus.BAD_REQUEST, headers, request.format,
-                'InvalidParameterValue', msg)
-
-    LOGGER.debug('Processing datetime parameter')
-    datetime_ = request.params.get('datetime')
-    try:
-        datetime_ = validate_datetime(collections[dataset]['extents'],
-                                      datetime_)
-    except ValueError as err:
-        msg = str(err)
-        return api.get_exception(
-            HTTPStatus.BAD_REQUEST, headers, request.format,
-            'InvalidParameterValue', msg)
-
-    LOGGER.debug('processing q parameter')
-    val = request.params.get('q')
-
-    q = None
-    if val is not None:
-        q = val
-
-    LOGGER.debug('Loading provider')
-
-    try:
-        provider_def = get_provider_by_type(
-            collections[dataset]['providers'], 'feature')
-    except ProviderTypeError:
-        try:
-            provider_def = get_provider_by_type(
-                collections[dataset]['providers'], 'record')
-        except ProviderTypeError:
-            msg = 'Invalid provider type'
-            return api.get_exception(
-                HTTPStatus.BAD_REQUEST, headers, request.format,
-                'NoApplicableCode', msg)
-
-    try:
-        p = load_plugin('provider', provider_def)
-    except ProviderGenericError as err:
-        return api.get_exception(
-            err.http_status_code, headers, request.format,
-            err.ogc_exception_code, err.message)
-
-    LOGGER.debug('processing property parameters')
-    for k, v in request.params.items():
-        if k not in reserved_fieldnames and k not in p.fields.keys():
-            msg = f'unknown query parameter: {k}'
-            return api.get_exception(
-                HTTPStatus.BAD_REQUEST, headers, request.format,
-                'InvalidParameterValue', msg)
-        elif k not in reserved_fieldnames and k in p.fields.keys():
-            LOGGER.debug(f'Add property filter {k}={v}')
-            properties.append((k, v))
-
-    LOGGER.debug('processing sort parameter')
-    val = request.params.get('sortby')
-
-    if val is not None:
-        sortby = []
-        sorts = val.split(',')
-        for s in sorts:
-            prop = s
-            order = '+'
-            if s[0] in ['+', '-']:
-                order = s[0]
-                prop = s[1:]
-
-            if prop not in p.fields.keys():
-                msg = 'bad sort property'
-                return api.get_exception(
-                    HTTPStatus.BAD_REQUEST, headers, request.format,
-                    'InvalidParameterValue', msg)
-
-            sortby.append({'property': prop, 'order': order})
-    else:
-        sortby = []
-
-    LOGGER.debug('processing properties parameter')
-    val = request.params.get('properties')
-
-    if val is not None:
-        select_properties = val.split(',')
-        properties_to_check = set(p.properties) | set(p.fields.keys())
-
-        if (len(list(set(select_properties) -
-                     set(properties_to_check))) > 0):
-            msg = 'unknown properties specified'
-            return api.get_exception(
-                HTTPStatus.BAD_REQUEST, headers, request.format,
-                'InvalidParameterValue', msg)
-    else:
-        select_properties = []
-
-    LOGGER.debug('processing skipGeometry parameter')
-    val = request.params.get('skipGeometry')
-    if val is not None:
-        skip_geometry = str2bool(val)
-    else:
-        skip_geometry = False
-
-    LOGGER.debug('Processing filter-crs parameter')
-    filter_crs = request.params.get('filter-crs', DEFAULT_CRS)
-    LOGGER.debug('Processing filter-lang parameter')
-    filter_lang = request.params.get('filter-lang')
-    if filter_lang != 'cql-json':  # @TODO add check from the configuration
-        msg = 'Invalid filter language'
-        return api.get_exception(
-            HTTPStatus.BAD_REQUEST, headers, request.format,
-            'InvalidParameterValue', msg)
-
-    LOGGER.debug('Querying provider')
-    LOGGER.debug(f'offset: {offset}')
-    LOGGER.debug(f'limit: {limit}')
-    LOGGER.debug(f'resulttype: {resulttype}')
-    LOGGER.debug(f'sortby: {sortby}')
-    LOGGER.debug(f'bbox: {bbox}')
-    LOGGER.debug(f'datetime: {datetime_}')
-    LOGGER.debug(f'properties: {select_properties}')
-    LOGGER.debug(f'skipGeometry: {skip_geometry}')
-    LOGGER.debug(f'q: {q}')
-    LOGGER.debug(f'filter-lang: {filter_lang}')
-    LOGGER.debug(f'filter-crs: {filter_crs}')
-
-    LOGGER.debug('Processing headers')
-
-    LOGGER.debug('Processing request content-type header')
-    if (request_headers.get(
-        'Content-Type') or request_headers.get(
-            'content-type')) != 'application/query-cql-json':
-        msg = 'Invalid body content-type'
-        return api.get_exception(
-            HTTPStatus.BAD_REQUEST, headers, request.format,
-            'InvalidHeaderValue', msg)
-
-    LOGGER.debug('Processing body')
-
-    if not request.data:
-        msg = 'missing request data'
-        return api.get_exception(
-            HTTPStatus.BAD_REQUEST, headers, request.format,
-            'MissingParameterValue', msg)
-
-    filter_ = None
-    try:
-        # Parse bytes data, if applicable
-        data = request.data.decode()
-        LOGGER.debug(data)
-    except UnicodeDecodeError:
-        msg = 'Unicode error in data'
-        return api.get_exception(
-            HTTPStatus.BAD_REQUEST, headers, request.format,
-            'InvalidParameterValue', msg)
-
-    # FIXME: remove testing backend in use once CQL support is normalized
-    if p.name == 'PostgreSQL':
-        LOGGER.debug('processing PostgreSQL CQL_JSON data')
-        try:
-            filter_ = parse_cql_json(data)
-            filter_ = modify_pygeofilter(
-                filter_,
-                filter_crs_uri=filter_crs,
-                storage_crs_uri=provider_def.get('storage_crs'),
-                geometry_column_name=provider_def.get('geom_field')
-            )
-        except Exception:
-            msg = 'Bad CQL text'
-            LOGGER.error(f'{msg}: {data}')
-            return api.get_exception(
-                HTTPStatus.BAD_REQUEST, headers, request.format,
-                'InvalidParameterValue', msg)
-    else:
-        LOGGER.debug('processing CQL_JSON data')
-        try:
-            filter_ = CQLModel.parse_raw(data)
-        except Exception:
-            msg = 'Bad CQL text'
-            LOGGER.error(f'{msg}: {data}')
-            return api.get_exception(
-                HTTPStatus.BAD_REQUEST, headers, request.format,
-                'InvalidParameterValue', msg)
-
-    try:
-        content = p.query(offset=offset, limit=limit,
-                          resulttype=resulttype, bbox=bbox,
-                          datetime_=datetime_, properties=properties,
-                          sortby=sortby,
-                          select_properties=select_properties,
-                          skip_geometry=skip_geometry,
-                          q=q,
-                          filterq=filter_)
-    except ProviderGenericError as err:
-        return api.get_exception(
-            err.http_status_code, headers, request.format,
-            err.ogc_exception_code, err.message)
 
     return headers, HTTPStatus.OK, to_json(content, api.pretty_print)
 

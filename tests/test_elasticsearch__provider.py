@@ -2,7 +2,7 @@
 #
 # Authors: Tom Kralidis <tomkralidis@gmail.com>
 #
-# Copyright (c) 2020 Tom Kralidis
+# Copyright (c) 2024 Tom Kralidis
 # Copyright (c) 2024 Francesco Bartoli
 #
 # Permission is hereby granted, free of charge, to any person
@@ -28,11 +28,13 @@
 #
 # =================================================================
 
+import json
+
+from pygeofilter.parsers.cql2_json import parse as parse_cql2_json
 import pytest
 
 from pygeoapi.provider.base import ProviderItemNotFoundError
 from pygeoapi.provider.elasticsearch_ import ElasticsearchProvider
-from pygeoapi.models.cql import CQLModel
 
 
 @pytest.fixture()
@@ -72,90 +74,89 @@ def config_cql():
 @pytest.fixture()
 def between():
     between_ = {
-        "between": {
-            "value": {"property": "properties.pop_max"},
-            "lower": 10000,
-            "upper": 100000
-        }
+        'op': 'between',
+        'args': [
+            {'property': 'properties.pop_max'},
+            [10000, 100000]
+        ]
     }
-    return CQLModel.parse_obj(between_)
+    return parse_cql2_json(json.dumps(between_))
 
 
 @pytest.fixture()
 def between_upper():
     between_ = {
-        "between": {
-            "value": {"property": "properties.pop_max"},
-            "upper": 100000
-        }
+        'op': '<',
+        'args': [
+            {'property': 'properties.pop_max'},
+            100000
+        ]
     }
-    return CQLModel.parse_obj(between_)
+    return parse_cql2_json(json.dumps(between_))
 
 
 @pytest.fixture()
 def between_lower():
     between_ = {
-        "between": {
-            "value": {"property": "properties.pop_max"},
-            "lower": 10000
-        }
+        'op': '>',
+        'args': [
+            {'property': 'properties.pop_max'},
+            10000
+        ]
     }
-    return CQLModel.parse_obj(between_)
+    return parse_cql2_json(json.dumps(between_))
 
 
 @pytest.fixture()
 def eq():
     eq_ = {
-        "eq": [
-            {"property": "properties.featurecla"},
-            "Admin-0 capital"
+        'op': '=',
+        'args': [
+            {'property': 'properties.featurecla'},
+            'Admin-0 capital'
         ]
     }
-    return CQLModel.parse_obj(eq_)
+    return parse_cql2_json(json.dumps(eq_))
 
 
 @pytest.fixture()
 def _and(eq, between):
     and_ = {
-        "and": [
-            {
-                "between": {
-                    "value": {
-                        "property": "properties.pop_max"
-                    },
-                    "lower": 100000,
-                    "upper": 1000000
-                }
-            },
-            {
-                "eq": [
-                    {"property": "properties.featurecla"},
-                    "Admin-0 capital"
+        'op': 'and',
+        'args': [{
+            'op': 'between',
+            'args': [
+                {'property': 'properties.pop_max'},
+                [100000, 1000000]
+            ]
+            }, {
+            'op': '=',
+                'args': [
+                    {'property': 'properties.featurecla'},
+                    'Admin-0 capital'
                 ]
-            }
-        ]
+            }]
     }
-    return CQLModel.parse_obj(and_)
+    return parse_cql2_json(json.dumps(and_))
 
 
 @pytest.fixture()
 def intersects():
-    intersects = {"intersects": [
-        {"property": "geometry"},
-        {
-            "type": "Polygon",
-            "coordinates": [
-                [
-                    [10.497565, 41.520355],
-                    [10.497565, 43.308645],
-                    [15.111823, 43.308645],
-                    [15.111823, 41.520355],
-                    [10.497565, 41.520355]
-                ]
-            ]
-        }
-    ]}
-    return CQLModel.parse_obj(intersects)
+    intersects = {
+        'op': 's_intersects',
+        'args': [
+            {'property': 'geometry'}, {
+             'type': 'Polygon',
+             'coordinates': [[
+                 [10.497565, 41.520355],
+                 [10.497565, 43.308645],
+                 [15.111823, 43.308645],
+                 [15.111823, 41.520355],
+                 [10.497565, 41.520355]
+             ]]
+            }
+        ]}
+    return parse_cql2_json(json.dumps(intersects))
 
 
 def test_query(config):

@@ -37,15 +37,15 @@
                 <h4><label for="runtime">{% trans %}Duration{% endtrans %}</label></h4>
                 <p><span id="runtime">
                   {% if data['jobs']['status'] == 'running' %}
-                    {{ data['jobs']['job_start_datetime']|format_duration(data.now) }}
+                    {{ data['jobs']['started']|format_duration(data.now) }}
                   {% else %}
-                    {{ data['jobs']['job_start_datetime']|format_duration(data['jobs']['job_end_datetime']) }}
+                    {{ data['jobs']['started']|format_duration(data['jobs']['finished']) }}
                   {% endif %}
                 </span></p>
                 <h4><label for="starttime">{% trans %}Started processing{% endtrans %}</label></h4>
-                <p><span id="starttime">{{ data['jobs']['job_start_datetime']|format_datetime }}</span></p>
+                <p><span id="starttime">{{ data['jobs']['started']|format_datetime }}</span></p>
                 <h4><label for="endtime">{% trans %}Finished processing{% endtrans %}</label></h4>
-                <p><span id="endtime">{{ data['jobs']['job_end_datetime']|format_datetime }}</span></p>
+                <p><span id="endtime">{{ data['jobs']['finished']|format_datetime }}</span></p>
 
                 <h3>{% trans %}Links{% endtrans %}</h3>
                 <ul>

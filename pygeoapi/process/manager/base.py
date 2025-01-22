@@ -32,7 +32,6 @@
 # =================================================================
 
 import collections
-from datetime import datetime
 import json
 import logging
 from multiprocessing import dummy
@@ -50,7 +49,7 @@ from pygeoapi.process.base import (
     UnknownProcessError,
 )
 from pygeoapi.util import (
-    DATETIME_FORMAT,
+    get_current_datetime,
     JobStatus,
     ProcessExecutionMode,
     RequestedProcessExecutionMode,
@@ -284,6 +283,7 @@ class BaseManager:
                 }
 
             self.update_job(job_id, {
+                'updated': get_current_datetime(),
                 'status': current_status.value,
                 'message': 'Writing job output',
                 'progress': 95
@@ -305,8 +305,8 @@ class BaseManager:
             current_status = JobStatus.successful
 
             job_update_metadata = {
-                'job_end_datetime': datetime.utcnow().strftime(
-                    DATETIME_FORMAT),
+                'finished': get_current_datetime(),
+                'updated': get_current_datetime(),
                 'status': current_status.value,
                 'location': str(job_filename),
                 'mimetype': jfmt,
@@ -336,8 +336,8 @@ class BaseManager:
             }
             LOGGER.exception(err)
             job_metadata = {
-                'job_end_datetime': datetime.utcnow().strftime(
-                    DATETIME_FORMAT),
+                'finished': get_current_datetime(),
+                'updated': get_current_datetime(),
                 'status': current_status.value,
                 'location': None,
                 'mimetype': 'application/octet-stream',
@@ -432,8 +432,9 @@ class BaseManager:
             'type': 'process',
             'identifier': job_id,
             'process_id': process_id,
-            'job_start_datetime': datetime.utcnow().strftime(DATETIME_FORMAT),
-            'job_end_datetime': None,
+            'created': get_current_datetime(),
+            'started': get_current_datetime(),
+            'finished': None,
             'status': current_status.value,
             'location': None,
             'mimetype': 'application/octet-stream',

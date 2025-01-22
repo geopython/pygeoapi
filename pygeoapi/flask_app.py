@@ -281,7 +281,7 @@ def collection_items(collection_id, item_id=None):
                             skip_valid_check=True)
                 else:
                     return execute_from_flask(
-                            itemtypes_api.post_collection_items, request,
+                            itemtypes_api.get_collection_items, request,
                             collection_id, skip_valid_check=True)
         elif request.method == 'OPTIONS':
             return execute_from_flask(

@@ -25,12 +25,12 @@
               <tr>
                 <td class="small"><a href="{{ config['server']['url'] }}/jobs/{{ job.jobID}}">{{ job.jobID }}</a></td>
                 <td class="small"><a href="{{ config['server']['url'] }}/processes/{{ job.processID}}">{{ job.processID }}</a></td>
-                <td><abbr title="{{ job.job_start_datetime|format_datetime }}">{{ job.job_start_datetime|format_datetime }}</abbr></td>
+                <td><abbr title="{{ job.started|format_datetime }}">{{ job.started|format_datetime }}</abbr></td>
                 <td>
                   {% if job.status == 'running' %}
-                    {{ job.job_start_datetime|format_duration(data.now) }}
+                    {{ job.started|format_duration(data.now) }}
                   {% else %}
-                    {{ job.job_start_datetime|format_duration(job.job_end_datetime) }}
+                    {{ job.started|format_duration(job.finished) }}
                   {% endif %}
                 </td>
                 <td>

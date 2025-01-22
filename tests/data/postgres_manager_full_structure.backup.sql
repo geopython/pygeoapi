@@ -34,8 +34,10 @@ CREATE TABLE public.jobs (
     type character varying DEFAULT 'process'::character varying NOT NULL,
     identifier character varying NOT NULL,
     process_id character varying NOT NULL,
-    job_start_datetime timestamp without time zone,
-    job_end_datetime timestamp without time zone,
+    created timestamp without time zone,
+    started timestamp without time zone,
+    finished timestamp without time zone,
+    updated timestamp without time zone,
     status character varying NOT NULL,
     location character varying,
     mimetype character varying,
@@ -65,4 +67,3 @@ GRANT ALL ON SCHEMA public TO PUBLIC;
 --
 -- PostgreSQL database dump complete
 --
-
