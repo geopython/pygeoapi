@@ -45,7 +45,7 @@
                 {% if col.get('itemType') == 'record' %}
                 <tr>
                   <td data-label="name">
-                    <a  title="{{ col['title'] | striptags | truncate }}"
+                    <a rel="http://www.opengis.net/def/rel/ogc/1.0/ogc-catalog" title="{{ col['title'] | striptags | truncate }}"
                       href="{{ data['collections_path'] }}/{{ col.id }}">
                       <span>{{ col['title'] | striptags | truncate }}</span></a>
                   </td>
