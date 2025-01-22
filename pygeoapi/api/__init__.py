@@ -7,7 +7,7 @@
 #          Colin Blackburn <colb@bgs.ac.uk>
 #          Ricardo Garcia Silva <ricardo.garcia.silva@geobeyond.it>
 #
-# Copyright (c) 2024 Tom Kralidis
+# Copyright (c) 2025 Tom Kralidis
 # Copyright (c) 2022 Francesco Bartoli
 # Copyright (c) 2022 John A Stevenson and Colin Blackburn
 # Copyright (c) 2023 Ricardo Garcia Silva
@@ -1063,6 +1063,20 @@ def describe_collections(api: API, request: APIRequest,
             'title': l10n.translate('This document as HTML', request.locale),  # noqa
             'href': f'{api.get_collections_url()}/{k}?f={F_HTML}'
         })
+
+        if collection_data_type == 'record':
+            collection['links'].append({
+                'type': FORMAT_TYPES[F_JSON],
+                'rel': 'http://www.opengis.net/def/rel/ogc/1.0/ogc-catalog',
+                'title': l10n.translate('Record catalogue as JSON', request.locale),  # noqa
+                'href': f'{api.get_collections_url()}/{k}?f={F_JSON}'
+            })
+            collection['links'].append({
+                'type': FORMAT_TYPES[F_HTML],
+                'rel': 'http://www.opengis.net/def/rel/ogc/1.0/ogc-catalog',
+                'title': l10n.translate('Record catalogue as HTML', request.locale),  # noqa
+                'href': f'{api.get_collections_url()}/{k}?f={F_HTML}'
+            })
 
         if collection_data_type in ['feature', 'coverage', 'record']:
             collection['links'].append({
