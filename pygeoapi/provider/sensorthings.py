@@ -32,6 +32,7 @@
 from json.decoder import JSONDecodeError
 import logging
 from requests import Session
+from requests.exceptions import ConnectionError
 from urllib.parse import urlparse
 
 from pygeoapi.config import get_config
@@ -103,12 +104,16 @@ class SensorThingsProvider(BaseProvider):
         :returns: dict of fields
         """
         if not self._fields:
-            r = self._get_response(self._url, {'$top': 1})
             try:
+                r = self._get_response(self._url, {'$top': 1})
                 results = r['value'][0]
             except IndexError:
                 LOGGER.warning('could not get fields; returning empty set')
                 return {}
+            except (ConnectionError, ProviderConnectionError):
+                msg = f'Unable to contact SensorThings endpoint at {self._url}'
+                LOGGER.error(msg)
+                raise ProviderConnectionError(msg)
 
             for (n, v) in results.items():
                 if isinstance(v, (int, float)) or \
