@@ -613,6 +613,38 @@ class OracleProvider(BaseProvider):
 
         return srid
 
+    def _process_query_with_sql_manipulator_sup(
+        self, db, sql_query, bind_variables, extra_params, **query_args
+    ):
+        """
+        Apply the SQL manipulation plugin to process the SQL query.
+
+        :param db: Database connection instance
+        :param sql_query: The SQL query to process
+        :param bind_variables: Query bind variables
+        :param extra_params: Additional parameters for manipulation
+        :param query_args: Other dynamic arguments required for processing
+        :return: Processed SQL query and bind variables
+        """
+        if self.sql_manipulator:
+            LOGGER.debug(f"sql_manipulator: {self.sql_manipulator}")
+            manipulation_class = _class_factory(self.sql_manipulator)
+
+            # Pass all arguments to the process_query method
+            sql_query, bind_variables = manipulation_class.process_query(
+                db=db,
+                sql_query=sql_query,
+                bind_variables=bind_variables,
+                sql_manipulator_options=self.sql_manipulator_options,
+                **query_args,
+                extra_params=extra_params,
+            )
+
+        for placeholder in ["#HINTS#", "#JOIN#", "#WHERE#"]:
+            sql_query = sql_query.replace(placeholder, "")
+
+        return sql_query, bind_variables
+
     def query(
         self,
         offset=0,
@@ -695,9 +727,36 @@ class OracleProvider(BaseProvider):
             # because of getFields ...
             sql_query = f"SELECT COUNT(1) AS hits \
                             FROM {self.table} \
-                            {where_dict['clause']}"
+                            {where_dict['clause']} #WHERE#"
+
+            # Assign where_dict["properties"] to bind_variables
+            bind_variables = {**where_dict["properties"]}
+
+            # Default values for the process_query function (sql_manipulator)
+            query_args = {
+                "offset": offset,
+                "limit": limit,
+                "resulttype": resulttype,
+                "bbox": bbox,
+                "datetime_": datetime_,
+                "properties": properties,
+                "sortby": sortby,
+                "skip_geometry": skip_geometry,
+                "select_properties": select_properties,
+                "crs_transform_spec": crs_transform_spec,
+                "q": q,
+                "language": language,
+                "filterq": filterq,
+            }
+
+            # Apply the SQL manipulation plugin
+            extra_params["geom"] = self.geom
+            sql_query, bind_variables = self._process_query_with_sql_manipulator_sup(   # noqa: E501
+                db, sql_query, bind_variables, extra_params, **query_args
+            )
+
             try:
-                cursor.execute(sql_query, where_dict["properties"])
+                cursor.execute(sql_query, bind_variables)
             except oracledb.Error as err:
                 LOGGER.error(
                     f"Error executing sql_query: {sql_query}: {err}"
@@ -795,36 +854,10 @@ class OracleProvider(BaseProvider):
             # Create dictionary for sql bind variables
             bind_variables = {**where_dict["properties"], **paging_bind}
 
-            # SQL manipulation plugin
-            if self.sql_manipulator:
-                LOGGER.debug("sql_manipulator: " + self.sql_manipulator)
-                manipulation_class = _class_factory(self.sql_manipulator)
-                sql_query, bind_variables = manipulation_class.process_query(
-                    db,
-                    sql_query,
-                    bind_variables,
-                    self.sql_manipulator_options,
-                    offset,
-                    limit,
-                    resulttype,
-                    bbox,
-                    datetime_,
-                    properties,
-                    sortby,
-                    skip_geometry,
-                    select_properties,
-                    crs_transform_spec,
-                    q,
-                    language,
-                    filterq,
-                    extra_params=extra_params
-                )
-
-            # Clean up placeholders that aren't used by the
-            # manipulation class.
-            sql_query = sql_query.replace("#HINTS#", "")
-            sql_query = sql_query.replace("#JOIN#", "")
-            sql_query = sql_query.replace("#WHERE#", "")
+            # Apply the SQL manipulation plugin
+            sql_query, bind_variables = self._process_query_with_sql_manipulator_sup(   # noqa: E501
+                db, sql_query, bind_variables, extra_params, **query_args
+            )
 
             LOGGER.debug(f"SQL Query: {sql_query}")
             LOGGER.debug(f"Bind variables: {bind_variables}")
