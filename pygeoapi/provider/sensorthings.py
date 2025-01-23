@@ -3,7 +3,7 @@
 # Authors: Benjamin Webb <benjamin.miller.webb@gmail.com>
 # Authors: Tom Kralidis <tomkralidis@gmail.com>
 #
-# Copyright (c) 2024 Benjamin Webb
+# Copyright (c) 2025 Benjamin Webb
 # Copyright (c) 2022 Tom Kralidis
 #
 # Permission is hereby granted, free of charge, to any person
@@ -32,13 +32,16 @@
 from json.decoder import JSONDecodeError
 import logging
 from requests import Session
+from requests.exceptions import ConnectionError
 from urllib.parse import urlparse
 
 from pygeoapi.config import get_config
 from pygeoapi.provider.base import (
-    BaseProvider, ProviderQueryError, ProviderConnectionError)
+    BaseProvider, ProviderQueryError, ProviderConnectionError,
+    ProviderInvalidDataError)
 from pygeoapi.util import (
-    url_join, get_provider_default, crs_transform, get_base_url)
+    url_join, get_provider_default, crs_transform, get_base_url,
+    get_typed_value)
 
 LOGGER = logging.getLogger(__name__)
 
@@ -101,12 +104,16 @@ class SensorThingsProvider(BaseProvider):
         :returns: dict of fields
         """
         if not self._fields:
-            r = self._get_response(self._url, {'$top': 1})
             try:
+                r = self._get_response(self._url, {'$top': 1})
                 results = r['value'][0]
             except IndexError:
                 LOGGER.warning('could not get fields; returning empty set')
                 return {}
+            except (ConnectionError, ProviderConnectionError):
+                msg = f'Unable to contact SensorThings endpoint at {self._url}'
+                LOGGER.error(msg)
+                raise ProviderConnectionError(msg)
 
             for (n, v) in results.items():
                 if isinstance(v, (int, float)) or \
@@ -154,6 +161,65 @@ class SensorThingsProvider(BaseProvider):
         """
         response = self._get_response(f'{self._url}({identifier})')
         return self._make_feature(response)
+
+    def create(self, item):
+        """
+        Create a new item
+
+        :param item: `dict` of new item
+
+        :returns: identifier of created item
+        """
+        response = self.http.post(self._url, json=item)
+
+        if response.status_code == 201:
+            location = response.headers.get("Location")
+            iotid = location[location.find("(")+1:location.find(")")]
+
+            LOGGER.debug(f'Feature created with @iot.id: {iotid}')
+            return get_typed_value(iotid)
+        else:
+            msg = f"Failed to create item: {response.text}"
+            raise ProviderInvalidDataError(msg)
+
+    def update(self, identifier, item):
+        """
+        Updates an existing item
+
+        :param identifier: feature id
+        :param item: `dict` of partial or full item
+
+        :returns: `bool` of update result
+        """
+        id = f"'{identifier}'" \
+             if isinstance(identifier, str) else str(identifier)
+        LOGGER.debug(f'Updating @iot.id: {id}')
+        response = self.http.put(f"{self._url}({id})", json=item)
+
+        if response.status_code == 200:
+            return True
+        else:
+            msg = f'Failed to update item: {response.text}'
+            raise ProviderConnectionError(msg)
+
+    def delete(self, identifier):
+        """
+        Deletes an existing item
+
+        :param identifier: item id
+
+        :returns: `bool` of deletion result
+        """
+        id = f"'{identifier}'" \
+             if isinstance(identifier, str) else str(identifier)
+        LOGGER.debug(f'Deleting @iot.id: {id}')
+        response = self.http.delete(f"{self._url}({id})")
+
+        if response.status_code == 200:
+            return True
+        else:
+            msg = f"Failed to delete item: {response.text}"
+            raise ProviderConnectionError(msg)
 
     def _load(self, offset=0, limit=10, resulttype='results',
               bbox=[], datetime_=None, properties=[], sortby=[],
@@ -208,13 +274,13 @@ class SensorThingsProvider(BaseProvider):
         v = response.get('value')
         while len(v) < limit:
             try:
-                LOGGER.debug('Fetching next set of values')
-                next_ = response['@iot.nextLink']
-
                 # Ensure we only use provided network location
-                next_ = next_.replace(urlparse(next_).netloc,
-                                      urlparse(self.data).netloc)
+                next_ = urlparse(response['@iot.nextLink'])._replace(
+                    scheme=self.parsed_url.scheme,
+                    netloc=self.parsed_url.netloc
+                ).geturl()
 
+                LOGGER.debug('Fetching next set of values')
                 response = self._get_response(next_)
                 v.extend(response['value'])
             except (ProviderConnectionError, KeyError):
@@ -516,6 +582,8 @@ class SensorThingsProvider(BaseProvider):
             self.entity = self._get_entity(self.data)
             self._url = self.data
             self.data = self._url.rstrip(f'/{self.entity}')
+
+        self.parsed_url = urlparse(self.data)
 
         # Default id
         if self.id_field:

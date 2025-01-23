@@ -2,7 +2,7 @@
 #
 # Authors: Benjamin Webb <bwebb@lincolninst.edu>
 #
-# Copyright (c) 2024 Benjamin Webb
+# Copyright (c) 2025 Benjamin Webb
 #
 # Permission is hereby granted, free of charge, to any person
 # obtaining a copy of this software and associated documentation
@@ -41,6 +41,27 @@ def config():
         'rel_link': 'http://localhost:5000',
         'intralink': True,
         'time_field': 'phenomenonTime'
+    }
+
+
+@pytest.fixture()
+def post_body():
+    return {
+        '@iot.id': 121,
+        'name': 'Temperature Datastream',
+        'description': 'Datastream for measuring temperature in Celsius.',
+        'observationType': 'http://www.opengis.net/def/observationType/OGC-OM/2.0/OM_Measurement', # noqa
+        'unitOfMeasurement': {
+            'name': 'Degree Celsius',
+            'symbol': 'degC',
+            'definition': 'http://www.qudt.org/qudt/owl/1.0.0/unit/Instances.html#DegreeCelsius' # noqa
+        },
+        'Thing': {'@iot.id': 2},
+        'ObservedProperty': {'@iot.id': 3},
+        'Sensor': {'@iot.id': 5},
+        'properties': {
+            'uri': 'https://geoconnex.us/test/datastream'
+        }
     }
 
 
@@ -162,3 +183,28 @@ def test_custom_expand(config):
     assert 'Observations' in fields
     assert 'ObservedProperty' not in fields
     assert 'Sensor' not in fields
+
+
+def test_transactions(config, post_body):
+    p = SensorThingsProvider(config)
+    results = p.query(resulttype='hits')
+    assert results['numberMatched'] == 120
+
+    id = p.create(post_body)
+    assert id == 121
+    results = p.query(resulttype='hits')
+    assert results['numberMatched'] == 121
+
+    datastream = p.get(121)
+    assert datastream['properties']['name'] == 'Temperature Datastream'
+
+    post_body['name'] = 'Temperature'
+    result = p.update(id, post_body)
+    assert result is True
+
+    datastream = p.get(121)
+    assert datastream['properties']['name'] == 'Temperature'
+
+    assert p.delete(id) is True
+    results = p.query(resulttype='hits')
+    assert results['numberMatched'] == 120

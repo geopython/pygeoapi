@@ -31,7 +31,7 @@ parameters.
    `Parquet`_,✅/✅,results/hits,✅,✅,❌,✅,❌,❌,✅
    `PostgreSQL`_,✅/✅,results/hits,✅,✅,✅,✅,✅,✅,✅
    `SQLiteGPKG`_,✅/❌,results/hits,✅,❌,❌,✅,❌,❌,✅
-   `SensorThings API`_,✅/✅,results/hits,✅,✅,✅,✅,❌,❌,✅
+   `SensorThings API`_,✅/✅,results/hits,✅,✅,✅,✅,❌,✅,✅
    `Socrata`_,✅/✅,results/hits,✅,✅,✅,✅,❌,❌,✅
    `TinyDB`_,✅/✅,results/hits,✅,✅,✅,✅,❌,✅,✅
 
