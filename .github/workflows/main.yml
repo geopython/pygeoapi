@@ -69,7 +69,7 @@ jobs:
         security-disabled: true
         port: 9209
     - name: Install and run MongoDB
-      uses: supercharge/mongodb-github-action@1.5.0
+      uses: supercharge/mongodb-github-action@1.12.0
       with:
         mongodb-version: 4.4
     - name: Install and run SensorThingsAPI
