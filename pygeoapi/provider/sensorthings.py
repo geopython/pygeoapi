@@ -194,7 +194,7 @@ class SensorThingsProvider(BaseProvider):
         id = f"'{identifier}'" \
              if isinstance(identifier, str) else str(identifier)
         LOGGER.debug(f'Updating @iot.id: {id}')
-        response = self.http.patch(f"{self._url}({id})", json=item)
+        response = self.http.put(f"{self._url}({id})", json=item)
 
         if response.status_code == 200:
             return True

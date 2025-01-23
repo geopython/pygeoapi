@@ -198,7 +198,8 @@ def test_transactions(config, post_body):
     datastream = p.get(121)
     assert datastream['properties']['name'] == 'Temperature Datastream'
 
-    result = p.update(id, {'name': 'Temperature'})
+    post_body['name'] = 'Temperature'
+    result = p.update(id, post_body)
     assert result is True
 
     datastream = p.get(121)
