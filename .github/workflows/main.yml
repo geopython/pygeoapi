@@ -37,8 +37,8 @@ jobs:
     - name: Chown user
       run: |
         sudo chown -R $USER:$USER $GITHUB_WORKSPACE
-    - uses: actions/checkout@v2
-    - uses: actions/setup-python@v2
+    - uses: actions/checkout@master
+    - uses: actions/setup-python@v5
       name: Setup Python ${{ matrix.python-version }}
       with:
         python-version: ${{ matrix.python-version }}
