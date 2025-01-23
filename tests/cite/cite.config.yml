@@ -8,7 +8,9 @@ server:
     language: en-US
     cors: true
     pretty_print: true
-    limit: 100
+    limits:
+        default_items: 10
+        max_items: 10
     # templates: /path/to/templates
     map:
         url: https://tile.openstreetmap.org/{z}/{x}/{y}.png

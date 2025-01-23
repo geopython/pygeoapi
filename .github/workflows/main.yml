@@ -37,8 +37,8 @@ jobs:
     - name: Chown user
       run: |
         sudo chown -R $USER:$USER $GITHUB_WORKSPACE
-    - uses: actions/checkout@v2
-    - uses: actions/setup-python@v2
+    - uses: actions/checkout@master
+    - uses: actions/setup-python@v5
       name: Setup Python ${{ matrix.python-version }}
       with:
         python-version: ${{ matrix.python-version }}
@@ -69,13 +69,13 @@ jobs:
         security-disabled: true
         port: 9209
     - name: Install and run MongoDB
-      uses: supercharge/mongodb-github-action@1.5.0
+      uses: supercharge/mongodb-github-action@1.12.0
       with:
         mongodb-version: 4.4
     - name: Install and run SensorThingsAPI
       uses: cgs-earth/sensorthings-action@v0.1.0
     - name: Install sqlite and gpkg dependencies
-      uses: awalsh128/cache-apt-pkgs-action@latest
+      uses: awalsh128/cache-apt-pkgs-action@v1.4.3
       with:
         packages: libsqlite3-mod-spatialite
         version: 4.3.0a-6build1
@@ -83,7 +83,7 @@ jobs:
       run: sudo add-apt-repository ppa:ubuntugis/ubuntugis-unstable && sudo apt update
       shell: bash
     - name: Install GDAL with Python bindings
-      uses: awalsh128/cache-apt-pkgs-action@latest
+      uses: awalsh128/cache-apt-pkgs-action@v1.4.3
       with:
         packages: gdal-bin libgdal-dev
         version: 3.8.4

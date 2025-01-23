@@ -40,7 +40,7 @@ import pytest
 
 from pygeoapi.api import (
     API, APIRequest, FORMAT_TYPES, F_HTML, F_JSON, F_JSONLD, F_GZIP,
-    __version__, validate_bbox, validate_datetime,
+    __version__, validate_bbox, validate_datetime, evaluate_limit,
     validate_subset, landing_page, openapi_, conformance, describe_collections,
     get_collection_schema,
 )
@@ -848,3 +848,42 @@ def test_get_exception(config, api_):
     assert content['description'] == 'oops'
 
     d = api_.get_exception(500, {}, 'html', 'NoApplicableCode', 'oops')
+
+
+def test_evaluate_limit():
+    collection = {}
+    server = {}
+
+    with pytest.raises(ValueError):
+        assert evaluate_limit('1.1', server, collection) == 10
+
+    with pytest.raises(ValueError):
+        assert evaluate_limit('-12', server, collection) == 10
+
+    assert evaluate_limit('1', server, collection) == 1
+
+    collection = {}
+    server = {'default_items': 2, 'max_items': 3}
+
+    assert evaluate_limit(None, server, collection) == 2
+    assert evaluate_limit('1', server, collection) == 1
+    assert evaluate_limit('4', server, collection) == 3
+
+    collection = {'default_items': 10, 'max_items': 50}
+    server = {'default_items': 100, 'max_items': 1000}
+
+    assert evaluate_limit(None, server, collection) == 10
+    assert evaluate_limit('40', server, collection) == 40
+    assert evaluate_limit('60', server, collection) == 50
+
+    collection = {}
+    server = {'default_items': 2, 'max_items': 3, 'on_exceed': 'error'}
+
+    with pytest.raises(RuntimeError):
+        assert evaluate_limit('40', server, collection) == 40
+
+    collection = {'default_items': 10}
+    server = {'default_items': 2, 'max_items': 3}
+
+    assert evaluate_limit(None, server, collection) == 10
+    assert evaluate_limit('40', server, collection) == 3
