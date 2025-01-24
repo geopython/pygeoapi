@@ -719,7 +719,7 @@ def get_admin(cfg: dict) -> dict:
 
     res_eg_key = next(iter(cfg['resources']))
     res_eg = {
-        res_eg_key: cfg['resources'][res_eg_key]
+        res_eg_key: deepcopy(cfg['resources'][res_eg_key])
     }
 
     paths['/admin/config'] = {
@@ -887,7 +887,7 @@ def get_admin(cfg: dict) -> dict:
                 'description': 'Updates admin configuration resource',
                 'content': {
                     'application/json': {
-                        'example': {'extents': res_eg[res_eg_key]['extents']},
+                        'example': {'type': res_eg[res_eg_key]['type']},
                         'schema': schema_dict['properties']['resources']['patternProperties']['^.*$']  # noqa
                     }
                 },
