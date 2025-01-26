@@ -721,6 +721,14 @@ def get_admin(cfg: dict) -> dict:
     res_eg = {
         res_eg_key: cfg['resources'][res_eg_key]
     }
+    if 'extents' in res_eg[res_eg_key]:
+        res_eg_eg_key = 'extents'
+    elif 'type' in res_eg[res_eg_key]:
+        res_eg_eg_key = 'type'
+
+    res_eg[res_eg_key]['patch_example'] = {
+        res_eg_eg_key: res_eg[res_eg_key][res_eg_eg_key]
+    }
 
     paths['/admin/config'] = {
         'get': {
@@ -887,7 +895,7 @@ def get_admin(cfg: dict) -> dict:
                 'description': 'Updates admin configuration resource',
                 'content': {
                     'application/json': {
-                        'example': {'type': res_eg[res_eg_key]['type']},
+                        'example': res_eg[res_eg_key]['patch_example'],
                         'schema': schema_dict['properties']['resources']['patternProperties']['^.*$']  # noqa
                     }
                 },
