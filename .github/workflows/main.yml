@@ -56,7 +56,7 @@ jobs:
     - name: Install and run Elasticsearch 📦
       uses: getong/elasticsearch-action@v1.2
       with:
-        elasticsearch version: '8.3.1'
+        elasticsearch version: '8.17.0'
         host port: 9200
         container port: 9200
         host node port: 9300
@@ -71,7 +71,7 @@ jobs:
     - name: Install and run MongoDB
       uses: supercharge/mongodb-github-action@1.12.0
       with:
-        mongodb-version: 4.4
+        mongodb-version: '8.0.4'
     - name: Install and run SensorThingsAPI
       uses: cgs-earth/sensorthings-action@v0.1.0
     - name: Install sqlite and gpkg dependencies
