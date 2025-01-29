@@ -39,13 +39,7 @@ from flask import (Flask, Blueprint, make_response, request,
 
 from pygeoapi.api import API, APIRequest, apply_gzip
 import pygeoapi.api as core_api
-import pygeoapi.api.coverages as coverages_api
-import pygeoapi.api.environmental_data_retrieval as edr_api
 import pygeoapi.api.itemtypes as itemtypes_api
-import pygeoapi.api.maps as maps_api
-import pygeoapi.api.processes as processes_api
-import pygeoapi.api.stac as stac_api
-import pygeoapi.api.tiles as tiles_api
 from pygeoapi.openapi import load_openapi_document
 from pygeoapi.config import get_config
 from pygeoapi.util import get_mimetype, get_api_rules
@@ -54,11 +48,38 @@ from pygeoapi.util import get_mimetype, get_api_rules
 CONFIG = get_config()
 OPENAPI = load_openapi_document()
 
-API_RULES = get_api_rules(CONFIG)
+coverages_enabled = CONFIG['server'].get('coverages', True)
+edr_enabled = CONFIG['server'].get('edr', True)
+features_enabled = CONFIG['server'].get('features', True)
+maps_enabled = CONFIG['server'].get('maps', True)
+processes_enabled = CONFIG['server'].get('processes', True)
+stac_enabled = CONFIG['server'].get('stac', True)
+tiles_enabled = CONFIG['server'].get('tiles', True)
+admin_enabled = CONFIG['server'].get('admin', False)
 
-if CONFIG['server'].get('admin'):
+if coverages_enabled:
+    import pygeoapi.api.coverages as coverages_api
+
+if edr_enabled:
+    import pygeoapi.api.environmental_data_retrieval as edr_api
+
+if maps_enabled:
+    import pygeoapi.api.maps as maps_api
+
+if processes_enabled:
+    import pygeoapi.api.processes as processes_api
+
+if stac_enabled:
+    import pygeoapi.api.stac as stac_api
+
+if tiles_enabled:
+    import pygeoapi.api.tiles as tiles_api
+
+if admin_enabled:
     import pygeoapi.admin as admin_api
     from pygeoapi.admin import Admin
+
+API_RULES = get_api_rules(CONFIG)
 
 STATIC_FOLDER = 'static'
 if 'templates' in CONFIG['server']:
@@ -67,12 +88,33 @@ if 'templates' in CONFIG['server']:
 APP = Flask(__name__, static_folder=STATIC_FOLDER, static_url_path='/static')
 APP.url_map.strict_slashes = API_RULES.strict_slashes
 
-BLUEPRINT = Blueprint(
-    'pygeoapi',
-    __name__,
-    static_folder=STATIC_FOLDER,
-    url_prefix=API_RULES.get_url_prefix('flask')
-)
+url_prefix = API_RULES.get_url_prefix('flask')
+
+BLUEPRINT = Blueprint('pygeoapi', __name__,
+                      static_folder=STATIC_FOLDER,
+                      url_prefix=url_prefix)
+COVERAGES_BLUEPRINT = Blueprint('pygeoapi-coverages', __name__,
+                                static_folder=STATIC_FOLDER,
+                                url_prefix=url_prefix)
+EDR_BLUEPRINT = Blueprint('pygeoapi-edr', __name__,
+                          static_folder=STATIC_FOLDER,
+                          url_prefix=url_prefix)
+FEATURES_BLUEPRINT = Blueprint('pygeoapi-features', __name__,
+                               static_folder=STATIC_FOLDER,
+                               url_prefix=url_prefix)
+MAPS_BLUEPRINT = Blueprint('pygeoapi-maps', __name__,
+                           static_folder=STATIC_FOLDER,
+                           url_prefix=url_prefix)
+PROCESSES_BLUEPRINT = Blueprint('pygeoapi-processes', __name__,
+                                static_folder=STATIC_FOLDER,
+                                url_prefix=url_prefix)
+STAC_BLUEPRINT = Blueprint('pygeoapi-stac', __name__,
+                           static_folder=STATIC_FOLDER,
+                           url_prefix=url_prefix)
+TILES_BLUEPRINT = Blueprint('pygeoapi-tiles', __name__,
+                            static_folder=STATIC_FOLDER,
+                            url_prefix=url_prefix)
+
 ADMIN_BLUEPRINT = Blueprint('admin', __name__, static_folder=STATIC_FOLDER)
 
 # CORS: optionally enable from config.
@@ -187,7 +229,7 @@ def conformance():
     return execute_from_flask(core_api.conformance, request)
 
 
-@BLUEPRINT.route('/TileMatrixSets/<tileMatrixSetId>')
+@TILES_BLUEPRINT.route('/TileMatrixSets/<tileMatrixSetId>')
 def get_tilematrix_set(tileMatrixSetId=None):
     """
     OGC API TileMatrixSet endpoint
@@ -201,7 +243,7 @@ def get_tilematrix_set(tileMatrixSetId=None):
                               tileMatrixSetId)
 
 
-@BLUEPRINT.route('/TileMatrixSets')
+@TILES_BLUEPRINT.route('/TileMatrixSets')
 def get_tilematrix_sets():
     """
     OGC API TileMatrixSets endpoint
@@ -255,12 +297,12 @@ def collection_queryables(collection_id=None):
                               collection_id)
 
 
-@BLUEPRINT.route('/collections/<path:collection_id>/items',
-                 methods=['GET', 'POST', 'OPTIONS'],
-                 provide_automatic_options=False)
-@BLUEPRINT.route('/collections/<path:collection_id>/items/<path:item_id>',
-                 methods=['GET', 'PUT', 'DELETE', 'OPTIONS'],
-                 provide_automatic_options=False)
+@FEATURES_BLUEPRINT.route('/collections/<path:collection_id>/items',
+                          methods=['GET', 'POST', 'OPTIONS'],
+                          provide_automatic_options=False)
+@FEATURES_BLUEPRINT.route('/collections/<path:collection_id>/items/<path:item_id>',  # noqa
+                          methods=['GET', 'PUT', 'DELETE', 'OPTIONS'],
+                          provide_automatic_options=False)
 def collection_items(collection_id, item_id=None):
     """
     OGC API collections items endpoint
@@ -309,7 +351,7 @@ def collection_items(collection_id, item_id=None):
                                   collection_id, item_id)
 
 
-@BLUEPRINT.route('/collections/<path:collection_id>/coverage')
+@COVERAGES_BLUEPRINT.route('/collections/<path:collection_id>/coverage')
 def collection_coverage(collection_id):
     """
     OGC API - Coverages coverage endpoint
@@ -323,7 +365,7 @@ def collection_coverage(collection_id):
                               collection_id, skip_valid_check=True)
 
 
-@BLUEPRINT.route('/collections/<path:collection_id>/tiles')
+@TILES_BLUEPRINT.route('/collections/<path:collection_id>/tiles')
 def get_collection_tiles(collection_id=None):
     """
     OGC open api collections tiles access point
@@ -337,8 +379,8 @@ def get_collection_tiles(collection_id=None):
                               collection_id)
 
 
-@BLUEPRINT.route('/collections/<path:collection_id>/tiles/<tileMatrixSetId>')
-@BLUEPRINT.route('/collections/<path:collection_id>/tiles/<tileMatrixSetId>/metadata')  # noqa
+@TILES_BLUEPRINT.route('/collections/<path:collection_id>/tiles/<tileMatrixSetId>')  # noqa
+@TILES_BLUEPRINT.route('/collections/<path:collection_id>/tiles/<tileMatrixSetId>/metadata')  # noqa
 def get_collection_tiles_metadata(collection_id=None, tileMatrixSetId=None):
     """
     OGC open api collection tiles service metadata
@@ -354,7 +396,7 @@ def get_collection_tiles_metadata(collection_id=None, tileMatrixSetId=None):
                               skip_valid_check=True)
 
 
-@BLUEPRINT.route('/collections/<path:collection_id>/tiles/\
+@TILES_BLUEPRINT.route('/collections/<path:collection_id>/tiles/\
 <tileMatrixSetId>/<tileMatrix>/<tileRow>/<tileCol>')
 def get_collection_tiles_data(collection_id=None, tileMatrixSetId=None,
                               tileMatrix=None, tileRow=None, tileCol=None):
@@ -377,8 +419,8 @@ def get_collection_tiles_data(collection_id=None, tileMatrixSetId=None,
     )
 
 
-@BLUEPRINT.route('/collections/<collection_id>/map')
-@BLUEPRINT.route('/collections/<collection_id>/styles/<style_id>/map')
+@MAPS_BLUEPRINT.route('/collections/<collection_id>/map')
+@MAPS_BLUEPRINT.route('/collections/<collection_id>/styles/<style_id>/map')
 def collection_map(collection_id, style_id=None):
     """
     OGC API - Maps map render endpoint
@@ -394,8 +436,8 @@ def collection_map(collection_id, style_id=None):
     )
 
 
-@BLUEPRINT.route('/processes')
-@BLUEPRINT.route('/processes/<process_id>')
+@PROCESSES_BLUEPRINT.route('/processes')
+@PROCESSES_BLUEPRINT.route('/processes/<process_id>')
 def get_processes(process_id=None):
     """
     OGC API - Processes description endpoint
@@ -409,9 +451,9 @@ def get_processes(process_id=None):
                               process_id)
 
 
-@BLUEPRINT.route('/jobs')
-@BLUEPRINT.route('/jobs/<job_id>',
-                 methods=['GET', 'DELETE'])
+@PROCESSES_BLUEPRINT.route('/jobs')
+@PROCESSES_BLUEPRINT.route('/jobs/<job_id>',
+                           methods=['GET', 'DELETE'])
 def get_jobs(job_id=None):
     """
     OGC API - Processes jobs endpoint
@@ -431,7 +473,8 @@ def get_jobs(job_id=None):
             return execute_from_flask(processes_api.get_jobs, request, job_id)
 
 
-@BLUEPRINT.route('/processes/<process_id>/execution', methods=['POST'])
+@PROCESSES_BLUEPRINT.route('/processes/<process_id>/execution',
+                           methods=['POST'])
 def execute_process_jobs(process_id):
     """
     OGC API - Processes execution endpoint
@@ -445,8 +488,8 @@ def execute_process_jobs(process_id):
                               process_id)
 
 
-@BLUEPRINT.route('/jobs/<job_id>/results',
-                 methods=['GET'])
+@PROCESSES_BLUEPRINT.route('/jobs/<job_id>/results',
+                           methods=['GET'])
 def get_job_result(job_id=None):
     """
     OGC API - Processes job result endpoint
@@ -459,24 +502,24 @@ def get_job_result(job_id=None):
     return execute_from_flask(processes_api.get_job_result, request, job_id)
 
 
-@BLUEPRINT.route('/collections/<path:collection_id>/position')
-@BLUEPRINT.route('/collections/<path:collection_id>/area')
-@BLUEPRINT.route('/collections/<path:collection_id>/cube')
-@BLUEPRINT.route('/collections/<path:collection_id>/radius')
-@BLUEPRINT.route('/collections/<path:collection_id>/trajectory')
-@BLUEPRINT.route('/collections/<path:collection_id>/corridor')
-@BLUEPRINT.route('/collections/<path:collection_id>/locations/<location_id>')
-@BLUEPRINT.route('/collections/<path:collection_id>/locations')
-@BLUEPRINT.route('/collections/<path:collection_id>/instances/<instance_id>/position')  # noqa
-@BLUEPRINT.route('/collections/<path:collection_id>/instances/<instance_id>/area')  # noqa
-@BLUEPRINT.route('/collections/<path:collection_id>/instances/<instance_id>/cube')  # noqa
-@BLUEPRINT.route('/collections/<path:collection_id>/instances/<instance_id>/radius')  # noqa
-@BLUEPRINT.route('/collections/<path:collection_id>/instances/<instance_id>/trajectory')  # noqa
-@BLUEPRINT.route('/collections/<path:collection_id>/instances/<instance_id>/corridor')  # noqa
-@BLUEPRINT.route('/collections/<path:collection_id>/instances/<instance_id>/locations/<location_id>')  # noqa
-@BLUEPRINT.route('/collections/<path:collection_id>/instances/<instance_id>/locations')  # noqa
-@BLUEPRINT.route('/collections/<path:collection_id>/instances/<instance_id>')
-@BLUEPRINT.route('/collections/<path:collection_id>/instances')
+@EDR_BLUEPRINT.route('/collections/<path:collection_id>/position')
+@EDR_BLUEPRINT.route('/collections/<path:collection_id>/area')
+@EDR_BLUEPRINT.route('/collections/<path:collection_id>/cube')
+@EDR_BLUEPRINT.route('/collections/<path:collection_id>/radius')
+@EDR_BLUEPRINT.route('/collections/<path:collection_id>/trajectory')
+@EDR_BLUEPRINT.route('/collections/<path:collection_id>/corridor')
+@EDR_BLUEPRINT.route('/collections/<path:collection_id>/locations/<location_id>')  # noqa
+@EDR_BLUEPRINT.route('/collections/<path:collection_id>/locations')  # noqa
+@EDR_BLUEPRINT.route('/collections/<path:collection_id>/instances/<instance_id>/position')  # noqa
+@EDR_BLUEPRINT.route('/collections/<path:collection_id>/instances/<instance_id>/area')  # noqa
+@EDR_BLUEPRINT.route('/collections/<path:collection_id>/instances/<instance_id>/cube')  # noqa
+@EDR_BLUEPRINT.route('/collections/<path:collection_id>/instances/<instance_id>/radius')  # noqa
+@EDR_BLUEPRINT.route('/collections/<path:collection_id>/instances/<instance_id>/trajectory')  # noqa
+@EDR_BLUEPRINT.route('/collections/<path:collection_id>/instances/<instance_id>/corridor')  # noqa
+@EDR_BLUEPRINT.route('/collections/<path:collection_id>/instances/<instance_id>/locations/<location_id>')  # noqa
+@EDR_BLUEPRINT.route('/collections/<path:collection_id>/instances/<instance_id>/locations')  # noqa
+@EDR_BLUEPRINT.route('/collections/<path:collection_id>/instances/<instance_id>')  # noqa
+@EDR_BLUEPRINT.route('/collections/<path:collection_id>/instances')  # noqa
 def get_collection_edr_query(collection_id, instance_id=None,
                              location_id=None):
     """
@@ -508,7 +551,7 @@ def get_collection_edr_query(collection_id, instance_id=None,
     )
 
 
-@BLUEPRINT.route('/stac')
+@STAC_BLUEPRINT.route('/stac')
 def stac_catalog_root():
     """
     STAC root endpoint
@@ -519,7 +562,7 @@ def stac_catalog_root():
     return execute_from_flask(stac_api.get_stac_root, request)
 
 
-@BLUEPRINT.route('/stac/<path:path>')
+@STAC_BLUEPRINT.route('/stac/<path:path>')
 def stac_catalog_path(path):
     """
     STAC path endpoint
@@ -603,7 +646,22 @@ def admin_config_resource(resource_id):
 
 APP.register_blueprint(BLUEPRINT)
 
-if CONFIG['server'].get('admin'):
+if coverages_enabled:
+    APP.register_blueprint(COVERAGES_BLUEPRINT)
+if edr_enabled:
+    APP.register_blueprint(EDR_BLUEPRINT)
+if features_enabled:
+    APP.register_blueprint(FEATURES_BLUEPRINT)
+if maps_enabled:
+    APP.register_blueprint(MAPS_BLUEPRINT)
+if processes_enabled:
+    APP.register_blueprint(PROCESSES_BLUEPRINT)
+if stac_enabled:
+    APP.register_blueprint(STAC_BLUEPRINT)
+if tiles_enabled:
+    APP.register_blueprint(TILES_BLUEPRINT)
+
+if admin_enabled:
     admin_ = Admin(CONFIG, OPENAPI)
     APP.register_blueprint(ADMIN_BLUEPRINT)
 

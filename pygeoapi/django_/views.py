@@ -42,15 +42,36 @@ from django.http import HttpRequest, HttpResponse
 
 from pygeoapi.api import API, APIRequest, apply_gzip
 import pygeoapi.api as core_api
-import pygeoapi.api.coverages as coverages_api
-import pygeoapi.api.environmental_data_retrieval as edr_api
 import pygeoapi.api.itemtypes as itemtypes_api
-import pygeoapi.api.maps as maps_api
-import pygeoapi.api.processes as processes_api
-import pygeoapi.api.stac as stac_api
-import pygeoapi.api.tiles as tiles_api
 
-if settings.PYGEOAPI_CONFIG['server'].get('admin'):
+coverages_enabled = settings.PYGEOAPI_CONFIG['server'].get('coverages', True)
+edr_enabled = settings.PYGEOAPI_CONFIG['server'].get('edr', True)
+features_enabled = settings.PYGEOAPI_CONFIG['server'].get('features', True)
+maps_enabled = settings.PYGEOAPI_CONFIG['server'].get('maps', True)
+processes_enabled = settings.PYGEOAPI_CONFIG['server'].get('processes', True)
+stac_enabled = settings.PYGEOAPI_CONFIG['server'].get('stac', True)
+tiles_enabled = settings.PYGEOAPI_CONFIG['server'].get('tiles', True)
+admin_enabled = settings.PYGEOAPI_CONFIG['server'].get('admin', False)
+
+if coverages_enabled:
+    import pygeoapi.api.coverages as coverages_api
+
+if edr_enabled:
+    import pygeoapi.api.environmental_data_retrieval as edr_api
+
+if maps_enabled:
+    import pygeoapi.api.maps as maps_api
+
+if processes_enabled:
+    import pygeoapi.api.processes as processes_api
+
+if stac_enabled:
+    import pygeoapi.api.stac as stac_api
+
+if tiles_enabled:
+    import pygeoapi.api.tiles as tiles_api
+
+if admin_enabled:
     import pygeoapi.admin as admin_api
 
 

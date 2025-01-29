@@ -51,13 +51,7 @@ import uvicorn
 
 from pygeoapi.api import API, APIRequest, apply_gzip
 import pygeoapi.api as core_api
-import pygeoapi.api.coverages as coverages_api
-import pygeoapi.api.environmental_data_retrieval as edr_api
 import pygeoapi.api.itemtypes as itemtypes_api
-import pygeoapi.api.maps as maps_api
-import pygeoapi.api.processes as processes_api
-import pygeoapi.api.stac as stac_api
-import pygeoapi.api.tiles as tiles_api
 from pygeoapi.openapi import load_openapi_document
 from pygeoapi.config import get_config
 from pygeoapi.util import get_api_rules
@@ -69,7 +63,34 @@ if 'PYGEOAPI_OPENAPI' not in os.environ:
 
 OPENAPI = load_openapi_document()
 
-if CONFIG['server'].get('admin'):
+coverages_enabled = CONFIG['server'].get('coverages', True)
+edr_enabled = CONFIG['server'].get('edr', True)
+features_enabled = CONFIG['server'].get('features', True)
+maps_enabled = CONFIG['server'].get('maps', True)
+processes_enabled = CONFIG['server'].get('processes', True)
+stac_enabled = CONFIG['server'].get('stac', True)
+tiles_enabled = CONFIG['server'].get('tiles', True)
+admin_enabled = CONFIG['server'].get('admin', False)
+
+if coverages_enabled:
+    import pygeoapi.api.coverages as coverages_api
+
+if edr_enabled:
+    import pygeoapi.api.environmental_data_retrieval as edr_api
+
+if maps_enabled:
+    import pygeoapi.api.maps as maps_api
+
+if processes_enabled:
+    import pygeoapi.api.processes as processes_api
+
+if stac_enabled:
+    import pygeoapi.api.stac as stac_api
+
+if tiles_enabled:
+    import pygeoapi.api.tiles as tiles_api
+
+if admin_enabled:
     import pygeoapi.admin as admin_api
     from pygeoapi.admin import Admin
 
@@ -649,25 +670,60 @@ api_routes = [
     Route('/', landing_page),
     Route('/openapi', openapi),
     Route('/conformance', conformance),
-    Route('/TileMatrixSets/{tileMatrixSetId}', get_tilematrix_set),
-    Route('/TileMatrixSets', get_tilematrix_sets),
+    Route('/collections', collections),
+    Route('/collections/{collection_id:path}', collections),
     Route('/collections/{collection_id:path}/schema', collection_schema),
     Route('/collections/{collection_id:path}/queryables', collection_queryables),  # noqa
+]
+
+features_routes = [
+    Route('/collections/{collection_id:path}/items', collection_items, methods=['GET', 'POST', 'OPTIONS']),  # noqa
+    Route('/collections/{collection_id:path}/items/{item_id:path}', collection_items, methods=['GET', 'PUT', 'DELETE', 'OPTIONS'])  # noqa
+]
+
+if features_enabled:
+    api_routes.extend(features_routes)
+
+tiles_routes = [
+    Route('/TileMatrixSets/{tileMatrixSetId}', get_tilematrix_set),
+    Route('/TileMatrixSets', get_tilematrix_sets),
     Route('/collections/{collection_id:path}/tiles', get_collection_tiles),
     Route('/collections/{collection_id:path}/tiles/{tileMatrixSetId}', get_collection_tiles_metadata),  # noqa
     Route('/collections/{collection_id:path}/tiles/{tileMatrixSetId}/metadata', get_collection_tiles_metadata),  # noqa
-    Route('/collections/{collection_id:path}/tiles/{tileMatrixSetId}/{tile_matrix}/{tileRow}/{tileCol}', get_collection_items_tiles),  # noqa
-    Route('/collections/{collection_id:path}/items', collection_items, methods=['GET', 'POST', 'OPTIONS']),  # noqa
-    Route('/collections/{collection_id:path}/items/{item_id:path}', collection_items, methods=['GET', 'PUT', 'DELETE', 'OPTIONS']),  # noqa
-    Route('/collections/{collection_id:path}/coverage', collection_coverage),  # noqa
+    Route('/collections/{collection_id:path}/tiles/{tileMatrixSetId}/{tile_matrix}/{tileRow}/{tileCol}', get_collection_items_tiles)  # noqa
+]
+
+if tiles_enabled:
+    api_routes.extend(tiles_routes)
+
+coverages_routes = [
+    Route('/collections/{collection_id:path}/coverage', collection_coverage)  # noqa
+]
+
+if coverages_enabled:
+    api_routes.extend(coverages_routes)
+
+maps_routes = [
     Route('/collections/{collection_id:path}/map', collection_map),
-    Route('/collections/{collection_id:path}/styles/{style_id:path}/map', collection_map),  # noqa
+    Route('/collections/{collection_id:path}/styles/{style_id:path}/map', collection_map)  # noqa
+]
+
+if maps_enabled:
+    api_routes.extend(maps_routes)
+
+processes_routes = [
     Route('/processes', get_processes),
     Route('/processes/{process_id}', get_processes),
     Route('/jobs', get_jobs),
     Route('/jobs/{job_id}', get_jobs, methods=['GET', 'DELETE']),
     Route('/processes/{process_id}/execution', execute_process_jobs, methods=['POST']),  # noqa
-    Route('/jobs/{job_id}/results', get_job_result),
+    Route('/jobs/{job_id}/results', get_job_result)
+]
+
+if processes_enabled:
+    api_routes.extend(processes_routes)
+
+edr_routes = [
     Route('/collections/{collection_id:path}/position', get_collection_edr_query),  # noqa
     Route('/collections/{collection_id:path}/area', get_collection_edr_query),
     Route('/collections/{collection_id:path}/cube', get_collection_edr_query),
@@ -685,12 +741,19 @@ api_routes = [
     Route('/collections/{collection_id:path}/instances/{instance_id}/trajectory', get_collection_edr_query),  # noqa
     Route('/collections/{collection_id:path}/instances/{instance_id}/corridor', get_collection_edr_query),  # noqa
     Route('/collections/{collection_id:path}/instances/{instance_id}/locations', get_collection_edr_query),  # noqa
-    Route('/collections/{collection_id:path}/instances/{instance_id}/locations/{location_id}', get_collection_edr_query),  # noqa
-    Route('/collections', collections),
-    Route('/collections/{collection_id:path}', collections),
+    Route('/collections/{collection_id:path}/instances/{instance_id}/locations/{location_id}', get_collection_edr_query)  # noqa
+]
+
+if edr_enabled:
+    api_routes.extend(edr_routes)
+
+stac_routes = [
     Route('/stac', stac_catalog_root),
     Route('/stac/{path:path}', stac_catalog_path)
 ]
+
+if stac_enabled:
+    api_routes.extend(stac_routes)
 
 admin_routes = [
     Route('/admin/config', admin_config, methods=['GET', 'PUT', 'PATCH']),
@@ -699,7 +762,7 @@ admin_routes = [
           methods=['GET', 'PUT', 'PATCH', 'DELETE'])
 ]
 
-if CONFIG['server'].get('admin', False):
+if admin_enabled:
     ADMIN = Admin(CONFIG, OPENAPI)
     api_routes.extend(admin_routes)
 

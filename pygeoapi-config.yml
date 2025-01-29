@@ -56,6 +56,13 @@ server:
 #        output_dir: /tmp/
     # ogc_schemas_location: /opt/schemas.opengis.net
     admin: false # enable admin api
+    coverages: true # enable ogcapi-coverages
+    edr: true # enable ogcapi-edr
+    features: true # enable ogcapi-features
+    maps: true # enable ogcapi-maps
+    processes: true # enable ogcapi-processes
+    stac: true # enable ogcapi-stac
+    tiles: true # enable ogcapi-tiles
 
 logging:
     level: ERROR

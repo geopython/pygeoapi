@@ -58,6 +58,15 @@ from django.conf.urls.static import static
 
 from . import views
 
+coverages_enabled = settings.PYGEOAPI_CONFIG['server'].get('coverages', True)
+edr_enabled = settings.PYGEOAPI_CONFIG['server'].get('edr', True)
+features_enabled = settings.PYGEOAPI_CONFIG['server'].get('features', True)
+maps_enabled = settings.PYGEOAPI_CONFIG['server'].get('maps', True)
+processes_enabled = settings.PYGEOAPI_CONFIG['server'].get('processes', True)
+stac_enabled = settings.PYGEOAPI_CONFIG['server'].get('stac', True)
+tiles_enabled = settings.PYGEOAPI_CONFIG['server'].get('tiles', True)
+admin_enabled = settings.PYGEOAPI_CONFIG['server'].get('admin', False)
+
 
 def apply_slash_rule(url: str):
     """ Strip trailing slashes if the API rules are strict about it.
@@ -75,16 +84,6 @@ urlpatterns = [
         apply_slash_rule('conformance/'),
         views.conformance,
         name='conformance'
-    ),
-    path(
-        apply_slash_rule('TileMatrixSets/'),
-        views.tilematrixsets,
-        name='tilematrixsets'
-    ),
-    path(
-        apply_slash_rule('TileMatrixSets/<str:tilematrixset_id>'),
-        views.tilematrixsets,
-        name='tilematrixset'
     ),
     path(
         apply_slash_rule('collections/'),
@@ -106,6 +105,9 @@ urlpatterns = [
         views.collection_queryables,
         name='collection-queryables',
     ),
+]
+
+features_urlpatterns = [
     path(
         apply_slash_rule('collections/<str:collection_id>/items/'),
         views.collection_items,
@@ -116,30 +118,21 @@ urlpatterns = [
         views.collection_item,
         name='collection-item',
     ),
+]
+
+if features_enabled:
+    urlpatterns.extend(features_urlpatterns)
+
+tiles_urlpatterns = [
     path(
-        apply_slash_rule('collections/<str:collection_id>/coverage/'),
-        views.collection_coverage,
-        name='collection-coverage',
+        apply_slash_rule('TileMatrixSets/'),
+        views.tilematrixsets,
+        name='tilematrixsets'
     ),
     path(
-        'collections/<str:collection_id>/map',
-        views.collection_map,
-        name='collection-map',
-    ),
-    path(
-        'collections/<str:collection_id>/styles/<str:style_id>/map',
-        views.collection_style_map,
-        name='collection-style-map',
-    ),
-    path(
-        apply_slash_rule('collections/<str:collection_id>/tiles/'),
-        views.collection_tiles,
-        name='collection-tiles',
-    ),
-    path(
-        'collections/<str:collection_id>/tiles/<str:tileMatrixSetId>',
-        views.collection_tiles_metadata,
-        name='collection-tiles-metadata',
+        apply_slash_rule('TileMatrixSets/<str:tilematrixset_id>'),
+        views.tilematrixsets,
+        name='tilematrixset'
     ),
     path(
         'collections/<str:collection_id>/tiles/<str:tileMatrixSetId>/metadata',
@@ -152,6 +145,39 @@ urlpatterns = [
         views.collection_item_tiles,
         name='collection-item-tiles',
     ),
+]
+
+if tiles_enabled:
+    urlpatterns.extend(tiles_urlpatterns)
+
+coverages_urlpatterns = [
+    path(
+        apply_slash_rule('collections/<str:collection_id>/coverage/'),
+        views.collection_coverage,
+        name='collection-coverage',
+    ),
+]
+
+if coverages_enabled:
+    urlpatterns.extend(coverages_urlpatterns)
+
+maps_urlpatterns = [
+    path(
+        'collections/<str:collection_id>/map',
+        views.collection_map,
+        name='collection-map',
+    ),
+    path(
+        'collections/<str:collection_id>/styles/<str:style_id>/map',
+        views.collection_style_map,
+        name='collection-style-map',
+    ),
+]
+
+if maps_enabled:
+    urlpatterns.extend(maps_urlpatterns)
+
+edr_urlpatterns = [
     path(
         'collections/<str:collection_id>/position',
         views.get_collection_edr_query,
@@ -242,6 +268,12 @@ urlpatterns = [
         views.get_collection_edr_query,
         name='collection-edr-corridor',
     ),
+]
+
+if edr_enabled:
+    urlpatterns.extend(edr_urlpatterns)
+
+processes_urlpatterns = [
     path(apply_slash_rule('processes/'), views.processes, name='processes'),
     path('processes/<str:process_id>', views.processes, name='process-detail'),
     path('processes/<str:process_id>/execution', views.process_execution,
@@ -258,12 +290,21 @@ urlpatterns = [
         views.job_results_resource,
         name='job-results-resource',
     ),
+]
+
+if processes_enabled:
+    urlpatterns.extend(processes_urlpatterns)
+
+stac_urlpatterns = [
     path(
         apply_slash_rule('stac/'),
         views.stac_catalog_root,
         name='stac-catalog-root'
     )
 ]
+
+if stac_enabled:
+    urlpatterns.extend(stac_urlpatterns)
 
 url_route_prefix = settings.API_RULES.get_url_prefix('django')
 if url_route_prefix:
@@ -272,7 +313,7 @@ if url_route_prefix:
         path(url_route_prefix, include(urlpatterns))
     ]
 
-if settings.PYGEOAPI_CONFIG['server'].get('admin', False):
+if admin_enabled:
     admin_urlpatterns = [
         path(
             apply_slash_rule('admin/config'),
