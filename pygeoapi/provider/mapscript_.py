@@ -111,6 +111,9 @@ class MapScriptProvider(BaseProvider):
                     cls.updateFromString(cls_def)
                     self._layer.insertClass(cls)
 
+            if self.options['type'] == 'MS_LAYER_RASTER':
+                self._layer.addProcessing('SCALE=AUTO')
+
         except MapServerError as err:
             LOGGER.warning(err)
             raise ProviderConnectionError('Cannot connect to map service')
