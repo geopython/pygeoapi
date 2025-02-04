@@ -33,8 +33,8 @@
 # OTHER DEALINGS IN THE SOFTWARE.
 #
 # =================================================================
-
-FROM ubuntu:jammy-20240911.1
+### Build stage
+FROM ubuntu:jammy-20240911.1 AS builder
 
 LABEL maintainer="Just van den Broecke <justb4@gmail.com>"
 
@@ -140,6 +140,14 @@ RUN \
     # Set default config and entrypoint for Docker Image
     cp /pygeoapi/docker/default.config.yml /pygeoapi/local.config.yml \
     && cp /pygeoapi/docker/entrypoint.sh /entrypoint.sh 
+
+
+### Runtime stage
+FROM ubuntu:jammy-20240911.1
+
+COPY --from=builder /pygeoapi /pygeoapi
+
+WORKDIR /pygeoapi
 
 ENTRYPOINT ["/entrypoint.sh"]
 
