@@ -443,6 +443,9 @@ def get_oas_30(cfg: dict, fail_on_invalid_collection: bool = True) -> dict:
     items_f = deepcopy(oas['components']['parameters']['f'])
     items_f['schema']['enum'].append('csv')
 
+    tiles_enabled = cfg['server'].get('tiles', True)
+    admin_enabled = cfg['server'].get('admin', False)
+
     LOGGER.debug('setting up datasets')
 
     for k, v in get_visible_collections(cfg).items():
@@ -484,58 +487,59 @@ def get_oas_30(cfg: dict, fail_on_invalid_collection: bool = True) -> dict:
             }
         }
 
-        oas['components']['responses'].update({
-                'Tiles': {
-                    'description': 'Retrieves the tiles description for this collection', # noqa
-                    'content': {
-                        'application/json': {
-                            'schema': {
-                                '$ref': '#/components/schemas/tiles'
+        if tiles_enabled:
+            oas['components']['responses'].update({
+                    'Tiles': {
+                        'description': 'Retrieves the tiles description for this collection', # noqa
+                        'content': {
+                            'application/json': {
+                                'schema': {
+                                    '$ref': '#/components/schemas/tiles'
+                                }
                             }
                         }
                     }
                 }
-            }
-        )
+            )
 
-        oas['components']['schemas'].update({
-                'tilematrixsetlink': {
-                    'type': 'object',
-                    'required': ['tileMatrixSet'],
-                    'properties': {
-                        'tileMatrixSet': {
-                            'type': 'string'
-                        },
-                        'tileMatrixSetURI': {
-                            'type': 'string'
-                        }
-                    }
-                },
-                'tiles': {
-                    'type': 'object',
-                    'required': [
-                        'tileMatrixSetLinks',
-                        'links'
-                    ],
-                    'properties': {
-                        'tileMatrixSetLinks': {
-                            'type': 'array',
-                            'items': {
-                                '$ref': '#/components/schemas/tilematrixsetlink' # noqa
+            oas['components']['schemas'].update({
+                    'tilematrixsetlink': {
+                        'type': 'object',
+                        'required': ['tileMatrixSet'],
+                        'properties': {
+                            'tileMatrixSet': {
+                                'type': 'string'
+                            },
+                            'tileMatrixSetURI': {
+                                'type': 'string'
                             }
-                        },
-                        'links': {
-                            'type': 'array',
-                            'items': {'$ref': f"{OPENAPI_YAML['oapit']}#/components/schemas/link"}  # noqa
+                        }
+                    },
+                    'tiles': {
+                        'type': 'object',
+                        'required': [
+                            'tileMatrixSetLinks',
+                            'links'
+                        ],
+                        'properties': {
+                            'tileMatrixSetLinks': {
+                                'type': 'array',
+                                'items': {
+                                    '$ref': '#/components/schemas/tilematrixsetlink' # noqa
+                                }
+                            },
+                            'links': {
+                                'type': 'array',
+                                'items': {'$ref': f"{OPENAPI_YAML['oapit']}#/components/schemas/link"}  # noqa
+                            }
                         }
                     }
                 }
-            }
-        )
+            )
 
     oas['paths'] = paths
 
-    for api_name, api_module in all_apis().items():
+    for api_name, api_module in all_apis(cfg['server']).items():
         LOGGER.debug(f'Adding OpenAPI definitions for {api_name}')
 
         try:
@@ -548,7 +552,7 @@ def get_oas_30(cfg: dict, fail_on_invalid_collection: bool = True) -> dict:
             else:
                 LOGGER.warning(f'Resource not added to OpenAPI: {err}')
 
-    if cfg['server'].get('admin', False):
+    if admin_enabled:
         schema_dict = get_config_schema()
         oas['definitions'] = schema_dict['definitions']
         LOGGER.debug('Adding admin endpoints')
