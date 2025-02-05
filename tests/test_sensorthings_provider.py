@@ -29,6 +29,7 @@
 
 import pytest
 
+from pygeoapi.provider.base import ProviderInvalidDataError
 from pygeoapi.provider.sensorthings import SensorThingsProvider
 
 
@@ -196,6 +197,12 @@ def test_custom_uri_field(config):
     assert result['properties']['uri'] == \
         'https://geoconnex.us/iow/sta-demo/timeseries/9'
     assert len(result['properties']) == 2
+
+    config['uri_field'] = 'bad_uri'
+    p = SensorThingsProvider(config)
+    with pytest.raises(ProviderInvalidDataError,
+                       match=".*Unable to find uri field: bad_uri"):
+        result = p.get('9')
 
 
 def test_transactions(config, post_body):
