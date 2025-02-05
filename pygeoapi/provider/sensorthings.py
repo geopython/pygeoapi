@@ -484,8 +484,13 @@ class SensorThingsProvider(BaseProvider):
             self._expand_location(feature['Thing'])
 
         # Retain URI if present
-        if feature.get('properties') and self.uri_field:
-            uri = feature['properties']
+        try:
+            if self.uri_field is not None:
+                uri = feature['properties'][self.uri_field]
+        except KeyError:
+            msg = f'Unable to find uri field: {self.uri_field}'
+            LOGGER.error(msg)
+            raise ProviderInvalidDataError(msg)
 
         # Create intra links
         for k, v in feature.items():
@@ -506,7 +511,7 @@ class SensorThingsProvider(BaseProvider):
             ret = {k: feature.pop(k) for k in keys}
             feature = ret
 
-        if self.uri_field is not None and uri != '':
+        if self.uri_field is not None:
             feature[self.uri_field] = uri
 
         return feature

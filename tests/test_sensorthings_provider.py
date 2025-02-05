@@ -185,6 +185,19 @@ def test_custom_expand(config):
     assert 'Sensor' not in fields
 
 
+def test_custom_uri_field(config):
+    config['uri_field'] = 'urai'
+    config['properties'] = ['name']
+    p = SensorThingsProvider(config)
+
+    result = p.get('9')
+    assert result['id'] == '9'
+    assert result['properties']['name'] == 'Depth Below Surface'
+    assert result['properties']['uri'] == \
+        'https://geoconnex.us/iow/sta-demo/timeseries/9'
+    assert len(result['properties']) == 2
+
+
 def test_transactions(config, post_body):
     p = SensorThingsProvider(config)
     results = p.query(resulttype='hits')
