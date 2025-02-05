@@ -186,7 +186,7 @@ def test_custom_expand(config):
 
 
 def test_custom_uri_field(config):
-    config['uri_field'] = 'urai'
+    config['uri_field'] = 'uri'
     config['properties'] = ['name']
     p = SensorThingsProvider(config)
 
