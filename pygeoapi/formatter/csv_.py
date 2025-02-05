@@ -30,6 +30,7 @@
 import csv
 import io
 import logging
+from shapely.geometry import shape
 
 from pygeoapi.formatter.base import BaseFormatter, FormatterSerializationError
 
@@ -73,16 +74,11 @@ class CSVFormatter(BaseFormatter):
             return str()
 
         if self.geom:
-            LOGGER.debug('Including point geometry')
-            if data['features'][0]['geometry']['type'] == 'Point':
-                fields.insert(0, 'x')
-                fields.insert(1, 'y')
-                is_point = True
-            else:
-                # TODO: implement wkt geometry serialization
-                LOGGER.debug('not a point geometry, skipping')
+            LOGGER.debug('Including geometry')
+            fields.insert(0, 'geometry')
+        else:
+            LOGGER.debug('Excluding geometry column')
 
-        print("JJJ", fields)
         LOGGER.debug(f'CSV fields: {fields}')
 
         try:
@@ -92,9 +88,24 @@ class CSVFormatter(BaseFormatter):
 
             for feature in data['features']:
                 fp = feature['properties']
-                if is_point:
-                    fp['x'] = feature['geometry']['coordinates'][0]
-                    fp['y'] = feature['geometry']['coordinates'][1]
+
+                # Safely remove the 'geometry' key if it exists as we don't want that key being directly written out to
+                # the csv
+                if 'geometry' in fp:
+                    del fp['geometry']
+
+                # Include geometry field if enabled
+                if self.geom:
+                    geometry = feature.get('geometry')
+                    if geometry:
+                        try:
+                            wkt = shape(geometry).wkt
+                            fp['geometry'] = wkt
+                        except ValueError:
+                            fp['geometry'] = ''
+                    else:
+                        fp['geometry'] = ''
+
                 LOGGER.debug(fp)
                 writer.writerow(fp)
         except ValueError as err:
