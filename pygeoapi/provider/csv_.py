@@ -136,9 +136,9 @@ class CSVProvider(BaseProvider):
                         float(row.pop(self.geometry_y)),
                     ]
                 except ValueError:
-                    msg = f'Skipping row with invalid geometry: {row.get(self.id_field)}'  # noqa
-                    LOGGER.error(msg)
-                    continue
+                    msg = f'Row with invalid geometry: {row.get(self.id_field)}, setting coordinates to None'  # noqa
+                    LOGGER.warning(msg)
+                    coordinates = None
                 feature = {'type': 'Feature'}
                 feature['id'] = row.pop(self.id_field)
                 if not skip_geometry:
