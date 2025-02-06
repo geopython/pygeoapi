@@ -31,11 +31,10 @@
 Returns content as linked data representations
 """
 
-import json
 import logging
 from typing import Callable
 
-from pygeoapi.util import is_url, render_j2_template
+from pygeoapi.util import is_url, render_j2_template, to_json
 from pygeoapi import l10n
 from shapely.geometry import shape
 from shapely.ops import unary_union
@@ -209,7 +208,6 @@ def geojson2jsonld(cls, data: dict, dataset: str,
 
         # Include multiple geometry encodings
         if (data.get('geometry') is not None):
-            data['type'] = 'schema:Place'
             jsonldify_geometry(data)
 
         data['@id'] = identifier
@@ -251,22 +249,19 @@ def geojson2jsonld(cls, data: dict, dataset: str,
         **data
     }
 
-    if item_template and identifier:
+    if identifier:
         # Render jsonld template for single item with template configured
-        LOGGER.debug(f'Rendering JSON-LD template: {template}')
+        LOGGER.debug(f'Rendering JSON-LD item template')
         content = render_j2_template(
             cls.config, cls.config['server']['templates'],
-            template, ldjsonData)
+            'collections/items/index.jsonld', ldjsonData)
 
-        ldjsonData = json.loads(content)
-
-    elif items_template:
+    else:
         # Render jsonld template for items with template configured
         LOGGER.debug(f'Rendering JSON-LD template: {items_template}')
         content = render_j2_template(cls.config, items_template, ldjsonData)
-        ldjsonData = json.loads(content)
 
-    return ldjsonData
+    return content
 
 
 def jsonldify_geometry(feature: dict) -> None:
@@ -278,6 +273,8 @@ def jsonldify_geometry(feature: dict) -> None:
 
     :returns: None
     """
+
+    feature['type'] = 'schema:Place'
 
     geo = feature.get('geometry')
     geom = shape(geo)
