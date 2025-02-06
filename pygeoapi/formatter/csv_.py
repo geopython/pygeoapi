@@ -66,7 +66,6 @@ class CSVFormatter(BaseFormatter):
         :returns: string representation of format
         """
 
-        is_point = False
         try:
             fields = list(data['features'][0]['properties'].keys())
         except IndexError:
@@ -89,8 +88,8 @@ class CSVFormatter(BaseFormatter):
             for feature in data['features']:
                 fp = feature['properties']
 
-                # Safely remove the 'geometry' key if it exists as we don't want that key being directly written out to
-                # the csv
+                # Safely remove the 'geometry' key if it exists as we don't want
+                # that key being directly written out to the csv
                 if 'geometry' in fp:
                     del fp['geometry']
 
