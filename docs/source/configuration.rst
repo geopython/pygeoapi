@@ -658,7 +658,7 @@ For even more deployment flexibility, the path can be specified with string inte
 
     linked-data:
       item_template: tests/data/base.jsonld
-      items_template: tests/data/base.jsonld
+      items_template: collections/items/items_list.jsonld
       context:
         - datetime: https://schema.org/DateTime
 
