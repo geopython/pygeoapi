@@ -60,6 +60,7 @@ PLUGINS = {
         'PostgreSQL': 'pygeoapi.provider.postgresql.PostgreSQLProvider',
         'rasterio': 'pygeoapi.provider.rasterio_.RasterioProvider',
         'SensorThings': 'pygeoapi.provider.sensorthings.SensorThingsProvider',
+        'SensorThingsEDR': 'pygeoapi.provider.sensorthings_edr.SensorThingsEDRProvider',  # noqa: E501
         'SQLiteGPKG': 'pygeoapi.provider.sqlite.SQLiteGPKGProvider',
         'Socrata': 'pygeoapi.provider.socrata.SODAServiceProvider',
         'TinyDB': 'pygeoapi.provider.tinydb_.TinyDBProvider',
