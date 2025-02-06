@@ -106,8 +106,8 @@ class SensorThingsEDRProvider(BaseEDRProvider, SensorThingsProvider):
         :param kwargs: Additional parameters for the request.
         :returns: A GeoJSON representation of the items.
         """
-        # This method is empty due to the way pygeoapi expects EDR providers.
-        # We define this method and then implement `get` inside of the OAF provider
+        # This method is empty due to the way pygeoapi handles items requests
+        # We implement this method inside of the feature provider
         pass
 
     @BaseEDRProvider.register()
@@ -163,7 +163,8 @@ class SensorThingsEDRProvider(BaseEDRProvider, SensorThingsProvider):
 
         expand = ','.join(expand)
         response = self._get_response(
-            url=self._url, params=params, entity='ObservedProperties', expand=expand
+            url=self._url, params=params,
+            entity='ObservedProperties', expand=expand
         )
 
         if location_id:
@@ -221,14 +222,19 @@ class SensorThingsEDRProvider(BaseEDRProvider, SensorThingsProvider):
 
         expand = ','.join(expand)
         response = self._get_response(
-            url=self._url, params=params, entity='ObservedProperties', expand=expand
+            url=self._url, params=params,
+            entity='ObservedProperties', expand=expand
         )
 
         return self._make_coverage_collection(response)
 
     @BaseEDRProvider.register()
     def area(
-        self, wkt: str, select_properties: list = [], datetime_: str = None, **kwargs
+        self,
+        wkt: str,
+        select_properties: list = [],
+        datetime_: str = None,
+        **kwargs
     ):
         """
         Extract and return coverage data from a specified area.
@@ -265,7 +271,8 @@ class SensorThingsEDRProvider(BaseEDRProvider, SensorThingsProvider):
 
         expand = ','.join(expand)
         response = self._get_response(
-            url=self._url, params=params, entity='ObservedProperties', expand=expand
+            url=self._url, params=params,
+            entity='ObservedProperties', expand=expand
         )
 
         return self._make_coverage_collection(response)

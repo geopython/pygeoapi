@@ -35,7 +35,7 @@ from pygeoapi_plugins.provider.sensorthings_edr import SensorThingsEDRProvider
 @pytest.fixture()
 def config():
     return {
-        'name': 'pygeoapi_plugins.provider.sensorthings_edr.SensorThingsEDRProvider',
+        'name': 'SensorThingsEDRProvider',
         'type': 'edr',
         'data': 'http://localhost:8888/FROST-Server/v1.1',
     }
@@ -114,7 +114,7 @@ def test_get_location(config):
     # Validate 'coverages'
     coverages = response['coverages']
     assert isinstance(coverages, list)
-    assert len(coverages) == 2  # Ensure there are 2 coverages as per the response
+    assert len(coverages) == 2  # Ensure there are 2 coverages
 
     # Validate each coverage
     for coverage in coverages:
@@ -186,7 +186,7 @@ def test_get_cube(config):
     # Validate 'coverages'
     coverages = response['coverages']
     assert isinstance(coverages, list)
-    assert len(coverages) == 1  # Ensure there is 1 coverage as per the response
+    assert len(coverages) == 1  # Ensure there is 1 coverage
 
     # Validate coverage structure
     coverage = coverages[0]
@@ -340,7 +340,7 @@ def test_get_area(config):
     p = SensorThingsEDRProvider(config)
 
     # Query the area with a sample WKT polygon
-    response = p.area(wkt='POLYGON ((-108 34, -108 35, -107 35, -107 34, -108 34))')
+    response = p.area(wkt='POLYGON ((-108 34, -108 35, -107 35, -107 34, -108 34))')  # noqa
 
     # Check the overall type
     assert response.get('type') == 'CoverageCollection'
@@ -352,30 +352,32 @@ def test_get_area(config):
     parameters = response.get('parameters')
     assert parameters is not None
     assert 'Water+Level+Below+Ground+Surface' in parameters
-    assert parameters['Water+Level+Below+Ground+Surface']['type'] == 'Parameter'
+    wl_below_ground = parameters['Water+Level+Below+Ground+Surface']
+    assert wl_below_ground['type'] == 'Parameter'
     assert (
-        parameters['Water+Level+Below+Ground+Surface']['description']['en']
+        wl_below_ground['description']['en']
         == 'Estimated depth to water table below ground surface'
     )
     assert (
-        parameters['Water+Level+Below+Ground+Surface']['observedProperty']['id']
+        wl_below_ground['observedProperty']['id']
         == 'Water Level Below Ground Surface'
     )
     assert (
-        parameters['Water+Level+Below+Ground+Surface']['unit']['label']['en'] == 'feet'
+        wl_below_ground['unit']['label']['en'] == 'feet'
     )
 
     assert 'Water+Level+relative+to+datum' in parameters
-    assert parameters['Water+Level+relative+to+datum']['type'] == 'Parameter'
+    wl_relative_datum = parameters['Water+Level+relative+to+datum']
+    assert wl_relative_datum['type'] == 'Parameter'
     assert (
-        parameters['Water+Level+relative+to+datum']['description']['en']
-        == 'Measured water level relative to National Geodetic Vertical Datum of 1929'
+        wl_relative_datum['description']['en']
+        == 'Measured water level relative to National Geodetic Vertical Datum of 1929' # noqa
     )
     assert (
-        parameters['Water+Level+relative+to+datum']['observedProperty']['id']
+        wl_relative_datum['observedProperty']['id']
         == 'Water Level relative to datum'
     )
-    assert parameters['Water+Level+relative+to+datum']['unit']['label']['en'] == 'feet'
+    assert wl_relative_datum['unit']['label']['en'] == 'feet'
 
     # Check coverages
     coverages = response.get('coverages')
@@ -400,4 +402,3 @@ def test_get_area(config):
     assert ranges_23['Water+Level+Below+Ground+Surface']['type'] == 'NdArray'
     assert ranges_23['Water+Level+Below+Ground+Surface']['dataType'] == 'float'
     assert ranges_23['Water+Level+Below+Ground+Surface']['shape'] == [31]
-
