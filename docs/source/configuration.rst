@@ -198,6 +198,7 @@ default.
               - monitoring
           linked-data: # linked data configuration (see Linked Data section)
               item_template: tests/data/base.jsonld
+              items_template: tests/data/base.jsonld
               context:
                   - datetime: https://schema.org/DateTime
                   - vocab: https://example.com/vocab#
@@ -648,15 +649,16 @@ This relationship can further be maintained in the JSON-LD structured data using
 
 Sometimes, the JSON-LD desired for an individual feature in a collection is more complicated than can be achieved by
 aliasing properties using a context. In this case, it is possible to specify a Jinja2 template. When ``item_template``
-is defined for a feature collection, the json-ld prepared by pygeoapi will be used to render the Jinja2 template
-specified by the path. The path specified can be absolute or relative to pygeoapi's template folder. For even more
-deployment flexibility, the path can be specified with string interpolation of environment variables.
+or ``items_template`` is defined for a feature collection, the json-ld prepared by pygeoapi will be used to render 
+the Jinja2 template specified by the path. The path specified can be absolute or relative to pygeoapi's template folder. 
+For even more deployment flexibility, the path can be specified with string interpolation of environment variables.
 
 
 .. code-block:: yaml
 
     linked-data:
       item_template: tests/data/base.jsonld
+      items_template: tests/data/base.jsonld
       context:
         - datetime: https://schema.org/DateTime
 
