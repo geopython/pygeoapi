@@ -76,6 +76,7 @@ class BaseManager:
         self.name = manager_def['name']
         self.is_async = False
         self.supports_subscribing = False
+        self.supports_request_headers = False
         self.connection = manager_def.get('connection')
         self.output_dir = manager_def.get('output_dir')
 
@@ -194,7 +195,8 @@ class BaseManager:
                                data_dict: dict,
                                requested_outputs: Optional[dict] = None,
                                subscriber: Optional[Subscriber] = None,
-                               requested_response: Optional[RequestedResponse] = RequestedResponse.raw.value  # noqa
+                               requested_response: Optional[RequestedResponse] = RequestedResponse.raw.value,  # noqa
+                               request_headers: Optional[dict] = None
                                ) -> Tuple[str, None, JobStatus]:
         """
         This private execution handler executes a process in a background
@@ -215,13 +217,15 @@ class BaseManager:
         :param subscriber: optional `Subscriber` specifying callback URLs
         :param requested_response: `RequestedResponse` optionally specifying
                                    raw or document (default is `raw`)
+        :param request_headers: `dict` optionally specifying the headers from
+                                the request
 
         :returns: tuple of None (i.e. initial response payload)
                   and JobStatus.accepted (i.e. initial job status)
         """
 
         args = (p, job_id, data_dict, requested_outputs, subscriber,
-                requested_response)
+                requested_response, request_headers)
 
         _process = dummy.Process(target=self._execute_handler_sync, args=args)
         _process.start()
@@ -232,7 +236,8 @@ class BaseManager:
                               data_dict: dict,
                               requested_outputs: Optional[dict] = None,
                               subscriber: Optional[Subscriber] = None,
-                              requested_response: Optional[RequestedResponse] = RequestedResponse.raw.value  # noqa
+                              requested_response: Optional[RequestedResponse] = RequestedResponse.raw.value,  # noqa
+                              request_headers: Optional[dict] = None
                               ) -> Tuple[str, Any, JobStatus]:
         """
         Synchronous execution handler
@@ -254,16 +259,20 @@ class BaseManager:
         :param subscriber: optional `Subscriber` specifying callback URLs
         :param requested_response: `RequestedResponse` optionally specifying
                                    raw or document (default is `raw`)
+        :param request_headers: `dict` optionally specifying the headers from
+                                the request
 
         :returns: tuple of MIME type, response payload and status
         """
 
         extra_execute_parameters = {}
 
-        # only pass requested_outputs if supported,
+        # only pass requested_outputs and request_headers if supported,
         # otherwise this breaks existing processes
         if p.supports_outputs:
             extra_execute_parameters['outputs'] = requested_outputs
+        if p.supports_request_headers:
+            extra_execute_parameters['request_headers'] = request_headers
 
         self._send_in_progress_notification(subscriber)
 
@@ -358,7 +367,8 @@ class BaseManager:
             execution_mode: Optional[RequestedProcessExecutionMode] = None,
             requested_outputs: Optional[dict] = None,
             subscriber: Optional[Subscriber] = None,
-            requested_response: Optional[RequestedResponse] = RequestedResponse.raw.value  # noqa
+            requested_response: Optional[RequestedResponse] = RequestedResponse.raw.value,  # noqa
+            request_headers: Optional[dict] = None
     ) -> Tuple[str, Any, JobStatus, Optional[Dict[str, str]]]:
         """
         Default process execution handler
@@ -377,6 +387,8 @@ class BaseManager:
         :param subscriber: `Subscriber` optionally specifying callback urls
         :param requested_response: `RequestedResponse` optionally specifying
                                    raw or document (default is `raw`)
+        :param request_headers: `dict` optionally specifying the headers from
+                                the request
 
 
         :raises UnknownProcessError: if the input process_id does not
@@ -443,10 +455,12 @@ class BaseManager:
         }
         self.add_job(job_metadata)
 
-        # only pass subscriber if supported, otherwise this breaks
+        # only pass subscriber and headers if supported, otherwise this breaks
         # existing managers
         if self.supports_subscribing:
             extra_execute_handler_parameters['subscriber'] = subscriber
+        if self.supports_request_headers:
+            extra_execute_handler_parameters['request_headers'] = request_headers  # noqa
 
         # TODO: handler's response could also be allowed to include more HTTP
         # headers

@@ -79,6 +79,7 @@ class PostgreSQLManager(BaseManager):
         self.is_async = True
         self.id_field = 'identifier'
         self.supports_subscribing = True
+        self.supports_request_headers = True
         self.connection = manager_def['connection']
 
         try:
