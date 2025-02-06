@@ -368,7 +368,10 @@ properties:
                             properties:
                                 item_template:
                                     type: string
-                                    description: path to JSON-LD Jinja2 template
+                                    description: path to JSON-LD Jinja2 item template
+                                items_template:
+                                    type: string
+                                    description: path to JSON-LD Jinja2 items template
                                 context:
                                     type: array
                                     description: additional JSON-LD context

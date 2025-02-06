@@ -1,0 +1,18 @@
+{
+    "@context":{
+        "schema": "https://schema.org/"
+    },
+    "@type": "schema:itemList",
+    "@id": "{{ data["@id"] }}",
+    {%- if data.features %}
+    "schema:itemListElement": [
+        {%- for ft in data.features %}
+        {
+            "@type": "{{ ft.type }}",
+            "@id": "{{ ft["@id"] }}"
+        }
+        {%- if not loop.last -%},{%- endif -%}
+        {%- endfor %}
+    ]
+    {%- endif %}
+}
