@@ -62,6 +62,17 @@ Currently supported style files (`options.style`):
             name: png
             mimetype: image/png
 
+Projections are supported through EPSG codes (`options.projection`):        
+
+.. code-block:: yaml
+
+           options:
+             type: MS_LAYER_POINT
+             layer: foo_name
+             projection: 32631
+
+This parameter is optional, defaulting to WGS84 (4236).
+
 WMSFacade
 ^^^^^^^^^
 
