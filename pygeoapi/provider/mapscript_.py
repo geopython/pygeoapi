@@ -75,7 +75,8 @@ class MapScriptProvider(BaseProvider):
 
             file_extension = self.data.split('.')[-1]
 
-            if 'tileindex' in self.options and str2bool(self.options.get('tileindex', False)): # noqa
+            if str2bool(self.options.get('tileindex', False)):
+                LOGGER.debug('Setting tileindex')
                 self._layer.tileindex = self.data
             else:
                 if file_extension in ['shp', 'tif']:
