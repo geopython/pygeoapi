@@ -186,4 +186,3 @@ def test_get_malformed(malformatted_config, caplog):
     assert results['numberReturned'] == 5
     assert results['features'][3]['geometry']['coordinates'] is None
     assert results['features'][4]['geometry']['coordinates'] is None
-  
