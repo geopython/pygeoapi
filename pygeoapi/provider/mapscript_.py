@@ -34,7 +34,8 @@ import mapscript
 from mapscript import MapServerError
 
 from pygeoapi.provider.base import (BaseProvider, ProviderConnectionError,
-                                    ProviderGenericError, ProviderQueryError)
+                                    ProviderQueryError)
+from pygeoapi.util import (str2bool)
 
 LOGGER = logging.getLogger(__name__)
 
@@ -74,13 +75,8 @@ class MapScriptProvider(BaseProvider):
 
             file_extension = self.data.split('.')[-1]
 
-            tileindex = False
-            if 'tileindex' in self.options:
-                if (self.options['tileindex'] is not True and self.options['tileindex'] is not False): # noqa
-                    raise ProviderGenericError('Invalid tileindex parameter')
-                tileindex = bool(self.options['tileindex'])
-
-            if tileindex is True:
+            # self._layer.tileindex = False
+            if 'tileindex' in self.options and str2bool(self.options.get('tileindex', False)): # noqa
                 self._layer.tileindex = self.data
             else:
                 if file_extension in ['shp', 'tif']:
