@@ -27,6 +27,8 @@
 #
 # =================================================================
 
+import logging
+
 import pytest
 
 from pygeoapi.provider.base import (ProviderItemNotFoundError,
