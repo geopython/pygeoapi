@@ -3,6 +3,6 @@
 {% block body %}
     <section id="exception">
       <h2>{% trans %}Exception{% endtrans %}</h2>
-      <p>{{ data['description'] }}</p>
+      <p>{{ data['description'] | striptags }}</p>
     </section>
 {% endblock %}
