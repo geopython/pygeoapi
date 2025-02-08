@@ -2,7 +2,7 @@
 #
 # Authors: Tom Kralidis <tomkralidis@gmail.com>
 #
-# Copyright (c) 2024 Tom Kralidis
+# Copyright (c) 2025 Tom Kralidis
 #
 # Permission is hereby granted, free of charge, to any person
 # obtaining a copy of this software and associated documentation
@@ -37,6 +37,7 @@ from shapely.geometry import shape
 from tinydb import TinyDB, Query, where
 
 from pygeoapi.provider.base import (BaseProvider, ProviderConnectionError,
+                                    ProviderInvalidQueryError,
                                     ProviderItemNotFoundError)
 from pygeoapi.util import crs_transform, get_typed_value
 
@@ -197,7 +198,12 @@ class TinyDBProvider(BaseProvider):
         LOGGER.debug('querying database')
         if len(QUERY) > 0:
             LOGGER.debug(f'running eval on {SEARCH_STRING}')
-            results = eval(SEARCH_STRING)
+            try:
+                results = eval(SEARCH_STRING)
+            except SyntaxError as err:
+                msg = 'Invalid query'
+                LOGGER.error(f'{msg}: {err}')
+                raise ProviderInvalidQueryError(msg)
         else:
             results = self.db.all()
 
