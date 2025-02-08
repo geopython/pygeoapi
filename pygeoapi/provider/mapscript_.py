@@ -75,7 +75,6 @@ class MapScriptProvider(BaseProvider):
 
             file_extension = self.data.split('.')[-1]
 
-            # self._layer.tileindex = False
             if 'tileindex' in self.options and str2bool(self.options.get('tileindex', False)): # noqa
                 self._layer.tileindex = self.data
             else:
