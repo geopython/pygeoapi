@@ -73,9 +73,9 @@ Projections are supported through EPSG codes (`options.projection`):
 
 This parameter is optional, defaulting to WGS84 (4236).
 
-This provider also supports `tileindexing <https://mapserver.org/optimization/tileindex.html>`_,
-which let MapScript create a mosaic on the fly, piecing together a set of files. 
-In order to enable it, set `options.tileindex` to True and set the location of the index file on the `data` path.
+This provider also supports `tile indexing <https://mapserver.org/optimization/tileindex.html>`_,
+which lets MapScript create a mosaic on the fly, piecing together a set of files. 
+In order to enable it, set `options.tileindex` to `True` and set the location of the index file on the `data` path.
 
 .. code-block:: yaml
 
@@ -91,7 +91,7 @@ In order to enable it, set `options.tileindex` to True and set the location of t
                 name: png
                 mimetype: image/png
 
-The `options.tileindex` parameter is optional, defaulting to False.
+The `options.tileindex` parameter is optional, defaulting to `False`.
 
 WMSFacade
 ^^^^^^^^^
