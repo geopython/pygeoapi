@@ -35,7 +35,7 @@ from mapscript import MapServerError
 
 from pygeoapi.provider.base import (BaseProvider, ProviderConnectionError,
                                     ProviderQueryError)
-from pygeoapi.util import (str2bool)
+from pygeoapi.util import str2bool
 
 LOGGER = logging.getLogger(__name__)
 
