@@ -29,6 +29,7 @@
 
 import pytest
 
+from pygeoapi.provider.base import ProviderInvalidDataError
 from pygeoapi.provider.sensorthings import SensorThingsProvider
 
 
@@ -183,6 +184,25 @@ def test_custom_expand(config):
     assert 'Observations' in fields
     assert 'ObservedProperty' not in fields
     assert 'Sensor' not in fields
+
+
+def test_custom_uri_field(config):
+    config['uri_field'] = 'uri'
+    config['properties'] = ['name']
+    p = SensorThingsProvider(config)
+
+    result = p.get('9')
+    assert result['id'] == '9'
+    assert result['properties']['name'] == 'Depth Below Surface'
+    assert result['properties']['uri'] == \
+        'https://geoconnex.us/iow/sta-demo/timeseries/9'
+    assert len(result['properties']) == 2
+
+    config['uri_field'] = 'bad_uri'
+    p = SensorThingsProvider(config)
+    with pytest.raises(ProviderInvalidDataError,
+                       match=".*Unable to find uri field: bad_uri"):
+        result = p.get('9')
 
 
 def test_transactions(config, post_body):

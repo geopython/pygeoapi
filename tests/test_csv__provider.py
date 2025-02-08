@@ -2,7 +2,7 @@
 #
 # Authors: Tom Kralidis <tomkralidis@gmail.com>
 #
-# Copyright (c) 2021 Tom Kralidis
+# Copyright (c) 2025 Tom Kralidis
 #
 # Permission is hereby granted, free of charge, to any person
 # obtaining a copy of this software and associated documentation
@@ -28,8 +28,9 @@
 # =================================================================
 
 import pytest
-import logging
-from pygeoapi.provider.base import ProviderItemNotFoundError
+
+from pygeoapi.provider.base import (ProviderItemNotFoundError,
+                                    ProviderInvalidQueryError)
 from pygeoapi.provider.csv_ import CSVProvider
 
 from .util import get_test_file_path
@@ -37,8 +38,6 @@ from .util import get_test_file_path
 path = get_test_file_path('data/obs.csv')
 stations_path = get_test_file_path('data/station_list.csv')
 malformatted_path = get_test_file_path('data/obs_malformatted.csv')
-
-LOGGER = logging.getLogger(__name__)
 
 
 @pytest.fixture()
@@ -82,7 +81,7 @@ def malformatted_config():
         }
     }
 
-
+ 
 def test_query(config):
     p = CSVProvider(config)
 
@@ -132,6 +131,13 @@ def test_query(config):
     p = CSVProvider(config)
     results = p.query()
     assert len(results['features'][0]['properties']) == 2
+
+
+def test_get_invalid_property(config):
+    """Testing query for an invalid property name"""
+    p = CSVProvider(config)
+    with pytest.raises(ProviderInvalidQueryError):
+        p.query(properties=[('foo', 'bar')])
 
 
 def test_get(config):

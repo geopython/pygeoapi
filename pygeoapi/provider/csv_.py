@@ -2,7 +2,7 @@
 #
 # Authors: Tom Kralidis <tomkralidis@gmail.com>
 #
-# Copyright (c) 2022 Tom Kralidis
+# Copyright (c) 2025 Tom Kralidis
 #
 # Permission is hereby granted, free of charge, to any person
 # obtaining a copy of this software and associated documentation
@@ -32,8 +32,9 @@ import csv
 import itertools
 import logging
 
-from pygeoapi.provider.base import (BaseProvider, ProviderQueryError,
-                                    ProviderItemNotFoundError)
+from pygeoapi.provider.base import (BaseProvider, ProviderInvalidQueryError,
+                                    ProviderItemNotFoundError,
+                                    ProviderQueryError)
 from pygeoapi.util import get_typed_value, crs_transform
 
 LOGGER = logging.getLogger(__name__)
@@ -120,6 +121,12 @@ class CSVProvider(BaseProvider):
             LOGGER.debug('Serializing DictReader')
             data_ = csv.DictReader(ff)
             if properties:
+                for prop in properties:
+                    if prop[0] not in data_.fieldnames:
+                        msg = 'Invalid fieldname'
+                        LOGGER.error(msg)
+                        raise ProviderInvalidQueryError(msg)
+
                 data_ = filter(
                     lambda p: all(
                         [p[prop[0]] == prop[1] for prop in properties]), data_)
@@ -139,6 +146,7 @@ class CSVProvider(BaseProvider):
                     msg = f'Row with invalid geometry: {row.get(self.id_field)}, setting coordinates to None'  # noqa
                     LOGGER.warning(msg)
                     coordinates = None
+
                 feature = {'type': 'Feature'}
                 feature['id'] = row.pop(self.id_field)
                 if not skip_geometry:
