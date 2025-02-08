@@ -35,6 +35,8 @@ from pygeoapi.provider.csv_ import CSVProvider
 
 from .util import get_test_file_path
 
+LOGGER = logging.getLogger(__name__)
+
 path = get_test_file_path('data/obs.csv')
 stations_path = get_test_file_path('data/station_list.csv')
 malformatted_path = get_test_file_path('data/obs_malformatted.csv')
@@ -81,7 +83,7 @@ def malformatted_config():
         }
     }
 
- 
+
 def test_query(config):
     p = CSVProvider(config)
 
@@ -182,3 +184,4 @@ def test_get_malformed(malformatted_config, caplog):
     assert results['numberReturned'] == 5
     assert results['features'][3]['geometry']['coordinates'] is None
     assert results['features'][4]['geometry']['coordinates'] is None
+  
