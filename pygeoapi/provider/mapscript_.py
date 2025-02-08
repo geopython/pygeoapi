@@ -35,6 +35,7 @@ from mapscript import MapServerError
 
 from pygeoapi.provider.base import (BaseProvider, ProviderConnectionError,
                                     ProviderQueryError)
+from pygeoapi.util import str2bool
 
 LOGGER = logging.getLogger(__name__)
 
@@ -74,13 +75,17 @@ class MapScriptProvider(BaseProvider):
 
             file_extension = self.data.split('.')[-1]
 
-            if file_extension in ['shp', 'tif']:
-                LOGGER.debug('Setting built-in MapServer driver')
-                self._layer.data = self.data
+            if str2bool(self.options.get('tileindex', False)):
+                LOGGER.debug('Setting tileindex')
+                self._layer.tileindex = self.data
             else:
-                LOGGER.debug('Setting OGR driver')
-                self._layer.setConnectionType(mapscript.MS_OGR, 'OGR')
-                self._layer.connection = self.data
+                if file_extension in ['shp', 'tif']:
+                    LOGGER.debug('Setting built-in MapServer driver')
+                    self._layer.data = self.data
+                else:
+                    LOGGER.debug('Setting OGR driver')
+                    self._layer.setConnectionType(mapscript.MS_OGR, 'OGR')
+                    self._layer.connection = self.data
 
             self._layer.type = getattr(mapscript, self.options['type'])
 
