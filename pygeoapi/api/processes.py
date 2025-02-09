@@ -743,6 +743,25 @@ def get_oas_30(cfg: dict, locale: str) -> tuple[list[dict[str, str]], dict[str, 
                 }
             }
         }
+
+        try:
+            first_key = list(p.metadata['outputs'])[0]
+            p_output = p.metadata['outputs'][first_key]
+
+            if p_output.get('schema') is not None:
+                LOGGER.debug('Adding output schema')
+                content_media_type = p_output['schema'].pop('contentMediaType', 'application/json')  # noqa
+                paths[f'{process_name_path}/execution']['post']['responses']['200'] = {  # noqa
+                    'description': 'Process output schema',
+                    'content': {
+                        content_media_type: {
+                            'schema': p_output['schema']
+                        }
+                    }
+                }
+        except (IndexError, KeyError):
+            LOGGER.debug('No output defined')
+
         if 'example' in p.metadata:
             paths[f'{process_name_path}/execution']['post']['requestBody']['content']['application/json']['example'] = p.metadata['example']  # noqa
 
