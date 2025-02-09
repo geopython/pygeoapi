@@ -29,7 +29,7 @@
 
 import pytest
 
-from pygeoapi_plugins.provider.sensorthings_edr import SensorThingsEDRProvider
+from pygeoapi.provider.sensorthings_edr import SensorThingsEDRProvider
 
 
 @pytest.fixture()

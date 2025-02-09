@@ -103,19 +103,18 @@ SensorThingsEDR
 ^^^^^^^^^^^^^^^
 
 The SensorThings API EDR Provider for pygeaopi extends the feature provider to
-produce coverageJSON representations from SenosThings repsonses. This provider relies
-on using the ObservedProperty Entity to create the `parameter-name` set.
+produce coverageJSON representations from SensorThings responses repsonses. This provider
+relies on using the ObservedProperty Entity to create the `parameter-name` set.
 
 .. code-block:: yaml
 
    providers:
       - type: edr
         name: SensorThingsEDR
-        data: https://api.waterdata.usgs.gov/sta/v1.1/
+        data: https://emotional.byteroad.net/FROST-Server/v1.1/
       - type: feature
         name: SensorThings
-        data: https://api.waterdata.usgs.gov/sta/v1.1/
-        entity: Things
+        data: https://emotional.byteroad.net/FROST-Server/v1.1/Things
         title_field: name
 
 

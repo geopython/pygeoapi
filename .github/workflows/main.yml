@@ -141,6 +141,7 @@ jobs:
         pytest tests/test_oracle_provider.py
         pytest tests/test_postgresql_provider.py
         pytest tests/test_rasterio_provider.py
+        pytest tests/test_sensorthings_edr_provider.py 
         pytest tests/test_sensorthings_provider.py
         pytest tests/test_socrata_provider.py
         # pytest tests/test_socrata_provider_live.py.py  # NOTE: these are skipped in the file but listed here for completeness
