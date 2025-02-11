@@ -151,6 +151,7 @@ def test_render_items_template(api_, feature):
         'links': []
     }
 
+    # Use "objects" collection which has item list json-ld template
     result = geojson2jsonld(api_, fc, "objects")
     feature_list = json.loads(result)
 
