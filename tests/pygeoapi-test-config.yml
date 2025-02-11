@@ -358,6 +358,7 @@ resources:
               hreflang: en-US
         linked-data:
             item_template: tests/data/base.jsonld
+            items_template: collections/items/items_list.jsonld
         extents:
             spatial:
                 bbox: [-180,-90,180,90]
