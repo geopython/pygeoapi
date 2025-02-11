@@ -29,6 +29,7 @@
 
 
 from copy import deepcopy
+import json
 import logging
 import pytest
 from shapely.geometry import (Point, MultiPoint, Polygon,
@@ -65,7 +66,7 @@ def test_geojson2jsonld_single_feature(api_, feature):
 
     result = geojson2jsonld(api_, feature,
                             "obs", "http://example.org/feature/1")
-    result_dict = eval(result)
+    result_dict = json.loads(result)
 
     assert "@context" in result_dict
     assert result_dict["@id"] == "http://example.org/feature/1"
@@ -151,7 +152,7 @@ def test_render_items_template(api_, feature):
     }
 
     result = geojson2jsonld(api_, fc, "objects")
-    feature_list = eval(result)
+    feature_list = json.loads(result)
 
     assert len(feature_list['schema:itemListElement']) == len(fc['features'])
 
