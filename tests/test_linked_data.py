@@ -145,6 +145,23 @@ def test_geometry_conversions(geom_type, coords):
     assert result["@type"] in ["schema:GeoCoordinates", "schema:GeoShape"]
 
 
+def test_render_item_template(api_, feature):
+    # Use 'objects' collection which has item json-ld template
+    result = geojson2jsonld(api_, deepcopy(feature),
+                       'objects', 'http://example.org/feature/1')
+
+    # Use 'objects' collection which has item json-ld template
+    api_.config['resources']['objects'].pop('linked-data')
+    result2 = geojson2jsonld(api_, deepcopy(feature),
+                       'objects', 'http://example.org/feature/1')
+
+    # Ensure item template is renderable
+    assert json.loads(result)
+
+    # Ensure item template is unedited
+    assert json.loads(result) == json.loads(result2)
+
+
 def test_render_items_template(api_, feature):
     fc = {
         'features': [deepcopy(feature) for _ in range(5)],
