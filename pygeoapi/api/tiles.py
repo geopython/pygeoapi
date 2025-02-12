@@ -258,7 +258,7 @@ def get_collection_tiles_data(
             HTTPStatus.BAD_REQUEST, headers, format_,
             'InvalidParameterValue', msg)
     except ProviderTileNotFoundError:
-        msg = f'Tile not found'
+        msg = 'Tile not found'
         LOGGER.info(msg)
         return headers, HTTPStatus.NOT_FOUND, msg
     except ProviderGenericError as err:
