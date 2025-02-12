@@ -101,7 +101,7 @@ class ParquetProvider(BaseProvider):
         self.ds = pyarrow.dataset.dataset(self.source, filesystem=self.fs)
 
         LOGGER.debug('Grabbing field information')
-        self.fields = self.get_fields()  # Must be set to visualise queryables
+        self.get_fields()  # Must be set to visualise queryables
 
         # Column names for bounding box data.
         if None in [self.x_field, self.y_field]:
@@ -148,42 +148,42 @@ class ParquetProvider(BaseProvider):
         :returns: dict of fields
         """
 
-        fields = dict()
+        if not self._fields:
 
-        for field_name, field_type in zip(self.ds.schema.names,
-                                          self.ds.schema.types):
-            # Geometry is managed as a special case by pygeoapi
-            if field_name == 'geometry':
-                continue
+            for field_name, field_type in zip(self.ds.schema.names,
+                                              self.ds.schema.types):
+                # Geometry is managed as a special case by pygeoapi
+                if field_name == 'geometry':
+                    continue
 
-            field_type = str(field_type)
-            converted_type = None
-            converted_format = None
-            if field_type.startswith(('int', 'uint')):
-                converted_type = 'integer'
-                converted_format = field_type
-            elif field_type == 'double' or field_type.startswith('float'):
-                converted_type = 'number'
-                converted_format = field_type
-            elif field_type == 'string':
-                converted_type = 'string'
-            elif field_type == 'bool':
-                converted_type = 'boolean'
-            elif field_type.startswith('timestamp'):
-                converted_type = 'string'
-                converted_format = 'date-time'
-            else:
-                LOGGER.error(f'Unsupported field type {field_type}')
+                field_type = str(field_type)
+                converted_type = None
+                converted_format = None
+                if field_type.startswith(('int', 'uint')):
+                    converted_type = 'integer'
+                    converted_format = field_type
+                elif field_type == 'double' or field_type.startswith('float'):
+                    converted_type = 'number'
+                    converted_format = field_type
+                elif field_type == 'string':
+                    converted_type = 'string'
+                elif field_type == 'bool':
+                    converted_type = 'boolean'
+                elif field_type.startswith('timestamp'):
+                    converted_type = 'string'
+                    converted_format = 'date-time'
+                else:
+                    LOGGER.error(f'Unsupported field type {field_type}')
 
-            if converted_format is None:
-                fields[field_name] = {'type': converted_type}
-            else:
-                fields[field_name] = {
-                    'type': converted_type,
-                    'format': converted_format,
-                }
+                if converted_format is None:
+                    self._fields[field_name] = {'type': converted_type}
+                else:
+                    self._fields[field_name] = {
+                        'type': converted_type,
+                        'format': converted_format,
+                    }
 
-        return fields
+        return self._fields
 
     @crs_transform
     def query(
