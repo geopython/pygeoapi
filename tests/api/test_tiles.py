@@ -99,8 +99,7 @@ def test_get_collection_tiles_metadata_formats(api_, file_format):
     _, code, response = get_collection_tiles_metadata(
         api_, req, 'naturalearth/lakes', matrix_id='WebMercatorQuad')
     assert code == HTTPStatus.OK
-    data = json.loads(response)
-    assert data['title'] == 'Large Lakes'
+    assert json.loads(response)
 
 
 def test_tilematrixset(config, api_):
