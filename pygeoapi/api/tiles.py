@@ -262,7 +262,6 @@ def get_collection_tiles_data(
             err.ogc_exception_code, err.message)
 
 
-# TODO: no test for this function?
 def get_collection_tiles_metadata(
     api: API, request: APIRequest,
         dataset=None, matrix_id=None) -> Tuple[dict, int, str]:
