@@ -327,9 +327,10 @@ def get_collection_tiles_metadata(
                                      'collections/tiles/metadata.html',
                                      tiles_metadata, request.locale)
 
-        return headers, HTTPStatus.OK, content
     else:
-        return headers, HTTPStatus.OK, tiles_metadata
+        content = to_json(tiles_metadata, api.pretty_print)
+
+    return headers, HTTPStatus.OK, content
 
 
 def tilematrixsets(api: API,
