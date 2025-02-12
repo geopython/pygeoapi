@@ -34,10 +34,12 @@
 
 import json
 from http import HTTPStatus
+import pytest
 
 from pygeoapi.api import FORMAT_TYPES, F_HTML
 from pygeoapi.api.tiles import (
-    get_collection_tiles, tilematrixset, tilematrixsets,
+    get_collection_tiles, tilematrixset,
+    tilematrixsets, get_collection_tiles_metadata
 )
 from pygeoapi.models.provider.base import TileMatrixSetEnum
 
@@ -81,6 +83,23 @@ def test_tilematrixsets(config, api_):
     assert rsp_headers['Content-Type'] == FORMAT_TYPES[F_HTML]
     # No language requested: should be set to default from YAML
     assert rsp_headers['Content-Language'] == 'en-US'
+
+
+@pytest.mark.parametrize('file_format', ['html', 'json', 'tilejson'])
+def test_get_collection_tiles_metadata_bad_request(api_, file_format):
+    req = mock_api_request({'f': file_format})
+    _, code, _ = get_collection_tiles_metadata(
+        api_, req, 'obs', 'WorldCRS84Quad')
+    assert code == HTTPStatus.BAD_REQUEST
+
+
+@pytest.mark.parametrize('file_format', ['json', 'tilejson'])
+def test_get_collection_tiles_metadata_formats(api_, file_format):
+    req = mock_api_request({'f': file_format})
+    _, code, response = get_collection_tiles_metadata(
+        api_, req, 'naturalearth/lakes', matrix_id='WebMercatorQuad')
+    assert code == HTTPStatus.OK
+    assert json.loads(response)
 
 
 def test_tilematrixset(config, api_):
