@@ -122,7 +122,7 @@ DEFAULT_CRS = 'http://www.opengis.net/def/crs/OGC/1.3/CRS84'
 DEFAULT_STORAGE_CRS = DEFAULT_CRS
 
 
-def all_apis() -> dict:
+def all_apis(server_cfg: dict = {}) -> dict:
     """
     Return all supported API modules
 
@@ -131,18 +131,36 @@ def all_apis() -> dict:
     :returns: `dict` of API provider type, API module
     """
 
-    from . import (coverages, environmental_data_retrieval, itemtypes, maps,
-                   processes, tiles, stac)
+    apis: dict = {}
 
-    return {
-        'coverage': coverages,
-        'edr': environmental_data_retrieval,
-        'itemtypes': itemtypes,
-        'map': maps,
-        'process': processes,
-        'tile': tiles,
-        'stac': stac
-    }
+    from . import itemtypes
+    apis['itemtypes'] = itemtypes
+
+    if server_cfg.get('coverages', True):
+        from . import coverages
+        apis['coverage'] = coverages
+
+    if server_cfg.get('edr', True):
+        from . import environmental_data_retrieval
+        apis['edr'] = environmental_data_retrieval
+
+    if server_cfg.get('maps', True):
+        from . import maps
+        apis['map'] = maps
+
+    if server_cfg.get('processes', True):
+        from . import processes
+        apis['process'] = processes
+
+    if server_cfg.get('tiles', True):
+        from . import tiles
+        apis['tile'] = tiles
+
+    if server_cfg.get('stac', True):
+        from . import stac
+        apis['stac'] = stac
+
+    return apis
 
 
 def apply_gzip(headers: dict, content: Union[str, bytes]) -> Union[str, bytes]:
@@ -742,6 +760,10 @@ def landing_page(api: API,
                 request.locale)
     }
 
+    processes_enabled = api.config['server'].get('processes', True)
+    stac_enabled = api.config['server'].get('stac', True)
+    tiles_enabled = api.config['server'].get('tiles', True)
+
     LOGGER.debug('Creating links')
     # TODO: put title text in config or translatable files?
     fcm['links'] = [{
@@ -788,27 +810,32 @@ def landing_page(api: API,
         'type': FORMAT_TYPES[F_JSON],
         'title': l10n.translate('Collections', request.locale),
         'href': api.get_collections_url()
-    }, {
-        'rel': 'http://www.opengis.net/def/rel/ogc/1.0/processes',
-        'type': FORMAT_TYPES[F_JSON],
-        'title': l10n.translate('Processes', request.locale),
-        'href': f"{api.base_url}/processes"
-    }, {
-        'rel': 'http://www.opengis.net/def/rel/ogc/1.0/job-list',
-        'type': FORMAT_TYPES[F_JSON],
-        'title': l10n.translate('Jobs', request.locale),
-        'href': f"{api.base_url}/jobs"
-    }, {
-        'rel': 'http://www.opengis.net/def/rel/ogc/1.0/tiling-schemes',
-        'type': FORMAT_TYPES[F_JSON],
-        'title': l10n.translate('The list of supported tiling schemes as JSON', request.locale),  # noqa
-        'href': f"{api.base_url}/TileMatrixSets?f=json"
-    }, {
-        'rel': 'http://www.opengis.net/def/rel/ogc/1.0/tiling-schemes',
-        'type': FORMAT_TYPES[F_HTML],
-        'title': l10n.translate('The list of supported tiling schemes as HTML', request.locale),  # noqa
-        'href': f"{api.base_url}/TileMatrixSets?f=html"
     }]
+
+    if processes_enabled:
+        fcm['links'].extend([{
+            'rel': 'http://www.opengis.net/def/rel/ogc/1.0/processes',
+            'type': FORMAT_TYPES[F_JSON],
+            'title': l10n.translate('Processes', request.locale),
+            'href': f"{api.base_url}/processes"
+        }, {
+            'rel': 'http://www.opengis.net/def/rel/ogc/1.0/job-list',
+            'type': FORMAT_TYPES[F_JSON],
+            'title': l10n.translate('Jobs', request.locale),
+            'href': f"{api.base_url}/jobs"
+        }])
+    if tiles_enabled:
+        fcm['links'].extend([{
+            'rel': 'http://www.opengis.net/def/rel/ogc/1.0/tiling-schemes',
+            'type': FORMAT_TYPES[F_JSON],
+            'title': l10n.translate('The list of supported tiling schemes as JSON', request.locale),  # noqa
+            'href': f"{api.base_url}/TileMatrixSets?f=json"
+        }, {
+            'rel': 'http://www.opengis.net/def/rel/ogc/1.0/tiling-schemes',
+            'type': FORMAT_TYPES[F_HTML],
+            'title': l10n.translate('The list of supported tiling schemes as HTML', request.locale),  # noqa
+            'href': f"{api.base_url}/TileMatrixSets?f=html"
+        }])
 
     headers = request.get_response_headers(**api.api_headers)
     if request.format == F_HTML:  # render
@@ -816,14 +843,15 @@ def landing_page(api: API,
         fcm['processes'] = False
         fcm['stac'] = False
         fcm['collection'] = False
+        fcm['tiles'] = tiles_enabled
 
         if filter_dict_by_key_value(api.config['resources'],
                                     'type', 'process'):
-            fcm['processes'] = True
+            fcm['processes'] = processes_enabled
 
         if filter_dict_by_key_value(api.config['resources'],
                                     'type', 'stac-collection'):
-            fcm['stac'] = True
+            fcm['stac'] = stac_enabled
 
         if filter_dict_by_key_value(api.config['resources'],
                                     'type', 'collection'):
@@ -882,14 +910,17 @@ def conformance(api, request: APIRequest) -> Tuple[dict, int, str]:
     :returns: tuple of headers, status code, content
     """
 
-    apis_dict = all_apis()
+    apis_dict = all_apis(api.config['server'])
+
+    processes_enabled = api.config['server'].get('processes', True)
 
     conformance_list = CONFORMANCE_CLASSES
 
     for key, value in api.config['resources'].items():
         if value['type'] == 'process':
-            conformance_list.extend(
-                apis_dict['process'].CONFORMANCE_CLASSES)
+            if processes_enabled:
+                conformance_list.extend(
+                    apis_dict['process'].CONFORMANCE_CLASSES)
         else:
             for provider in value['providers']:
                 if provider['type'] in apis_dict:
