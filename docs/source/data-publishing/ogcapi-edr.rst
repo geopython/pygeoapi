@@ -14,13 +14,22 @@ Providers
 ---------
 
 pygeoapi core EDR providers are listed below, along with a matrix of supported query
-parameters.
+types and query arguments.
+
+.. csv-table::
+   :header: Provider, Position, Radius, Area, Cube, Trajectory, Corridor, Items, Locations, Instances
+   :align: left
+
+   `xarray-edr`_,✅,❌,❌,✅,❌,❌,❌,❌,❌
+   `SensorThingsEDR`_,❌,❌,✅,✅,❌,❌,✅,✅,❌
+
 
 .. csv-table::
    :header: Provider, coords, parameter-name, datetime
    :align: left
 
    `xarray-edr`_,✅,✅,✅
+   `SensorThingsEDR`_,✅,✅,✅
 
 
 Below are specific connection examples based on supported providers.
@@ -88,6 +97,30 @@ The `xarray-edr`_ provider plugin reads and extracts `NetCDF`_ and `Zarr`_ data 
    When providing a `storage_crs` value in the EDR configuration, specify the 
    coordinate reference system using any valid input for 
    `pyproj.CRS.from_user_input`_. 
+
+
+SensorThingsEDR
+^^^^^^^^^^^^^^^
+
+The SensorThings API EDR Provider for pygeaopi extends the feature provider to
+produce CoverageJSON representations from SensorThings responses repsonses. This provider
+relies on using the ObservedProperty Entity to create the `parameter-name` set.
+
+.. code-block:: yaml
+
+   providers:
+      - type: edr
+        name: SensorThingsEDR
+        data: https://emotional.byteroad.net/FROST-Server/v1.1/
+      - type: feature
+        name: SensorThings
+        data: https://emotional.byteroad.net/FROST-Server/v1.1/Things
+        title_field: name
+
+
+.. note::
+   The `feature` provider must also be configured to service the `.../items` 
+   EDR query type.
 
 
 Data access examples
