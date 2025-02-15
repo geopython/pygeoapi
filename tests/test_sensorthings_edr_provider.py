@@ -37,7 +37,7 @@ def config():
     return {
         'name': 'SensorThingsEDRProvider',
         'type': 'edr',
-        'data': 'http://localhost:8888/FROST-Server/v1.1',
+        'data': 'http://localhost:8888/FROST-Server/v1.1'
     }
 
 

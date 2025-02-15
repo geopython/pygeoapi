@@ -39,13 +39,13 @@ GEOGRAPHIC_CRS = {
     'coordinates': ['x', 'y'],
     'system': {
         'type': 'GeographicCRS',
-        'id': 'http://www.opengis.net/def/crs/OGC/1.3/CRS84',  # noqa
-    },
+        'id': 'http://www.opengis.net/def/crs/OGC/1.3/CRS84'  # noqa
+    }
 }
 
 TEMPORAL_RS = {
     'coordinates': ['t'],
-    'system': {'type': 'TemporalRS', 'calendar': 'Gregorian'},
+    'system': {'type': 'TemporalRS', 'calendar': 'Gregorian'}
 }
 
 
@@ -56,6 +56,7 @@ class SensorThingsEDRProvider(BaseEDRProvider, SensorThingsProvider):
 
         :param provider_def: provider definition
         """
+
         provider_def['entity'] = 'ObservedProperties'
         BaseEDRProvider.__init__(self, provider_def)
         SensorThingsProvider.__init__(self, provider_def)
@@ -72,6 +73,7 @@ class SensorThingsEDRProvider(BaseEDRProvider, SensorThingsProvider):
 
         :returns: A dictionary mapping field IDs to their properties.
         """
+
         if not self._fields:
             r = self._get_response(
                 self._url, entity='ObservedProperties', expand='Datastreams'
@@ -86,14 +88,14 @@ class SensorThingsEDRProvider(BaseEDRProvider, SensorThingsProvider):
                 id = str(feature['@iot.id'])
                 key = feature['name']
                 try:
-                    UoM = feature['Datastreams'][0]['unitOfMeasurement']
+                    uom = feature['Datastreams'][0]['unitOfMeasurement']
                 except IndexError:
                     continue
 
                 self._fields[id] = {
                     'type': 'number',
                     'title': key,
-                    'x-ogc-unit': UoM['symbol'],
+                    'x-ogc-unit': uom['symbol']
                 }
 
         return self._fields
@@ -106,6 +108,7 @@ class SensorThingsEDRProvider(BaseEDRProvider, SensorThingsProvider):
         :param kwargs: Additional parameters for the request.
         :returns: A GeoJSON representation of the items.
         """
+
         # This method is empty due to the way pygeoapi handles items requests
         # We implement this method inside of the feature provider
         pass
@@ -117,7 +120,7 @@ class SensorThingsEDRProvider(BaseEDRProvider, SensorThingsProvider):
         bbox: list = [],
         datetime_: str = None,
         location_id: str = None,
-        **kwargs,
+        **kwargs
     ):
         """
         Extract and return location data from ObservedProperties.
@@ -129,13 +132,14 @@ class SensorThingsEDRProvider(BaseEDRProvider, SensorThingsProvider):
 
         :returns: A GeoJSON FeatureCollection of locations.
         """
+
         fc = {'type': 'FeatureCollection', 'features': []}
 
         params = {}
         expand = [
             'Datastreams($select=description,name,unitOfMeasurement)',
             'Datastreams/Thing($select=@iot.id)',
-            'Datastreams/Thing/Locations($select=location)',
+            'Datastreams/Thing/Locations($select=location)'
         ]
 
         if select_properties:
@@ -146,16 +150,16 @@ class SensorThingsEDRProvider(BaseEDRProvider, SensorThingsProvider):
             ret = [f'{name} eq {value}' for (name, value) in properties]
             params['$filter'] = ' or '.join(ret)
 
-        filter = f'$filter={self._make_dtf(datetime_)};' if datetime_ else ''
+        filter_ = f'$filter={self._make_dtf(datetime_)};' if datetime_ else ''
         if location_id:
             expand[0] = (
                 f'Datastreams($filter=Thing/@iot.id eq {location_id};$select=description,name,unitOfMeasurement)'  # noqa
             )
             expand.append(
-                f'Datastreams/Observations({filter}$orderby=phenomenonTime;$select=result,phenomenonTime,resultTime)'  # noqa
+                f'Datastreams/Observations({filter_}$orderby=phenomenonTime;$select=result,phenomenonTime,resultTime)'  # noqa
             )
         else:
-            expand.append(f'Datastreams/Observations({filter}$select=result;$top=1)')  # noqa
+            expand.append(f'Datastreams/Observations({filter_}$select=result;$top=1)')  # noqa
 
         if bbox:
             geom_filter = self._make_bbox(bbox, 'Datastreams')
@@ -187,7 +191,7 @@ class SensorThingsEDRProvider(BaseEDRProvider, SensorThingsProvider):
         select_properties: list = [],
         bbox: list = [],
         datetime_: str = None,
-        **kwargs,
+        **kwargs
     ):
         """
         Extract and return coverage data from ObservedProperties.
@@ -198,13 +202,14 @@ class SensorThingsEDRProvider(BaseEDRProvider, SensorThingsProvider):
 
         :returns: A CovJSON CoverageCollection.
         """
+
         params = {}
 
         geom_filter = self._make_bbox(bbox, 'Datastreams')
         expand = [
             f'Datastreams($filter={geom_filter};$select=description,name,unitOfMeasurement)',  # noqa
             'Datastreams/Thing($select=@iot.id)',
-            'Datastreams/Thing/Locations($select=location)',
+            'Datastreams/Thing/Locations($select=location)'
         ]
 
         if select_properties:
@@ -215,9 +220,9 @@ class SensorThingsEDRProvider(BaseEDRProvider, SensorThingsProvider):
             ret = [f'{name} eq {value}' for (name, value) in properties]
             params['$filter'] = ' or '.join(ret)
 
-        filter = f'$filter={self._make_dtf(datetime_)};' if datetime_ else ''
+        filter_ = f'$filter={self._make_dtf(datetime_)};' if datetime_ else ''
         expand.append(
-            f'Datastreams/Observations({filter}$orderby=phenomenonTime;$select=result,phenomenonTime,resultTime)'  # noqa
+            f'Datastreams/Observations({filter_}$orderby=phenomenonTime;$select=result,phenomenonTime,resultTime)'  # noqa
         )
 
         expand = ','.join(expand)
@@ -253,7 +258,7 @@ class SensorThingsEDRProvider(BaseEDRProvider, SensorThingsProvider):
         expand = [
             f"Datastreams($filter=st_within(Thing/Locations/location,geography'{wkt}');$select=description,name,unitOfMeasurement)",  # noqa
             'Datastreams/Thing($select=@iot.id)',
-            'Datastreams/Thing/Locations($select=location)',
+            'Datastreams/Thing/Locations($select=location)'
         ]
 
         if select_properties:
@@ -264,9 +269,9 @@ class SensorThingsEDRProvider(BaseEDRProvider, SensorThingsProvider):
             ret = [f'{name} eq {value}' for (name, value) in properties]
             params['$filter'] = ' or '.join(ret)
 
-        filter = f'$filter={self._make_dtf(datetime_)};' if datetime_ else ''
+        filter_ = f'$filter={self._make_dtf(datetime_)};' if datetime_ else ''
         expand.append(
-            f'Datastreams/Observations({filter}$orderby=phenomenonTime;$select=result,phenomenonTime,resultTime)'  # noqa
+            f'Datastreams/Observations({filter_}$orderby=phenomenonTime;$select=result,phenomenonTime,resultTime)'  # noqa
         )
 
         expand = ','.join(expand)
@@ -286,6 +291,7 @@ class SensorThingsEDRProvider(BaseEDRProvider, SensorThingsProvider):
 
         :returns: A dict containing the coverage object.
         """
+
         times, values = self._expand_observations(datastream)
         thing = datastream['Thing']
         coords = thing['Locations'][0]['location']['coordinates']
@@ -300,9 +306,9 @@ class SensorThingsEDRProvider(BaseEDRProvider, SensorThingsProvider):
                 'axes': {
                     'x': {'values': [coords[0]]},
                     'y': {'values': [coords[1]]},
-                    't': {'values': times},
+                    't': {'values': times}
                 },
-                'referencing': [GEOGRAPHIC_CRS, TEMPORAL_RS],
+                'referencing': [GEOGRAPHIC_CRS, TEMPORAL_RS]
             },
             'ranges': {
                 id: {
@@ -310,9 +316,9 @@ class SensorThingsEDRProvider(BaseEDRProvider, SensorThingsProvider):
                     'dataType': 'float',
                     'axisNames': ['t'],
                     'shape': [length],
-                    'values': values,
+                    'values': values
                 }
-            },
+            }
         }, length
 
     @staticmethod
@@ -325,14 +331,15 @@ class SensorThingsEDRProvider(BaseEDRProvider, SensorThingsProvider):
 
         :returns: A dictionary containing the parameter definition.
         """
+
         return {
             'type': 'Parameter',
             'description': {'en': datastream['description']},
             'observedProperty': {'id': label, 'label': {'en': label}},
             'unit': {
                 'label': {'en': datastream['unitOfMeasurement']['name']},
-                'symbol': datastream['unitOfMeasurement']['symbol'],
-            },
+                'symbol': datastream['unitOfMeasurement']['symbol']
+            }
         }
 
     @staticmethod
@@ -344,6 +351,7 @@ class SensorThingsEDRProvider(BaseEDRProvider, SensorThingsProvider):
 
         :returns: A string datetime filter for use in queries.
         """
+
         dtf_r = []
         if '/' in datetime_:
             time_start, time_end = datetime_.split('/')
@@ -366,11 +374,12 @@ class SensorThingsEDRProvider(BaseEDRProvider, SensorThingsProvider):
 
         :returns: The updated CoverageCollection object.
         """
+
         cc = {
             'type': 'CoverageCollection',
             'domainType': 'PointSeries',
             'parameters': {},
-            'coverages': [],
+            'coverages': []
         }
 
         for feature in response['value']:
@@ -403,6 +412,7 @@ class SensorThingsEDRProvider(BaseEDRProvider, SensorThingsProvider):
 
         :returns: A tuple containing lists of times and values.
         """
+
         times = []
         values = []
         # TODO: Expand observations when 'Observations@iot.nextLink'

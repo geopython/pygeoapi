@@ -119,7 +119,7 @@ relies on using the ObservedProperty Entity to create the `parameter-name` set.
 
 
 .. note::
-   The `feature` provider must also be configured to service the `/items` 
+   The `feature` provider must also be configured to service the `.../items` 
    EDR query type.
 
 
