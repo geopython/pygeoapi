@@ -39,7 +39,7 @@ GEOGRAPHIC_CRS = {
     'coordinates': ['x', 'y'],
     'system': {
         'type': 'GeographicCRS',
-        'id': 'http://www.opengis.net/def/crs/OGC/1.3/CRS84'  # noqa
+        'id': 'http://www.opengis.net/def/crs/OGC/1.3/CRS84'
     }
 }
 
@@ -61,7 +61,7 @@ class SensorThingsEDRProvider(BaseEDRProvider, SensorThingsProvider):
         BaseEDRProvider.__init__(self, provider_def)
         SensorThingsProvider.__init__(self, provider_def)
         self.expand['ObservedProperties'] = (
-            'Datastreams/Thing/Locations,Datastreams/Observations'  # noqa
+            'Datastreams/Thing/Locations,Datastreams/Observations'
         )
         self.time_field = 'Datastreams/Observations/resultTime'
         self._fields = {}
@@ -153,13 +153,16 @@ class SensorThingsEDRProvider(BaseEDRProvider, SensorThingsProvider):
         filter_ = f'$filter={self._make_dtf(datetime_)};' if datetime_ else ''
         if location_id:
             expand[0] = (
-                f'Datastreams($filter=Thing/@iot.id eq {location_id};$select=description,name,unitOfMeasurement)'  # noqa
+                f'Datastreams($filter=Thing/@iot.id eq {location_id};'
+                '$select=description,name,unitOfMeasurement)'
             )
             expand.append(
-                f'Datastreams/Observations({filter_}$orderby=phenomenonTime;$select=result,phenomenonTime,resultTime)'  # noqa
+                f'Datastreams/Observations({filter_}$orderby=phenomenonTime;'
+                '$select=result,phenomenonTime,resultTime)'
             )
         else:
-            expand.append(f'Datastreams/Observations({filter_}$select=result;$top=1)')  # noqa
+            expand.append(
+                f'Datastreams/Observations({filter_}$select=result;$top=1)')
 
         if bbox:
             geom_filter = self._make_bbox(bbox, 'Datastreams')
@@ -207,7 +210,10 @@ class SensorThingsEDRProvider(BaseEDRProvider, SensorThingsProvider):
 
         geom_filter = self._make_bbox(bbox, 'Datastreams')
         expand = [
-            f'Datastreams($filter={geom_filter};$select=description,name,unitOfMeasurement)',  # noqa
+            (
+             f'Datastreams($filter={geom_filter};'
+             '$select=description,name,unitOfMeasurement)'
+            ),
             'Datastreams/Thing($select=@iot.id)',
             'Datastreams/Thing/Locations($select=location)'
         ]
@@ -222,7 +228,8 @@ class SensorThingsEDRProvider(BaseEDRProvider, SensorThingsProvider):
 
         filter_ = f'$filter={self._make_dtf(datetime_)};' if datetime_ else ''
         expand.append(
-            f'Datastreams/Observations({filter_}$orderby=phenomenonTime;$select=result,phenomenonTime,resultTime)'  # noqa
+            f'Datastreams/Observations({filter_}$orderby=phenomenonTime;'
+            '$select=result,phenomenonTime,resultTime)'
         )
 
         expand = ','.join(expand)
@@ -256,7 +263,11 @@ class SensorThingsEDRProvider(BaseEDRProvider, SensorThingsProvider):
         params = {}
 
         expand = [
-            f"Datastreams($filter=st_within(Thing/Locations/location,geography'{wkt}');$select=description,name,unitOfMeasurement)",  # noqa
+            (
+             'Datastreams($filter=st_within('
+             f"Thing/Locations/location,geography'{wkt}');"
+             '$select=description,name,unitOfMeasurement)'
+            ),
             'Datastreams/Thing($select=@iot.id)',
             'Datastreams/Thing/Locations($select=location)'
         ]
@@ -271,7 +282,8 @@ class SensorThingsEDRProvider(BaseEDRProvider, SensorThingsProvider):
 
         filter_ = f'$filter={self._make_dtf(datetime_)};' if datetime_ else ''
         expand.append(
-            f'Datastreams/Observations({filter_}$orderby=phenomenonTime;$select=result,phenomenonTime,resultTime)'  # noqa
+            f'Datastreams/Observations({filter_}$orderby=phenomenonTime;'
+            '$select=result,phenomenonTime,resultTime)'
         )
 
         expand = ','.join(expand)
