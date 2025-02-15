@@ -103,7 +103,7 @@ SensorThingsEDR
 ^^^^^^^^^^^^^^^
 
 The SensorThings API EDR Provider for pygeaopi extends the feature provider to
-produce coverageJSON representations from SensorThings responses repsonses. This provider
+produce CoverageJSON representations from SensorThings responses repsonses. This provider
 relies on using the ObservedProperty Entity to create the `parameter-name` set.
 
 .. code-block:: yaml
