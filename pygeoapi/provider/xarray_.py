@@ -97,7 +97,11 @@ class XarrayProvider(BaseProvider):
             self.storage_crs = self._parse_storage_crs(provider_def)
             self._coverage_properties = self._get_coverage_properties()
 
-            self.axes = self._coverage_properties['axes']
+            self.axes = [self._coverage_properties['x_axis_label'],
+                         self._coverage_properties['y_axis_label'],
+                         self._coverage_properties['time_axis_label']]
+            self.time_axis_covjson = provider_def.get('time_axis_covjson') \
+                or self.time_field
 
             self.get_fields()
         except Exception as err:
@@ -111,7 +115,7 @@ class XarrayProvider(BaseProvider):
                     LOGGER.debug('Adding variable')
                     dtype = value.dtype
                     if dtype.name.startswith('float'):
-                        dtype = 'number'
+                        dtype = 'float'
                     elif dtype.name.startswith('int'):
                         dtype = 'integer'
 
@@ -280,26 +284,13 @@ class XarrayProvider(BaseProvider):
         """
 
         LOGGER.debug('Creating CoverageJSON domain')
-        minx, miny, maxx, maxy = metadata['bbox']
+        startx, starty, stopx, stopy = metadata['bbox']
+        mint, maxt = metadata['time']
 
         selected_fields = {
             key: value for key, value in self.fields.items()
             if key in fields
         }
-
-        try:
-            tmp_min = data.coords[self.y_field].values[0]
-        except IndexError:
-            tmp_min = data.coords[self.y_field].values
-        try:
-            tmp_max = data.coords[self.y_field].values[-1]
-        except IndexError:
-            tmp_max = data.coords[self.y_field].values
-
-        if tmp_min > tmp_max:
-            LOGGER.debug(f'Reversing direction of {self.y_field}')
-            miny = tmp_max
-            maxy = tmp_min
 
         cj = {
             'type': 'Coverage',
@@ -308,13 +299,13 @@ class XarrayProvider(BaseProvider):
                 'domainType': 'Grid',
                 'axes': {
                     'x': {
-                        'start': minx,
-                        'stop': maxx,
+                        'start': startx,
+                        'stop': stopx,
                         'num': metadata['width']
                     },
                     'y': {
-                        'start': maxy,
-                        'stop': miny,
+                        'start': starty,
+                        'stop': stopy,
                         'num': metadata['height']
                     }
                 },
@@ -331,17 +322,14 @@ class XarrayProvider(BaseProvider):
         }
 
         if self.time_field is not None:
-            mint, maxt = metadata['time']
-            cj['domain']['axes'][self.time_field] = {
-                'start': mint,
-                'stop': maxt,
-                'num': metadata['time_steps'],
+            cj['domain']['axes'][self.time_axis_covjson] = {
+                'values': [str(i) for i in data.coords[self.time_field].values]
             }
-
+        
         for key, value in selected_fields.items():
             parameter = {
                 'type': 'Parameter',
-                'description': value['title'],
+                'description': {'en': value['title']},
                 'unit': {
                     'symbol': value['x-ogc-unit']
                 },
@@ -362,19 +350,20 @@ class XarrayProvider(BaseProvider):
                 cj['ranges'][key] = {
                     'type': 'NdArray',
                     'dataType': value['type'],
-                    'axisNames': [
-                        'y', 'x'
-                    ],
-                    'shape': [metadata['height'],
-                              metadata['width']]
+                    'axisNames': [],
+                    'shape': []
                 }
                 cj['ranges'][key]['values'] = data[key].values.flatten().tolist()  # noqa
 
                 if self.time_field is not None:
                     cj['ranges'][key]['axisNames'].append(
-                        self._coverage_properties['time_axis_label']
+                        self.time_axis_covjson
                     )
                     cj['ranges'][key]['shape'].append(metadata['time_steps'])
+                cj['ranges'][key]['axisNames'].append('y')
+                cj['ranges'][key]['axisNames'].append('x')
+                cj['ranges'][key]['shape'].append(metadata['height'])
+                cj['ranges'][key]['shape'].append(metadata['width'])
         except IndexError as err:
             LOGGER.warning(err)
             raise ProviderQueryError('Invalid query parameter')
@@ -550,7 +539,7 @@ class XarrayProvider(BaseProvider):
         for var_name, var in self._data.variables.items():
             if all(dim in var.dims for dim in spatiotemporal_dims):
                 try:
-                    grid_mapping_name = self._data[var_name].attrs['grid_mapping']  # noqa 
+                    grid_mapping_name = self._data[var_name].attrs['grid_mapping']  # noqa
                     LOGGER.debug(f'Grid mapping: {grid_mapping_name}')
                 except KeyError as err:
                     LOGGER.debug(err)
