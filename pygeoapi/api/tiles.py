@@ -49,6 +49,7 @@ from pygeoapi.models.provider.base import (TilesMetadataFormat,
 from pygeoapi.provider.base import (
     ProviderGenericError, ProviderTypeError
 )
+from pygeoapi.provider.tile import ProviderTileNotFoundError
 
 from pygeoapi.util import (
     get_provider_by_type, to_json, filter_dict_by_key_value,
@@ -256,6 +257,10 @@ def get_collection_tiles_data(
         return api.get_exception(
             HTTPStatus.BAD_REQUEST, headers, format_,
             'InvalidParameterValue', msg)
+    except ProviderTileNotFoundError:
+        msg = 'Tile not found'
+        LOGGER.info(msg)
+        return headers, HTTPStatus.NOT_FOUND, msg
     except ProviderGenericError as err:
         return api.get_exception(
             err.http_status_code, headers, request.format,
