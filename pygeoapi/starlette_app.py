@@ -49,7 +49,7 @@ from starlette.responses import (
 )
 import uvicorn
 
-from pygeoapi.api import API, APIRequest, apply_gzip
+from pygeoapi.api import API, APIRequest, apply_gzip, apply_integrity
 import pygeoapi.api as core_api
 import pygeoapi.api.coverages as coverages_api
 import pygeoapi.api.environmental_data_retrieval as edr_api
@@ -133,6 +133,7 @@ async def execute_from_starlette(api_function, request: Request, *args,
         headers, status, content = await loop.run_in_executor(
             None, call_api_threadsafe, loop, api_function,
             actual_api, api_request, *args)
+        apply_integrity(headers, content)
         # NOTE: that gzip currently doesn't work in starlette
         #       https://github.com/geopython/pygeoapi/issues/1591
         content = apply_gzip(headers, content)
