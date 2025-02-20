@@ -32,11 +32,22 @@
 # =================================================================
 
 from pydantic import BaseModel, Field
+import pydantic
+
+# Handle Pydantic v1/v2 compatibility
+if pydantic.VERSION.startswith("1"):
+    model_validator = "parse_obj"
+    model_fields = "__fields__"
+    regex_param = "regex"
+else:
+    model_validator = "model_validate"
+    model_fields = "model_fields"
+    regex_param = "pattern"
 
 
 class APIRules(BaseModel):
     """ Pydantic model for API design rules that must be adhered to. """
-    api_version: str = Field(pattern=r'^\d+\.\d+\..+$',
+    api_version: str = Field(**{regex_param: r'^\d+\.\d+\..+$'},
                              description="Semantic API version number.")
     url_prefix: str = Field(
         "",
@@ -62,11 +73,12 @@ class APIRules(BaseModel):
         """ Returns a new APIRules instance for the current API version
         and configured rules. """
         obj = {
-            k: v for k, v in rules_config.items() if k in APIRules.model_fields
+            k: v for k, v in rules_config.items() if k in getattr(APIRules, model_fields)
         }
         # Validation will fail if required `api_version` is missing
         # or if `api_version` is not a semantic version number
-        return APIRules.model_validate(obj)
+        model_validator_ = getattr(APIRules, model_validator)
+        return model_validator_(obj)
 
     @property
     def response_headers(self) -> dict:
