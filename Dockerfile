@@ -7,7 +7,7 @@
 #
 # Copyright (c) 2020 Tom Kralidis
 # Copyright (c) 2019 Just van den Broecke
-# Copyright (c) 2020 Francesco Bartoli
+# Copyright (c) 2025 Francesco Bartoli
 # Copyright (c) 2024 Angelos Tzotsos
 # Copyright (c) 2023 Bernhard Mallinger
 #
