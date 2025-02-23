@@ -1,8 +1,10 @@
 # =================================================================
 #
 # Authors: Joana Simoes <jo@byteroad.net>
+#          Francesco Bartoli <xbartolone@gmail.com>
 #
 # Copyright (c) 2023 Joana Simoes
+# Copyright (c) 2025 Francesco Bartoli
 #
 # Permission is hereby granted, free of charge, to any person
 # obtaining a copy of this software and associated documentation
@@ -302,8 +304,8 @@ class MVTTippecanoeProvider(BaseMVTProvider):
             content = MVTTilesJson(**metadata_json_content)
             content.tiles = service_url
             content.vector_layers = json.loads(
-                    metadata_json_content["json"])["vector_layers"]
-            metadata['metadata'] = content.dict()
+                metadata_json_content["json"])["vector_layers"]
+            metadata['metadata'] = content.model_dump()
             # Some providers may not implement tilejson metadata
             metadata['tilejson_url'] = f'{metadata_url}?f=tilejson'
         except ProviderConnectionError:
@@ -365,7 +367,7 @@ class MVTTippecanoeProvider(BaseMVTProvider):
 
         content.links = links
 
-        return content.dict(exclude_none=True)
+        return content.model_dump(exclude_none=True)
 
     def get_vendor_metadata(self, dataset, server_url, layer, tileset,
                             title, description, keywords, **kwargs):
@@ -383,8 +385,8 @@ class MVTTippecanoeProvider(BaseMVTProvider):
             content = MVTTilesJson(**metadata_json_content)
             content.tiles = service_url
             content.vector_layers = json.loads(
-                    metadata_json_content["json"])["vector_layers"]
-            return content.dict()
+                metadata_json_content["json"])["vector_layers"]
+            return content.model_dump()
         except ProviderConnectionError:
             msg = f'No tiles metadata json available: {self.service_metadata_url}'  # noqa
             LOGGER.error(msg)
