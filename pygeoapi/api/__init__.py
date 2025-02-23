@@ -176,7 +176,7 @@ def apply_integrity(headers: dict, content: Union[str, bytes]):
     """
 
     try:
-        hash_method = headers.pop('Want-Digest')
+        hash_method = headers.pop('Want-Content-Digest')
     except KeyError:
         LOGGER.debug('No digest requested')
         return
@@ -190,7 +190,7 @@ def apply_integrity(headers: dict, content: Union[str, bytes]):
                          else content.encode(charset))
 
         hash_func.update(content_bytes)
-        headers['Digest'] = f'{hash_method}={hash_func.hexdigest()}'
+        headers['Content-Digest'] = f'{hash_method}={hash_func.hexdigest()}'
 
     except ValueError:
         raise ValueError(f'Unsupported hash method: {hash_method}')
@@ -388,7 +388,7 @@ class APIRequest:
         :param headers: Dict of Request headers
         :returns: digest method or None if not found/specified
         """
-        h = headers.get('Want-Digest', headers.get('want-digest', '')).strip() # noqa
+        h = headers.get('Want-Content-Digest', headers.get('want-content-digest', '')).strip() # noqa
         # basic support for complex types (i.e. with "q=0.x")
         for hash_method in (t.split(';')[0].strip().lower() for t in h.split(',') if t): # noqa
             if hash_method in DIGEST_METHODS:
@@ -556,9 +556,9 @@ class APIRequest:
                 headers['Content-Encoding'] = F_GZIP
 
         if force_digest:
-            headers['Want-Digest'] = force_digest
+            headers['Want-Content-Digest'] = force_digest
         elif self._digest:
-            headers['Want-Digest'] = self._digest
+            headers['Want-Content-Digest'] = self._digest
 
         return headers
 
