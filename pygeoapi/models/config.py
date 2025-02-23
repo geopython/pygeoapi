@@ -6,7 +6,7 @@
 #          Francesco Bartoli <xbartolone@gmail.com>
 #
 # Copyright (c) 2023 Sander Schaminee
-# Copyright (c) 2024 Francesco Bartoli
+# Copyright (c) 2025 Francesco Bartoli
 #
 # Permission is hereby granted, free of charge, to any person
 # obtaining a copy of this software and associated documentation
@@ -36,7 +36,7 @@ from pydantic import BaseModel, Field
 
 class APIRules(BaseModel):
     """ Pydantic model for API design rules that must be adhered to. """
-    api_version: str = Field(regex=r'^\d+\.\d+\..+$',
+    api_version: str = Field(pattern=r'^\d+\.\d+\..+$',
                              description="Semantic API version number.")
     url_prefix: str = Field(
         "",
@@ -62,11 +62,11 @@ class APIRules(BaseModel):
         """ Returns a new APIRules instance for the current API version
         and configured rules. """
         obj = {
-            k: v for k, v in rules_config.items() if k in APIRules.__fields__
+            k: v for k, v in rules_config.items() if k in APIRules.model_fields
         }
         # Validation will fail if required `api_version` is missing
         # or if `api_version` is not a semantic version number
-        return APIRules.parse_obj(obj)
+        return APIRules.model_validate(obj)
 
     @property
     def response_headers(self) -> dict:
