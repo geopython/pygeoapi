@@ -9,7 +9,7 @@
 #          Bernhard Mallinger <bernhard.mallinger@eox.at>
 #
 # Copyright (c) 2024 Tom Kralidis
-# Copyright (c) 2022 Francesco Bartoli
+# Copyright (c) 2025 Francesco Bartoli
 # Copyright (c) 2022 John A Stevenson and Colin Blackburn
 # Copyright (c) 2023 Ricardo Garcia Silva
 # Copyright (c) 2024 Bernhard Mallinger
@@ -96,7 +96,7 @@ def get_collection_tiles(api: API, request: APIRequest,
     LOGGER.debug('Loading provider')
     try:
         t = get_provider_by_type(
-                api.config['resources'][dataset]['providers'], 'tile')
+            api.config['resources'][dataset]['providers'], 'tile')
         p = load_plugin('provider', t)
     except (KeyError, ProviderTypeError):
         msg = 'Invalid collection tiles'
@@ -363,14 +363,14 @@ def tilematrixsets(api: API,
                 {
                    "rel": "self",
                    "type": "text/html",
-                   "title": f"The HTML representation of the {e.tileMatrixSet} tile matrix set", # noqa
-                   "href": f"{api.base_url}/TileMatrixSets/{e.tileMatrixSet}?f=html" # noqa
+                   "title": f"The HTML representation of the {e.tileMatrixSet} tile matrix set",  # noqa
+                   "href": f"{api.base_url}/TileMatrixSets/{e.tileMatrixSet}?f=html"  # noqa
                 },
                 {
                    "rel": "self",
                    "type": "application/json",
-                   "title": f"The JSON representation of the {e.tileMatrixSet} tile matrix set", # noqa
-                   "href": f"{api.base_url}/TileMatrixSets/{e.tileMatrixSet}?f=json" # noqa
+                   "title": f"The JSON representation of the {e.tileMatrixSet} tile matrix set",  # noqa
+                   "href": f"{api.base_url}/TileMatrixSets/{e.tileMatrixSet}?f=json"  # noqa
                 }
             ]
         })
@@ -505,7 +505,7 @@ def get_oas_30(cfg: dict, locale: str) -> tuple[list[dict[str, str]], dict[str, 
                     'tags': [k],
                     'operationId': f'get{k.capitalize()}.collection.{datatype}.getTile',  # noqa
                     'parameters': [
-                        {'$ref': f"{OPENAPI_YAML['oapit']}#/components/parameters/tileMatrixSetId"}, # noqa
+                        {'$ref': f"{OPENAPI_YAML['oapit']}#/components/parameters/tileMatrixSetId"},  # noqa
                         {'$ref': f"{OPENAPI_YAML['oapit']}#/components/parameters/tileMatrix"},  # noqa
                         {'$ref': f"{OPENAPI_YAML['oapit']}#/components/parameters/tileRow"},  # noqa
                         {'$ref': f"{OPENAPI_YAML['oapit']}#/components/parameters/tileCol"},  # noqa
