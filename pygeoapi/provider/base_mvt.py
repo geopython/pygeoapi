@@ -73,9 +73,9 @@ class BaseMVTProvider(BaseTileProvider):
     def get_tiling_schemes(self):
 
         tile_matrix_set_links_list = [
-                TileMatrixSetEnum.WORLDCRS84QUAD.value,
-                TileMatrixSetEnum.WEBMERCATORQUAD.value
-            ]
+            TileMatrixSetEnum.WORLDCRS84QUAD.value,
+            TileMatrixSetEnum.WEBMERCATORQUAD.value
+        ]
         tile_matrix_set_links = [
             item for item in tile_matrix_set_links_list
             if item.tileMatrixSet in self.options['schemes']]
@@ -214,7 +214,7 @@ class BaseMVTProvider(BaseTileProvider):
                                              tileset, title, description,
                                              keywords, **kwargs)
         else:
-            raise NotImplementedError(f"_{metadata_format.upper()}_ is not supported") # noqa
+            raise NotImplementedError(f"_{metadata_format.upper()}_ is not supported")  # noqa
 
     def get_tms_links(self):
         """

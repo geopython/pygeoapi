@@ -134,12 +134,11 @@ RUN python3 -m pip install --no-cache-dir -r requirements-docker.txt \
 ADD . /pygeoapi
 
  # Install pygeoapi
-RUN python3 -m pip install --no-cache-dir -e . 
+RUN python3 -m pip install --no-cache-dir -e .
 
-RUN \ 
+RUN \
     # Set default config and entrypoint for Docker Image
     cp /pygeoapi/docker/default.config.yml /pygeoapi/local.config.yml \
-    && cp /pygeoapi/docker/entrypoint.sh /entrypoint.sh 
+    && cp /pygeoapi/docker/entrypoint.sh /entrypoint.sh
 
 ENTRYPOINT ["/entrypoint.sh"]
-
