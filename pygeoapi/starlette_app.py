@@ -4,7 +4,7 @@
 #          Tom Kralidis <tomkralidis@gmail.com>
 #          Abdulazeez Abdulazeez Adeshina <youngestdev@gmail.com>
 #
-# Copyright (c) 2020 Francesco Bartoli
+# Copyright (c) 2025 Francesco Bartoli
 # Copyright (c) 2025 Tom Kralidis
 # Copyright (c) 2022 Abdulazeez Abdulazeez Adeshina
 #
@@ -616,6 +616,7 @@ class ApiRulesMiddleware:
     """ Custom middleware to properly deal with trailing slashes.
     See https://github.com/encode/starlette/issues/869.
     """
+
     def __init__(
             self,
             app: ASGIApp
