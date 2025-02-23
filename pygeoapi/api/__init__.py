@@ -8,7 +8,7 @@
 #          Ricardo Garcia Silva <ricardo.garcia.silva@geobeyond.it>
 #
 # Copyright (c) 2025 Tom Kralidis
-# Copyright (c) 2022 Francesco Bartoli
+# Copyright (c) 2025 Francesco Bartoli
 # Copyright (c) 2022 John A Stevenson and Colin Blackburn
 # Copyright (c) 2023 Ricardo Garcia Silva
 #
@@ -212,6 +212,7 @@ class APIRequest:
     :param request:             The web platform specific Request instance.
     :param supported_locales:   List or set of supported Locale instances.
     """
+
     def __init__(self, request, supported_locales):
         # Set default request data
         self._data = b''
@@ -336,7 +337,7 @@ class APIRequest:
 
         # Format not specified: get from Accept headers (MIME types)
         # e.g. format_ = 'text/html'
-        h = headers.get('accept', headers.get('Accept', '')).strip() # noqa
+        h = headers.get('accept', headers.get('Accept', '')).strip()  # noqa
         (fmts, mimes) = zip(*FORMAT_TYPES.items())
         # basic support for complex types (i.e. with "q=0.x")
         for type_ in (t.split(';')[0].strip() for t in h.split(',') if t):
@@ -1134,10 +1135,10 @@ def describe_collections(api: API, request: APIRequest,
 
         # OAPIF Part 2 - list supported CRSs and StorageCRS
         if collection_data_type in ['edr', 'feature']:
-            collection['crs'] = get_supported_crs_list(collection_data, DEFAULT_CRS_LIST) # noqa
-            collection['storageCRS'] = collection_data.get('storage_crs', DEFAULT_STORAGE_CRS) # noqa
+            collection['crs'] = get_supported_crs_list(collection_data, DEFAULT_CRS_LIST)  # noqa
+            collection['storageCRS'] = collection_data.get('storage_crs', DEFAULT_STORAGE_CRS)  # noqa
             if 'storage_crs_coordinate_epoch' in collection_data:
-                collection['storageCrsCoordinateEpoch'] = collection_data.get('storage_crs_coordinate_epoch') # noqa
+                collection['storageCrsCoordinateEpoch'] = collection_data.get('storage_crs_coordinate_epoch')  # noqa
 
         elif collection_data_type == 'coverage':
             # TODO: translate
@@ -1176,7 +1177,7 @@ def describe_collections(api: API, request: APIRequest,
                     collection['extent']['spatial']['grid'] = [{
                         'cellsCount': p._coverage_properties['width'],
                         'resolution': p._coverage_properties['resx']
-                        }, {
+                    }, {
                         'cellsCount': p._coverage_properties['height'],
                         'resolution': p._coverage_properties['resy']
                     }]
