@@ -139,11 +139,8 @@ class MVTTippecanoeProvider(BaseMVTProvider):
             return Path(self.data).name
 
     def get_tiling_schemes(self):
-
         "Only WebMercatorQuad tiling scheme is supported in elastic"
-        return [
-                TileMatrixSetEnum.WEBMERCATORQUAD.value
-            ]
+        return [TileMatrixSetEnum.WEBMERCATORQUAD.value]
 
     def get_tiles_service(self, baseurl=None, servicepath=None,
                           dirpath=None, tile_type=None):
@@ -299,7 +296,7 @@ class MVTTippecanoeProvider(BaseMVTProvider):
         metadata['json_url'] = f'{metadata_url}?f=json'
 
         try:
-            metadata_json_content = self.get_metadata_from_URL(self.service_metadata_url) # noqa
+            metadata_json_content = self.get_metadata_from_URL(self.service_metadata_url)  # noqa
 
             content = MVTTilesJson(**metadata_json_content)
             content.tiles = service_url
@@ -338,15 +335,15 @@ class MVTTippecanoeProvider(BaseMVTProvider):
                 tiling_scheme_url = url_join(
                     server_url, f'/TileMatrixSets/{schema.tileMatrixSet}')
                 tiling_scheme_url_type = "application/json"
-                tiling_scheme_url_title = f'{schema.tileMatrixSet} tile matrix set definition' # noqa
+                tiling_scheme_url_title = f'{schema.tileMatrixSet} tile matrix set definition'  # noqa
 
                 tiling_scheme = LinkType(href=tiling_scheme_url,
-                                         rel="http://www.opengis.net/def/rel/ogc/1.0/tiling-scheme", # noqa
+                                         rel="http://www.opengis.net/def/rel/ogc/1.0/tiling-scheme",  # noqa
                                          type_=tiling_scheme_url_type,
                                          title=tiling_scheme_url_title)
 
         if tiling_scheme is None:
-            msg = f'Could not identify a valid tiling schema'  # noqa
+            msg = "Could not identify a valid tiling schema"
             LOGGER.error(msg)
             raise ProviderConnectionError(msg)
 
@@ -376,7 +373,7 @@ class MVTTippecanoeProvider(BaseMVTProvider):
         """
 
         try:
-            metadata_json_content = self.get_metadata_from_URL(self.service_metadata_url) # noqa
+            metadata_json_content = self.get_metadata_from_URL(self.service_metadata_url)  # noqa
 
             service_url = url_join(
                 server_url,
