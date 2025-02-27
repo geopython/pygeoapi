@@ -29,11 +29,11 @@ To run with the default built-in configuration and data:
 
 ...then browse to http://localhost:5000
 
-You can also run pygeoapi with hot-reload of the configuration enabled
+You can also run pygeoapi with run-with-hot-reload of the configuration enabled
 
 .. code-block:: bash
 
-   docker run -p 5000:80 -it geopython/pygeoapi hot-reload
+   docker run -p 5000:80 -it geopython/pygeoapi run-with-hot-reload
 
 You can also run all unit tests to verify:
 
@@ -97,8 +97,8 @@ The base Docker image supports two additional environment variables for configur
    .. code-block:: bash
 
       docker run -p 5000:80 -e PYGEOAPI_SERVER_ADMIN=true -it geopython/pygeoapi
-      # with hot-reload
-      docker run -p 5000:80 -e PYGEOAPI_SERVER_ADMIN=true -it geopython/pygeoapi hot-reload
+      # run with hot reload
+      docker run -p 5000:80 -e PYGEOAPI_SERVER_ADMIN=true -it geopython/pygeoapi run-with-hot-reload
 
    To learn more about the Admin API see :ref:`admin-api`.
 

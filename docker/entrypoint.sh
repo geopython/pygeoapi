@@ -113,7 +113,7 @@ case ${entry_cmd} in
 		;;
 
 	# Run pygeoapi server with hot reload
-	hot-reload)
+	run-with-hot-reload)
 		# Lock all Python files (for gunicorn hot reload)
 		find . -type f -name "*.py" | xargs chmod 0444
 
@@ -122,7 +122,7 @@ case ${entry_cmd} in
 		;;
 
 	*)
-	  error "unknown command arg: must be run (default), hot-reload, or test"
+	  error "unknown command arg: must be run (default), run-with-hot-reload, or test"
 	  ;;
 esac
 
