@@ -434,6 +434,7 @@ class BaseManager:
             'process_id': process_id,
             'created': get_current_datetime(),
             'started': get_current_datetime(),
+            'updated': get_current_datetime(),
             'finished': None,
             'status': current_status.value,
             'location': None,
