@@ -73,7 +73,12 @@ BLUEPRINT = Blueprint(
     static_folder=STATIC_FOLDER,
     url_prefix=API_RULES.get_url_prefix('flask')
 )
-ADMIN_BLUEPRINT = Blueprint('admin', __name__, static_folder=STATIC_FOLDER)
+ADMIN_BLUEPRINT = Blueprint(
+    'admin',
+    __name__,
+    static_folder=STATIC_FOLDER,
+    url_prefix=API_RULES.get_url_prefix('flask')
+)
 
 # CORS: optionally enable from config.
 if CONFIG['server'].get('cors', False):
