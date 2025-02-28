@@ -595,7 +595,7 @@ class API:
         if format_ == F_HTML:
             headers['Content-Type'] = FORMAT_TYPES[F_HTML]
             content = render_j2_template(
-                self.config, self.config['server']['templates'],
+                self.tpl_config, self.config['server']['templates'],
                 'exception.html', exception, SYSTEM_LOCALE)
         else:
             content = to_json(exception, self.pretty_print)
@@ -832,8 +832,8 @@ def landing_page(api: API,
             fcm['collection'] = True
 
         content = render_j2_template(
-            api.config, api.config['server']['templates'], 'landing_page.html',
-            fcm, request.locale)
+            api.tpl_config, api.config['server']['templates'],
+            'landing_page.html', fcm, request.locale)
 
         return headers, HTTPStatus.OK, content
 
@@ -865,7 +865,7 @@ def openapi_(api: API, request: APIRequest) -> Tuple[dict, int, str]:
             'openapi-document-path': path
         }
         content = render_j2_template(
-            api.config, api.config['server']['templates'], template, data,
+            api.tpl_config, api.config['server']['templates'], template, data,
             request.locale)
 
         return headers, HTTPStatus.OK, content
@@ -915,8 +915,8 @@ def conformance(api, request: APIRequest) -> Tuple[dict, int, str]:
     headers = request.get_response_headers(**api.api_headers)
     if request.format == F_HTML:  # render
         content = render_j2_template(
-            api.config, api.config['server']['templates'], 'conformance.html',
-            conformance, request.locale)
+            api.tpl_config, api.config['server']['templates'],
+            'conformance.html', conformance, request.locale)
 
         return headers, HTTPStatus.OK, content
 
@@ -1345,12 +1345,12 @@ def describe_collections(api: API, request: APIRequest,
         fcm['collections_path'] = api.get_collections_url()
         if dataset is not None:
             tpl_config = api.get_dataset_templates(dataset)
-            content = render_j2_template(api.config, tpl_config,
+            content = render_j2_template(api.tpl_config, tpl_config,
                                          'collections/collection.html',
                                          fcm, request.locale)
         else:
             content = render_j2_template(
-                api.config, api.config['server']['templates'],
+                api.tpl_config, api.config['server']['templates'],
                 'collections/index.html', fcm, request.locale)
 
         return headers, HTTPStatus.OK, content
@@ -1443,7 +1443,7 @@ def get_collection_schema(api: API, request: Union[APIRequest, Any],
         schema['collections_path'] = api.get_collections_url()
         schema['dataset_path'] = f'{api.get_collections_url()}/{dataset}'
 
-        content = render_j2_template(api.config, tpl_config,
+        content = render_j2_template(api.tpl_config, tpl_config,
                                      'collections/schema.html',
                                      schema, request.locale)
 

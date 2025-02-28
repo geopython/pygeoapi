@@ -212,12 +212,12 @@ def describe_processes(api: API, request: APIRequest,
     if request.format == F_HTML:  # render
         if process is not None:
             tpl_config = api.get_dataset_templates(process)
-            response = render_j2_template(api.config, tpl_config,
+            response = render_j2_template(api.tpl_config, tpl_config,
                                           'processes/process.html',
                                           response, request.locale)
         else:
             response = render_j2_template(
-                api.config, api.config['server']['templates'],
+                api.tpl_config, api.config['server']['templates'],
                 'processes/index.html', response, request.locale)
 
         return headers, HTTPStatus.OK, response
@@ -395,8 +395,8 @@ def get_jobs(api: API, request: APIRequest,
             'now': datetime.now(timezone.utc).strftime(DATETIME_FORMAT)
         }
         response = render_j2_template(
-            api.config, api.config['server']['templates'], j2_template, data,
-            request.locale)
+            api.tpl_config, api.config['server']['templates'], j2_template,
+            data, request.locale)
 
         return headers, HTTPStatus.OK, response
 

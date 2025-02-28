@@ -176,7 +176,7 @@ def get_config_(
 
     if request.format == F_HTML:
         content = render_j2_template(
-            admin.config, admin.config['server']['templates'],
+            admin.tpl_config, admin.config['server']['templates'],
             'admin/index.html', cfg, request.locale
         )
     else:
@@ -317,7 +317,7 @@ def get_resources(
 
     if request.format == F_HTML:
         content = render_j2_template(
-            admin.config, admin.config['server']['templates'],
+            admin.tpl_config, admin.config['server']['templates'],
             'admin/index.html', cfg['resources'], request.locale
         )
     else:
@@ -421,7 +421,7 @@ def get_resource(
 
     if request.format == F_HTML:
         content = render_j2_template(
-            admin.config, admin.config['server']['templates'],
+            admin.tpl_config, admin.config['server']['templates'],
             'admin/index.html', resource, request.locale
         )
     else:

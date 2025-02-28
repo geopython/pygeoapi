@@ -224,8 +224,8 @@ def get_collection_edr_instances(api: API, request: APIRequest, dataset,
             'href': f'{uri}?f={F_JSONLD}{serialized_query_params}'
         }]
 
-        content = render_j2_template(api.config, tpl_config, template, data,
-                                     api.default_locale)
+        content = render_j2_template(api.tpl_config, tpl_config, template,
+                                     data, api.default_locale)
     else:
         content = to_json(data, api.pretty_print)
 
@@ -413,7 +413,7 @@ def get_collection_edr_query(api: API, request: APIRequest,
             'href': f'{uri}?f={F_JSONLD}{serialized_query_params}'
         }]
 
-        content = render_j2_template(api.config, tpl_config,
+        content = render_j2_template(api.tpl_config, tpl_config,
                                      'collections/edr/query.html', data,
                                      api.default_locale)
     else:
