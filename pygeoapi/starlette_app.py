@@ -557,7 +557,7 @@ async def admin_config(request: Request):
     """
 
     if request.method == 'GET':
-        return await execute_from_starlette(admin_api.get_config, request,
+        return await execute_from_starlette(admin_api.get_config_, request,
                                             alternative_api=ADMIN)
     elif request.method == 'PUT':
         return await execute_from_starlette(admin_api.put_config, request,
