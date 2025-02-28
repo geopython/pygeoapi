@@ -59,7 +59,7 @@ Docker
 Using DockerHub
 ^^^^^^^^^^^^^^^
 
-`Docker image`_
+`DockerHub image`_
 
 .. code-block:: bash
 
@@ -68,7 +68,7 @@ Using DockerHub
 Using GitHub Container Registry   
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-`Docker image`_
+`GCHR image`_
 
 .. code-block:: bash
 
@@ -148,5 +148,6 @@ Congratulations!  Whichever of the abovementioned methods you chose, you have su
 onto your system.
 
 
-.. _`Docker image`: https://github.com/geopython/pygeoapi/pkgs/container/pygeoapi
+.. _`DockerHub image`: https://hub.docker.com/r/geopython/pygeoapi
+.. _`GCHR image`: https://github.com/geopython/pygeoapi/pkgs/container/pygeoapi
 .. _`Dockerfile`: https://github.com/geopython/pygeoapi/blob/master/Dockerfile
