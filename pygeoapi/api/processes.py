@@ -211,14 +211,14 @@ def describe_processes(api: API, request: APIRequest,
 
     if request.format == F_HTML:  # render
         if process is not None:
-            api.set_dataset_templates(process)
-            response = render_j2_template(api.tpl_config,
+            tpl_config = api.get_dataset_templates(process)
+            response = render_j2_template(api.tpl_config, tpl_config,
                                           'processes/process.html',
                                           response, request.locale)
         else:
-            response = render_j2_template(api.tpl_config,
-                                          'processes/index.html', response,
-                                          request.locale)
+            response = render_j2_template(
+                api.tpl_config, api.config['server']['templates'],
+                'processes/index.html', response, request.locale)
 
         return headers, HTTPStatus.OK, response
 
@@ -394,8 +394,10 @@ def get_jobs(api: API, request: APIRequest,
             'offset': offset,
             'now': datetime.now(timezone.utc).strftime(DATETIME_FORMAT)
         }
-        response = render_j2_template(api.tpl_config, j2_template, data,
-                                      request.locale)
+        response = render_j2_template(
+            api.tpl_config, api.config['server']['templates'], j2_template,
+            data, request.locale)
+
         return headers, HTTPStatus.OK, response
 
     return headers, HTTPStatus.OK, to_json(serialized_jobs,
@@ -586,8 +588,8 @@ def get_job_result(api: API, request: APIRequest,
                 'result': job_output
             }
             content = render_j2_template(
-                api.config, 'jobs/results/index.html',
-                data, request.locale)
+                api.config, api.config['server']['templates'],
+                'jobs/results/index.html', data, request.locale)
 
     return headers, HTTPStatus.OK, content
 

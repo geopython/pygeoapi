@@ -173,7 +173,7 @@ def get_collection_edr_instances(api: API, request: APIRequest, dataset,
             }])
 
     if request.format == F_HTML:  # render
-        api.set_dataset_templates(dataset)
+        tpl_config = api.get_dataset_templates(dataset)
 
         serialized_query_params = ''
         for k, v in request.params.items():
@@ -224,8 +224,8 @@ def get_collection_edr_instances(api: API, request: APIRequest, dataset,
             'href': f'{uri}?f={F_JSONLD}{serialized_query_params}'
         }]
 
-        content = render_j2_template(api.tpl_config, template, data,
-                                     api.default_locale)
+        content = render_j2_template(api.tpl_config, tpl_config, template,
+                                     data, api.default_locale)
     else:
         content = to_json(data, api.pretty_print)
 
@@ -381,7 +381,7 @@ def get_collection_edr_query(api: API, request: APIRequest,
             err.ogc_exception_code, err.message)
 
     if request.format == F_HTML:  # render
-        api.set_dataset_templates(dataset)
+        tpl_config = api.get_dataset_templates(dataset)
 
         uri = f'{api.get_collections_url()}/{dataset}/{query_type}'
         serialized_query_params = ''
@@ -413,7 +413,7 @@ def get_collection_edr_query(api: API, request: APIRequest,
             'href': f'{uri}?f={F_JSONLD}{serialized_query_params}'
         }]
 
-        content = render_j2_template(api.tpl_config,
+        content = render_j2_template(api.tpl_config, tpl_config,
                                      'collections/edr/query.html', data,
                                      api.default_locale)
     else:

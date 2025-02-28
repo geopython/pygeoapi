@@ -434,12 +434,13 @@ def is_url(urlstring: str) -> bool:
         return False
 
 
-def render_j2_template(config: dict, template: Path,
+def render_j2_template(config: dict, tpl_config: dict, template: Path,
                        data: dict, locale_: str = None) -> str:
     """
     render Jinja2 template
 
     :param config: dict of configuration
+    :param tpl_config: dict of template configuration
     :param template: template (relative path)
     :param data: dict of data
     :param locale_: the requested output Locale
@@ -453,7 +454,7 @@ def render_j2_template(config: dict, template: Path,
     LOGGER.debug(f'Locale directory: {locale_dir}')
 
     try:
-        templates = config['server']['templates']['path']
+        templates = tpl_config['path']
         template_paths.insert(0, templates)
         LOGGER.debug(f'using custom templates: {templates}')
     except (KeyError, TypeError):

@@ -177,7 +177,7 @@ def get_collection_queryables(api: API, request: Union[APIRequest, Any],
                 queryables['properties'][k]['x-ogc-role'] = 'primary-instant'  # noqa
 
     if request.format == F_HTML:  # render
-        api.set_dataset_templates(dataset)
+        tpl_config = api.get_dataset_templates(dataset)
 
         queryables['title'] = l10n.translate(
             api.config['resources'][dataset]['title'], request.locale)
@@ -185,7 +185,7 @@ def get_collection_queryables(api: API, request: Union[APIRequest, Any],
         queryables['collections_path'] = api.get_collections_url()
         queryables['dataset_path'] = f'{api.get_collections_url()}/{dataset}'
 
-        content = render_j2_template(api.tpl_config,
+        content = render_j2_template(api.tpl_config, tpl_config,
                                      'collections/queryables.html',
                                      queryables, request.locale)
 
@@ -591,7 +591,7 @@ def get_collection_items(
     l10n.set_response_language(headers, prv_locale, request.locale)
 
     if request.format == F_HTML:  # render
-        api.set_dataset_templates(dataset)
+        tpl_config = api.get_dataset_templates(dataset)
         # For constructing proper URIs to items
 
         content['items_path'] = uri
@@ -608,7 +608,7 @@ def get_collection_items(
                                                     request.locale)
             # If title exists, use it as id in html templates
             content['id_field'] = content['title_field']
-        content = render_j2_template(api.tpl_config,
+        content = render_j2_template(api.tpl_config, tpl_config,
                                      'collections/items/index.html',
                                      content, request.locale)
         return headers, HTTPStatus.OK, content
@@ -909,7 +909,7 @@ def get_collection_item(api: API, request: APIRequest,
     l10n.set_response_language(headers, prv_locale, request.locale)
 
     if request.format == F_HTML:  # render
-        api.set_dataset_templates(dataset)
+        tpl_config = api.get_dataset_templates(dataset)
         content['title'] = l10n.translate(collections[dataset]['title'],
                                           request.locale)
         content['id_field'] = p.id_field
@@ -920,7 +920,7 @@ def get_collection_item(api: API, request: APIRequest,
                                                     request.locale)
         content['collections_path'] = api.get_collections_url()
 
-        content = render_j2_template(api.tpl_config,
+        content = render_j2_template(api.tpl_config, tpl_config,
                                      'collections/items/item.html',
                                      content, request.locale)
         return headers, HTTPStatus.OK, content

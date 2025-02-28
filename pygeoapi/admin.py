@@ -176,7 +176,8 @@ def get_config_(
 
     if request.format == F_HTML:
         content = render_j2_template(
-            admin.config, 'admin/index.html', cfg, request.locale
+            admin.tpl_config, admin.config['server']['templates'],
+            'admin/index.html', cfg, request.locale
         )
     else:
         content = to_json(cfg, admin.pretty_print)
@@ -316,10 +317,8 @@ def get_resources(
 
     if request.format == F_HTML:
         content = render_j2_template(
-            admin.config,
-            'admin/index.html',
-            cfg['resources'],
-            request.locale,
+            admin.tpl_config, admin.config['server']['templates'],
+            'admin/index.html', cfg['resources'], request.locale
         )
     else:
         content = to_json(cfg['resources'], admin.pretty_print)
@@ -422,7 +421,8 @@ def get_resource(
 
     if request.format == F_HTML:
         content = render_j2_template(
-            admin.config, 'admin/index.html', resource, request.locale
+            admin.tpl_config, admin.config['server']['templates'],
+            'admin/index.html', resource, request.locale
         )
     else:
         content = to_json(resource, admin.pretty_print)

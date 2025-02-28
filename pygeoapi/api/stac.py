@@ -106,9 +106,10 @@ def get_stac_root(api: API, request: APIRequest) -> Tuple[dict, int, str]:
         })
 
     if request.format == F_HTML:  # render
-        content = render_j2_template(api.tpl_config,
-                                     'stac/collection.html',
-                                     content, request.locale)
+        content = render_j2_template(
+            api.tpl_config, api.config['server']['templates'],
+            'stac/collection.html', content, request.locale)
+
         return headers, HTTPStatus.OK, content
 
     return headers, HTTPStatus.OK, to_json(content, api.pretty_print)
@@ -187,18 +188,13 @@ def get_stac_path(api: API, request: APIRequest,
             if 'assets' in content:  # item view
                 if content['type'] == 'Collection':
                     content = render_j2_template(
-                        api.tpl_config,
+                        api.tpl_config, api.config['server']['templates'],
                         'stac/collection_base.html',
-                        content,
-                        request.locale
-                    )
+                        content, request.locale)
                 elif content['type'] == 'Feature':
                     content = render_j2_template(
-                        api.tpl_config,
-                        'stac/item.html',
-                        content,
-                        request.locale
-                    )
+                        api.tpl_config, api.config['server']['templattes'],
+                        'stac/item.html', content, request.locale)
                 else:
                     msg = f'Unknown STAC type {content.type}'
                     return api.get_exception(
@@ -208,9 +204,9 @@ def get_stac_path(api: API, request: APIRequest,
                         'NoApplicableCode',
                         msg)
             else:
-                content = render_j2_template(api.tpl_config,
-                                             'stac/catalog.html',
-                                             content, request.locale)
+                content = render_j2_template(
+                        api.tpl_config, api.config['server']['templates'],
+                        'stac/catalog.html', content, request.locale)
 
             return headers, HTTPStatus.OK, content
 
