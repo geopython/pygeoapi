@@ -79,7 +79,8 @@ class DummyManager(BaseManager):
             execution_mode: Optional[RequestedProcessExecutionMode] = None,
             requested_outputs: Optional[dict] = None,
             subscriber: Optional[Subscriber] = None,
-            requested_response: Optional[RequestedResponse] = RequestedResponse.raw.value  # noqa
+            requested_response: Optional[RequestedResponse] = RequestedResponse.raw.value,  # noqa
+            request_headers: Optional[dict] = None
     ) -> Tuple[str, str, Any, JobStatus, Optional[Dict[str, str]]]:
         """
         Default process execution handler
@@ -95,6 +96,8 @@ class DummyManager(BaseManager):
         :param subscriber: `Subscriber` optionally specifying callback urls
         :param requested_response: `RequestedResponse` optionally specifying
                                    raw or document (default is `raw`)
+        :param request_headers: `dict` optionally specifying the headers from
+                                the request
 
         :raises UnknownProcessError: if the input process_id does not
                                      correspond to a known process
