@@ -64,8 +64,8 @@ from pygeoapi.provider.base import (
 
 from pygeoapi.util import (
     CrsTransformSpec, TEMPLATES, UrlPrefetcher, dategetter,
-    filter_dict_by_key_value, get_api_rules, get_base_url,
-    get_provider_by_type, get_provider_default, get_typed_value,
+    filter_dict_by_key_value, filter_providers_by_type, get_api_rules,
+    get_base_url, get_provider_by_type, get_provider_default, get_typed_value,
     get_crs_from_uri, get_supported_crs_list, render_j2_template, to_json
 )
 
@@ -815,21 +815,18 @@ def landing_page(api: API,
     headers = request.get_response_headers(**api.api_headers)
     if request.format == F_HTML:  # render
 
-        fcm['processes'] = False
-        fcm['stac'] = False
-        fcm['collection'] = False
+        for resource_type in ['collection', 'process', 'stac-collection']:
+            fcm[resource_type] = False
 
-        if filter_dict_by_key_value(api.config['resources'],
-                                    'type', 'process'):
-            fcm['processes'] = True
-
-        if filter_dict_by_key_value(api.config['resources'],
-                                    'type', 'stac-collection'):
-            fcm['stac'] = True
-
-        if filter_dict_by_key_value(api.config['resources'],
-                                    'type', 'collection'):
-            fcm['collection'] = True
+            found = filter_dict_by_key_value(api.config['resources'],
+                                             'type', resource_type)
+            if found:
+                fcm[resource_type] = True
+                if resource_type == 'collection':  # check for tiles
+                    for key, value in found.items():
+                        if filter_providers_by_type(value['providers'],
+                                                    'tile'):
+                            fcm['tile'] = True
 
         content = render_j2_template(
             api.tpl_config, api.config['server']['templates'],
