@@ -152,16 +152,8 @@ def test_render_item_template(api_, feature):
     result = geojson2jsonld(api_, deepcopy(feature),
                             'objects', 'http://example.org/feature/1')
 
-    # Use 'objects' collection which has item json-ld template
-    api_.config['resources']['objects'].pop('linked-data')
-    result2 = geojson2jsonld(api_, deepcopy(feature),
-                             'objects', 'http://example.org/feature/1')
-
     # Ensure item template is renderable
     assert json.loads(result)
-
-    # Ensure item template is unedited
-    assert json.loads(result) == json.loads(result2)
 
 
 def test_render_items_template(api_, feature):
@@ -172,12 +164,11 @@ def test_render_items_template(api_, feature):
         'links': []
     }
 
-    # Use 'objects' collection which has item list json-ld template
     result = geojson2jsonld(api_, fc, 'objects')
     feature_list = json.loads(result)
 
-    assert len(feature_list['schema:itemListElement']) == len(fc['features'])
+    assert len(feature_list['features']) == len(fc['features'])
 
-    for fld, f in zip(feature_list['schema:itemListElement'], fc['features']):
+    for fld, f in zip(feature_list['features'], fc['features']):
         assert ['@type', '@id'] == list(fld.keys())
         assert f['id'] in fld['@id']

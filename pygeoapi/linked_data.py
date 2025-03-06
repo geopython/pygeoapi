@@ -34,7 +34,7 @@ Returns content as linked data representations
 import logging
 from typing import Callable
 
-from pygeoapi.util import is_url, render_j2_template, to_json
+from pygeoapi.util import is_url, render_j2_template, url_join
 from pygeoapi import l10n
 from shapely.geometry import shape
 from shapely.ops import unary_union
@@ -188,13 +188,9 @@ def geojson2jsonld(cls, data: dict, dataset: str,
     :returns: string of rendered JSON (GeoJSON-LD)
     """
 
-    LOGGER.debug('Fetching context and template from resource configuration')
-    jsonld = cls.config['resources'][dataset].get('linked-data', {})
-    ds_url = f"{cls.get_collections_url()}/{dataset}"
-
-    context = jsonld.get('context', []).copy()
-    item_template = jsonld.get('item_template', None)
-    items_template = jsonld.get('items_template', None)
+    LOGGER.debug('Fetching context from resource configuration')
+    context = cls.config['resources'][dataset].get('context', []).copy()
+    templates = cls.get_dataset_templates(dataset)
 
     defaultVocabulary = {
         'schema': 'https://schema.org/',
@@ -219,6 +215,7 @@ def geojson2jsonld(cls, data: dict, dataset: str,
             'FeatureCollection': 'schema:itemList'
         })
 
+        ds_url = url_join(cls.get_collections_url(), dataset)
         data['@id'] = ds_url
 
         for i, feature in enumerate(data['features']):
@@ -250,16 +247,18 @@ def geojson2jsonld(cls, data: dict, dataset: str,
     }
 
     if identifier:
-        # Render jsonld template for single item with template configured
-        LOGGER.debug(f'Rendering JSON-LD item template')
+        # Render jsonld template for single item
+        LOGGER.debug('Rendering JSON-LD item template')
         content = render_j2_template(
-            cls.config, cls.config['server']['templates'],
-            'collections/items/index.jsonld', ldjsonData)
+            cls.tpl_config, templates,
+            'collections/items/item.jsonld', ldjsonData)
 
     else:
-        # Render jsonld template for items with template configured
-        LOGGER.debug(f'Rendering JSON-LD template: {items_template}')
-        content = render_j2_template(cls.config, items_template, ldjsonData)
+        # Render jsonld template for /items
+        LOGGER.debug('Rendering JSON-LD items template')
+        content = render_j2_template(
+            cls.tpl_config, templates,
+            'collections/items/index.jsonld', ldjsonData)
 
     return content
 
