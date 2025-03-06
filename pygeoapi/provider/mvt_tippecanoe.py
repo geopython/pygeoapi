@@ -186,6 +186,10 @@ class MVTTippecanoeProvider(BaseMVTProvider):
             with requests.Session() as session:
                 session.get(base_url)
                 resp = session.get(f'{base_url}/{layer}/{z}/{y}/{x}{extension}')  # noqa
+
+                if resp.status_code == 404:
+                    raise ProviderTileNotFoundError
+
                 resp.raise_for_status()
                 return resp.content
         except requests.exceptions.RequestException as e:
