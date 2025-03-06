@@ -108,8 +108,12 @@ class PostgreSQLProvider(BaseProvider):
         LOGGER.debug(f'ID field: {self.id_field}')
         LOGGER.debug(f'Geometry field: {self.geom}')
 
-        # conforming to the docs: https://docs.pygeoapi.io/en/latest/data-publishing/ogcapi-features.html#connection-examples
-        self.storage_crs = provider_def.get('storage_crs', 'https://www.opengis.net/def/crs/OGC/0/CRS84')
+        # conforming to the docs:
+        # https://docs.pygeoapi.io/en/latest/data-publishing/ogcapi-features.html#connection-examples # noqa
+        self.storage_crs = provider_def.get(
+            'storage_crs',
+            'https://www.opengis.net/def/crs/OGC/0/CRS84'
+        )
         LOGGER.debug(f'Configured Storage CRS: {self.storage_crs}')
 
         # Read table information from database
