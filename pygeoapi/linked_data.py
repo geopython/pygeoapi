@@ -226,14 +226,14 @@ def geojson2jsonld(cls, data: dict, dataset: str,
                 identifier_ = f"{ds_url}/items/{feature['id']}"  # noqa
 
             # Include multiple geometry encodings
-            if (feature.get('geometry') is not None):
+            if feature.get('geometry') is not None:
                 jsonldify_geometry(feature)
 
             data['features'][i] = {
                 '@id': identifier_,
                 'type': 'schema:Place',
                 **feature.pop('properties'),
-                **feature,
+                **feature
             }
 
     if data.get('timeStamp', False):
