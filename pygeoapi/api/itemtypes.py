@@ -648,6 +648,8 @@ def get_collection_items(
             api, content, dataset, id_field=(p.uri_field or 'id')
         )
 
+        return headers, HTTPStatus.OK, content
+
     return headers, HTTPStatus.OK, to_json(content, api.pretty_print)
 
 
@@ -929,6 +931,8 @@ def get_collection_item(api: API, request: APIRequest,
         content = geojson2jsonld(
             api, content, dataset, uri, (p.uri_field or 'id')
         )
+
+        return headers, HTTPStatus.OK, content
 
     return headers, HTTPStatus.OK, to_json(content, api.pretty_print)
 

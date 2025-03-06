@@ -1,0 +1,1 @@
+{{ to_json(data, config.server.pretty_print) | safe }}
