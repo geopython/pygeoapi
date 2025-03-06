@@ -72,8 +72,8 @@
         }
       })
 
-
-    displayCovJSON(JSON.parse('{{ data | to_json | safe }}'), {display: true})
+    var covjson_data = {{ data | to_json | safe }};
+    displayCovJSON(covjson_data, {display: true})
 
     const truncateString = (str, maxLength) => {
       str = str.replace(/\+/g, ' ');
