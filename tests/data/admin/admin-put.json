@@ -70,18 +70,16 @@
       "observations",
       "monitoring"
     ],
-    "linked-data": {
-      "context": [
-        {
-          "datetime": "https://schema.org/DateTime"
-        },
-        {
-          "vocab": "https://example.com/vocab#",
-          "stn_id": "vocab:stn_id",
-          "value": "vocab:value"
-        }
-      ]
-    },
+    "context": [
+      {
+        "datetime": "https://schema.org/DateTime"
+      },
+      {
+        "vocab": "https://example.com/vocab#",
+        "stn_id": "vocab:stn_id",
+        "value": "vocab:value"
+      }
+    ],
     "links": [
       {
         "type": "text/csv",
