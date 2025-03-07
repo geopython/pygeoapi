@@ -723,7 +723,7 @@ class API:
 
 
 def landing_page_prerender(api: API,
-                 request: APIRequest) -> Tuple[dict, dict]:
+                           request: APIRequest) -> Tuple[dict, dict]:
     fcm = {
         'links': [],
         'title': l10n.translate(
@@ -805,7 +805,6 @@ def landing_page_prerender(api: API,
 
     headers = request.get_response_headers(**api.api_headers)
     return headers, fcm
-
 
 
 @jsonldify
