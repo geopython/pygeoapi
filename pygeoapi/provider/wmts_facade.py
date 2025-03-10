@@ -35,8 +35,8 @@ import logging
 import requests
 from urllib.parse import urlparse, urlencode
 
-from pygeoapi.provider.tile import (
-    BaseTileProvider)
+from pygeoapi.provider.tile import (ProviderTileNotFoundError,
+                                    BaseTileProvider)
 from pygeoapi.provider.base import ProviderConnectionError
 from pygeoapi.models.provider.base import (
     TileMatrixSetEnum, TilesMetadataFormat, TileSetMetadata, LinkType)
@@ -171,7 +171,10 @@ class WMTSFacadeProvider(BaseTileProvider):
 
             with requests.Session() as session:
                 resp = session.get(request_url)
-                resp.raise_for_status()
+
+                if resp.status_code == 400:
+                    raise ProviderTileNotFoundError
+
                 return resp.content
         else:
             msg = f'Wrong data path configuration: {self.data}'
