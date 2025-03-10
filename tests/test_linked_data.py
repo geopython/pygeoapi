@@ -27,10 +27,10 @@
 #
 # =================================================================
 
-
 from copy import deepcopy
 import json
 import logging
+
 import pytest
 from shapely.geometry import (Point, MultiPoint, Polygon,
                               MultiPolygon, LineString, MultiLineString)
