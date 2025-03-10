@@ -247,7 +247,7 @@ def get_collection_tiles_data(
         if content is None:
             msg = 'identifier not found'
             return api.get_exception(
-                HTTPStatus.NOT_FOUND, headers, format_, 'NotFound', msg)
+                HTTPStatus.NO_CONTENT, headers, format_, 'NocContent', msg)
         else:
             return headers, HTTPStatus.OK, content
 
@@ -443,7 +443,6 @@ def tilematrixset(api: API,
         return headers, HTTPStatus.OK, content
 
     return headers, HTTPStatus.OK, to_json(tms, api.pretty_print)
-
 
 def get_oas_30(cfg: dict, locale: str) -> tuple[list[dict[str, str]], dict[str, dict]]:  # noqa
     """
