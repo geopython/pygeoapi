@@ -188,7 +188,7 @@ class MVTTippecanoeProvider(BaseMVTProvider):
                 resp = session.get(f'{base_url}/{layer}/{z}/{y}/{x}{extension}')  # noqa
 
                 if resp.status_code == 404:
-                    if (self.is_in_limits(self.get_tilematrixset(tileset), z, x, y)): # noqa
+                    if (self.is_in_limits(TileMatrixSetEnum.WEBMERCATORQUAD.value, z, x, y)): # noqa
                         return None
                     raise ProviderTileNotFoundError
 
@@ -220,7 +220,7 @@ class MVTTippecanoeProvider(BaseMVTProvider):
             with open(service_url_path, mode='rb') as tile:
                 return tile.read()
         except FileNotFoundError as err:
-            if (self.is_in_limits(self.get_tilematrixset(tileset), z, x, y)): # noqa
+            if (self.is_in_limits(TileMatrixSetEnum.WEBMERCATORQUAD.value, z, x, y)): # noqa
                 return None
             raise ProviderTileNotFoundError(err)
 
