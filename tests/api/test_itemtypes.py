@@ -548,8 +548,8 @@ def test_get_collection_items_json_ld(config, api_):
     assert '@context' in collection
     assert all((f in collection['@context'][0] for
                 f in ('schema', 'type', 'features', 'FeatureCollection')))
-    assert len(collection['@context']) > 1
-    assert collection['@context'][1]['schema'] == 'https://schema.org/'
+    assert len(collection['@context']) == 1
+    assert collection['@context'][0]['schema'] == 'https://schema.org/'
     expanded = jsonld.expand(collection)[0]
     featuresUri = 'https://schema.org/itemListElement'
     assert len(expanded[featuresUri]) == 2

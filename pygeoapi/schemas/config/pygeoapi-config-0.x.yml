@@ -366,9 +366,6 @@ properties:
                             type: object
                             description: linked data configuration
                             properties:
-                                item_template:
-                                    type: string
-                                    description: path to JSON-LD Jinja2 template
                                 context:
                                     type: array
                                     description: additional JSON-LD context
