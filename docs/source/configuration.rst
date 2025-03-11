@@ -645,11 +645,11 @@ This relationship can further be maintained in the JSON-LD structured data using
             ssn: "http://www.w3.org/ns/ssn/"
             Datastream: sosa:isMemberOf
 
-Sometimes, the JSON-LD desired for an individual feature in a collection is more complicated than can be achieved by
-aliasing properties using a context. In this case, it is possible to specify a Jinja2 template. When ``item_template``
-or ``items_template`` is defined for a feature collection, the json-ld prepared by pygeoapi will be used to render 
-the Jinja2 template specified by the path. The path specified can be absolute or relative to pygeoapi's template folder. 
-For even more deployment flexibility, the path can be specified with string interpolation of environment variables.
+Sometimes, the JSON-LD desired for an individual feature in a collection is more complicated than can
+be achieved by aliasing properties using a context. In this case, it is possible to implement a custom 
+Jinja2 template. GeoJSON-LD is rendered using the Jinja2 templates defined in ``collections/items/item.jsonld``
+and ``collections/items/index.jsonld``. A pygeoapi collection requiring custom GeoJSON-LD can overwrite these
+templates using dataset level templating. To learn more about Jinja2 templates, see :ref:`html-templating`.
 
 
 .. code-block:: yaml
@@ -658,9 +658,6 @@ For even more deployment flexibility, the path can be specified with string inte
       context:
         - datetime: https://schema.org/DateTime
 
-.. note::
-   The template ``tests/data/base.jsonld`` renders the unmodified JSON-LD. For more information on the capacities
-   of Jinja2 templates, see :ref:`html-templating`.
 
 Validating the configuration
 ----------------------------
