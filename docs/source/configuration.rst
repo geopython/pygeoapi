@@ -196,11 +196,12 @@ default.
           keywords:  # list of related keywords
               - observations
               - monitoring
-          context:
-              - datetime: https://schema.org/DateTime
-              - vocab: https://example.com/vocab#
-                stn_id: "vocab:stn_id"
-                value: "vocab:value"
+          linked-data: # linked data configuration (see Linked Data section)
+              context:
+                  - datetime: https://schema.org/DateTime
+                  - vocab: https://example.com/vocab#
+                    stn_id: "vocab:stn_id"
+                    value: "vocab:value"
           links:  # list of 1..n related links
               - type: text/csv  # MIME type
                 rel: canonical  # link relations per https://www.iana.org/assignments/link-relations/link-relations.xhtml
@@ -579,11 +580,12 @@ The default pygeoapi configuration includes an example for the ``obs`` sample da
 
 .. code-block:: yaml
 
-  context:
-    - datetime: https://schema.org/DateTime
-    - vocab: https://example.com/vocab#
-      stn_id: "vocab:stn_id"
-      value: "vocab:value"
+  linked-data:
+    context:
+      - datetime: https://schema.org/DateTime
+      - vocab: https://example.com/vocab#
+        stn_id: "vocab:stn_id"
+        value: "vocab:value"
 
 This is a non-existent vocabulary included only to illustrate the expected data structure within the configuration.
 In particular, the links for the ``stn_id`` and ``value`` properties do not resolve. We can extend this example to
@@ -591,15 +593,16 @@ one with terms defined by schema.org:
 
 .. code-block:: yaml
 
-  context:
-    - schema: https://schema.org/
-      stn_id: schema:identifier
-      datetime:
-          "@id": schema:observationDate
-          "@type": schema:DateTime
-      value:
-          "@id": schema:value
-          "@type": schema:Number
+  linked-data:
+    context:
+      - schema: https://schema.org/
+        stn_id: schema:identifier
+        datetime:
+            "@id": schema:observationDate
+            "@type": schema:DateTime
+        value:
+            "@id": schema:value
+            "@type": schema:Number
 
 Now this has been elaborated, the benefit of a structured data representation becomes clearer.  What was once an
 unexplained property called ``datetime`` in the source CSV, it can now be `expanded <https://www.w3.org/TR/json-ld-api/#expansion-algorithms>`_
@@ -621,35 +624,43 @@ This relationship can further be maintained in the JSON-LD structured data using
 .. code-block:: yaml
 
     Things:
-      context:
-        - sosa: "http://www.w3.org/ns/sosa/"
-          ssn: "http://www.w3.org/ns/ssn/"
-          Datastreams: sosa:ObservationCollection
+      linked-data:
+        context:
+          - sosa: "http://www.w3.org/ns/sosa/"
+            ssn: "http://www.w3.org/ns/ssn/"
+            Datastreams: sosa:ObservationCollection
 
     Datastreams:
-      context:
-        - sosa: "http://www.w3.org/ns/sosa/"
-          ssn: "http://www.w3.org/ns/ssn/"
-          Observations: sosa:hasMember
-          Thing: sosa:hasFeatureOfInterest
+      linked-data:
+        context:
+          - sosa: "http://www.w3.org/ns/sosa/"
+            ssn: "http://www.w3.org/ns/ssn/"
+            Observations: sosa:hasMember
+            Thing: sosa:hasFeatureOfInterest
 
     Observations:
-      context:
-        - sosa: "http://www.w3.org/ns/sosa/"
-          ssn: "http://www.w3.org/ns/ssn/"
-          Datastream: sosa:isMemberOf
+      linked-data:
+        context:
+          - sosa: "http://www.w3.org/ns/sosa/"
+            ssn: "http://www.w3.org/ns/ssn/"
+            Datastream: sosa:isMemberOf
 
-Sometimes, the JSON-LD desired for an individual feature in a collection is more complicated than can
-be achieved by aliasing properties using a context. In this case, it is possible to implement a custom 
-Jinja2 template. GeoJSON-LD is rendered using the Jinja2 templates defined in ``collections/items/item.jsonld``
-and ``collections/items/index.jsonld``. A pygeoapi collection requiring custom GeoJSON-LD can overwrite these
-templates using dataset level templating. To learn more about Jinja2 templates, see :ref:`html-templating`.
+Sometimes, the JSON-LD desired for an individual feature in a collection is more complicated than can be achieved by
+aliasing properties using a context. In this case, it is possible to specify a Jinja2 template. When ``item_template``
+or ``items_template`` is defined for a feature collection, the json-ld prepared by pygeoapi will be used to render 
+the Jinja2 template specified by the path. The path specified can be absolute or relative to pygeoapi's template folder. 
+For even more deployment flexibility, the path can be specified with string interpolation of environment variables.
+
 
 .. code-block:: yaml
 
-    templates: /path/to/templates
-    context:
-      - datetime: https://schema.org/DateTime
+    linked-data:
+      context:
+        - datetime: https://schema.org/DateTime
+
+.. note::
+   The template ``tests/data/base.jsonld`` renders the unmodified JSON-LD. For more information on the capacities
+   of Jinja2 templates, see :ref:`html-templating`.
 
 Validating the configuration
 ----------------------------
