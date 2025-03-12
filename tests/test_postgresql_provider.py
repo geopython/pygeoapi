@@ -42,6 +42,8 @@
 
 import os
 import json
+
+from sqlalchemy import text
 import pytest
 import pyproj
 from http import HTTPStatus
@@ -419,6 +421,38 @@ def test_get_fields(config):
     # Assert
     assert provider.get_fields() == expected_fields
     assert provider.fields == expected_fields  # API uses .fields attribute
+
+
+def test_get_fields_with_column_comments(config):
+    """Test that column comments are properly read and added as field titles"""
+    # Arrange
+    p = PostgreSQLProvider(config)
+
+    with p._engine.connect() as conn:
+        try:
+            # Add comment to name column
+            conn.execute(text("""
+                COMMENT ON COLUMN osm.hotosm_bdi_waterways.name IS 'The name of the feature';
+            """))
+
+            conn.commit()
+
+            # Act
+            fields = p.get_fields()
+
+            # Assert
+            assert fields
+            assert 'name' in fields
+            assert 'title' in fields['name']
+            assert fields['name']['title'] == 'The name of the feature'
+
+
+        finally:
+            # Clean up - remove the comment
+            conn.execute(text("""
+                COMMENT ON COLUMN osm.hotosm_bdi_waterways.name IS NULL;
+            """))
+            conn.commit()
 
 
 def test_instantiation(config):
