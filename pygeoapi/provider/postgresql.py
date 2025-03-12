@@ -261,35 +261,10 @@ class PostgreSQLProvider(BaseProvider):
 
         if not self._fields:
             # Get column comments from PostgreSQL
-            column_comments = {}
             try:
-                with Session(self._engine) as session:
-                    # Get the schema name from the search path
-                    schema = self.db_search_path[0]
-
-                    # Query to get column comments from PostgreSQL information_schema
-                    sql = text("""
-                        SELECT column_name, col_description(
-                            (quote_ident(:schema) || '.' || quote_ident(:table))::regclass::oid,
-                            ordinal_position
-                        ) as column_comment
-                        FROM information_schema.columns
-                        WHERE table_schema = :schema
-                        AND table_name = :table
-                    """)
-
-                    result = session.execute(
-                        sql, {"schema": schema, "table": self.table}
-                    )
-
-                    for row in result:
-                        if row.column_comment:
-                            column_comments[row.column_name] = row.column_comment
-                            LOGGER.debug(
-                                f"Found comment for column {row.column_name}: {row.column_comment}"
-                            )
+                column_comments = self._get_column_comments()
             except Exception as e:
-                LOGGER.warning(f"Failed to retrieve column comments: {str(e)}")
+                LOGGER.warning(f'Failed to retrieve column comments: {str(e)}')
 
             for column in self.table_model.__table__.columns:
                 LOGGER.debug(f'Testing {column.name}')
@@ -298,11 +273,45 @@ class PostgreSQLProvider(BaseProvider):
 
                 self._fields[str(column.name)] = {
                     'type': _column_type_to_json_schema_type(column.type),
-                    'format': _column_format_to_json_schema_format(column.type),
-                    'title': column_comments.get(column.name, '')
+                    'title': column_comments.get(column.name, ''),
+                    'format': _column_format_to_json_schema_format(column.type)
                 }
 
         return self._fields
+
+    def _get_column_comments(self):
+        """
+        Get column comments from PostgreSQL
+        """
+        column_comments = {}
+
+        get_column_comments_sql = text("""
+            SELECT column_name, col_description(
+                (quote_ident(:schema) || '.' || quote_ident(:table))::regclass::oid,
+                ordinal_position
+            ) as column_comment
+            FROM information_schema.columns
+            WHERE table_schema = :schema
+            AND table_name = :table
+        """)  # noqa
+
+        with Session(self._engine) as session:
+            # Get the schema name from the search path
+            schema = self.db_search_path[0]
+
+            result = session.execute(
+                get_column_comments_sql,
+                {'schema': schema, 'table': self.table}
+            )
+
+            for row in result:
+                column_comments[row.column_name] = row.column_comment
+                LOGGER.debug(
+                    f'Found comment for column '
+                    f'{row.column_name}: {row.column_comment}'
+                )
+
+        return column_comments
 
     def get(self, identifier, crs_transform_spec=None, **kwargs):
         """
