@@ -689,9 +689,9 @@ def get_oas_30_parameters(cfg: dict, locale_: str):
                  }
             }
         }
-  if len(list(cfg['resources'].keys())) > 0:
-      oas_30_parameters['resourceId']['schema']['default'] = list(cfg['resources'].keys())[0]
-  return oas_30_parameters
+    if len(list(cfg['resources'].keys())) > 0:
+        oas_30_parameters['resourceId']['schema']['default'] = list(cfg['resources'].keys())[0]
+    return oas_30_parameters
   
 
 
