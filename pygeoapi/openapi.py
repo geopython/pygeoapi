@@ -560,7 +560,7 @@ def get_oas_30(cfg: dict, fail_on_invalid_collection: bool = True) -> dict:
 def get_oas_30_parameters(cfg: dict, locale_: str):
     server_locales = l10n.get_locales(cfg)
 
-    return {
+    oas_30_parameters = {
             'f': {
                 'name': 'f',
                 'in': 'query',
@@ -685,11 +685,14 @@ def get_oas_30_parameters(cfg: dict, locale_: str):
                 'description': 'Configuration resource identifier',
                 'required': True,
                 'schema': {
-                    'type': 'string',
-                    'default': list(cfg['resources'].keys())[0]
+                    'type': 'string'
                  }
             }
         }
+  if len(list(cfg['resources'].keys())) > 0:
+      oas_30_parameters['resourceId']['schema']['default'] = list(cfg['resources'].keys())[0]
+  return oas_30_parameters
+  
 
 
 def get_visible_collections(cfg: dict) -> dict:
