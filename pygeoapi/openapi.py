@@ -560,136 +560,140 @@ def get_oas_30(cfg: dict, fail_on_invalid_collection: bool = True) -> dict:
 def get_oas_30_parameters(cfg: dict, locale_: str):
     server_locales = l10n.get_locales(cfg)
 
-    return {
-            'f': {
-                'name': 'f',
-                'in': 'query',
-                'description': 'The optional f parameter indicates the output format which the server shall provide as part of the response document.  The default format is GeoJSON.',  # noqa
-                'required': False,
-                'schema': {
-                    'type': 'string',
-                    'enum': ['json', 'html', 'jsonld'],
-                    'default': 'json'
-                },
-                'style': 'form',
-                'explode': False
+    oas_30_parameters = {
+        'f': {
+            'name': 'f',
+            'in': 'query',
+            'description': 'The optional f parameter indicates the output format which the server shall provide as part of the response document.  The default format is GeoJSON.',  # noqa
+            'required': False,
+            'schema': {
+                'type': 'string',
+                'enum': ['json', 'html', 'jsonld'],
+                'default': 'json'
             },
-            'lang': {
-                'name': 'lang',
-                'in': 'query',
-                'description': 'The optional lang parameter instructs the server return a response in a certain language, if supported.  If the language is not among the available values, the Accept-Language header language will be used if it is supported. If the header is missing, the default server language is used. Note that providers may only support a single language (or often no language at all), that can be different from the server language.  Language strings can be written in a complex (e.g. "fr-CA,fr;q=0.9,en-US;q=0.8,en;q=0.7"), simple (e.g. "de") or locale-like (e.g. "de-CH" or "fr_BE") fashion.',  # noqa
-                'required': False,
-                'schema': {
-                    'type': 'string',
-                    'enum': [l10n.locale2str(sl) for sl in server_locales],
-                    'default': l10n.locale2str(locale_)
-                }
-            },
-            'skipGeometry': {
-                'name': 'skipGeometry',
-                'in': 'query',
-                'description': 'This option can be used to skip response geometries for each feature.',  # noqa
-                'required': False,
-                'style': 'form',
-                'explode': False,
-                'schema': {
-                    'type': 'boolean',
-                    'default': False
-                }
-            },
-            'crs': {
-                'name': 'crs',
-                'in': 'query',
-                'description': 'Indicates the coordinate reference system for the results.',  # noqa
-                'style': 'form',
-                'required': False,
-                'explode': False,
-                'schema': {
-                    'format': 'uri',
-                    'type': 'string'
-                }
-            },
-            'bbox': {
-                'name': 'bbox',
-                'in': 'query',
-                'description': 'Only features that have a geometry that intersects the bounding box are selected.'  # noqa
-                               'The bounding box is provided as four or six numbers, depending on whether the '  # noqa
-                               'coordinate reference system includes a vertical axis (height or depth).',  # noqa
-                'required': False,
-                'style': 'form',
-                'explode': False,
-                'schema': {
-                    'type': 'array',
-                    'minItems': 4,
-                    'maxItems': 6,
-                    'items': {
-                        'type': 'number'
-                    }
-                }
-            },
-            'bbox-crs': {
-                'name': 'bbox-crs',
-                'in': 'query',
-                'description': 'Indicates the coordinate reference system for the given bbox coordinates.',  # noqa
-                'style': 'form',
-                'required': False,
-                'explode': False,
-                'schema': {
-                    'format': 'uri',
-                    'type': 'string'
-                }
-            },
-            # FIXME: This is not compatible with the bbox-crs definition in
-            #        OGCAPI Features Part 2!
-            #        We need to change the mapscript provider and
-            #        get_collection_map() method in the API!
-            #        So this is for de map-provider only.
-            'bbox-crs-epsg': {
-                'name': 'bbox-crs',
-                'in': 'query',
-                'description': 'Indicates the EPSG for the given bbox coordinates.',  # noqa
-                'required': False,
-                'style': 'form',
-                'explode': False,
-                'schema': {
-                    'type': 'integer',
-                    'default': 4326
-                }
-            },
-            'offset': {
-                'name': 'offset',
-                'in': 'query',
-                'description': 'The optional offset parameter indicates the index within the result set from which the server shall begin presenting results in the response document.  The first element has an index of 0 (default).',  # noqa
-                'required': False,
-                'schema': {
-                    'type': 'integer',
-                    'minimum': 0,
-                    'default': 0
-                },
-                'style': 'form',
-                'explode': False
-            },
-            'vendorSpecificParameters': {
-                'name': 'vendorSpecificParameters',
-                'in': 'query',
-                'description': 'Additional "free-form" parameters that are not explicitly defined',  # noqa
-                'schema': {
-                    'type': 'object',
-                    'additionalProperties': True
-                },
-                'style': 'form'
-            },
-            'resourceId': {
-                'name': 'resourceId',
-                'in': 'path',
-                'description': 'Configuration resource identifier',
-                'required': True,
-                'schema': {
-                    'type': 'string',
-                    'default': list(cfg['resources'].keys())[0]
-                 }
+            'style': 'form',
+            'explode': False
+        },
+        'lang': {
+            'name': 'lang',
+            'in': 'query',
+            'description': 'The optional lang parameter instructs the server return a response in a certain language, if supported.  If the language is not among the available values, the Accept-Language header language will be used if it is supported. If the header is missing, the default server language is used. Note that providers may only support a single language (or often no language at all), that can be different from the server language.  Language strings can be written in a complex (e.g. "fr-CA,fr;q=0.9,en-US;q=0.8,en;q=0.7"), simple (e.g. "de") or locale-like (e.g. "de-CH" or "fr_BE") fashion.',  # noqa
+            'required': False,
+            'schema': {
+                'type': 'string',
+                'enum': [l10n.locale2str(sl) for sl in server_locales],
+                'default': l10n.locale2str(locale_)
             }
+        },
+        'skipGeometry': {
+            'name': 'skipGeometry',
+            'in': 'query',
+            'description': 'This option can be used to skip response geometries for each feature.',  # noqa
+            'required': False,
+            'style': 'form',
+            'explode': False,
+            'schema': {
+                'type': 'boolean',
+                'default': False
+            }
+        },
+        'crs': {
+            'name': 'crs',
+            'in': 'query',
+            'description': 'Indicates the coordinate reference system for the results.',  # noqa
+            'style': 'form',
+            'required': False,
+            'explode': False,
+            'schema': {
+                'format': 'uri',
+                'type': 'string'
+            }
+        },
+        'bbox': {
+            'name': 'bbox',
+            'in': 'query',
+            'description': 'Only features that have a geometry that intersects the bounding box are selected.'  # noqa
+                           'The bounding box is provided as four or six numbers, depending on whether the '  # noqa
+                           'coordinate reference system includes a vertical axis (height or depth).',  # noqa
+            'required': False,
+            'style': 'form',
+            'explode': False,
+            'schema': {
+                'type': 'array',
+                'minItems': 4,
+                'maxItems': 6,
+                'items': {
+                    'type': 'number'
+                }
+            }
+        },
+        'bbox-crs': {
+            'name': 'bbox-crs',
+            'in': 'query',
+            'description': 'Indicates the coordinate reference system for the given bbox coordinates.',  # noqa
+            'style': 'form',
+            'required': False,
+            'explode': False,
+            'schema': {
+                'format': 'uri',
+                'type': 'string'
+            }
+        },
+        # FIXME: This is not compatible with the bbox-crs definition in
+        #        OGCAPI Features Part 2!
+        #        We need to change the mapscript provider and
+        #        get_collection_map() method in the API!
+        #        So this is for de map-provider only.
+        'bbox-crs-epsg': {
+            'name': 'bbox-crs',
+            'in': 'query',
+            'description': 'Indicates the EPSG for the given bbox coordinates.',  # noqa
+            'required': False,
+            'style': 'form',
+            'explode': False,
+            'schema': {
+                'type': 'integer',
+                'default': 4326
+            }
+        },
+        'offset': {
+            'name': 'offset',
+            'in': 'query',
+            'description': 'The optional offset parameter indicates the index within the result set from which the server shall begin presenting results in the response document.  The first element has an index of 0 (default).',  # noqa
+            'required': False,
+            'schema': {
+                'type': 'integer',
+                'minimum': 0,
+                'default': 0
+            },
+            'style': 'form',
+            'explode': False
+        },
+        'vendorSpecificParameters': {
+            'name': 'vendorSpecificParameters',
+            'in': 'query',
+            'description': 'Additional "free-form" parameters that are not explicitly defined',  # noqa
+            'schema': {
+                'type': 'object',
+                'additionalProperties': True
+            },
+            'style': 'form'
+        },
+        'resourceId': {
+            'name': 'resourceId',
+            'in': 'path',
+            'description': 'Configuration resource identifier',
+            'required': True,
+            'schema': {
+                'type': 'string'
+             }
         }
+    }
+    if len(list(cfg['resources'].keys())) > 0:
+        oas_30_parameters['resourceId']['schema']['default'] = list(
+            cfg['resources'].keys()
+        )[0]
+    return oas_30_parameters
 
 
 def get_visible_collections(cfg: dict) -> dict:
