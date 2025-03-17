@@ -80,7 +80,7 @@ DEFAULT_STORAGE_CRS = DEFAULT_CRS
 
 CONFORMANCE_CLASSES_FEATURES = [
     'http://www.opengis.net/spec/ogcapi-features-1/1.0/conf/core',
-    'http://www.opengis.net/spec/ogcapi-features-1/1.0/req/oas30',
+    'http://www.opengis.net/spec/ogcapi-features-1/1.0/conf/oas30',
     'http://www.opengis.net/spec/ogcapi-features-1/1.0/conf/html',
     'http://www.opengis.net/spec/ogcapi-features-1/1.0/conf/geojson',
     'http://www.opengis.net/spec/ogcapi-features-2/1.0/conf/crs',
@@ -88,7 +88,7 @@ CONFORMANCE_CLASSES_FEATURES = [
     'http://www.opengis.net/spec/ogcapi-features-3/1.0/conf/queryables-query-parameters',  # noqa
     'http://www.opengis.net/spec/ogcapi-features-4/1.0/conf/create-replace-delete',  # noqa
     'http://www.opengis.net/spec/ogcapi-features-5/1.0/conf/schemas',
-    'http://www.opengis.net/spec/ogcapi-features-5/1.0/req/core-roles-features'
+    'http://www.opengis.net/spec/ogcapi-features-5/1.0/conf/core-roles-features',  # noqa
 ]
 
 CONFORMANCE_CLASSES_RECORDS = [
