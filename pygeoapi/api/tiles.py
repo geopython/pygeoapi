@@ -199,7 +199,6 @@ def get_collection_tiles(api: API, request: APIRequest,
     return headers, HTTPStatus.OK, to_json(tiles, api.pretty_print)
 
 
-# TODO: no test for this function?
 def get_collection_tiles_data(
         api: API, request: APIRequest,
         dataset=None, matrix_id=None,
