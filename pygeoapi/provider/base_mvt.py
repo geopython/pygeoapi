@@ -285,7 +285,7 @@ class BaseMVTProvider(BaseTileProvider):
         """
 
         try:
-            if int(x) <= tilematrixset.tileMatrices[int(z)]['matrixWidth'] and int(y) <= tilematrixset.tileMatrices[int(z)]['matrixHeight']: # noqa
+            if int(x) < tilematrixset.tileMatrices[int(z)]['matrixWidth'] and int(y) < tilematrixset.tileMatrices[int(z)]['matrixHeight']: # noqa
                 return True
             return False
         except ValueError as err:

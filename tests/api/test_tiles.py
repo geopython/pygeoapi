@@ -81,7 +81,7 @@ def test_get_collection_tiles_data(config, api_):
 
     rsp_headers, code, response = get_collection_tiles_data(
         api_, req, 'naturalearth/lakes',
-        matrix_id='WebMercatorQuad', z_idx=0, x_idx=2, y_idx=2)
+        matrix_id='WebMercatorQuad', z_idx=0, x_idx=1, y_idx=1)
     assert code == HTTPStatus.NOT_FOUND
 
 
