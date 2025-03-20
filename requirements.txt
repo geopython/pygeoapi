@@ -16,3 +16,4 @@ requests
 shapely
 SQLAlchemy
 tinydb
+setuptools
