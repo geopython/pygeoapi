@@ -175,6 +175,8 @@ class MVTProxyProvider(BaseMVTProvider):
                         resp = session.get(f'{base_url}/{layer}/{z}/{y}/{x}{url_query}')  # noqa
 
                     if resp.status_code == 404:
+                        if (self.is_in_limits(self.get_tilematrixset(tileset), z, x, y)): # noqa
+                            return None
                         raise ProviderTileNotFoundError
 
                     resp.raise_for_status()
