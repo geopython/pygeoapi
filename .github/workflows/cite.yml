@@ -15,13 +15,17 @@ jobs:
       matrix:
         test-suite:
           - suite-id: ogcapi-features-1.0
-            arguments: >
+            arguments: >-
               iut=http://localhost:5001 
               noofcollections=-1
           - suite-id: ogcapi-processes-1.0
-            arguments: >
+            arguments: >-
               iut=http://localhost:5001 
               noofcollections=-1
+          - suite-id: ogcapi-edr10
+            arguments: >-
+              iut=http://localhost:5001 
+              apiDefinition=http://localhost:5001/openapi
 
     runs-on: ubuntu-22.04
     steps:
