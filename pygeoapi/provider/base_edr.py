@@ -52,7 +52,7 @@ class BaseEDRProvider(BaseProvider):
         :returns: pygeoapi.provider.base_edr.BaseEDRProvider
         """
 
-        super().__init__(provider_def)
+        BaseProvider.__init__(self, provider_def)
 
 #        self.instances = []
 
