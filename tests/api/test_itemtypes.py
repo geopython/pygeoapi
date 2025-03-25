@@ -96,7 +96,8 @@ def test_get_collection_queryables(config, api_):
     assert 'properties' in queryables
     assert len(queryables['properties']) == 2
     assert 'geometry' in queryables['properties']
-    assert queryables['properties']['geometry']['$ref'] == 'https://geojson.org/schema/Geometry.json'  # noqa
+    assert '$ref' not in queryables['properties']['geometry']
+    assert queryables['properties']['geometry']['format'] == 'geometry-any'
 
     # No language requested: should be set to default from YAML
     assert rsp_headers['Content-Language'] == 'en-US'
