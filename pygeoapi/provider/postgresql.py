@@ -9,7 +9,7 @@
 #          Bernhard Mallinger <bernhard.mallinger@eox.at>
 #
 # Copyright (c) 2018 Jorge Samuel Mendes de Jesus
-# Copyright (c) 2024 Tom Kralidis
+# Copyright (c) 2025 Tom Kralidis
 # Copyright (c) 2022 John A Stevenson and Colin Blackburn
 # Copyright (c) 2023 Francesco Bartoli
 # Copyright (c) 2024 Bernhard Mallinger
@@ -224,6 +224,7 @@ class PostgreSQLProvider(BaseProvider):
             bool: 'boolean',
             datetime: 'string',
             Decimal: 'number',
+            dict: 'object',
             float: 'number',
             int: 'integer',
             str: 'string'
