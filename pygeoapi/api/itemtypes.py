@@ -149,7 +149,7 @@ def get_collection_queryables(api: API, request: Union[APIRequest, Any],
 
     if p.fields:
         queryables['properties']['geometry'] = {
-            '$ref': 'https://geojson.org/schema/Geometry.json',
+            'format': 'geometry-any',
             'x-ogc-role': 'primary-geometry'
         }
 

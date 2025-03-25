@@ -1418,7 +1418,7 @@ def get_collection_schema(api: API, request: Union[APIRequest, Any],
 
     if p.type != 'coverage':
         schema['properties']['geometry'] = {
-            '$ref': 'https://geojson.org/schema/Geometry.json',
+            'format': 'geometry-any',
             'x-ogc-role': 'primary-geometry'
         }
 
