@@ -53,6 +53,7 @@ PLUGINS = {
         'MVT-tippecanoe': 'pygeoapi.provider.mvt_tippecanoe.MVTTippecanoeProvider',  # noqa: E501
         'MVT-elastic': 'pygeoapi.provider.mvt_elastic.MVTElasticProvider',
         'MVT-proxy': 'pygeoapi.provider.mvt_proxy.MVTProxyProvider',
+        'MVT-postgres': 'pygeoapi.provider.mvt_postgres.MVTPostgresProvider',
         'OracleDB': 'pygeoapi.provider.oracle.OracleProvider',
         'OGR': 'pygeoapi.provider.ogr.OGRProvider',
         'OpenSearch': 'pygeoapi.provider.opensearch_.OpenSearchProvider',
