@@ -7,7 +7,7 @@
 #
 # Copyright (c) 2024 Tom Kralidis
 # Copyright (c) 2022 John A Stevenson and Colin Blackburn
-# Copyright (c) 2025 doublebyte
+# Copyright (c) 2025 Joana Simoes
 #
 # Permission is hereby granted, free of charge, to any person
 # obtaining a copy of this software and associated documentation
