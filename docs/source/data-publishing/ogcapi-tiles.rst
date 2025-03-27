@@ -22,6 +22,7 @@ pygeoapi core tile providers are listed below, along with supported features.
    `MVT-elastic`_,✅,✅,✅,❌,❌,✅
    `MVT-proxy`_,❓,❓,❓,❓,❌,✅
    `WMTSFacade`_,✅,❌,✅,✅,✅,❌
+   `MVT-postgres`_,✅,✅,✅,✅,❌,✅
 
 Below are specific connection examples based on supported providers.
 
@@ -130,6 +131,46 @@ Following code block shows how to configure pygeoapi to read Mapbox vector tiles
              name: pbf
              mimetype: application/vnd.mapbox-vector-tile
 
+MVT-postgres
+^^^^^^^^^^^
+
+.. note::
+   Requires Python packages sqlalchemy, geoalchemy2 and psycopg2-binary
+
+Must have PostGIS installed with protobuf-c support. 
+
+.. note::
+   Geometry must be using EPSG:4326
+
+This provider gives support to serving tiles generated using `Postgres <https://www.postgresql.org/>`_ with `PostGIS <https://postgis.net/>`_.
+The tiles are rendered on-the-fly using `ST_AsMVT <https://postgis.net/docs/ST_AsMVT.html>`_ and related methods.
+
+This code block shows how to configure pygeoapi to render Mapbox vector tiles from a PostGIS table.
+
+.. code-block:: yaml
+
+   providers:
+       - type: tile
+           name: MVT-postgres
+           data:
+               host: 127.0.0.1
+               port: 3010 # Default 5432 if not provided
+               dbname: test
+               user: postgres
+               password: postgres
+               search_path: [osm, public]
+           id_field: osm_id
+           table: hotosm_bdi_waterways
+           geom_field: foo_geom
+           options:
+           zoom:
+               min: 0
+               max: 10 
+           format:
+               name: pbf
+               mimetype: application/vnd.mapbox-vector-tile
+
+PostgreSQL-related connection options can also be added to `options`. Please refer to the :ref:`PostgreSQL OGC Features Provider<PostgreSQL>` documentation for more information.
 
 WMTSFacade
 ^^^^^^^^^^
