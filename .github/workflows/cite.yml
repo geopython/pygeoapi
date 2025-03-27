@@ -11,6 +11,7 @@ env:
 jobs:
 
   perform-cite-testing:
+    name: ${{ matrix.test-suite.suite-id }} CITE testing
     strategy:
       matrix:
         test-suite:
