@@ -40,7 +40,18 @@ from pygeoapi.provider.tile import ProviderTileNotFoundError
 from pygeoapi.models.provider.base import (
     TileSetMetadata, TileMatrixSetEnum, LinkType)
 from pygeoapi.util import is_url, url_join
+from sqlalchemy.orm import Session, load_only
 
+from sqlalchemy.engine import URL
+from sqlalchemy.sql import text
+from sqlalchemy.exc import ConstraintColumnNotFoundError, \
+    InvalidRequestError, OperationalError
+from sqlalchemy.ext.automap import automap_base
+from sqlalchemy.sql.expression import and_
+from pygeoapi.provider.base import BaseProvider, \
+    ProviderConnectionError, ProviderInvalidDataError, ProviderQueryError, \
+    ProviderItemNotFoundError
+    
 from copy import deepcopy
 from datetime import datetime
 from decimal import Decimal
@@ -67,7 +78,11 @@ class MVTPostgresProvider(BaseMVTProvider):
         del pg_def["options"]["zoom"]
         self.postgres = PostgreSQLProvider(pg_def)
         self.layer_name = provider_def["table"]
+        self.table = provider_def['table']
+        self.id_field = provider_def['id_field']
+        self.geom = provider_def.get('geom_field', 'geom')
 
+        LOGGER.debug(f'DB connection: {repr(self.postgres._engine.url)}')
 
     def __repr__(self):
         return f'<MVTPostgresProvider> {self.data}'
@@ -132,42 +147,51 @@ class MVTPostgresProvider(BaseMVTProvider):
         if format_ == 'mvt':
             format_ = self.format_type
 
-        # @TODO : Update tile fetch code. 
-        raise NotImplementedError()
-        """
-        if is_url(self.data):
-            url = urlparse(self.data)
-            base_url = f'{url.scheme}://{url.netloc}'
+        fields_arr = self.postgres.get_fields().keys()
+        fields = ', '.join(['"' + f + '"' for f in fields_arr])
+        if len(fields) != 0:
+            fields = ',' + fields
+        
+        query = ''
+        if tileset == TileMatrixSetEnum.WEBMERCATORQUAD.value.tileMatrixSet:
+            query = text("""
+                WITH                                                                  
+                    bounds AS (
+                        SELECT ST_TileEnvelope(:z, :y, :x) AS boundgeom
+                    ),
+                    mvtgeom AS (
+                        SELECT ST_AsMVTGeom(ST_Transform({geom}, 3857), bounds.boundgeom) AS geom {fields}
+                        FROM "{table}", bounds
+                        WHERE ST_Intersects({geom}, ST_Transform(bounds.boundgeom, 4326))
+                    )
+                SELECT ST_AsMVT(mvtgeom, 'default') FROM mvtgeom;
+            """.format(geom=self.geom, table=self.table, fields=fields))  
+        
+        if tileset == TileMatrixSetEnum.WORLDCRS84QUAD.value.tileMatrixSet:
+            query = text("""
+                WITH                                                                  
+                    bounds AS (
+                        SELECT ST_TileEnvelope(:z, :y, :x, ST_MakeEnvelope(-180, -90, 180, 90, 4326)) AS boundgeom
+                    ),
+                    mvtgeom AS (
+                        SELECT ST_AsMVTGeom({geom}, bounds.boundgeom) AS geom {fields}
+                        FROM "{table}", bounds
+                        WHERE ST_Intersects({geom}, bounds.boundgeom)
+                    )
+                SELECT ST_AsMVT(mvtgeom, 'default') FROM mvtgeom;
+            """.format(geom=self.geom, table=self.table, fields=fields))  
 
-            if url.query:
-                url_query = f'?{url.query}'
-            else:
-                url_query = ''
+        with self.postgres._engine.connect() as session:
+                result = session.execute(query, {
+                    'z': z,  
+                    'y': y,  
+                    'x': x
+                }).fetchone()
 
-            try:
-                with requests.Session() as session:
-                    data = {'fields': ['*']}
-                    session.get(base_url)
-                    resp = session.get(f'{base_url}/{layer}/{z}/{y}/{x}{url_query}', json=data)  # noqa
-
-                    if resp.status_code == 404:
-                        if (self.is_in_limits(self.get_tilematrixset(tileset), z, x, y)): # noqa
-                            return None
-                        raise ProviderTileNotFoundError
-
-                    resp.raise_for_status()
-                    return resp.content
-            except requests.exceptions.RequestException as e:
-                LOGGER.debug(e)
-                if resp.status_code < 500:
-                    raise ProviderInvalidQueryError  # Client is sending an invalid request # noqa
-                raise ProviderGenericError  # Server error
-        else:
-            msg = 'Wrong input format for Elasticsearch MVT'
-            LOGGER.error(msg)
-            raise ProviderConnectionError(msg)
-        """    
-
+                if len(bytes(result[0])) == 0:
+                   return None
+                return bytes(result[0])
+        
     def get_html_metadata(self, dataset, server_url, layer, tileset,
                           title, description, keywords, **kwargs):
 
