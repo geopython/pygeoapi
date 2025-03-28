@@ -35,6 +35,7 @@ import importlib
 import logging
 import os
 from typing import Any
+from copy import deepcopy
 
 from osgeo import gdal as osgeo_gdal
 from osgeo import ogr as osgeo_ogr
@@ -527,6 +528,14 @@ class OGRProvider(BaseProvider):
 
         if skip_geometry:
             json_feature['geometry'] = None
+
+        # Drop non-defined properties
+        if self.properties:
+            props = json_feature['properties']
+            dropping_keys = deepcopy(props).keys()
+            for item in dropping_keys:
+                if item not in self.properties:
+                    props.pop(item)
 
         try:
             json_feature['id'] = json_feature['properties'].pop(
