@@ -8,7 +8,7 @@
 #          Ricardo Garcia Silva <ricardo.garcia.silva@geobeyond.it>
 #
 # Copyright (c) 2024 Tom Kralidis
-# Copyright (c) 2022 Francesco Bartoli
+# Copyright (c) 2025 Francesco Bartoli
 # Copyright (c) 2022 John A Stevenson and Colin Blackburn
 # Copyright (c) 2023 Ricardo Garcia Silva
 #
@@ -352,7 +352,7 @@ def get_collection_items(
                 HTTPStatus.BAD_REQUEST, headers, request.format,
                 'NoApplicableCode', msg)
 
-        supported_crs_list = get_supported_crs_list(provider_def, DEFAULT_CRS_LIST) # noqa
+        supported_crs_list = get_supported_crs_list(provider_def, DEFAULT_CRS_LIST)  # noqa
         if bbox_crs not in supported_crs_list:
             msg = f'bbox-crs {bbox_crs} not supported for this collection'
             return api.get_exception(
@@ -367,7 +367,7 @@ def get_collection_items(
     if len(bbox) > 0:
         try:
             # Get a pyproj CRS instance for the Collection's Storage CRS
-            storage_crs = provider_def.get('storage_crs', DEFAULT_STORAGE_CRS) # noqa
+            storage_crs = provider_def.get('storage_crs', DEFAULT_STORAGE_CRS)  # noqa
 
             # Do the (optional) Transform to the Storage CRS
             bbox = transform_bbox(bbox, bbox_crs, storage_crs)
@@ -621,8 +621,8 @@ def get_collection_items(
                 data=content,
                 options={
                     'provider_def': get_provider_by_type(
-                                        collections[dataset]['providers'],
-                                        'feature')
+                        collections[dataset]['providers'],
+                        'feature')
                 }
             )
         except FormatterSerializationError:

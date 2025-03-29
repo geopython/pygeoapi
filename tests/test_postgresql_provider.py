@@ -10,7 +10,7 @@
 # Copyright (c) 2019 Just van den Broecke
 # Copyright (c) 2025 Tom Kralidis
 # Copyright (c) 2022 John A Stevenson and Colin Blackburn
-# Copyright (c) 2023 Francesco Bartoli
+# Copyright (c) 2025 Francesco Bartoli
 # Copyright (c) 2024 Bernhard Mallinger
 #
 # Permission is hereby granted, free of charge, to any person
@@ -81,8 +81,8 @@ def config():
                  'search_path': ['osm', 'public']
                  },
         'options': {
-                        'connect_timeout': 10
-                   },
+            'connect_timeout': 10
+        },
         'id_field': 'osm_id',
         'table': 'hotosm_bdi_waterways',
         'geom_field': 'foo_geom'
@@ -101,8 +101,8 @@ def config_types():
                  'search_path': ['public']
                  },
         'options': {
-                        'connect_timeout': 10
-                   },
+            'connect_timeout': 10
+        },
         'id_field': 'id',
         'table': 'foo',
         'geom_field': 'the_geom'
@@ -436,7 +436,7 @@ def test_instantiation(config):
     ({'table': 'bad_table'}, ProviderQueryError,
      'Table.*not found in schema.*'),
     ({'data': {'bad': 'data'}}, ProviderConnectionError,
-     r'Could not connect to postgresql\+psycopg2:\/\/:5432 \(password hidden\).'), # noqa
+     r'Could not connect to postgresql\+psycopg2:\/\/:5432 \(password hidden\).'),  # noqa
     ({'id_field': 'bad_id'}, ProviderQueryError,
      r'No such id_field column \(bad_id\) on osm.hotosm_bdi_waterways.'),
 ])
@@ -594,7 +594,7 @@ def test_get_collection_items_postgresql_cql_json(pg_api_):
                 {'property': 'osm_id'},
                 [80800000, 80900000]
             ]
-            }, {
+        }, {
             # FIXME: the below query is in CQL style, not CQL2
             # needs a fix in pygeofilter
             # 'op': 'isNull',
@@ -603,7 +603,7 @@ def test_get_collection_items_postgresql_cql_json(pg_api_):
             # ]
             'op': 'isNull',
             'args': {'property': 'name'}
-            }]
+        }]
     }
     # werkzeug requests use a value of CONTENT_TYPE 'application/json'
     # to create Content-Type in the Request object. So here we need to

@@ -9,7 +9,7 @@
 #          Bernhard Mallinger <bernhard.mallinger@eox.at>
 #
 # Copyright (c) 2024 Tom Kralidis
-# Copyright (c) 2022 Francesco Bartoli
+# Copyright (c) 2025 Francesco Bartoli
 # Copyright (c) 2022 John A Stevenson and Colin Blackburn
 # Copyright (c) 2023 Ricardo Garcia Silva
 # Copyright (c) 2024 Bernhard Mallinger
@@ -148,7 +148,7 @@ def get_collection_edr_instances(api: API, request: APIRequest, dataset,
                     'href': f'{uri}/instances/{instance}/{qt}',
                     'rel': 'data',
                     'title': f'{qt} query'
-                 }
+                }
             }
             instance_dict['data_queries'][qt] = data_query
 
@@ -166,7 +166,7 @@ def get_collection_edr_instances(api: API, request: APIRequest, dataset,
                 'href': f'{links_uri}?f={F_JSON}',
                 'rel': request.get_linkrel(F_JSON),
                 'type': 'application/json'
-                }, {
+            }, {
                 'href': f'{links_uri}?f={F_HTML}',
                 'rel': request.get_linkrel(F_HTML),
                 'type': 'text/html'

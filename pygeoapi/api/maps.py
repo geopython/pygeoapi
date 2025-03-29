@@ -9,7 +9,7 @@
 #          Bernhard Mallinger <bernhard.mallinger@eox.at>
 #
 # Copyright (c) 2024 Tom Kralidis
-# Copyright (c) 2022 Francesco Bartoli
+# Copyright (c) 2025 Francesco Bartoli
 # Copyright (c) 2022 John A Stevenson and Colin Blackburn
 # Copyright (c) 2023 Ricardo Garcia Silva
 # Copyright (c) 2024 Bernhard Mallinger

@@ -3,7 +3,7 @@
 # Authors: Tom Kralidis <tomkralidis@gmail.com>
 #
 # Copyright (c) 2024 Tom Kralidis
-# Copyright (c) 2024 Francesco Bartoli
+# Copyright (c) 2025 Francesco Bartoli
 #
 # Permission is hereby granted, free of charge, to any person
 # obtaining a copy of this software and associated documentation
@@ -129,13 +129,13 @@ def _and(eq, between):
                 {'property': 'properties.pop_max'},
                 [100000, 1000000]
             ]
-            }, {
+        }, {
             'op': '=',
-                'args': [
-                    {'property': 'properties.featurecla'},
-                    'Admin-0 capital'
-                ]
-            }]
+            'args': [
+                {'property': 'properties.featurecla'},
+                'Admin-0 capital'
+            ]
+        }]
     }
     return parse_cql2_json(json.dumps(and_))
 
@@ -146,14 +146,14 @@ def intersects():
         'op': 's_intersects',
         'args': [
             {'property': 'geometry'}, {
-             'type': 'Polygon',
-             'coordinates': [[
-                 [10.497565, 41.520355],
-                 [10.497565, 43.308645],
-                 [15.111823, 43.308645],
-                 [15.111823, 41.520355],
-                 [10.497565, 41.520355]
-             ]]
+                'type': 'Polygon',
+                'coordinates': [[
+                    [10.497565, 41.520355],
+                    [10.497565, 43.308645],
+                    [15.111823, 43.308645],
+                    [15.111823, 41.520355],
+                    [10.497565, 41.520355]
+                ]]
             }
         ]}
     return parse_cql2_json(json.dumps(intersects))

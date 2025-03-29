@@ -6,7 +6,7 @@
 #
 # Copyright (c) 2019 Just van den Broecke
 # Copyright (c) 2020 Tom Kralidis
-# Copyright (c) 2020 Francesco Bartoli
+# Copyright (c) 2025 Francesco Bartoli
 #
 # Permission is hereby granted, free of charge, to any person
 # obtaining a copy of this software and associated documentation
@@ -218,18 +218,18 @@ resources:
 #                  target_srs: EPSG:4326
                   source_capabilities:
                       paging: True
-  
+
                   source_options:
   #                    OGR_WFS_VERSION: 1.1.0
                       OGR_WFS_LOAD_MULTIPLE_LAYER_DEFN: NO
-  
+
                   gdal_ogr_options:
                       EMPTY_AS_NULL: NO
                       GDAL_CACHEMAX: 64
                       # GDAL_HTTP_PROXY: (optional proxy)
                       # GDAL_PROXY_AUTH: (optional auth for remote WFS)
                       CPL_DEBUG: NO
-  
+
               crs:
                 - http://www.opengis.net/def/crs/EPSG/0/4258
                 - http://www.opengis.net/def/crs/EPSG/0/28992
@@ -269,18 +269,18 @@ resources:
 #                  target_srs: EPSG:4326
                   source_capabilities:
                       paging: True
-  
+
                   source_options:
   #                    OGR_WFS_VERSION: 2.0.0
                       OGR_WFS_LOAD_MULTIPLE_LAYER_DEFN: NO
-  
+
                   gdal_ogr_options:
                       EMPTY_AS_NULL: NO
                       GDAL_CACHEMAX: 64
                       # GDAL_HTTP_PROXY: (optional proxy)
                       # GDAL_PROXY_AUTH: (optional auth for remote WFS)
                       CPL_DEBUG: NO
-  
+
               crs:
                 - http://www.opengis.net/def/crs/EPSG/0/4258
                 - http://www.opengis.net/def/crs/EPSG/0/26912
@@ -319,18 +319,18 @@ resources:
 #                  target_srs: EPSG:4326
                   source_capabilities:
                       paging: True
-  
+
                   source_options:
   #                    OGR_WFS_VERSION: 1.1.0
                       OGR_WFS_LOAD_MULTIPLE_LAYER_DEFN: NO
-  
+
                   gdal_ogr_options:
                       EMPTY_AS_NULL: NO
                       GDAL_CACHEMAX: 64
                       # GDAL_HTTP_PROXY: (optional proxy)
                       # GDAL_PROXY_AUTH: (optional auth for remote WFS)
                       CPL_DEBUG: NO
-  
+
               crs:
                 - http://www.opengis.net/def/crs/EPSG/0/4258
                 - http://www.opengis.net/def/crs/EPSG/0/32632
@@ -374,14 +374,14 @@ resources:
 #                  target_srs: EPSG:4326
                   source_capabilities:
                       paging: True
-  
+
                   gdal_ogr_options:
                       EMPTY_AS_NULL: NO
                       GDAL_CACHEMAX: 64
                       # GDAL_HTTP_PROXY: (optional proxy)
                       # GDAL_PROXY_AUTH: (optional auth for remote WFS)
                       CPL_DEBUG: NO
-  
+
               id_field: osm_id
               layer: poi_portugal
 
@@ -414,14 +414,14 @@ resources:
 #                  target_srs: EPSG:4326
                   source_capabilities:
                       paging: True
-  
+
                   gdal_ogr_options:
                       EMPTY_AS_NULL: NO
                       GDAL_CACHEMAX: 64
                       # GDAL_HTTP_PROXY: (optional proxy)
                       # GDAL_PROXY_AUTH: (optional auth for remote WFS)
                       CPL_DEBUG: NO
-  
+
               id_field: id
               layer: ne_110m_lakes
 
@@ -457,14 +457,14 @@ resources:
 #                  target_srs: EPSG:4326
                   source_capabilities:
                       paging: True
-  
+
                   gdal_ogr_options:
                       EMPTY_AS_NULL: NO
                       GDAL_CACHEMAX: 64
                       # GDAL_HTTP_PROXY: (optional proxy)
                       # GDAL_PROXY_AUTH: (optional auth for remote WFS)
                       CPL_DEBUG: NO
-  
+
               id_field: id
               layer: ogrgeojson
 
@@ -499,14 +499,14 @@ resources:
 #                  target_srs: EPSG:4326
                   source_capabilities:
                       paging: True
-  
+
                   gdal_ogr_options:
                       EMPTY_AS_NULL: NO
                       GDAL_CACHEMAX: 64
                       # GDAL_HTTP_PROXY: (optional proxy)
                       # GDAL_PROXY_AUTH: (optional auth for remote WFS)
                       CPL_DEBUG: NO
-  
+
               id_field: id
               layer: OGRGeoJSON
 

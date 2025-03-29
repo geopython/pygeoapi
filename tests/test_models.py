@@ -3,7 +3,7 @@
 # Authors: Francesco Bartoli <xbartolone@gmail.com>
 #          Tom Kralidis: <tomkralidis@gmail.com>
 #
-# Copyright (c) 2024 Francesco Bartoli
+# Copyright (c) 2025 Francesco Bartoli
 # Copyright (c) 2024 Tom Kralidis
 #
 # Permission is hereby granted, free of charge, to any person
@@ -43,5 +43,5 @@ class GeospatialDataTypeFactory(ModelFactory[GeospatialDataType]):
 def test_provider_base_geospatial_data_type(
         geospatial_data_type_factory: GeospatialDataTypeFactory) -> None:
     gdt_instance = geospatial_data_type_factory.build()
-    assert gdt_instance.dict()
+    assert gdt_instance.model_dump()
     assert isinstance(gdt_instance, GeospatialDataType)
