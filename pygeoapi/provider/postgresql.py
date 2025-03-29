@@ -11,7 +11,7 @@
 # Copyright (c) 2018 Jorge Samuel Mendes de Jesus
 # Copyright (c) 2025 Tom Kralidis
 # Copyright (c) 2022 John A Stevenson and Colin Blackburn
-# Copyright (c) 2023 Francesco Bartoli
+# Copyright (c) 2025 Francesco Bartoli
 # Copyright (c) 2024 Bernhard Mallinger
 #
 # Permission is hereby granted, free of charge, to any person
@@ -85,6 +85,7 @@ class PostgreSQLProvider(BaseProvider):
     using sync approach and server side
     cursor (using support class DatabaseCursor)
     """
+
     def __init__(self, provider_def):
         """
         PostgreSQLProvider Class constructor
