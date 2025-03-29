@@ -30,12 +30,12 @@
 #
 # =================================================================
 
+from copy import deepcopy
 import functools
 import importlib
 import logging
 import os
 from typing import Any
-from copy import deepcopy
 
 from osgeo import gdal as osgeo_gdal
 from osgeo import ogr as osgeo_ogr
