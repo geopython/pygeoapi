@@ -38,8 +38,7 @@ def config():
     return {
         'name': 'CSWFacade',
         'type': 'record',
-        # 'data': 'https://demo.pycsw.org/cite/csw',
-        'data': 'http://localhost:8000',
+        'data': 'https://demo.pycsw.org/cite/csw',
         'id_field': 'identifier',
         'time_field': 'date'
     }
@@ -84,7 +83,7 @@ def test_query(config):
     assert results['features'][0]['properties']['keywords'][0] == 'Tourism--Greece'  # noqa
 
     assert results['features'][1]['geometry']['type'] == 'Polygon'
-    assert results['features'][1]['geometry']['coordinates'][0][0][0] == 17.92
+    assert results['features'][1]['geometry']['coordinates'][0][0][0] == 13.754
     assert results['features'][1]['geometry']['coordinates'][0][0][1] == 60.042
 
     results = p.query(limit=1)

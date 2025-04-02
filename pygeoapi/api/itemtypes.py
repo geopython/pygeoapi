@@ -177,7 +177,7 @@ def get_collection_queryables(api: API, request: Union[APIRequest, Any],
             'x-ogc-role': 'primary-geometry'
         }
 
-    if profile == 'current':
+    if profile == 'actual-domain':
         try:
             domains, _ = p.get_domains(properties)
         except NotImplementedError:
@@ -1101,7 +1101,7 @@ def get_oas_30(cfg: dict, locale: str) -> tuple[list[dict[str, str]], dict[str, 
         'explode': False,
         'schema': {
             'type': 'string',
-            'enum': ['current']
+            'enum': ['actual-domain', 'valid-domain']
         }
     }
 

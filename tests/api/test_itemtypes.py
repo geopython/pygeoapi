@@ -102,7 +102,7 @@ def test_get_collection_queryables(config, api_):
     # No language requested: should be set to default from YAML
     assert rsp_headers['Content-Language'] == 'en-US'
 
-    req = mock_api_request({'f': 'json', 'profile': 'current'})
+    req = mock_api_request({'f': 'json', 'profile': 'actual-domain'})
     rsp_headers, code, response = get_collection_queryables(api_, req, 'canada-metadata')  # noqa
     assert rsp_headers['Content-Type'] == 'application/schema+json'
     queryables = json.loads(response)

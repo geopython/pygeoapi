@@ -770,11 +770,11 @@ Data access examples
 
 * queryables with current domain values
 
-  * http://localhost:5000/collections/foo/queryables?profile=current
+  * http://localhost:5000/collections/foo/queryables?profile=actual-domain
 
 * queryables on specific properties with current domain values
 
-  * http://localhost:5000/collections/foo/queryables?profile=current&properties=title,type
+  * http://localhost:5000/collections/foo/queryables?profile=actual-domain&properties=title,type
 
 * browse features
 
