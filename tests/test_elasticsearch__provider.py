@@ -159,6 +159,31 @@ def intersects():
     return parse_cql2_json(json.dumps(intersects))
 
 
+def test_domains(config):
+    p = ElasticsearchProvider(config)
+
+    domains, current = p.get_domains()
+
+    assert current
+
+    expected_properties = ['adm0cap', 'capalt', 'changed', 'checkme',
+                           'diffascii', 'geonameid', 'labelrank', 'latitude',
+                           'longitude', 'ls_match', 'megacity', 'min_zoom',
+                           'nameascii', 'namediff', 'natscale', 'pop_max',
+                           'pop_min', 'pop_other', 'rank_max', 'rank_min',
+                           'scalerank', 'worldcity']
+
+    assert sorted(domains.keys()) == expected_properties
+
+    assert len(domains['scalerank']) == 8
+
+    domains, current = p.get_domains(['scalerank'])
+
+    assert current
+
+    assert list(domains.keys()) == ['scalerank']
+
+
 def test_query(config):
     p = ElasticsearchProvider(config)
 

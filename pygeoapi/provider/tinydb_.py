@@ -116,6 +116,24 @@ class TinyDBProvider(BaseProvider):
 
         return self._fields
 
+    def get_domains(self, properties=[], current=False) -> tuple:
+        records = self.query()
+        domains = {}
+
+        if properties:
+            keys = properties
+        else:
+            keys = records['features'][0]['properties'].keys()
+
+        for key in keys:
+            v = [x['properties'][key] for x in records['features']]
+            v = set([v2 for v2 in v if v2 is not None and isinstance(v2, (float, int, str))])  # noqa
+
+            if v:
+                domains[key] = list(v)
+
+        return domains, True
+
     @crs_transform
     def query(self, offset=0, limit=10, resulttype='results',
               bbox=[], datetime_=None, properties=[], sortby=[],

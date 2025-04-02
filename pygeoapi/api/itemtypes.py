@@ -7,7 +7,7 @@
 #          Colin Blackburn <colb@bgs.ac.uk>
 #          Ricardo Garcia Silva <ricardo.garcia.silva@geobeyond.it>
 #
-# Copyright (c) 2024 Tom Kralidis
+# Copyright (c) 2025 Tom Kralidis
 # Copyright (c) 2025 Francesco Bartoli
 # Copyright (c) 2022 John A Stevenson and Colin Blackburn
 # Copyright (c) 2023 Ricardo Garcia Silva
@@ -111,6 +111,7 @@ def get_collection_queryables(api: API, request: Union[APIRequest, Any],
     :returns: tuple of headers, status code, content
     """
 
+    domains = {}
     headers = request.get_response_headers(**api.api_headers)
 
     if any([dataset is None,
@@ -135,8 +136,31 @@ def get_collection_queryables(api: API, request: Union[APIRequest, Any],
     if p is None:
         msg = 'queryables not available for this collection'
         return api.get_exception(
+
             HTTPStatus.BAD_REQUEST, headers, request.format,
             'NoApplicableError', msg)
+
+    LOGGER.debug('Processing profile')
+    profile = request.params.get('profile', '')
+
+    LOGGER.debug('Processing properties')
+    val = request.params.get('properties')
+    if val is not None:
+        properties = [x for x in val.split(',') if x]
+        properties_to_check = set(p.properties) | set(p.fields.keys())
+
+        if len(list(set(properties) - set(properties_to_check))) > 0:
+            msg = 'unknown properties specified'
+            return api.get_exception(
+                HTTPStatus.BAD_REQUEST, headers, request.format,
+                'InvalidParameterValue', msg)
+    else:
+        properties = []
+
+    queryables_id = f'{api.get_collections_url()}/{dataset}/queryables'
+
+    if request.params:
+        queryables_id += '?' + urllib.parse.urlencode(request.params)
 
     queryables = {
         'type': 'object',
@@ -144,7 +168,7 @@ def get_collection_queryables(api: API, request: Union[APIRequest, Any],
             api.config['resources'][dataset]['title'], request.locale),
         'properties': {},
         '$schema': 'http://json-schema.org/draft/2019-09/schema',
-        '$id': f'{api.get_collections_url()}/{dataset}/queryables'
+        '$id': queryables_id
     }
 
     if p.fields:
@@ -153,8 +177,17 @@ def get_collection_queryables(api: API, request: Union[APIRequest, Any],
             'x-ogc-role': 'primary-geometry'
         }
 
+    if profile == 'actual-domain':
+        try:
+            domains, _ = p.get_domains(properties)
+        except NotImplementedError:
+            LOGGER.debug('Domains are not suported by this provider')
+            domains = {}
+
     for k, v in p.fields.items():
         show_field = False
+        if properties and k not in properties:
+            continue
         if p.properties:
             if k in p.properties:
                 show_field = True
@@ -175,6 +208,8 @@ def get_collection_queryables(api: API, request: Union[APIRequest, Any],
                 queryables['properties'][k]['x-ogc-role'] = 'id'
             if k == p.time_field:
                 queryables['properties'][k]['x-ogc-role'] = 'primary-instant'  # noqa
+            if domains.get(k):
+                queryables['properties'][k]['enum'] = domains[k]
 
     if request.format == F_HTML:  # render
         tpl_config = api.get_dataset_templates(dataset)
@@ -1057,6 +1092,19 @@ def get_oas_30(cfg: dict, locale: str) -> tuple[list[dict[str, str]], dict[str, 
         }
     }
 
+    profile = {
+        'name': 'profile',
+        'in': 'query',
+        'description': 'The profile to be applied to a given request',
+        'required': False,
+        'style': 'form',
+        'explode': False,
+        'schema': {
+            'type': 'string',
+            'enum': ['actual-domain', 'valid-domain']
+        }
+    }
+
     LOGGER.debug('setting up collection endpoints')
     paths = {}
 
@@ -1190,7 +1238,9 @@ def get_oas_30(cfg: dict, locale: str) -> tuple[list[dict[str, str]], dict[str, 
                         'tags': [k],
                         'operationId': f'get{k.capitalize()}Queryables',
                         'parameters': [
+                            coll_properties,
                             {'$ref': '#/components/parameters/f'},
+                            profile,
                             {'$ref': '#/components/parameters/lang'}
                         ],
                         'responses': {

@@ -4,7 +4,7 @@
 #          John A Stevenson <jostev@bgs.ac.uk>
 #          Colin Blackburn <colb@bgs.ac.uk>
 #
-# Copyright (c) 2024 Tom Kralidis
+# Copyright (c) 2025 Tom Kralidis
 # Copyright (c) 2022 John A Stevenson and Colin Blackburn
 #
 # Permission is hereby granted, free of charge, to any person
@@ -101,6 +101,15 @@ def test_get_collection_queryables(config, api_):
 
     # No language requested: should be set to default from YAML
     assert rsp_headers['Content-Language'] == 'en-US'
+
+    req = mock_api_request({'f': 'json', 'profile': 'actual-domain'})
+    rsp_headers, code, response = get_collection_queryables(api_, req, 'canada-metadata')  # noqa
+    assert rsp_headers['Content-Type'] == 'application/schema+json'
+    queryables = json.loads(response)
+
+    assert 'properties' in queryables
+    assert 'enum' in queryables['properties']['title']
+    assert len(queryables['properties']['title']['enum']) == 10
 
 
 def test_get_collection_items(config, api_):

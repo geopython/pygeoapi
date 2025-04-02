@@ -2,7 +2,7 @@
 #
 # Authors: Tom Kralidis <tomkralidis@gmail.com>
 #
-# Copyright (c) 2023 Tom Kralidis
+# Copyright (c) 2025 Tom Kralidis
 #
 # Permission is hereby granted, free of charge, to any person
 # obtaining a copy of this software and associated documentation
@@ -90,6 +90,35 @@ class CSWFacadeProvider(BaseProvider):
                     self._fields[key]['format'] = 'date-time'
 
         return self._fields
+
+    def get_domains(self, properties=[], current=False) -> tuple:
+        """
+        Get domains from dataset
+
+        :param properties: `list` of property names
+        :param current: `bool` of whether to provide list of live
+                        values (default `False`)
+
+        :returns: `tuple` of domains and whether they are based on the
+                  current/live dataset
+        """
+
+        LOGGER.debug(f'Querying CSW: {self.data}')
+        records = self.query()
+        domains = {}
+
+        if properties:
+            keys = properties
+        else:
+            keys = records['features'][0]['properties'].keys()
+
+        csw = self._get_csw()
+
+        for key in keys:
+            csw.getdomain(key, dtype='property')
+            domains[key] = csw.results['values']
+
+        return domains, True
 
     @crs_transform
     def query(self, offset=0, limit=10, resulttype='results',
