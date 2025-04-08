@@ -176,7 +176,7 @@ class MVTElasticProvider(BaseMVTProvider):
                 with requests.Session() as session:
                     data = {'fields': ['*']}
                     session.get(base_url)
-                    resp = session.get(f'{base_url}/{layer}/{z}/{y}/{x}{url_query}', json=data)  # noqa
+                    resp = session.get(f'{base_url}/{layer}/{z}/{x}/{y}{url_query}', json=data)  # noqa
 
                     if resp.status_code == 404:
                         if (self.is_in_limits(TileMatrixSetEnum.WEBMERCATORQUAD.value, z, x, y)): # noqa
