@@ -725,6 +725,16 @@ def get_oas_30(cfg: dict, locale: str) -> tuple[list[dict[str, str]], dict[str, 
                 'description': md_desc,
                 'tags': [name],
                 'operationId': f'execute{name.capitalize()}Job',
+                'parameters': [{
+                    'in': 'header',
+                    'name': 'Prefer',
+                    'required': False,
+                    'description': 'Indicates client preferences, including whether the client is capable of asynchronous processing.',  # noqa
+                    'schema': {
+                        'type': 'string',
+                        'enum': ['respond-async']
+                    }
+                }],
                 'responses': {
                     '200': {'$ref': '#/components/responses/200'},
                     '201': {'$ref': f"{OPENAPI_YAML['oapip']}/responses/ExecuteAsync.yaml"},  # noqa
