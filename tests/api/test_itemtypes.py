@@ -637,7 +637,7 @@ def test_get_collection_item_json_ld(config, api_):
     expanded = jsonld.expand(feature)[0]
     assert expanded['http://www.opengis.net/ont/geosparql#hasGeometry'][0][
             'http://www.opengis.net/ont/geosparql#asWKT'][0][
-            '@value'] == 'MULTIPOINT (10 40, 40 30, 20 20, 30 10)'
+            '@value'] == 'MULTIPOINT ((10 40), (40 30), (20 20), (30 10))'
     assert expanded['https://schema.org/geo'][0][
             'https://schema.org/polygon'][0][
             '@value'] == "10.0,40.0 40.0,30.0 20.0,20.0 30.0,10.0 10.0,40.0"
