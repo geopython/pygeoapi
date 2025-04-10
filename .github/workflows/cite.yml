@@ -22,11 +22,11 @@ jobs:
               noofcollections=-1
           - suite-id: ogcapi-processes-1.0
             arguments: >-
-              iut=http://localhost:5001 
+              iut=http://localhost:5001
               noofcollections=-1
           - suite-id: ogcapi-edr10
             arguments: >-
-              iut=http://localhost:5001 
+              iut=http://localhost:5001
               apiDefinition=http://localhost:5001/openapi
           - suite-id: ogcapi-tiles-1.0
             arguments: >-
@@ -62,8 +62,9 @@ jobs:
           images: ghcr.io/geopython/pygeoapi
           tail: 500
 
-      - name: test ogcapi-features compliancy
+      - name: test {{ matrix.test-suite.suite-id }} compliancy
         uses: OSGEO/cite-runner@main
         with:
           test_suite_identifier: ${{ matrix.test-suite.suite-id }}
           test_session_arguments: ${{ matrix.test-suite.arguments }}
+          exit_with_error_on_suite_failed_result: "true"
