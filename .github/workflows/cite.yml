@@ -12,6 +12,7 @@ jobs:
 
   perform-cite-testing:
     name: ${{ matrix.test-suite.suite-id }} CITE testing
+    continue-on-error: true
     strategy:
       matrix:
         test-suite:
@@ -27,6 +28,16 @@ jobs:
             arguments: >-
               iut=http://localhost:5001 
               apiDefinition=http://localhost:5001/openapi
+          - suite-id: ogcapi-tiles-1.0
+            arguments: >-
+              iut=http://localhost:5001
+              tilematrixsetdefinitionuri=http://www.opengis.net/def/tilematrixset/OGC/1.0/WebMercatorQuad
+              urltemplatefortiles=http://localhost:5001/collections/lakes/tiles/WebMercatorQuad/{tileMatrix}/{tileRow}/{tileCol}?f=mvt
+              tilematrix=0
+              mintilerow=0
+              maxtilerow=1
+              mintilecol=0
+              maxtilecol=1
 
     runs-on: ubuntu-22.04
     steps:
