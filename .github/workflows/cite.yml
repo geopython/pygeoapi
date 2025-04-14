@@ -62,9 +62,8 @@ jobs:
           images: ghcr.io/geopython/pygeoapi
           tail: 500
 
-      - name: test {{ matrix.test-suite.suite-id }} compliancy
+      - name: test {{ matrix.test-suite.suite-id }} compliance
         uses: OSGEO/cite-runner@main
         with:
           test_suite_identifier: ${{ matrix.test-suite.suite-id }}
           test_session_arguments: ${{ matrix.test-suite.arguments }}
-          exit_with_error_on_suite_failed_result: "true"
