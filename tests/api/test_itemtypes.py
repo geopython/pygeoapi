@@ -4,7 +4,7 @@
 #          John A Stevenson <jostev@bgs.ac.uk>
 #          Colin Blackburn <colb@bgs.ac.uk>
 #
-# Copyright (c) 2024 Tom Kralidis
+# Copyright (c) 2025 Tom Kralidis
 # Copyright (c) 2022 John A Stevenson and Colin Blackburn
 #
 # Permission is hereby granted, free of charge, to any person
@@ -96,10 +96,20 @@ def test_get_collection_queryables(config, api_):
     assert 'properties' in queryables
     assert len(queryables['properties']) == 2
     assert 'geometry' in queryables['properties']
-    assert queryables['properties']['geometry']['$ref'] == 'https://geojson.org/schema/Geometry.json'  # noqa
+    assert '$ref' not in queryables['properties']['geometry']
+    assert queryables['properties']['geometry']['format'] == 'geometry-any'
 
     # No language requested: should be set to default from YAML
     assert rsp_headers['Content-Language'] == 'en-US'
+
+    req = mock_api_request({'f': 'json', 'profile': 'actual-domain'})
+    rsp_headers, code, response = get_collection_queryables(api_, req, 'canada-metadata')  # noqa
+    assert rsp_headers['Content-Type'] == 'application/schema+json'
+    queryables = json.loads(response)
+
+    assert 'properties' in queryables
+    assert 'enum' in queryables['properties']['title']
+    assert len(queryables['properties']['title']['enum']) == 10
 
 
 def test_get_collection_items(config, api_):
@@ -630,8 +640,8 @@ def test_get_collection_items_json_ld(config, api_):
     assert '@context' in collection
     assert all((f in collection['@context'][0] for
                 f in ('schema', 'type', 'features', 'FeatureCollection')))
-    assert len(collection['@context']) > 1
-    assert collection['@context'][1]['schema'] == 'https://schema.org/'
+    assert len(collection['@context']) == 1
+    assert collection['@context'][0]['schema'] == 'https://schema.org/'
     expanded = jsonld.expand(collection)[0]
     featuresUri = 'https://schema.org/itemListElement'
     assert len(expanded[featuresUri]) == 2
@@ -709,7 +719,7 @@ def test_get_collection_item_json_ld(config, api_):
     expanded = jsonld.expand(feature)[0]
     assert expanded['http://www.opengis.net/ont/geosparql#hasGeometry'][0][
             'http://www.opengis.net/ont/geosparql#asWKT'][0][
-            '@value'] == 'MULTIPOINT (10 40, 40 30, 20 20, 30 10)'
+            '@value'] == 'MULTIPOINT ((10 40), (40 30), (20 20), (30 10))'
     assert expanded['https://schema.org/geo'][0][
             'https://schema.org/polygon'][0][
             '@value'] == "10.0,40.0 40.0,30.0 20.0,20.0 30.0,10.0 10.0,40.0"

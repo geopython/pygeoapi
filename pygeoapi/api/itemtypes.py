@@ -7,8 +7,8 @@
 #          Colin Blackburn <colb@bgs.ac.uk>
 #          Ricardo Garcia Silva <ricardo.garcia.silva@geobeyond.it>
 #
-# Copyright (c) 2024 Tom Kralidis
-# Copyright (c) 2022 Francesco Bartoli
+# Copyright (c) 2025 Tom Kralidis
+# Copyright (c) 2025 Francesco Bartoli
 # Copyright (c) 2022 John A Stevenson and Colin Blackburn
 # Copyright (c) 2023 Ricardo Garcia Silva
 #
@@ -80,7 +80,7 @@ DEFAULT_STORAGE_CRS = DEFAULT_CRS
 
 CONFORMANCE_CLASSES_FEATURES = [
     'http://www.opengis.net/spec/ogcapi-features-1/1.0/conf/core',
-    'http://www.opengis.net/spec/ogcapi-features-1/1.0/req/oas30',
+    'http://www.opengis.net/spec/ogcapi-features-1/1.0/conf/oas30',
     'http://www.opengis.net/spec/ogcapi-features-1/1.0/conf/html',
     'http://www.opengis.net/spec/ogcapi-features-1/1.0/conf/geojson',
     'http://www.opengis.net/spec/ogcapi-features-2/1.0/conf/crs',
@@ -88,7 +88,7 @@ CONFORMANCE_CLASSES_FEATURES = [
     'http://www.opengis.net/spec/ogcapi-features-3/1.0/conf/queryables-query-parameters',  # noqa
     'http://www.opengis.net/spec/ogcapi-features-4/1.0/conf/create-replace-delete',  # noqa
     'http://www.opengis.net/spec/ogcapi-features-5/1.0/conf/schemas',
-    'http://www.opengis.net/spec/ogcapi-features-5/1.0/req/core-roles-features'
+    'http://www.opengis.net/spec/ogcapi-features-5/1.0/conf/core-roles-features'  # noqa
 ]
 
 CONFORMANCE_CLASSES_RECORDS = [
@@ -111,6 +111,7 @@ def get_collection_queryables(api: API, request: Union[APIRequest, Any],
     :returns: tuple of headers, status code, content
     """
 
+    domains = {}
     headers = request.get_response_headers(**api.api_headers)
 
     if any([dataset is None,
@@ -135,8 +136,31 @@ def get_collection_queryables(api: API, request: Union[APIRequest, Any],
     if p is None:
         msg = 'queryables not available for this collection'
         return api.get_exception(
+
             HTTPStatus.BAD_REQUEST, headers, request.format,
             'NoApplicableError', msg)
+
+    LOGGER.debug('Processing profile')
+    profile = request.params.get('profile', '')
+
+    LOGGER.debug('Processing properties')
+    val = request.params.get('properties')
+    if val is not None:
+        properties = [x for x in val.split(',') if x]
+        properties_to_check = set(p.properties) | set(p.fields.keys())
+
+        if len(list(set(properties) - set(properties_to_check))) > 0:
+            msg = 'unknown properties specified'
+            return api.get_exception(
+                HTTPStatus.BAD_REQUEST, headers, request.format,
+                'InvalidParameterValue', msg)
+    else:
+        properties = []
+
+    queryables_id = f'{api.get_collections_url()}/{dataset}/queryables'
+
+    if request.params:
+        queryables_id += '?' + urllib.parse.urlencode(request.params)
 
     queryables = {
         'type': 'object',
@@ -144,17 +168,26 @@ def get_collection_queryables(api: API, request: Union[APIRequest, Any],
             api.config['resources'][dataset]['title'], request.locale),
         'properties': {},
         '$schema': 'http://json-schema.org/draft/2019-09/schema',
-        '$id': f'{api.get_collections_url()}/{dataset}/queryables'
+        '$id': queryables_id
     }
 
     if p.fields:
         queryables['properties']['geometry'] = {
-            '$ref': 'https://geojson.org/schema/Geometry.json',
+            'format': 'geometry-any',
             'x-ogc-role': 'primary-geometry'
         }
 
+    if profile == 'actual-domain':
+        try:
+            domains, _ = p.get_domains(properties)
+        except NotImplementedError:
+            LOGGER.debug('Domains are not suported by this provider')
+            domains = {}
+
     for k, v in p.fields.items():
         show_field = False
+        if properties and k not in properties:
+            continue
         if p.properties:
             if k in p.properties:
                 show_field = True
@@ -175,9 +208,11 @@ def get_collection_queryables(api: API, request: Union[APIRequest, Any],
                 queryables['properties'][k]['x-ogc-role'] = 'id'
             if k == p.time_field:
                 queryables['properties'][k]['x-ogc-role'] = 'primary-instant'  # noqa
+            if domains.get(k):
+                queryables['properties'][k]['enum'] = domains[k]
 
     if request.format == F_HTML:  # render
-        api.set_dataset_templates(dataset)
+        tpl_config = api.get_dataset_templates(dataset)
 
         queryables['title'] = l10n.translate(
             api.config['resources'][dataset]['title'], request.locale)
@@ -185,7 +220,7 @@ def get_collection_queryables(api: API, request: Union[APIRequest, Any],
         queryables['collections_path'] = api.get_collections_url()
         queryables['dataset_path'] = f'{api.get_collections_url()}/{dataset}'
 
-        content = render_j2_template(api.tpl_config,
+        content = render_j2_template(api.tpl_config, tpl_config,
                                      'collections/queryables.html',
                                      queryables, request.locale)
 
@@ -352,7 +387,7 @@ def get_collection_items(
                 HTTPStatus.BAD_REQUEST, headers, request.format,
                 'NoApplicableCode', msg)
 
-        supported_crs_list = get_supported_crs_list(provider_def, DEFAULT_CRS_LIST) # noqa
+        supported_crs_list = get_supported_crs_list(provider_def, DEFAULT_CRS_LIST)  # noqa
         if bbox_crs not in supported_crs_list:
             msg = f'bbox-crs {bbox_crs} not supported for this collection'
             return api.get_exception(
@@ -367,7 +402,7 @@ def get_collection_items(
     if len(bbox) > 0:
         try:
             # Get a pyproj CRS instance for the Collection's Storage CRS
-            storage_crs = provider_def.get('storage_crs', DEFAULT_STORAGE_CRS) # noqa
+            storage_crs = provider_def.get('storage_crs', DEFAULT_STORAGE_CRS)  # noqa
 
             # Do the (optional) Transform to the Storage CRS
             bbox = transform_bbox(bbox, bbox_crs, storage_crs)
@@ -591,7 +626,7 @@ def get_collection_items(
     l10n.set_response_language(headers, prv_locale, request.locale)
 
     if request.format == F_HTML:  # render
-        api.set_dataset_templates(dataset)
+        tpl_config = api.get_dataset_templates(dataset)
         # For constructing proper URIs to items
 
         content['items_path'] = uri
@@ -608,7 +643,7 @@ def get_collection_items(
                                                     request.locale)
             # If title exists, use it as id in html templates
             content['id_field'] = content['title_field']
-        content = render_j2_template(api.tpl_config,
+        content = render_j2_template(api.tpl_config, tpl_config,
                                      'collections/items/index.html',
                                      content, request.locale)
         return headers, HTTPStatus.OK, content
@@ -621,8 +656,8 @@ def get_collection_items(
                 data=content,
                 options={
                     'provider_def': get_provider_by_type(
-                                        collections[dataset]['providers'],
-                                        'feature')
+                        collections[dataset]['providers'],
+                        'feature')
                 }
             )
         except FormatterSerializationError:
@@ -647,6 +682,8 @@ def get_collection_items(
         content = geojson2jsonld(
             api, content, dataset, id_field=(p.uri_field or 'id')
         )
+
+        return headers, HTTPStatus.OK, content
 
     return headers, HTTPStatus.OK, to_json(content, api.pretty_print)
 
@@ -909,7 +946,7 @@ def get_collection_item(api: API, request: APIRequest,
     l10n.set_response_language(headers, prv_locale, request.locale)
 
     if request.format == F_HTML:  # render
-        api.set_dataset_templates(dataset)
+        tpl_config = api.get_dataset_templates(dataset)
         content['title'] = l10n.translate(collections[dataset]['title'],
                                           request.locale)
         content['id_field'] = p.id_field
@@ -920,7 +957,7 @@ def get_collection_item(api: API, request: APIRequest,
                                                     request.locale)
         content['collections_path'] = api.get_collections_url()
 
-        content = render_j2_template(api.tpl_config,
+        content = render_j2_template(api.tpl_config, tpl_config,
                                      'collections/items/item.html',
                                      content, request.locale)
         return headers, HTTPStatus.OK, content
@@ -929,6 +966,8 @@ def get_collection_item(api: API, request: APIRequest,
         content = geojson2jsonld(
             api, content, dataset, uri, (p.uri_field or 'id')
         )
+
+        return headers, HTTPStatus.OK, content
 
     return headers, HTTPStatus.OK, to_json(content, api.pretty_print)
 
@@ -1050,6 +1089,19 @@ def get_oas_30(cfg: dict, locale: str) -> tuple[list[dict[str, str]], dict[str, 
             'items': {
                 'type': 'string'
             }
+        }
+    }
+
+    profile = {
+        'name': 'profile',
+        'in': 'query',
+        'description': 'The profile to be applied to a given request',
+        'required': False,
+        'style': 'form',
+        'explode': False,
+        'schema': {
+            'type': 'string',
+            'enum': ['actual-domain', 'valid-domain']
         }
     }
 
@@ -1186,7 +1238,9 @@ def get_oas_30(cfg: dict, locale: str) -> tuple[list[dict[str, str]], dict[str, 
                         'tags': [k],
                         'operationId': f'get{k.capitalize()}Queryables',
                         'parameters': [
+                            coll_properties,
                             {'$ref': '#/components/parameters/f'},
+                            profile,
                             {'$ref': '#/components/parameters/lang'}
                         ],
                         'responses': {

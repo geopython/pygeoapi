@@ -4,7 +4,7 @@
 #          Francesco Bartoli <xbartolone@gmail.com>
 #
 # Copyright (c) 2019 Just van den Broecke
-# Copyright (c) 2020 Francesco Bartoli
+# Copyright (c) 2025 Francesco Bartoli
 # Copyright (c) 2022 Tom Kralidis
 #
 # Permission is hereby granted, free of charge, to any person
@@ -30,6 +30,7 @@
 #
 # =================================================================
 
+from copy import deepcopy
 import functools
 import importlib
 import logging
@@ -527,6 +528,14 @@ class OGRProvider(BaseProvider):
 
         if skip_geometry:
             json_feature['geometry'] = None
+
+        # Drop non-defined properties
+        if self.properties:
+            props = json_feature['properties']
+            dropping_keys = deepcopy(props).keys()
+            for item in dropping_keys:
+                if item not in self.properties:
+                    props.pop(item)
 
         try:
             json_feature['id'] = json_feature['properties'].pop(

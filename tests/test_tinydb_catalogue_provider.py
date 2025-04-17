@@ -2,7 +2,7 @@
 #
 # Authors: Tom Kralidis <tomkralidis@gmail.com>
 #
-# Copyright (c) 2023 Tom Kralidis
+# Copyright (c) 2025 Tom Kralidis
 #
 # Permission is hereby granted, free of charge, to any person
 # obtaining a copy of this software and associated documentation
@@ -88,6 +88,27 @@ def config(tmp_path):
         'id_field': 'externalId',
         'time_field': 'created'
     }
+
+
+def test_domains(config):
+    p = TinyDBCatalogueProvider(config)
+
+    domains, current = p.get_domains()
+
+    assert current
+
+    expected_properties = ['created', 'description', 'title', 'type',
+                           'updated']
+
+    assert sorted(domains.keys()) == expected_properties
+
+    assert len(domains['created']) == 10
+
+    domains, current = p.get_domains(['type'])
+
+    assert current
+
+    assert list(domains.keys()) == ['type']
 
 
 def test_query(config):

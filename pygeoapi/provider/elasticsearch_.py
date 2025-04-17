@@ -3,8 +3,8 @@
 # Authors: Tom Kralidis <tomkralidis@gmail.com>
 #          Francesco Bartoli <xbartolone@gmail.com>
 #
-# Copyright (c) 2024 Tom Kralidis
-# Copyright (c) 2024 Francesco Bartoli
+# Copyright (c) 2025 Tom Kralidis
+# Copyright (c) 2025 Francesco Bartoli
 #
 # Permission is hereby granted, free of charge, to any person
 # obtaining a copy of this software and associated documentation
@@ -149,6 +149,57 @@ class ElasticsearchProvider(BaseProvider):
                 else:
                     fields[cur_field] = {'type': v['type']}
         return fields
+
+    def get_domains(self, properties=[], current=False) -> tuple:
+        """
+        Get domains from dataset
+
+        :param properties: `list` of property names
+        :param current: `bool` of whether to provide list of live
+                        values (default `False`)
+
+        :returns: `tuple` of domains and whether they are based on the
+                  current/live dataset
+        """
+
+        domains = {}
+
+        if properties:
+            keys = properties
+        else:
+            keys = self.fields.keys()
+
+        body = {
+            'size': 0,
+            'aggs': {}
+        }
+
+        for key in keys:
+            if (self.fields[key]['type'] == 'string'
+                    and self.fields[key].get('format') != 'date'):
+
+                LOGGER.debug('setting ES .raw on property')
+                agg_property = f'{self.mask_prop(key)}.raw'
+            else:
+                agg_property = f'{self.mask_prop(key)}'
+
+            body['aggs'][key] = {
+                'terms': {
+                    'field': agg_property,
+                    'size': 500
+                }
+            }
+
+        response = self.es.search(index=self.index_name, body=body)
+
+        for key, value in response['aggregations'].items():
+            if self.fields[key]['type'] in ['string', 'number']:
+                values = [x['key'] for x in value['buckets']]
+                values = [x for x in values if isinstance(x, (float, int, str))]  # noqa
+                if values:
+                    domains[key] = values
+
+        return domains, True
 
     @crs_transform
     def query(self, offset=0, limit=10, resulttype='results',

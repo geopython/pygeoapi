@@ -100,8 +100,8 @@
         ));
     {% elif data['tile_type'] == 'vector' %}
         url = url
-            .replace("tileRow", "x")
-            .replace("tileCol", "y");
+            .replace("tileRow", "y")
+            .replace("tileCol", "x");
         var VectorTileOptions = {
             interactive: true,
             rendererFactory: L.canvas.tile,

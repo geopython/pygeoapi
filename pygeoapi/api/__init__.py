@@ -8,7 +8,7 @@
 #          Ricardo Garcia Silva <ricardo.garcia.silva@geobeyond.it>
 #
 # Copyright (c) 2025 Tom Kralidis
-# Copyright (c) 2022 Francesco Bartoli
+# Copyright (c) 2025 Francesco Bartoli
 # Copyright (c) 2022 John A Stevenson and Colin Blackburn
 # Copyright (c) 2023 Ricardo Garcia Silva
 #
@@ -65,8 +65,8 @@ from pygeoapi.provider.base import (
 
 from pygeoapi.util import (
     CrsTransformSpec, TEMPLATES, UrlPrefetcher, dategetter,
-    filter_dict_by_key_value, get_api_rules, get_base_url,
-    get_provider_by_type, get_provider_default, get_typed_value,
+    filter_dict_by_key_value, filter_providers_by_type, get_api_rules,
+    get_base_url, get_provider_by_type, get_provider_default, get_typed_value,
     get_crs_from_uri, get_supported_crs_list, render_j2_template, to_json
 )
 
@@ -243,6 +243,7 @@ class APIRequest:
     :param request:             The web platform specific Request instance.
     :param supported_locales:   List or set of supported Locale instances.
     """
+
     def __init__(self, request, supported_locales):
         # Set default request data
         self._data = b''
@@ -370,7 +371,7 @@ class APIRequest:
 
         # Format not specified: get from Accept headers (MIME types)
         # e.g. format_ = 'text/html'
-        h = headers.get('accept', headers.get('Accept', '')).strip() # noqa
+        h = headers.get('accept', headers.get('Accept', '')).strip()  # noqa
         (fmts, mimes) = zip(*FORMAT_TYPES.items())
         # basic support for complex types (i.e. with "q=0.x")
         for type_ in (t.split(';')[0].strip() for t in h.split(',') if t):
@@ -649,7 +650,8 @@ class API:
         if format_ == F_HTML:
             headers['Content-Type'] = FORMAT_TYPES[F_HTML]
             content = render_j2_template(
-                self.config, 'exception.html', exception, SYSTEM_LOCALE)
+                self.tpl_config, self.config['server']['templates'],
+                'exception.html', exception, SYSTEM_LOCALE)
         else:
             content = to_json(exception, self.pretty_print)
 
@@ -673,12 +675,13 @@ class API:
             HTTPStatus.BAD_REQUEST, headers,
             request.format, 'InvalidParameterValue', msg)
 
-    def get_collections_url(self):
+    def get_collections_url(self) -> str:
         return f"{self.base_url}/collections"
 
-    def set_dataset_templates(self, dataset):
-        if 'templates' in self.config['resources'][dataset]:
-           self.tpl_config['server']['templates'] = self.config['resources'][dataset]['templates']  # noqa
+    def get_dataset_templates(self, dataset) -> dict:
+        templates = self.config['resources'][dataset].get('templates')
+
+        return templates or self.tpl_config['server']['templates']
 
     @staticmethod
     def _create_crs_transform_spec(
@@ -867,24 +870,23 @@ def landing_page(api: API,
     headers = request.get_response_headers(**api.api_headers)
     if request.format == F_HTML:  # render
 
-        fcm['processes'] = False
-        fcm['stac'] = False
-        fcm['collection'] = False
+        for resource_type in ['collection', 'process', 'stac-collection']:
+            fcm[resource_type] = False
 
-        if filter_dict_by_key_value(api.config['resources'],
-                                    'type', 'process'):
-            fcm['processes'] = True
+            found = filter_dict_by_key_value(api.config['resources'],
+                                             'type', resource_type)
+            if found:
+                fcm[resource_type] = True
+                if resource_type == 'collection':  # check for tiles
+                    for key, value in found.items():
+                        if filter_providers_by_type(value['providers'],
+                                                    'tile'):
+                            fcm['tile'] = True
 
-        if filter_dict_by_key_value(api.config['resources'],
-                                    'type', 'stac-collection'):
-            fcm['stac'] = True
+        content = render_j2_template(
+            api.tpl_config, api.config['server']['templates'],
+            'landing_page.html', fcm, request.locale)
 
-        if filter_dict_by_key_value(api.config['resources'],
-                                    'type', 'collection'):
-            fcm['collection'] = True
-
-        content = render_j2_template(api.tpl_config, 'landing_page.html',
-                                     fcm, request.locale)
         return headers, HTTPStatus.OK, content
 
     if request.format == F_JSONLD:
@@ -914,8 +916,10 @@ def openapi_(api: API, request: APIRequest) -> Tuple[dict, int, str]:
         data = {
             'openapi-document-path': path
         }
-        content = render_j2_template(api.tpl_config, template, data,
-                                     request.locale)
+        content = render_j2_template(
+            api.tpl_config, api.config['server']['templates'], template, data,
+            request.locale)
+
         return headers, HTTPStatus.OK, content
 
     headers['Content-Type'] = 'application/vnd.oai.openapi+json;version=3.0'  # noqa
@@ -962,8 +966,10 @@ def conformance(api, request: APIRequest) -> Tuple[dict, int, str]:
 
     headers = request.get_response_headers(**api.api_headers)
     if request.format == F_HTML:  # render
-        content = render_j2_template(api.tpl_config, 'conformance.html',
-                                     conformance, request.locale)
+        content = render_j2_template(
+            api.tpl_config, api.config['server']['templates'],
+            'conformance.html', conformance, request.locale)
+
         return headers, HTTPStatus.OK, content
 
     return headers, HTTPStatus.OK, to_json(conformance, api.pretty_print)
@@ -1134,7 +1140,7 @@ def describe_collections(api: API, request: APIRequest,
 
         if collection_data_type in ['feature', 'coverage', 'record']:
             collection['links'].append({
-                'type': FORMAT_TYPES[F_JSON],
+                'type': 'application/schema+json',
                 'rel': f'{OGC_RELTYPES_BASE}/schema',
                 'title': l10n.translate('Schema of collection in JSON', request.locale),  # noqa
                 'href': f'{api.get_collections_url()}/{k}/schema?f={F_JSON}'  # noqa
@@ -1183,10 +1189,10 @@ def describe_collections(api: API, request: APIRequest,
 
         # OAPIF Part 2 - list supported CRSs and StorageCRS
         if collection_data_type in ['edr', 'feature']:
-            collection['crs'] = get_supported_crs_list(collection_data, DEFAULT_CRS_LIST) # noqa
-            collection['storageCRS'] = collection_data.get('storage_crs', DEFAULT_STORAGE_CRS) # noqa
+            collection['crs'] = get_supported_crs_list(collection_data, DEFAULT_CRS_LIST)  # noqa
+            collection['storageCRS'] = collection_data.get('storage_crs', DEFAULT_STORAGE_CRS)  # noqa
             if 'storage_crs_coordinate_epoch' in collection_data:
-                collection['storageCrsCoordinateEpoch'] = collection_data.get('storage_crs_coordinate_epoch') # noqa
+                collection['storageCrsCoordinateEpoch'] = collection_data.get('storage_crs_coordinate_epoch')  # noqa
 
         elif collection_data_type == 'coverage':
             # TODO: translate
@@ -1225,7 +1231,7 @@ def describe_collections(api: API, request: APIRequest,
                     collection['extent']['spatial']['grid'] = [{
                         'cellsCount': p._coverage_properties['width'],
                         'resolution': p._coverage_properties['resx']
-                        }, {
+                    }, {
                         'cellsCount': p._coverage_properties['height'],
                         'resolution': p._coverage_properties['resy']
                     }]
@@ -1390,14 +1396,14 @@ def describe_collections(api: API, request: APIRequest,
     if request.format == F_HTML:  # render
         fcm['collections_path'] = api.get_collections_url()
         if dataset is not None:
-            api.set_dataset_templates(dataset)
-            content = render_j2_template(api.tpl_config,
+            tpl_config = api.get_dataset_templates(dataset)
+            content = render_j2_template(api.tpl_config, tpl_config,
                                          'collections/collection.html',
                                          fcm, request.locale)
         else:
-            content = render_j2_template(api.tpl_config,
-                                         'collections/index.html',
-                                         fcm, request.locale)
+            content = render_j2_template(
+                api.tpl_config, api.config['server']['templates'],
+                'collections/index.html', fcm, request.locale)
 
         return headers, HTTPStatus.OK, content
 
@@ -1467,7 +1473,7 @@ def get_collection_schema(api: API, request: Union[APIRequest, Any],
 
     if p.type != 'coverage':
         schema['properties']['geometry'] = {
-            '$ref': 'https://geojson.org/schema/Geometry.json',
+            'format': 'geometry-any',
             'x-ogc-role': 'primary-geometry'
         }
 
@@ -1482,14 +1488,14 @@ def get_collection_schema(api: API, request: Union[APIRequest, Any],
             schema['properties'][k]['x-ogc-role'] = 'primary-instant'
 
     if request.format == F_HTML:  # render
-        api.set_dataset_templates(dataset)
+        tpl_config = api.get_dataset_templates(dataset)
         schema['title'] = l10n.translate(
             api.config['resources'][dataset]['title'], request.locale)
 
         schema['collections_path'] = api.get_collections_url()
         schema['dataset_path'] = f'{api.get_collections_url()}/{dataset}'
 
-        content = render_j2_template(api.tpl_config,
+        content = render_j2_template(api.tpl_config, tpl_config,
                                      'collections/schema.html',
                                      schema, request.locale)
 

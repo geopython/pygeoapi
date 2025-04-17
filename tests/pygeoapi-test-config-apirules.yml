@@ -293,8 +293,6 @@ resources:
               title: data source
               href: https://en.wikipedia.org/wiki/GeoJSON
               hreflang: en-US
-        linked-data:
-            item_template: tests/data/base.jsonld
         extents:
             spatial:
                 bbox: [-180,-90,180,90]

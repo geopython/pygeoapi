@@ -91,6 +91,28 @@ def config(tmp_path):
     }
 
 
+def test_domains(config):
+    p = TinyDBProvider(config)
+
+    domains, current = p.get_domains()
+
+    assert current
+
+    expected_properties = ['DATE', 'FLOW', 'FLOW_SYMBOL_EN', 'FLOW_SYMBOL_FR',
+                           'IDENTIFIER', 'LEVEL', 'PROV_TERR_STATE_LOC',
+                           'STATION_NAME', 'STATION_NUMBER']
+
+    assert sorted(domains.keys()) == expected_properties
+
+    assert len(domains['STATION_NUMBER']) == 1
+
+    domains, current = p.get_domains(['STATION_NAME'])
+
+    assert current
+
+    assert list(domains.keys()) == ['STATION_NAME']
+
+
 def test_query(config):
     p = TinyDBProvider(config)
 

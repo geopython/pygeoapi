@@ -4,7 +4,7 @@
 # Authors: Tom Kralidis <tomkralidis@gmail.com>
 # Authors: Simon Seyock <simonseyock@gmail.com>
 #
-# Copyright (c) 2020 Francesco Bartoli
+# Copyright (c) 2025 Francesco Bartoli
 # Copyright (c) 2023 Tom Kralidis
 #
 # Permission is hereby granted, free of charge, to any person
@@ -35,8 +35,8 @@ import logging
 import requests
 from urllib.parse import urlparse, urlencode
 
-from pygeoapi.provider.tile import (
-    BaseTileProvider)
+from pygeoapi.provider.tile import (ProviderTileNotFoundError,
+                                    BaseTileProvider)
 from pygeoapi.provider.base import ProviderConnectionError
 from pygeoapi.models.provider.base import (
     TileMatrixSetEnum, TilesMetadataFormat, TileSetMetadata, LinkType)
@@ -171,7 +171,10 @@ class WMTSFacadeProvider(BaseTileProvider):
 
             with requests.Session() as session:
                 resp = session.get(request_url)
-                resp.raise_for_status()
+
+                if resp.status_code == 400:
+                    raise ProviderTileNotFoundError
+
                 return resp.content
         else:
             msg = f'Wrong data path configuration: {self.data}'
@@ -206,7 +209,7 @@ class WMTSFacadeProvider(BaseTileProvider):
                                           tileset, title, description,
                                           keywords, **kwargs)
         else:
-            raise NotImplementedError(f"_{metadata_format.upper()}_ is not supported") # noqa
+            raise NotImplementedError(f"_{metadata_format.upper()}_ is not supported")  # noqa
 
     def get_html_metadata(self, dataset, server_url, layer, tileset,
                           title, description, keywords, **kwargs):
@@ -248,10 +251,10 @@ class WMTSFacadeProvider(BaseTileProvider):
                 tiling_scheme_url = url_join(
                     server_url, f'/TileMatrixSets/{schema.tileMatrixSet}')
                 tiling_scheme_url_type = "application/json"
-                tiling_scheme_url_title = f'{schema.tileMatrixSet} tile matrix set definition' # noqa
+                tiling_scheme_url_title = f'{schema.tileMatrixSet} tile matrix set definition'  # noqa
 
                 tiling_scheme = LinkType(href=tiling_scheme_url,
-                                         rel="http://www.opengis.net/def/rel/ogc/1.0/tiling-scheme", # noqa
+                                         rel="http://www.opengis.net/def/rel/ogc/1.0/tiling-scheme",  # noqa
                                          type_=tiling_scheme_url_type,
                                          title=tiling_scheme_url_title)
 

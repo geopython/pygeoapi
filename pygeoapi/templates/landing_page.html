@@ -60,7 +60,7 @@
     </p>
   </section>
  {% endif %}
- {% if data['stac'] %}
+ {% if data['stac-collection'] %}
   <section id="collections">
     <h2>{% trans %}SpatioTemporal Assets{% endtrans %}</h2>
     <p>
@@ -68,7 +68,7 @@
     </p>
   </section>
  {% endif %}
- {% if data['processes'] %}
+ {% if data['process'] %}
   <section id="processes">
       <h2>{% trans %}Processes{% endtrans %}</h2>
       <p>
@@ -97,12 +97,14 @@
         <a href="{{ config['server']['url'] }}/conformance?f=html">{% trans %}View the conformance classes of this service{% endtrans %}</a>
       </p>
   </section>
+  {% if data['tile'] %}
   <section id="tilematrixsets">
       <h2>{% trans %}Tile Matrix Sets{% endtrans %}</h2>
       <p>
         <a href="{{ config['server']['url'] }}/TileMatrixSets?f=html">{% trans %}View the Tile Matrix Sets available on this service{% endtrans %}</a>
       </p>
   </section>
+  {% endif %}
   </div>
   <div class="col-md-4 col-sm-12">
     <div class="card mb-3">

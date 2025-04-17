@@ -52,7 +52,7 @@ class BaseEDRProvider(BaseProvider):
         :returns: pygeoapi.provider.base_edr.BaseEDRProvider
         """
 
-        super().__init__(provider_def)
+        BaseProvider.__init__(self, provider_def)
 
 #        self.instances = []
 
@@ -97,8 +97,11 @@ class BaseEDRProvider(BaseProvider):
         :param z: vertical level(s)
         :param format_: data format of output
         :param bbox: bbox geometry (for cube queries)
-        :param within: distance (for radius querires)
-        :param within_units: distance units (for radius querires)
+        :param within: distance (for radius queries)
+        :param within_units: distance units (for radius queries)
+        :param instance: instance name (for instances queries)
+        :param limit: number of records to return (for locations queries)
+        :param location_id: location identifier (for locations queries)
 
         :returns: coverage data as `dict` of CoverageJSON or native format
         """

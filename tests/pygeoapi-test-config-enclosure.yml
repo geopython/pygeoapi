@@ -125,8 +125,6 @@ resources:
               rel: enclosure
               title: download link 3
               href: https://github.com/geopython/pygeoapi/raw/4a18393662583e53b8c7d591130246d9cd2c3f3f/pygeoapi/static/img/pygeoapi.png
-        linked-data:
-            item_template: tests/data/base.jsonld
         extents:
             spatial:
                 bbox: [-180,-90,180,90]

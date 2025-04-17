@@ -2,7 +2,7 @@
 #
 # Authors: Tom Kralidis <tomkralidis@gmail.com>
 #
-# Copyright (c) 2023 Tom Kralidis
+# Copyright (c) 2025 Tom Kralidis
 #
 # Permission is hereby granted, free of charge, to any person
 # obtaining a copy of this software and associated documentation
@@ -38,11 +38,30 @@ def config():
     return {
         'name': 'CSWFacade',
         'type': 'record',
-        # 'data': 'https://demo.pycsw.org/cite/csw',
-        'data': 'http://localhost:8000',
+        'data': 'https://demo.pycsw.org/cite/csw',
         'id_field': 'identifier',
         'time_field': 'date'
     }
+
+
+def test_domains(config):
+    p = CSWFacadeProvider(config)
+
+    domains, current = p.get_domains()
+
+    assert current
+
+    expected_properties = ['description', 'keywords', 'title', 'type']
+
+    assert sorted(domains.keys()) == expected_properties
+
+    assert len(domains['type']) == 4
+
+    domains, current = p.get_domains(['type'])
+
+    assert current
+
+    assert list(domains.keys()) == ['type']
 
 
 def test_query(config):
@@ -64,7 +83,7 @@ def test_query(config):
     assert results['features'][0]['properties']['keywords'][0] == 'Tourism--Greece'  # noqa
 
     assert results['features'][1]['geometry']['type'] == 'Polygon'
-    assert results['features'][1]['geometry']['coordinates'][0][0][0] == 17.92
+    assert results['features'][1]['geometry']['coordinates'][0][0][0] == 13.754
     assert results['features'][1]['geometry']['coordinates'][0][0][1] == 60.042
 
     results = p.query(limit=1)

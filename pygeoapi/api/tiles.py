@@ -9,7 +9,7 @@
 #          Bernhard Mallinger <bernhard.mallinger@eox.at>
 #
 # Copyright (c) 2024 Tom Kralidis
-# Copyright (c) 2022 Francesco Bartoli
+# Copyright (c) 2025 Francesco Bartoli
 # Copyright (c) 2022 John A Stevenson and Colin Blackburn
 # Copyright (c) 2023 Ricardo Garcia Silva
 # Copyright (c) 2024 Bernhard Mallinger
@@ -49,6 +49,7 @@ from pygeoapi.models.provider.base import (TilesMetadataFormat,
 from pygeoapi.provider.base import (
     ProviderGenericError, ProviderTypeError
 )
+from pygeoapi.provider.tile import ProviderTileNotFoundError
 
 from pygeoapi.util import (
     get_provider_by_type, to_json, filter_dict_by_key_value,
@@ -95,7 +96,7 @@ def get_collection_tiles(api: API, request: APIRequest,
     LOGGER.debug('Loading provider')
     try:
         t = get_provider_by_type(
-                api.config['resources'][dataset]['providers'], 'tile')
+            api.config['resources'][dataset]['providers'], 'tile')
         p = load_plugin('provider', t)
     except (KeyError, ProviderTypeError):
         msg = 'Invalid collection tiles'
@@ -176,7 +177,7 @@ def get_collection_tiles(api: API, request: APIRequest,
         tiles['tilesets'].append(tile_matrix)
 
     if request.format == F_HTML:  # render
-        api.set_dataset_templates(dataset)
+        tpl_config = api.get_dataset_templates(dataset)
         tiles['id'] = dataset
         tiles['title'] = l10n.translate(
             api.config['resources'][dataset]['title'], SYSTEM_LOCALE)
@@ -189,7 +190,7 @@ def get_collection_tiles(api: API, request: APIRequest,
         tiles['collections_path'] = api.get_collections_url()
         tiles['tile_type'] = p.tile_type
 
-        content = render_j2_template(api.tpl_config,
+        content = render_j2_template(api.tpl_config, tpl_config,
                                      'collections/tiles/index.html', tiles,
                                      request.locale)
 
@@ -198,7 +199,6 @@ def get_collection_tiles(api: API, request: APIRequest,
     return headers, HTTPStatus.OK, to_json(tiles, api.pretty_print)
 
 
-# TODO: no test for this function?
 def get_collection_tiles_data(
         api: API, request: APIRequest,
         dataset=None, matrix_id=None,
@@ -246,7 +246,7 @@ def get_collection_tiles_data(
         if content is None:
             msg = 'identifier not found'
             return api.get_exception(
-                HTTPStatus.NOT_FOUND, headers, format_, 'NotFound', msg)
+                HTTPStatus.NO_CONTENT, headers, format_, 'NocContent', msg)
         else:
             return headers, HTTPStatus.OK, content
 
@@ -256,6 +256,10 @@ def get_collection_tiles_data(
         return api.get_exception(
             HTTPStatus.BAD_REQUEST, headers, format_,
             'InvalidParameterValue', msg)
+    except ProviderTileNotFoundError:
+        msg = 'Tile not found'
+        LOGGER.info(msg)
+        return headers, HTTPStatus.NOT_FOUND, msg
     except ProviderGenericError as err:
         return api.get_exception(
             err.http_status_code, headers, request.format,
@@ -322,8 +326,8 @@ def get_collection_tiles_metadata(
         language=prv_locale)
 
     if request.format == F_HTML:  # render
-        api.set_dataset_templates(dataset)
-        content = render_j2_template(api.tpl_config,
+        tpl_config = api.get_dataset_templates(dataset)
+        content = render_j2_template(api.tpl_config, tpl_config,
                                      'collections/tiles/metadata.html',
                                      tiles_metadata, request.locale)
 
@@ -359,14 +363,14 @@ def tilematrixsets(api: API,
                 {
                    "rel": "self",
                    "type": "text/html",
-                   "title": f"The HTML representation of the {e.tileMatrixSet} tile matrix set", # noqa
-                   "href": f"{api.base_url}/TileMatrixSets/{e.tileMatrixSet}?f=html" # noqa
+                   "title": f"The HTML representation of the {e.tileMatrixSet} tile matrix set",  # noqa
+                   "href": f"{api.base_url}/TileMatrixSets/{e.tileMatrixSet}?f=html"  # noqa
                 },
                 {
                    "rel": "self",
                    "type": "application/json",
-                   "title": f"The JSON representation of the {e.tileMatrixSet} tile matrix set", # noqa
-                   "href": f"{api.base_url}/TileMatrixSets/{e.tileMatrixSet}?f=json" # noqa
+                   "title": f"The JSON representation of the {e.tileMatrixSet} tile matrix set",  # noqa
+                   "href": f"{api.base_url}/TileMatrixSets/{e.tileMatrixSet}?f=json"  # noqa
                 }
             ]
         })
@@ -384,7 +388,7 @@ def tilematrixsets(api: API,
     }]
 
     if request.format == F_HTML:  # render
-        content = render_j2_template(api.tpl_config,
+        content = render_j2_template(api.tpl_config, api.tpl_config,
                                      'tilematrixsets/index.html',
                                      tms, request.locale)
         return headers, HTTPStatus.OK, content
@@ -432,13 +436,12 @@ def tilematrixset(api: API,
     }
 
     if request.format == F_HTML:  # render
-        content = render_j2_template(api.tpl_config,
+        content = render_j2_template(api.tpl_config, api.tpl_config,
                                      'tilematrixsets/tilematrixset.html',
                                      tms, request.locale)
         return headers, HTTPStatus.OK, content
 
     return headers, HTTPStatus.OK, to_json(tms, api.pretty_print)
-
 
 def get_oas_30(cfg: dict, locale: str) -> tuple[list[dict[str, str]], dict[str, dict]]:  # noqa
     """
@@ -502,7 +505,7 @@ def get_oas_30(cfg: dict, locale: str) -> tuple[list[dict[str, str]], dict[str, 
                     'tags': [k],
                     'operationId': f'get{k.capitalize()}.collection.{datatype}.getTile',  # noqa
                     'parameters': [
-                        {'$ref': f"{OPENAPI_YAML['oapit']}#/components/parameters/tileMatrixSetId"}, # noqa
+                        {'$ref': f"{OPENAPI_YAML['oapit']}#/components/parameters/tileMatrixSetId"},  # noqa
                         {'$ref': f"{OPENAPI_YAML['oapit']}#/components/parameters/tileMatrix"},  # noqa
                         {'$ref': f"{OPENAPI_YAML['oapit']}#/components/parameters/tileRow"},  # noqa
                         {'$ref': f"{OPENAPI_YAML['oapit']}#/components/parameters/tileCol"},  # noqa

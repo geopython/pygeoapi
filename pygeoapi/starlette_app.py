@@ -4,7 +4,7 @@
 #          Tom Kralidis <tomkralidis@gmail.com>
 #          Abdulazeez Abdulazeez Adeshina <youngestdev@gmail.com>
 #
-# Copyright (c) 2020 Francesco Bartoli
+# Copyright (c) 2025 Francesco Bartoli
 # Copyright (c) 2025 Tom Kralidis
 # Copyright (c) 2022 Abdulazeez Abdulazeez Adeshina
 #
@@ -558,7 +558,7 @@ async def admin_config(request: Request):
     """
 
     if request.method == 'GET':
-        return await execute_from_starlette(admin_api.get_config, request,
+        return await execute_from_starlette(admin_api.get_config_, request,
                                             alternative_api=ADMIN)
     elif request.method == 'PUT':
         return await execute_from_starlette(admin_api.put_config, request,
@@ -617,6 +617,7 @@ class ApiRulesMiddleware:
     """ Custom middleware to properly deal with trailing slashes.
     See https://github.com/encode/starlette/issues/869.
     """
+
     def __init__(
             self,
             app: ASGIApp

@@ -10,7 +10,7 @@
 #          Francesco Martinelli <francesco.martinelli@ingv.it>
 #
 # Copyright (c) 2024 Tom Kralidis
-# Copyright (c) 2022 Francesco Bartoli
+# Copyright (c) 2025 Francesco Bartoli
 # Copyright (c) 2022 John A Stevenson and Colin Blackburn
 # Copyright (c) 2023 Ricardo Garcia Silva
 # Copyright (c) 2024 Bernhard Mallinger
@@ -65,7 +65,7 @@ from . import (
 LOGGER = logging.getLogger(__name__)
 
 CONFORMANCE_CLASSES = [
-    'http://www.opengis.net/spec/ogcapi-processes-1/1.0/conf/ogc-process-description', # noqa
+    'http://www.opengis.net/spec/ogcapi-processes-1/1.0/conf/ogc-process-description',  # noqa
     'http://www.opengis.net/spec/ogcapi-processes-1/1.0/conf/core',
     'http://www.opengis.net/spec/ogcapi-processes-1/1.0/conf/json',
     'http://www.opengis.net/spec/ogcapi-processes-1/1.0/conf/oas30',
@@ -211,14 +211,14 @@ def describe_processes(api: API, request: APIRequest,
 
     if request.format == F_HTML:  # render
         if process is not None:
-            api.set_dataset_templates(process)
-            response = render_j2_template(api.tpl_config,
+            tpl_config = api.get_dataset_templates(process)
+            response = render_j2_template(api.tpl_config, tpl_config,
                                           'processes/process.html',
                                           response, request.locale)
         else:
-            response = render_j2_template(api.tpl_config,
-                                          'processes/index.html', response,
-                                          request.locale)
+            response = render_j2_template(
+                api.tpl_config, api.config['server']['templates'],
+                'processes/index.html', response, request.locale)
 
         return headers, HTTPStatus.OK, response
 
@@ -394,8 +394,10 @@ def get_jobs(api: API, request: APIRequest,
             'offset': offset,
             'now': datetime.now(timezone.utc).strftime(DATETIME_FORMAT)
         }
-        response = render_j2_template(api.tpl_config, j2_template, data,
-                                      request.locale)
+        response = render_j2_template(
+            api.tpl_config, api.config['server']['templates'], j2_template,
+            data, request.locale)
+
         return headers, HTTPStatus.OK, response
 
     return headers, HTTPStatus.OK, to_json(serialized_jobs,
@@ -586,8 +588,8 @@ def get_job_result(api: API, request: APIRequest,
                 'result': job_output
             }
             content = render_j2_template(
-                api.config, 'jobs/results/index.html',
-                data, request.locale)
+                api.config, api.config['server']['templates'],
+                'jobs/results/index.html', data, request.locale)
 
     return headers, HTTPStatus.OK, content
 
@@ -723,6 +725,16 @@ def get_oas_30(cfg: dict, locale: str) -> tuple[list[dict[str, str]], dict[str, 
                 'description': md_desc,
                 'tags': [name],
                 'operationId': f'execute{name.capitalize()}Job',
+                'parameters': [{
+                    'in': 'header',
+                    'name': 'Prefer',
+                    'required': False,
+                    'description': 'Indicates client preferences, including whether the client is capable of asynchronous processing.',  # noqa
+                    'schema': {
+                        'type': 'string',
+                        'enum': ['respond-async']
+                    }
+                }],
                 'responses': {
                     '200': {'$ref': '#/components/responses/200'},
                     '201': {'$ref': f"{OPENAPI_YAML['oapip']}/responses/ExecuteAsync.yaml"},  # noqa

@@ -16,24 +16,24 @@ parameters.
 
 
 .. csv-table::
-   :header: Provider, property filters/display, resulttype, bbox, datetime, sortby, skipGeometry, CQL, transactions, crs
+   :header: Provider, property filters/display, resulttype, bbox, datetime, sortby, skipGeometry, domains, CQL, transactions, crs
    :align: left
 
-   `CSV`_,✅/✅,results/hits,❌,❌,❌,✅,❌,❌,✅
-   `Elasticsearch`_,✅/✅,results/hits,✅,✅,✅,✅,✅,✅,✅
-   `ERDDAP Tabledap Service`_,❌/❌,results/hits,✅,✅,❌,❌,❌,❌,✅
-   `ESRI Feature Service`_,✅/✅,results/hits,✅,✅,✅,✅,❌,❌,✅
-   `GeoJSON`_,✅/✅,results/hits,❌,❌,❌,✅,❌,❌,✅
-   `MongoDB`_,✅/❌,results,✅,✅,✅,✅,❌,❌,✅
-   `OGR`_,✅/❌,results/hits,✅,❌,❌,✅,❌,❌,✅
-   `OpenSearch`_,✅/✅,results/hits,✅,✅,✅,✅,✅,✅,✅
-   `Oracle`_,✅/✅,results/hits,✅,❌,✅,✅,❌,❌,✅
-   `Parquet`_,✅/✅,results/hits,✅,✅,❌,✅,❌,❌,✅
-   `PostgreSQL`_,✅/✅,results/hits,✅,✅,✅,✅,✅,✅,✅
-   `SQLiteGPKG`_,✅/❌,results/hits,✅,❌,❌,✅,❌,❌,✅
-   `SensorThings API`_,✅/✅,results/hits,✅,✅,✅,✅,❌,✅,✅
-   `Socrata`_,✅/✅,results/hits,✅,✅,✅,✅,❌,❌,✅
-   `TinyDB`_,✅/✅,results/hits,✅,✅,✅,✅,❌,✅,✅
+   `CSV`_,✅/✅,results/hits,❌,❌,❌,✅,❌,❌,❌,✅
+   `Elasticsearch`_,✅/✅,results/hits,✅,✅,✅,✅,✅,✅,✅,✅
+   `ERDDAP Tabledap Service`_,❌/❌,results/hits,✅,✅,❌,❌,❌,❌,❌,✅
+   `ESRI Feature Service`_,✅/✅,results/hits,✅,✅,✅,✅,❌,❌,❌,✅
+   `GeoJSON`_,✅/✅,results/hits,❌,❌,❌,✅,❌,❌,❌,✅
+   `MongoDB`_,✅/❌,results,✅,✅,✅,✅,❌,❌,❌,✅
+   `OGR`_,✅/❌,results/hits,✅,❌,❌,✅,❌,❌,❌,✅
+   `OpenSearch`_,✅/✅,results/hits,✅,✅,✅,✅,❌,✅,✅,✅
+   `Oracle`_,✅/✅,results/hits,✅,❌,✅,✅,❌,❌,❌,✅
+   `Parquet`_,✅/✅,results/hits,✅,✅,❌,✅,❌,❌,❌,✅
+   `PostgreSQL`_,✅/✅,results/hits,✅,✅,✅,✅,❌,✅,✅,✅
+   `SQLiteGPKG`_,✅/❌,results/hits,✅,❌,❌,✅,❌,❌,❌,✅
+   `SensorThings API`_,✅/✅,results/hits,✅,✅,✅,✅,❌,❌,✅,✅
+   `Socrata`_,✅/✅,results/hits,✅,✅,✅,✅,❌,❌,❌,✅
+   `TinyDB`_,✅/✅,results/hits,✅,✅,✅,✅,✅,❌,✅,✅
 
 .. note::
 
@@ -538,9 +538,6 @@ PostgreSQL
 
 Must have PostGIS installed.
 
-.. note::
-   Geometry must be using EPSG:4326
-
 .. code-block:: yaml
 
    providers:
@@ -755,18 +752,35 @@ Data access examples
 * list all collections
 
   * http://localhost:5000/collections
+
 * overview of dataset
 
   * http://localhost:5000/collections/foo
+
 * queryables
 
   * http://localhost:5000/collections/foo/queryables
+
+* queryables on specific properties
+
+  * http://localhost:5000/collections/foo/queryables?properties=title,type
+
+* queryables with current domain values
+
+  * http://localhost:5000/collections/foo/queryables?profile=actual-domain
+
+* queryables on specific properties with current domain values
+
+  * http://localhost:5000/collections/foo/queryables?profile=actual-domain&properties=title,type
+
 * browse features
 
   * http://localhost:5000/collections/foo/items
+
 * paging
 
   * http://localhost:5000/collections/foo/items?offset=10&limit=10
+
 * CSV outputs
 
   * http://localhost:5000/collections/foo/items?f=csv
@@ -779,24 +793,31 @@ Data access examples
 * query features (attribute)
 
   * http://localhost:5000/collections/foo/items?propertyname=foo
+
 * query features (temporal)
 
   * http://localhost:5000/collections/foo/items?datetime=2020-04-10T14:11:00Z
+
 * query features (temporal) and sort ascending by a property (if no +/- indicated, + is assumed)
 
   * http://localhost:5000/collections/foo/items?datetime=2020-04-10T14:11:00Z&sortby=+datetime
+
 * query features (temporal) and sort descending by a property
 
   * http://localhost:5000/collections/foo/items?datetime=2020-04-10T14:11:00Z&sortby=-datetime
+
 * query features in a given (and supported) CRS
 
   * http://localhost:5000/collections/foo/items?crs=http%3A%2F%2Fwww.opengis.net%2Fdef%2Fcrs%2FEPSG%2F0%2F32633
+
 * query features in a given bounding BBOX and return in given CRS
 
   * http://localhost:5000/collections/foo/items?bbox=120000,450000,130000,460000&bbox-crs=http%3A%2F%2Fwww.opengis.net%2Fdef%2Fcrs%2FEPSG%2F0%2F28992&crs=http%3A%2F%2Fwww.opengis.net%2Fdef%2Fcrs%2FEPSG%2F0%2F32633
+
 * fetch a specific feature
 
   * http://localhost:5000/collections/foo/items/123
+
 * fetch a specific feature in a given (and supported) CRS
 
   * http://localhost:5000/collections/foo/items/123?crs=http%3A%2F%2Fwww.opengis.net%2Fdef%2Fcrs%2FEPSG%2F0%2F32633

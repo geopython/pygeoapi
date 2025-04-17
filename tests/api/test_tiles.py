@@ -7,6 +7,7 @@
 #
 # Copyright (c) 2024 Tom Kralidis
 # Copyright (c) 2022 John A Stevenson and Colin Blackburn
+# Copyright (c) 2025 Joana Simoes
 #
 # Permission is hereby granted, free of charge, to any person
 # obtaining a copy of this software and associated documentation
@@ -39,7 +40,8 @@ import pytest
 from pygeoapi.api import FORMAT_TYPES, F_HTML
 from pygeoapi.api.tiles import (
     get_collection_tiles, tilematrixset,
-    tilematrixsets, get_collection_tiles_metadata
+    tilematrixsets, get_collection_tiles_metadata,
+    get_collection_tiles_data
 )
 from pygeoapi.models.provider.base import TileMatrixSetEnum
 
@@ -63,6 +65,24 @@ def test_get_collection_tiles(config, api_):
     content = json.loads(response)
     assert len(content['links']) > 0
     assert len(content['tilesets']) > 0
+
+
+def test_get_collection_tiles_data(config, api_):
+    req = mock_api_request({'f': 'mvt'})
+    rsp_headers, code, response = get_collection_tiles_data(
+        api_, req, 'naturalearth/lakes',
+        matrix_id='WebMercatorQuad', z_idx=0, x_idx=0, y_idx=0)
+    assert code == HTTPStatus.OK
+
+    rsp_headers, code, response = get_collection_tiles_data(
+        api_, req, 'naturalearth/lakes',
+        matrix_id='WebMercatorQuad', z_idx=5, x_idx=15, y_idx=16)
+    assert code == HTTPStatus.NO_CONTENT
+
+    rsp_headers, code, response = get_collection_tiles_data(
+        api_, req, 'naturalearth/lakes',
+        matrix_id='WebMercatorQuad', z_idx=0, x_idx=1, y_idx=1)
+    assert code == HTTPStatus.NOT_FOUND
 
 
 def test_tilematrixsets(config, api_):

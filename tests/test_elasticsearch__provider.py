@@ -3,7 +3,7 @@
 # Authors: Tom Kralidis <tomkralidis@gmail.com>
 #
 # Copyright (c) 2024 Tom Kralidis
-# Copyright (c) 2024 Francesco Bartoli
+# Copyright (c) 2025 Francesco Bartoli
 #
 # Permission is hereby granted, free of charge, to any person
 # obtaining a copy of this software and associated documentation
@@ -129,13 +129,13 @@ def _and(eq, between):
                 {'property': 'properties.pop_max'},
                 [100000, 1000000]
             ]
-            }, {
+        }, {
             'op': '=',
-                'args': [
-                    {'property': 'properties.featurecla'},
-                    'Admin-0 capital'
-                ]
-            }]
+            'args': [
+                {'property': 'properties.featurecla'},
+                'Admin-0 capital'
+            ]
+        }]
     }
     return parse_cql2_json(json.dumps(and_))
 
@@ -146,17 +146,42 @@ def intersects():
         'op': 's_intersects',
         'args': [
             {'property': 'geometry'}, {
-             'type': 'Polygon',
-             'coordinates': [[
-                 [10.497565, 41.520355],
-                 [10.497565, 43.308645],
-                 [15.111823, 43.308645],
-                 [15.111823, 41.520355],
-                 [10.497565, 41.520355]
-             ]]
+                'type': 'Polygon',
+                'coordinates': [[
+                    [10.497565, 41.520355],
+                    [10.497565, 43.308645],
+                    [15.111823, 43.308645],
+                    [15.111823, 41.520355],
+                    [10.497565, 41.520355]
+                ]]
             }
         ]}
     return parse_cql2_json(json.dumps(intersects))
+
+
+def test_domains(config):
+    p = ElasticsearchProvider(config)
+
+    domains, current = p.get_domains()
+
+    assert current
+
+    expected_properties = ['adm0cap', 'capalt', 'changed', 'checkme',
+                           'diffascii', 'geonameid', 'labelrank', 'latitude',
+                           'longitude', 'ls_match', 'megacity', 'min_zoom',
+                           'nameascii', 'namediff', 'natscale', 'pop_max',
+                           'pop_min', 'pop_other', 'rank_max', 'rank_min',
+                           'scalerank', 'worldcity']
+
+    assert sorted(domains.keys()) == expected_properties
+
+    assert len(domains['scalerank']) == 8
+
+    domains, current = p.get_domains(['scalerank'])
+
+    assert current
+
+    assert list(domains.keys()) == ['scalerank']
 
 
 def test_query(config):

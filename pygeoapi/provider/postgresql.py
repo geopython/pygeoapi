@@ -9,9 +9,9 @@
 #          Bernhard Mallinger <bernhard.mallinger@eox.at>
 #
 # Copyright (c) 2018 Jorge Samuel Mendes de Jesus
-# Copyright (c) 2024 Tom Kralidis
+# Copyright (c) 2025 Tom Kralidis
 # Copyright (c) 2022 John A Stevenson and Colin Blackburn
-# Copyright (c) 2023 Francesco Bartoli
+# Copyright (c) 2025 Francesco Bartoli
 # Copyright (c) 2024 Bernhard Mallinger
 #
 # Permission is hereby granted, free of charge, to any person
@@ -85,6 +85,7 @@ class PostgreSQLProvider(BaseProvider):
     using sync approach and server side
     cursor (using support class DatabaseCursor)
     """
+
     def __init__(self, provider_def):
         """
         PostgreSQLProvider Class constructor
@@ -107,6 +108,14 @@ class PostgreSQLProvider(BaseProvider):
         LOGGER.debug(f'Table: {self.table}')
         LOGGER.debug(f'ID field: {self.id_field}')
         LOGGER.debug(f'Geometry field: {self.geom}')
+
+        # conforming to the docs:
+        # https://docs.pygeoapi.io/en/latest/data-publishing/ogcapi-features.html#connection-examples # noqa
+        self.storage_crs = provider_def.get(
+            'storage_crs',
+            'https://www.opengis.net/def/crs/OGC/0/CRS84'
+        )
+        LOGGER.debug(f'Configured Storage CRS: {self.storage_crs}')
 
         # Read table information from database
         options = None
@@ -216,6 +225,7 @@ class PostgreSQLProvider(BaseProvider):
             bool: 'boolean',
             datetime: 'string',
             Decimal: 'number',
+            dict: 'object',
             float: 'number',
             int: 'integer',
             str: 'string'
@@ -416,7 +426,7 @@ class PostgreSQLProvider(BaseProvider):
             # NOTE: for some reason, postgis in the github action requires
             # explicit crs information. i think it's valid to assume 4326:
             # https://portal.ogc.org/files/108198#feature-crs
-            srid=4326
+            srid=pyproj.CRS.from_user_input(self.storage_crs).to_epsg()
         )
         attributes[self.id_field] = identifier
 
