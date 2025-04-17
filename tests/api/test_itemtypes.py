@@ -41,7 +41,7 @@ import pyproj
 from shapely.geometry import Point
 
 from pygeoapi.api import (API, FORMAT_TYPES, F_GZIP, F_HTML, F_JSONLD,
-                          apply_gzip)
+                          apply_gzip, apply_integrity)
 from pygeoapi.api.itemtypes import (
     get_collection_queryables, get_collection_item,
     get_collection_items, manage_collection_item)
@@ -413,6 +413,88 @@ def test_collection_items_gzip_csv(config, api_, openapi):
     assert rsp_csv_headers['Content-Type'] == 'text/csv; charset=utf-8'
     rsp_csv_ = gzip.decompress(rsp_csv_gzip).decode('utf-8')
     assert rsp_csv == rsp_csv_
+
+
+def test_collection_no_digest(api_):
+    req_digest = mock_api_request()
+    rsp_digest_headers, _, rsp_digest = get_collection_item(
+        api_, req_digest, 'obs', '371')
+    apply_integrity(rsp_digest_headers, rsp_digest)
+    assert rsp_digest_headers['Content-Type'] == 'application/json'
+    assert 'Content-Digest' not in rsp_digest_headers
+
+    req_digest = mock_api_request(HTTP_WANT_CONTENT_DIGEST='SHA100')
+    rsp_digest_headers, _, rsp_digest = get_collection_item(
+        api_, req_digest, 'obs', '371')
+    apply_integrity(rsp_digest_headers, rsp_digest)
+    assert rsp_digest_headers['Content-Type'] == 'application/json'
+    assert 'Content-Digest' not in rsp_digest_headers
+
+
+def test_collection_with_digest(api_):
+    req_digest = mock_api_request(HTTP_WANT_CONTENT_DIGEST='SHA100,sha1')
+    rsp_digest_headers, _, rsp_digest = get_collection_item(
+        api_, req_digest, 'obs', '371')
+    apply_integrity(rsp_digest_headers, rsp_digest)
+    assert rsp_digest_headers['Content-Type'] == 'application/json'
+    assert rsp_digest_headers['Content-Digest'] == 'sha1=0d4818c86215ba031044b27e28cb3170936e8c53' # noqa
+
+    req_digest = mock_api_request(HTTP_WANT_CONTENT_DIGEST='sha256')
+    rsp_digest_headers, _, rsp_digest = get_collection_item(
+        api_, req_digest, 'obs', '371')
+    apply_integrity(rsp_digest_headers, rsp_digest)
+    assert rsp_digest_headers['Content-Type'] == 'application/json'
+    assert rsp_digest_headers['Content-Digest'] == 'sha256=f24c899027516b64c13734caf12a5506c8137f8520ab1b08b936e8e14f43faa4' # noqa
+
+    req_digest = mock_api_request(HTTP_WANT_CONTENT_DIGEST='sha384')
+    rsp_digest_headers, _, rsp_digest = get_collection_item(
+        api_, req_digest, 'obs', '371')
+    apply_integrity(rsp_digest_headers, rsp_digest)
+    assert rsp_digest_headers['Content-Type'] == 'application/json'
+    assert rsp_digest_headers['Content-Digest'] == 'sha384=2e875167e36a9d70a11bef48d290dd439741514f28e19680a4eb049f2aeaca96092280dce1458c6072650a678840ee83' # noqa
+
+    req_digest = mock_api_request(HTTP_WANT_CONTENT_DIGEST='SHA512')
+    rsp_digest_headers, _, rsp_digest = get_collection_item(
+        api_, req_digest, 'obs', '371')
+    apply_integrity(rsp_digest_headers, rsp_digest)
+    assert rsp_digest_headers['Content-Type'] == 'application/json'
+    assert rsp_digest_headers['Content-Digest'] == 'sha512=a57169dd6a947237df9ab8640cf6bedd57e54cb854cc8843f4aac08c30d4e2c402af8b637b8823f6953b90d61f8fc37db95a68cce9ee0d7b9cc9186fcbf5978a' # noqa
+
+    req_digest = mock_api_request(HTTP_WANT_CONTENT_DIGEST='sha3-256')
+    rsp_digest_headers, _, rsp_digest = get_collection_item(
+        api_, req_digest, 'obs', '371')
+    apply_integrity(rsp_digest_headers, rsp_digest)
+    assert rsp_digest_headers['Content-Type'] == 'application/json'
+    assert rsp_digest_headers['Content-Digest'] == 'sha3-256=52bd7167f2c74131287e313dc0e6959502626a44069e6b3ab9059aa00cf15c22' # noqa
+
+    req_digest = mock_api_request(HTTP_WANT_CONTENT_DIGEST='sha3-384')
+    rsp_digest_headers, _, rsp_digest = get_collection_item(
+        api_, req_digest, 'obs', '371')
+    apply_integrity(rsp_digest_headers, rsp_digest)
+    assert rsp_digest_headers['Content-Type'] == 'application/json'
+    assert rsp_digest_headers['Content-Digest'] == 'sha3-384=335b5d9c02c174325b8d9f039ca1acd6783d1d457d1105a091b31baeca023c5896665d5fd7417fbc7ee946231e7ba990' # noqa
+
+    req_digest = mock_api_request(HTTP_WANT_CONTENT_DIGEST='SHA3-512')
+    rsp_digest_headers, _, rsp_digest = get_collection_item(
+        api_, req_digest, 'obs', '371')
+    apply_integrity(rsp_digest_headers, rsp_digest)
+    assert rsp_digest_headers['Content-Type'] == 'application/json'
+    assert rsp_digest_headers['Content-Digest'] == 'sha3-512=79f736ddfbc8faca1623c6eb365e48e422aa30d1ebb51cc5aa0b046b1966d8256f2cc1399d3669069d965f56a5148522d05e7d63b78b7b76282034f8e77fb8c2' # noqa
+
+
+def test_collection_with_digest_and_gzip(api_):
+    req_digest = mock_api_request(HTTP_WANT_CONTENT_DIGEST='SHA1,sha256',
+                                  HTTP_ACCEPT_ENCODING=F_GZIP)
+    rsp_digest_headers, _, rsp_digest = get_collection_item(
+        api_, req_digest, 'obs', '371')
+    apply_integrity(rsp_digest_headers, rsp_digest)
+    apply_gzip(rsp_digest_headers, rsp_digest)
+
+    assert rsp_digest_headers['Content-Type'] == \
+        'application/json; charset=utf-8'
+    assert rsp_digest_headers['Content-Digest'] == \
+        'sha1=0d4818c86215ba031044b27e28cb3170936e8c53'
+    assert rsp_digest_headers['Content-Encoding'] == F_GZIP
 
 
 def test_get_collection_items_crs(config, api_):
