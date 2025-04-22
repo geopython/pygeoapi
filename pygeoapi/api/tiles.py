@@ -238,7 +238,7 @@ def get_collection_tiles_data(
         p = load_plugin('provider', t)
 
         format_ = p.format_type
-        headers['Content-Type'] = format_
+        headers['Content-Type'] = t['format']['mimetype']
 
         LOGGER.debug(f'Fetching tileset id {matrix_id} and tile {z_idx}/{y_idx}/{x_idx}')  # noqa
         content = p.get_tiles(layer=p.get_layer(), tileset=matrix_id,

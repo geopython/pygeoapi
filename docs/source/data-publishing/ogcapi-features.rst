@@ -538,9 +538,6 @@ PostgreSQL
 
 Must have PostGIS installed.
 
-.. note::
-   Geometry must be using EPSG:4326
-
 .. code-block:: yaml
 
    providers:
