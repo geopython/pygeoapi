@@ -65,8 +65,8 @@ class WMSFacadeProvider(BaseProvider):
         LOGGER.debug(f'pyproj version: {pyproj.__version__}')
 
     def query(self, style=None, bbox=[-180, -90, 180, 90], width=500,
-              height=300, crs=4326, datetime_=None, transparent=True, bbox_crs=4326,
-              format_='png'):
+              height=300, crs=4326, datetime_=None, transparent=True,
+              bbox_crs=4326, format_='png'):
         """
         Generate map
 
