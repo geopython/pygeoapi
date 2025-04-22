@@ -42,8 +42,9 @@ OUTPUT_FORMATS = {
 }
 
 CRS_CODES = {
-    4326: 'EPSG:4326',
-    'http://www.opengis.net/def/crs/EPSG/0/3857': 'EPSG:3857'
+    4326: "EPSG:4326",
+    "http://www.opengis.net/def/crs/EPSG/0/3857": "EPSG:3857",
+    "http://www.opengis.net/def/crs/EPSG/0/4326": "EPSG:4326",
 }
 
 
@@ -64,7 +65,7 @@ class WMSFacadeProvider(BaseProvider):
         LOGGER.debug(f'pyproj version: {pyproj.__version__}')
 
     def query(self, style=None, bbox=[-180, -90, 180, 90], width=500,
-              height=300, crs=4326, datetime_=None, transparent=True,
+              height=300, crs=4326, datetime_=None, transparent=True, bbox_crs=4326,
               format_='png'):
         """
         Generate map
@@ -86,35 +87,18 @@ class WMSFacadeProvider(BaseProvider):
 
         version = self.options.get('version', '1.3.0')
 
-        if crs in [4326, 'CRS;84'] and version == '1.3.0':
-            LOGGER.debug('Swapping 4326 axis order to WMS 1.3 mode (yx)')
-            bbox2 = ','.join(str(c) for c in
-                             [bbox[1], bbox[0], bbox[3], bbox[2]])
-        else:
-            LOGGER.debug('Reprojecting coordinates')
-            LOGGER.debug(f'Output CRS: {CRS_CODES[crs]}')
-
-            src_crs = pyproj.CRS.from_string('epsg:4326')
-            dest_crs = pyproj.CRS.from_string(CRS_CODES[crs])
-
-            transformer = pyproj.Transformer.from_crs(src_crs, dest_crs,
-                                                      always_xy=True)
-
-            minx, miny = transformer.transform(bbox[0], bbox[1])
-            maxx, maxy = transformer.transform(bbox[2], bbox[3])
-
-            bbox2 = ','.join(str(c) for c in [minx, miny, maxx, maxy])
+        if version == '1.3.0' and CRS_CODES[bbox_crs] == 'EPSG:4326':
+            bbox = [bbox[1], bbox[0], bbox[3], bbox[2]]
 
         if not transparent:
             self._transparent = 'FALSE'
-
         crs_param = 'crs' if version == '1.3.0' else 'srs'
 
         params = {
             'version': version,
             'service': 'WMS',
             'request': 'GetMap',
-            'bbox': bbox2,
+            'bbox': ",".join(map(str, bbox)),
             crs_param: CRS_CODES[crs],
             'layers': self.options['layer'],
             'styles': self.options.get('style', 'default'),
