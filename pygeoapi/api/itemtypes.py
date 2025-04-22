@@ -545,34 +545,40 @@ def get_collection_items(
         'href': f'{uri}?f={F_HTML}{serialized_query_params}'
     }])
 
-    if 'next' not in [link['rel'] for link in content['links']]:
-        if offset > 0:
-            prev = max(0, offset - limit)
-            content['links'].append(
-                {
-                    'type': 'application/geo+json',
-                    'rel': 'prev',
-                    'title': l10n.translate('Items (prev)', request.locale),
-                    'href': f'{uri}?offset={prev}{serialized_query_params}'
-                })
+    next_link = False
+    prev_link = False
 
-        next_link = False
-
+    if 'next' in [link['rel'] for link in content['links']]:
+        LOGGER.debug('Using next link from provider')
+    else:
         if content.get('numberMatched', -1) > (limit + offset):
             next_link = True
         elif len(content['features']) == limit:
             next_link = True
 
-        if next_link:
-            next_ = offset + limit
-            next_href = f'{uri}?offset={next_}{serialized_query_params}'
-            content['links'].append(
-                {
-                    'type': 'application/geo+json',
-                    'rel': 'next',
-                    'title': l10n.translate('Items (next)', request.locale),
-                    'href': next_href
-                })
+        if offset > 0:
+            prev_link = True
+
+    if prev_link:
+        prev = max(0, offset - limit)
+        content['links'].append(
+            {
+                'type': 'application/geo+json',
+                'rel': 'prev',
+                'title': l10n.translate('Items (prev)', request.locale),
+                'href': f'{uri}?offset={prev}{serialized_query_params}'
+            })
+
+    if next_link:
+        next_ = offset + limit
+        next_href = f'{uri}?offset={next_}{serialized_query_params}'
+        content['links'].append(
+            {
+                'type': 'application/geo+json',
+                'rel': 'next',
+                'title': l10n.translate('Items (next)', request.locale),
+                'href': next_href
+            })
 
     content['links'].append(
         {
