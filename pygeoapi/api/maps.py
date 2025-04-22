@@ -137,7 +137,7 @@ def get_collection_map(api: API, request: APIRequest,
         bbox = api.config['resources'][dataset]['extents']['spatial']['bbox']  # noqa
 
     LOGGER.debug('Reprojecting coordinates')
-    LOGGER.debug(f'Output bbox CRS: {query_args['crs']}')
+    LOGGER.debug(f"Output bbox CRS: {query_args['crs']}")
     bbox = transform_bbox(bbox, query_args['bbox_crs'], query_args['crs'])
 
     try:
