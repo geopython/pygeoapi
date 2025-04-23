@@ -104,6 +104,28 @@ metadata:
         role: pointOfContact
 
 resources:
+
+    mysql:
+        type: collection
+        title: Observations
+        description: Rise obs
+        keywords:
+            - observations
+            - monitoring
+        extents:
+            spatial:
+                bbox: [-180,-90,180,90]
+                crs: http://www.opengis.net/def/crs/OGC/1.3/CRS84
+        providers:
+            - type: feature
+              name: MySQL
+              data: tests/data/obs.csv
+              id_field: id
+              geometry:
+                  x_field: long
+                  y_field: lat
+
+
     obs:
         type: collection
         title: Observations

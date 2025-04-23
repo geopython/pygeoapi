@@ -4,7 +4,7 @@ cftime
 elasticsearch
 elasticsearch-dsl
 fiona
-GDAL<=3.8.4
+GDAL
 geoalchemy2
 geopandas
 netCDF4
