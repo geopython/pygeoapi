@@ -39,6 +39,19 @@
 #
 # =================================================================
 
+# Testing local postgis with docker:
+# docker run --name "postgis" \
+# -v postgres_data:/var/lib/postgresql -p 5432:5432 \
+# -e ALLOW_IP_RANGE=0.0.0.0/0 \
+# -e POSTGRES_USER=postgres \
+# -e POSTGRES_PASS=postgres \
+# -e POSTGRES_DBNAME=test \
+# -d -t kartoza/postgis
+
+# Import dump:
+# gunzip < tests/data/hotosm_bdi_waterways.sql.gz |
+#  psql -U postgres -h 127.0.0.1 -p 5432 test
+
 from copy import deepcopy
 from datetime import datetime
 from decimal import Decimal
