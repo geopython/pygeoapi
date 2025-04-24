@@ -63,7 +63,7 @@ jobs:
           tail: 500
 
       - name: test {{ matrix.test-suite.suite-id }} compliance
-        uses: OSGeo/cite-runner@v0.1.0
+        uses: OSGeo/cite-runner@main
         with:
           test_suite_identifier: ${{ matrix.test-suite.suite-id }}
           test_session_arguments: ${{ matrix.test-suite.arguments }}
