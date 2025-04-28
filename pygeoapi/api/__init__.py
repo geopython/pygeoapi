@@ -42,7 +42,7 @@ Returns content from plugins and sets responses.
 
 from collections import ChainMap, OrderedDict
 from copy import deepcopy
-from datetime import datetime
+from datetime import (datetime, timezone)
 from functools import partial
 from gzip import compress
 from http import HTTPStatus
@@ -163,6 +163,32 @@ def apply_gzip(headers: dict, content: Union[str, bytes]) -> Union[str, bytes]:
             headers.pop('Content-Encoding')
             LOGGER.error(f'Error in compression: {err}')
     return content
+
+
+def pre_load_colls(func):
+    """
+    Decorator function that makes sure the loaded collections are updated.
+    This is used when the resources are loaded dynamically, not strictly
+    from the yaml file.
+
+    :param func: decorated function
+
+    :returns: `func`
+    """
+
+    def inner(*args, **kwargs):
+        cls = args[0]
+
+        # Validation on the method name for the provided class instance on this
+        # decoration function
+        if hasattr(cls, 'reload_resources_if_necessary'):
+            # Validate the resources are up to date
+            cls.reload_resources_if_necessary()
+
+        # Continue
+        return func(*args, **kwargs)
+
+    return inner
 
 
 class APIRequest:
@@ -565,8 +591,73 @@ class API:
         self.tpl_config = deepcopy(self.config)
         self.tpl_config['server']['url'] = self.base_url
 
+        # Now that the basic configuration is read, call the load_resources function.  # noqa
+        # This call enables the api engine to load resources dynamically.
+        # This pattern allows for loading resources coming from another
+        # source (e.g. a database) rather than from the yaml file.
+        # This, along with the @pre_load_colls decorative function, enables
+        # resources management on multiple distributed pygeoapi instances.
+        self.load_resources()
+
         self.manager = get_manager(self.config)
         LOGGER.info('Process manager plugin loaded')
+
+    def on_load_resources(self, resources: dict) -> dict:
+        """
+        Overridable function to load the available resources dynamically.
+        By default, this function simply returns the provided resources
+        as-is. This is the native behavior of the API; expecting
+        resources to be configured in the yaml config file.
+
+        :param resources: the resources as currently configured
+        (self.config['resources'])
+        :returns: the resources dictionary that's available in the API.
+        """
+
+        # By default, return the same resources object, unchanged.
+        return resources
+
+    def on_load_resources_check(self, last_loaded_resources: datetime) -> bool:  # noqa
+        """
+        Overridable function to check if the resources should be reloaded.
+        Return True in your API implementation when resources should be
+        reloaded. This implementation depends on your environment and
+        messaging broker.
+        Natively, the resources used by the pygeoapi instance are strictly
+        the ones from the yaml configuration file. It doesn't support
+        resources changing on-the-fly. Therefore, False is returned here
+        and they are never reloaded.
+        """
+
+        # By default, return False to not reload the resources.
+        return False
+
+    def load_resources(self) -> None:
+        """
+        Calls on_load_resources and reassigns the resources configuration.
+        """
+
+        # Call on_load_resources sending the current resources configuration.
+        self.config['resources'] = self.on_load_resources(self.config['resources'])  # noqa
+
+        # Copy over for the template config also
+        # TODO: Check relevancy of this line
+        self.tpl_config['resources'] = deepcopy(self.config['resources'])
+
+        # Keep track of UTC date of last time resources were loaded
+        self.last_loaded_resources = datetime.now(timezone.utc)
+
+    def reload_resources_if_necessary(self) -> None:
+        """
+        Checks if the resources should be reloaded by calling overridable
+        function 'on_load_resources_check' and then, when necessary, calls
+        'load_resources'.
+        """
+
+        # If the resources should be reloaded
+        if self.on_load_resources_check(self.last_loaded_resources):
+            # Reload the resources
+            self.load_resources()
 
     def get_exception(self, status, headers, format_, code,
                       description) -> Tuple[dict, int, str]:
@@ -922,6 +1013,7 @@ def conformance(api, request: APIRequest) -> Tuple[dict, int, str]:
 
 
 @jsonldify
+@pre_load_colls
 def describe_collections(api: API, request: APIRequest,
                          dataset=None) -> Tuple[dict, int, str]:
     """
