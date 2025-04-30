@@ -332,7 +332,7 @@ class XarrayProvider(BaseProvider):
 
         if self.time_field is not None:
             mint, maxt = metadata['time']
-            cj['domain']['axes'][self.time_field] = {
+            cj['domain']['axes']['t'] = {
                 'values': [str(v) for v in data.time.values],
             }
 
