@@ -269,6 +269,7 @@ class XarrayProvider(BaseProvider):
                 return fp.read()
 
     def gen_covjson(self, metadata, data, fields):
+        print("THIS IS IN THE GENCOVJSON!!!")
         """
         Generate coverage as CoverageJSON representation
 
