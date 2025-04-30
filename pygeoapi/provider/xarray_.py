@@ -49,7 +49,7 @@ from pygeoapi.provider.base import (BaseProvider,
 from pygeoapi.util import get_crs_from_uri, read_data
 
 LOGGER = logging.getLogger(__name__)
-
+LOGGER.setLevel(logging.DEBUG)
 
 class XarrayProvider(BaseProvider):
     """Xarray Provider"""
@@ -269,7 +269,7 @@ class XarrayProvider(BaseProvider):
                 return fp.read()
 
     def gen_covjson(self, metadata, data, fields):
-        print("THIS IS IN THE GENCOVJSON!!!")
+        LOGGER.debug("THIS IS IN THE GENCOVJSON!!!")
         """
         Generate coverage as CoverageJSON representation
 
