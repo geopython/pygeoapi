@@ -333,9 +333,7 @@ class XarrayProvider(BaseProvider):
         if self.time_field is not None:
             mint, maxt = metadata['time']
             cj['domain']['axes'][self.time_field] = {
-                'start': mint,
-                'stop': maxt,
-                'num': metadata['time_steps'],
+                'values': [str(v) for v in data.time.values],
             }
 
         for key, value in selected_fields.items():
@@ -368,7 +366,10 @@ class XarrayProvider(BaseProvider):
                     'shape': [metadata['height'],
                               metadata['width']]
                 }
-                cj['ranges'][key]['values'] = data[key].values.flatten().tolist()  # noqa
+                cj['ranges'][key]['values'] =[
+                    None if v is None or str(v) == 'nan' or (isinstance(v, (float, np.float32, np.float64)) and np.isnan(v)) else v
+                    for v in data[key].values.flatten()
+                ]  # noqa
 
                 if self.time_field is not None:
                     cj['ranges'][key]['axisNames'].append(
