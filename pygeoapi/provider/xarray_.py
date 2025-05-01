@@ -51,6 +51,7 @@ from pygeoapi.util import get_crs_from_uri, read_data
 LOGGER = logging.getLogger(__name__)
 LOGGER.setLevel(logging.DEBUG)
 
+
 class XarrayProvider(BaseProvider):
     """Xarray Provider"""
 
@@ -367,8 +368,11 @@ class XarrayProvider(BaseProvider):
                     'shape': [metadata['height'],
                               metadata['width']]
                 }
-                cj['ranges'][key]['values'] =[
-                    None if v is None or str(v) == 'nan' or (isinstance(v, (float, np.float32, np.float64)) and np.isnan(v)) else v
+                cj['ranges'][key]['values'] = [
+                    None if (
+                        v is None or str(v) == 'nan' or 
+                        (isinstance(v, (float, np.float32, np.float64)) and np.isnan(v))
+                    ) else v
                     for v in data[key].values.flatten()
                 ]  # noqa
 
