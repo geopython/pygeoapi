@@ -49,6 +49,7 @@ from pygeoapi.provider.base import (BaseProvider,
 from pygeoapi.util import get_crs_from_uri, read_data
 
 LOGGER = logging.getLogger(__name__)
+LOGGER.setLevel(logging.DEBUG)
 
 
 class XarrayProvider(BaseProvider):
@@ -269,6 +270,7 @@ class XarrayProvider(BaseProvider):
                 return fp.read()
 
     def gen_covjson(self, metadata, data, fields):
+        LOGGER.debug("THIS IS IN THE GENCOVJSON!!!")
         """
         Generate coverage as CoverageJSON representation
 
@@ -332,10 +334,8 @@ class XarrayProvider(BaseProvider):
 
         if self.time_field is not None:
             mint, maxt = metadata['time']
-            cj['domain']['axes'][self.time_field] = {
-                'start': mint,
-                'stop': maxt,
-                'num': metadata['time_steps'],
+            cj['domain']['axes']['t'] = {
+                'values': [str(v) for v in data.time.values],
             }
 
         for key, value in selected_fields.items():
@@ -368,7 +368,13 @@ class XarrayProvider(BaseProvider):
                     'shape': [metadata['height'],
                               metadata['width']]
                 }
-                cj['ranges'][key]['values'] = data[key].values.flatten().tolist()  # noqa
+                cj['ranges'][key]['values'] = [
+                    None if (
+                        v is None or str(v) == 'nan' or 
+                        (isinstance(v, (float, np.float32, np.float64)) and np.isnan(v))
+                    ) else v
+                    for v in data[key].values.flatten()
+                ]  # noqa
 
                 if self.time_field is not None:
                     cj['ranges'][key]['axisNames'].append(
