@@ -40,7 +40,7 @@ from typing import Optional, Union
 from django.conf import settings
 from django.http import HttpRequest, HttpResponse
 
-from pygeoapi.api import API, APIRequest, apply_gzip
+from pygeoapi.api import API, APIRequest, apply_gzip, apply_integrity
 import pygeoapi.api as core_api
 import pygeoapi.api.coverages as coverages_api
 import pygeoapi.api.environmental_data_retrieval as edr_api
@@ -550,6 +550,7 @@ def execute_from_django(api_function, request: HttpRequest, *args,
     else:
 
         headers, status, content = api_function(api_, api_request, *args)
+        apply_integrity(headers, content)
         content = apply_gzip(headers, content)
 
     # Convert API payload to a django response
