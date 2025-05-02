@@ -580,7 +580,21 @@ def get_collection_items(
         'href': f'{uri}?f={F_HTML}{serialized_query_params}'
     }])
 
-    if offset > 0:
+    next_link = False
+    prev_link = False
+
+    if 'next' in [link['rel'] for link in content['links']]:
+        LOGGER.debug('Using next link from provider')
+    else:
+        if content.get('numberMatched', -1) > (limit + offset):
+            next_link = True
+        elif len(content['features']) == limit:
+            next_link = True
+
+        if offset > 0:
+            prev_link = True
+
+    if prev_link:
         prev = max(0, offset - limit)
         content['links'].append(
             {
@@ -589,13 +603,6 @@ def get_collection_items(
                 'title': l10n.translate('Items (prev)', request.locale),
                 'href': f'{uri}?offset={prev}{serialized_query_params}'
             })
-
-    next_link = False
-
-    if content.get('numberMatched', -1) > (limit + offset):
-        next_link = True
-    elif len(content['features']) == limit:
-        next_link = True
 
     if next_link:
         next_ = offset + limit
