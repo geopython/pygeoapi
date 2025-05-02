@@ -1,6 +1,6 @@
 # =================================================================
 #
-# Authors: 
+# Authors:
 #
 # Copyright (c)
 #
@@ -28,35 +28,17 @@
 # =================================================================
 
 import logging
-import requests
-from urllib.parse import urlparse
 
 from pygeoapi.provider.base_mvt import BaseMVTProvider
 from pygeoapi.provider.postgresql import PostgreSQLProvider
-from pygeoapi.provider.base import (ProviderConnectionError,
-                                    ProviderGenericError,
-                                    ProviderInvalidQueryError)
-from pygeoapi.provider.tile import ProviderTileNotFoundError
+from pygeoapi.provider.base import ProviderConnectionError
 from pygeoapi.models.provider.base import (
     TileSetMetadata, TileMatrixSetEnum, LinkType)
-from pygeoapi.util import is_url, url_join
-from sqlalchemy.orm import Session, load_only
+from pygeoapi.util import url_join
 
-from sqlalchemy.engine import URL
 from sqlalchemy.sql import text
-from sqlalchemy.exc import ConstraintColumnNotFoundError, \
-    InvalidRequestError, OperationalError
-from sqlalchemy.ext.automap import automap_base
-from sqlalchemy.sql.expression import and_
-from pygeoapi.provider.base import BaseProvider, \
-    ProviderConnectionError, ProviderInvalidDataError, ProviderQueryError, \
-    ProviderItemNotFoundError
-    
+
 from copy import deepcopy
-from datetime import datetime
-from decimal import Decimal
-import functools
-import logging
 
 LOGGER = logging.getLogger(__name__)
 
@@ -73,7 +55,7 @@ class MVTPostgresProvider(BaseMVTProvider):
         """
 
         super().__init__(provider_def)
-        
+
         pg_def = deepcopy(provider_def)
         del pg_def["options"]["zoom"]
         self.postgres = PostgreSQLProvider(pg_def)
@@ -151,47 +133,48 @@ class MVTPostgresProvider(BaseMVTProvider):
         fields = ', '.join(['"' + f + '"' for f in fields_arr])
         if len(fields) != 0:
             fields = ',' + fields
-        
+
         query = ''
         if tileset == TileMatrixSetEnum.WEBMERCATORQUAD.value.tileMatrixSet:
             query = text("""
-                WITH                                                                  
+                WITH
                     bounds AS (
-                        SELECT ST_TileEnvelope(:z, :y, :x) AS boundgeom
+                        SELECT ST_TileEnvelope(:z, :x, :y) AS boundgeom
                     ),
                     mvtgeom AS (
-                        SELECT ST_AsMVTGeom(ST_Transform({geom}, 3857), bounds.boundgeom) AS geom {fields}
+                        SELECT ST_AsMVTGeom(ST_Transform(ST_CurveToLine({geom}), 3857), bounds.boundgeom) AS geom {fields}
                         FROM "{table}", bounds
                         WHERE ST_Intersects({geom}, ST_Transform(bounds.boundgeom, 4326))
                     )
                 SELECT ST_AsMVT(mvtgeom, 'default') FROM mvtgeom;
-            """.format(geom=self.geom, table=self.table, fields=fields))  
-        
+            """.format(geom=self.geom, table=self.table, fields=fields)) # noqa
+
         if tileset == TileMatrixSetEnum.WORLDCRS84QUAD.value.tileMatrixSet:
             query = text("""
-                WITH                                                                  
+                WITH
                     bounds AS (
-                        SELECT ST_TileEnvelope(:z, :y, :x, ST_MakeEnvelope(-180, -90, 180, 90, 4326)) AS boundgeom
+                        SELECT ST_TileEnvelope(:z, :x, :y,
+                                'SRID=4326;POLYGON((-180 -90,-180 90,180 90,180 -90,-180 -90))'::geometry) AS boundgeom
                     ),
                     mvtgeom AS (
-                        SELECT ST_AsMVTGeom({geom}, bounds.boundgeom) AS geom {fields}
+                        SELECT ST_AsMVTGeom(ST_CurveToLine({geom}), bounds.boundgeom) AS geom {fields}
                         FROM "{table}", bounds
                         WHERE ST_Intersects({geom}, bounds.boundgeom)
                     )
                 SELECT ST_AsMVT(mvtgeom, 'default') FROM mvtgeom;
-            """.format(geom=self.geom, table=self.table, fields=fields))  
+            """.format(geom=self.geom, table=self.table, fields=fields)) # noqa
 
         with self.postgres._engine.connect() as session:
-                result = session.execute(query, {
-                    'z': z,  
-                    'y': y,  
+            result = session.execute(query, {
+                    'z': z,
+                    'y': y,
                     'x': x
-                }).fetchone()
+            }).fetchone()
 
-                if len(bytes(result[0])) == 0:
-                   return None
-                return bytes(result[0])
-        
+            if len(bytes(result[0])) == 0:
+                return None
+            return bytes(result[0])
+
     def get_html_metadata(self, dataset, server_url, layer, tileset,
                           title, description, keywords, **kwargs):
 
