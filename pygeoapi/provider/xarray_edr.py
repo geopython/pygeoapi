@@ -138,7 +138,7 @@ class XarrayEDRProvider(BaseEDRProvider, XarrayProvider):
 
                             data = data.sel(string_query)
                         else:
-                            raise ProviderInvalidQueryError(user_msg=f"""Invalid Dimension Parameter '{coord}'""")
+                            raise ProviderInvalidQueryError(user_msg=f"""Invalid Dimension Parameter '{coord}'""") # noqa
 
             LOGGER.debug(query_params)
 
