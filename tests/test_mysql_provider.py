@@ -112,7 +112,7 @@ def test_fields(config):
         'locationID',
         'locationName',
         'description',
-        'created_at',
+        'created_at'
     ]
     for field in expectedFields:
         assert field in fields

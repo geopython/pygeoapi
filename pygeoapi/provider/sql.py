@@ -241,7 +241,7 @@ class GenericSQLProvider(BaseProvider):
 
             for item in (
                 results.order_by(*order_by_clauses).offset(offset).limit(limit)
-            ):  # noqa
+            ):
                 response['numberReturned'] += 1
                 response['features'].append(
                     self._sqlalchemy_to_feature(item, crs_transform_out)
@@ -311,7 +311,7 @@ class GenericSQLProvider(BaseProvider):
                     'type': _column_type_to_json_schema_type(column.type),
                     'format': _column_format_to_json_schema_format(
                         column.type
-                    ),
+                    )
                 }
 
         return self._fields
@@ -608,7 +608,7 @@ def get_engine(
     database: str,
     user: str,
     password: str,
-    **connection_options,
+    **connection_options
 ):
     """Create SQL Alchemy engine."""
     conn_str = URL.create(
@@ -633,7 +633,7 @@ def get_table_model(
     table_name: str,
     id_field: str,
     db_search_path: tuple[str],
-    engine,
+    engine
 ):
     """Reflect table."""
     metadata = MetaData()
