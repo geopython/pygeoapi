@@ -1511,7 +1511,11 @@ def validate_bbox(value=None) -> list:
     return bbox
 
 
-def validate_filter_dims(query_string):
+def validate_filter_dims(query_string=None) -> dict:
+    if query_string is None:
+        LOGGER.debug('dims is empty')
+        return {}
+
     if not isinstance(query_string, str):
         msg = 'dimension query must be string'
         LOGGER.debug(msg)

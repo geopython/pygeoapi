@@ -40,9 +40,9 @@ import pytest
 
 from pygeoapi.api import (
     API, APIRequest, FORMAT_TYPES, F_HTML, F_JSON, F_JSONLD, F_GZIP,
-    __version__, validate_bbox, validate_datetime, evaluate_limit,
-    validate_subset, landing_page, openapi_, conformance, describe_collections,
-    get_collection_schema,
+    __version__, validate_bbox, validate_filter_dims, validate_datetime,
+    evaluate_limit, validate_subset, landing_page, openapi_, conformance,
+    describe_collections, get_collection_schema,
 )
 from pygeoapi.util import yaml_load, get_api_rules, get_base_url
 
@@ -776,6 +776,39 @@ def test_validate_bbox():
 
     with pytest.raises(ValueError):
         validate_bbox('1,2,6,4,5,3')
+
+
+def test_validate_filter_dims():
+    with pytest.raises(ValueError) as error:
+        validate_filter_dims(123)
+    assert error.type == ValueError
+    assert error.match('dimension query must be string')
+
+    assert validate_filter_dims('key1:val1') == {'key1': 'val1'}
+    with pytest.raises(ValueError) as error:
+        validate_filter_dims('key1val1')
+    assert error.type == ValueError
+    assert error.match("filter dimension and value must be separated by a colon ':' ")  # noqa
+
+    assert validate_filter_dims('key1:val1,key2:val2') == {'key1': 'val1',
+                                                           'key2': 'val2'}
+    with pytest.raises(ValueError) as error:
+        validate_filter_dims('key1:val1,key1:val2')
+    assert error.match("""Duplicate key found: 'key1'""")
+
+    with pytest.raises(ValueError) as error:
+        validate_filter_dims(':val1,key1:val2')
+    assert error.match("Empty key or value in pair: ':val1'")
+
+    with pytest.raises(ValueError) as error:
+        validate_filter_dims('key1:,key1:val2')
+    assert error.match("Empty key or value in pair: 'key1:'")
+
+    with pytest.raises(ValueError) as error:
+        validate_filter_dims('')
+    assert error.match("filter dimension and value must be separated by a colon ':' ")  # noqa
+
+    assert validate_filter_dims(None) == {}
 
 
 def test_validate_datetime():
