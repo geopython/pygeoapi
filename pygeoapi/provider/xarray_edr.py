@@ -31,7 +31,8 @@ import logging
 
 import numpy as np
 
-from pygeoapi.provider.base import ProviderNoDataError, ProviderQueryError, ProviderInvalidQueryError
+from pygeoapi.provider.base import (ProviderNoDataError, ProviderQueryError,
+                                    ProviderInvalidQueryError)
 from pygeoapi.provider.base_edr import BaseEDRProvider
 from pygeoapi.provider.xarray_ import (
     _to_datetime_string,
@@ -122,13 +123,18 @@ class XarrayEDRProvider(BaseEDRProvider, XarrayProvider):
                 if isinstance(dims, dict):
                     for coord, level in dims.items():
                         if coord in self._dims:
-                            if self._dims[coord]['type'](level) in self._dims[coord]['values']:
+                            if self._dims[coord]['type'](level) in self._dims[coord]['values']: # noqa
                                 if self._dims[coord]['type'] == str:
-                                    string_query[coord] = self._dims[coord]['type'](level)
+                                    string_query[coord] = self._dims[coord]['type'](level) # noqa
                                 else:
-                                    query_params[coord] = self._dims[coord]['type'](level)
+                                    query_params[coord] = self._dims[coord]['type'](level) # noqa
                             else:
-                                raise ProviderInvalidQueryError(user_msg=f"""Invalid Value '{level}' for Dimension Parameter '{coord}'. Valid Values are '{self._dims[coord]['values']}'""")
+                                raise ProviderInvalidQueryError(
+                                    user_msg=(
+                                        f"Invalid Value '{level}' for Dimension Parameter '{coord}'. " # noqa
+                                        f"Valid Values are '{self._dims[coord]['values']}'" # noqa
+                                    )
+                                )
 
                             data = data.sel(string_query)
                         else:
@@ -241,18 +247,22 @@ class XarrayEDRProvider(BaseEDRProvider, XarrayProvider):
                 if isinstance(dims, dict):
                     for coord, level in dims.items():
                         if coord in self._dims:
-                            if self._dims[coord]['type'](level) in self._dims[coord]['values']:
+                            if self._dims[coord]['type'](level) in self._dims[coord]['values']: # noqa
                                 if self._dims[coord]['type'] == str:
-                                    string_query[coord] = self._dims[coord]['type'](level)
+                                    string_query[coord] = self._dims[coord]['type'](level) # noqa
                                 else:
-                                    query_params[coord] = self._dims[coord]['type'](level)
+                                    query_params[coord] = self._dims[coord]['type'](level) # noqa
                             else:
                                 raise ProviderInvalidQueryError(
-                                    user_msg=f"""Invalid Value '{level}' for Dimension Parameter '{coord}'. Valid Values are '{self._dims[coord]['values']}'""")
+                                    user_msg=(
+                                        f"Invalid Value '{level}' for Dimension Parameter '{coord}'. " # noqa
+                                        f"Valid Values are '{self._dims[coord]['values']}'" # noqa
+                                    )
+                                )
 
                             data = data.sel(string_query)
                         else:
-                            raise ProviderInvalidQueryError(user_msg=f"""Invalid Dimension Parameter '{coord}'""")
+                            raise ProviderInvalidQueryError(user_msg=f"""Invalid Dimension Parameter '{coord}'""") # noqa
 
             data = data.sel(query_params)
             data = _convert_float32_to_float64(data)

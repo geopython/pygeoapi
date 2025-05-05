@@ -137,7 +137,7 @@ class XarrayProvider(BaseProvider):
                         dtype = 'int'
                     else:
                         dtype = 'str'
-                    LOGGER.debug(f"""key: {key} with type: {type(value.values.tolist()[0])}""")
+                    LOGGER.debug(f"""key: {key} with type: {type(value.values.tolist()[0])}""") # noqa
                     self._dims[key] = {
                         'type': type(value.values.tolist()[0]),
                         'title': value.attrs.get('long_name'),

@@ -1519,7 +1519,7 @@ def validate_filter_dims(query_string):
     checked = {}
     for pair in query_string.split(','):
         if ':' not in pair:
-            msg = """filter dimension and value must be separated by a colon ':' """
+            msg = """filter dimension and value must be separated by a colon ':' """ # noqa
             LOGGER.debug(msg)
             raise ValueError(msg)
 
