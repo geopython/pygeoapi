@@ -73,7 +73,6 @@ class XarrayEDRProvider(BaseEDRProvider, XarrayProvider):
         :returns: coverage data as dict of CoverageJSON or native format
         """
 
-
         query_params = {}
 
         LOGGER.debug(f'Query parameters: {kwargs}')
