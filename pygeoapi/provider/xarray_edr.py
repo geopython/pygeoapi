@@ -31,7 +31,7 @@ import logging
 
 import numpy as np
 
-from pygeoapi.provider.base import ProviderNoDataError, ProviderQueryError
+from pygeoapi.provider.base import ProviderNoDataError, ProviderQueryError, ProviderInvalidQueryError
 from pygeoapi.provider.base_edr import BaseEDRProvider
 from pygeoapi.provider.xarray_ import (
     _to_datetime_string,
@@ -66,11 +66,13 @@ class XarrayEDRProvider(BaseEDRProvider, XarrayProvider):
         :param wkt: `shapely.geometry` WKT geometry
         :param datetime_: temporal (datestamp or extent)
         :param select_properties: list of parameters
+        :param dims: dict of dimensions to filter
         :param z: vertical level(s)
         :param format_: data format of output
 
         :returns: coverage data as dict of CoverageJSON or native format
         """
+
 
         query_params = {}
 
@@ -96,6 +98,8 @@ class XarrayEDRProvider(BaseEDRProvider, XarrayProvider):
         LOGGER.debug('Processing parameter-name')
         select_properties = kwargs.get('select_properties')
 
+        dims = kwargs.get('dims')
+
         # example of fetching instance passed
         # TODO: apply accordingly
         instance = kwargs.get('instance')
@@ -113,6 +117,25 @@ class XarrayEDRProvider(BaseEDRProvider, XarrayProvider):
                 data = self._data[[*select_properties]]
             else:
                 data = self._data
+
+            if dims:
+                string_query = {}
+                if isinstance(dims, dict):
+                    for coord, level in dims.items():
+                        if coord in self._dims:
+                            if self._dims[coord]['type'](level) in self._dims[coord]['values']:
+                                if self._dims[coord]['type'] == str:
+                                    string_query[coord] = self._dims[coord]['type'](level)
+                                else:
+                                    query_params[coord] = self._dims[coord]['type'](level)
+                            else:
+                                raise ProviderInvalidQueryError(user_msg = f"""Invalid Value '{level}' for Dimension Parameter '{coord}'. Valid Values are '{self._dims[coord]['values']}'""")
+
+                            data = data.sel(string_query)
+                        else:
+                            raise ProviderInvalidQueryError(user_msg = f"""Invalid Dimension Parameter '{coord}'""")
+
+            LOGGER.debug(query_params)
 
             if self.time_field in query_params:
                 remaining_query = {
@@ -150,6 +173,7 @@ class XarrayEDRProvider(BaseEDRProvider, XarrayProvider):
         bbox = wkt.bounds
         out_meta = {
             'bbox': [bbox[0], bbox[1], bbox[2], bbox[3]],
+            'dims': dims,
             "time": time,
             "driver": "xarray",
             "height": height,
@@ -203,6 +227,26 @@ class XarrayEDRProvider(BaseEDRProvider, XarrayProvider):
         if datetime_ is not None:
             query_params[self.time_field] = self._make_datetime(datetime_)
 
+        dims = kwargs.get('dims')
+
+        if dims:
+            string_query = {}
+            if isinstance(dims, dict):
+                for coord, level in dims.items():
+                    if coord in self._dims:
+                        if self._dims[coord]['type'](level) in self._dims[coord]['values']:
+                            if self._dims[coord]['type'] == str:
+                                string_query[coord] = self._dims[coord]['type'](level)
+                            else:
+                                query_params[coord] = self._dims[coord]['type'](level)
+                        else:
+                            raise ProviderInvalidQueryError(
+                                user_msg=f"""Invalid Value '{level}' for Dimension Parameter '{coord}'. Valid Values are '{self._dims[coord]['values']}'""")
+
+                        data = data.sel(string_query)
+                    else:
+                        raise ProviderInvalidQueryError(user_msg=f"""Invalid Dimension Parameter '{coord}'""")
+
         LOGGER.debug(f'query parameters: {query_params}')
         try:
             if select_properties:
@@ -226,6 +270,7 @@ class XarrayEDRProvider(BaseEDRProvider, XarrayProvider):
                 data.coords[self.x_field].values[-1],
                 data.coords[self.y_field].values[-1]
             ],
+            'dims': dims,
             "time": time,
             "driver": "xarray",
             "height": height,

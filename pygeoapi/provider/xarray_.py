@@ -100,6 +100,7 @@ class XarrayProvider(BaseProvider):
             self.axes = self._coverage_properties['axes']
 
             self.get_fields()
+            self.get_dims()
         except Exception as err:
             LOGGER.warning(err)
             raise ProviderConnectionError(err)
@@ -122,6 +123,30 @@ class XarrayProvider(BaseProvider):
                     }
 
         return self._fields
+
+    def get_dims(self):
+        fields = [self.time_field, self.x_field, self.y_field]
+        if not self._dims:
+            for key, value in self._data.coords.items():
+                if key not in fields:
+                    LOGGER.debug('Adding filterable dim')
+                    dtype = value.dtype
+                    if dtype.name.startswith('float'):
+                        dtype = 'float'
+                    elif dtype.name.startswith('int'):
+                        dtype = 'int'
+                    else:
+                        dtype = 'str'
+                    LOGGER.debug(f"""key: {key} with type: {type(value.values.tolist()[0])}""")
+                    self._dims[key] = {
+                        'type': type(value.values.tolist()[0]),
+                        'title': value.attrs.get('long_name'),
+                        'x-ogc-unit': value.attrs.get('units'),
+                        'values': value.values.tolist()
+                    }
+
+        return self._dims
+
 
     def query(self, properties=[], subsets={}, bbox=[], bbox_crs=4326,
               datetime_=None, format_='json', **kwargs):

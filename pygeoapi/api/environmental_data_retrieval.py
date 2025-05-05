@@ -57,7 +57,7 @@ from pygeoapi.util import (
 )
 
 from . import (APIRequest, API, F_COVERAGEJSON, F_HTML, F_JSON, F_JSONLD,
-               validate_datetime, validate_bbox)
+               validate_datetime, validate_bbox, validate_filter_dims)
 
 LOGGER = logging.getLogger(__name__)
 
@@ -298,6 +298,11 @@ def get_collection_edr_query(api: API, request: APIRequest,
     if isinstance(parameternames, str):
         parameternames = parameternames.split(',')
 
+    LOGGER.debug('Processing dims parameter')
+    dims = request.params.get('dims')
+    if dims:
+        dims = validate_filter_dims(dims)
+
     bbox = None
     if query_type in ['cube', 'locations']:
         LOGGER.debug('Processing cube bbox')
@@ -364,6 +369,7 @@ def get_collection_edr_query(api: API, request: APIRequest,
         format_=request.format,
         datetime_=datetime_,
         select_properties=parameternames,
+        dims=dims,
         wkt=wkt,
         z=z,
         bbox=bbox,

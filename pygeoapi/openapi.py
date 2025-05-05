@@ -609,6 +609,21 @@ def get_oas_30_parameters(cfg: dict, locale_: str):
                 'type': 'string'
             }
         },
+        'dims':{
+            'name': 'dims',
+            'in': 'query',
+            'description': 'Allows to select dims from multi dimensional EDR',
+            'required': False,
+            'style': 'form',
+            'explode': False,
+            'schema': {
+                'type': 'string',
+                'items': {
+                    'type': 'any'
+                },
+                'format': 'dim1:value1,dim2:value2'
+            }
+        },
         'bbox': {
             'name': 'bbox',
             'in': 'query',

@@ -74,6 +74,7 @@ class BaseProvider:
         self.properties = provider_def.get('properties', [])
         self.file_types = provider_def.get('file_types', [])
         self._fields = {}
+        self._dims = {}
         self.filename = None
 
         # for coverage providers

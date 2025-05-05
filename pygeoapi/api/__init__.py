@@ -1282,6 +1282,17 @@ def describe_collections(api: API, request: APIRequest,
                         }
                     }
 
+            filter_dims = p.get_dims()
+            if filter_dims:
+                collection['filter_dims'] = {}
+                for key, value in filter_dims.items():
+                    collection['filter_dims'][key] = {
+                        'id': key,
+                        'type': 'Dimension',
+                        'name': value['title'],
+                        'values': value['values']
+                    }
+
             for qt in p.get_query_types():
                 data_query = {
                     'link': {
@@ -1498,6 +1509,33 @@ def validate_bbox(value=None) -> list:
         raise ValueError(msg)
 
     return bbox
+
+def validate_filter_dims(query_string):
+    if not isinstance(query_string, str):
+        msg = 'dimension query must be string'
+        LOGGER.debug(msg)
+        raise ValueError(msg)
+    checked = {}
+    for pair in query_string.split(','):
+        if ':' not in pair:
+            msg = """filter dimension and value must be separated by a colon ':' """
+            LOGGER.debug(msg)
+            raise ValueError(msg)
+
+        key, value = map(str.strip, pair.split(':', 1))
+        if not key or not value:
+            msg = f"""Empty key or value in pair: '{pair}'"""
+            LOGGER.debug(msg)
+            raise ValueError(msg)
+
+        if key in checked:
+            msg = f"""Duplicate key found: '{key}'"""
+            LOGGER.debug(msg)
+            raise ValueError(msg)
+
+        checked[key] = value
+
+    return checked
 
 
 def validate_datetime(resource_def, datetime_=None) -> str:
