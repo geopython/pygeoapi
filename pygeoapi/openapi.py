@@ -609,7 +609,7 @@ def get_oas_30_parameters(cfg: dict, locale_: str):
                 'type': 'string'
             }
         },
-        'dims':{
+        'dims': {
             'name': 'dims',
             'in': 'query',
             'description': 'Allows to select dims from multi dimensional EDR',

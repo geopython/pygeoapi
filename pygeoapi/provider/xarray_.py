@@ -144,9 +144,7 @@ class XarrayProvider(BaseProvider):
                         'x-ogc-unit': value.attrs.get('units'),
                         'values': value.values.tolist()
                     }
-
         return self._dims
-
 
     def query(self, properties=[], subsets={}, bbox=[], bbox_crs=4326,
               datetime_=None, format_='json', **kwargs):

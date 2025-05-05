@@ -129,11 +129,11 @@ class XarrayEDRProvider(BaseEDRProvider, XarrayProvider):
                                 else:
                                     query_params[coord] = self._dims[coord]['type'](level)
                             else:
-                                raise ProviderInvalidQueryError(user_msg = f"""Invalid Value '{level}' for Dimension Parameter '{coord}'. Valid Values are '{self._dims[coord]['values']}'""")
+                                raise ProviderInvalidQueryError(user_msg=f"""Invalid Value '{level}' for Dimension Parameter '{coord}'. Valid Values are '{self._dims[coord]['values']}'""")
 
                             data = data.sel(string_query)
                         else:
-                            raise ProviderInvalidQueryError(user_msg = f"""Invalid Dimension Parameter '{coord}'""")
+                            raise ProviderInvalidQueryError(user_msg=f"""Invalid Dimension Parameter '{coord}'""")
 
             LOGGER.debug(query_params)
 
@@ -229,24 +229,6 @@ class XarrayEDRProvider(BaseEDRProvider, XarrayProvider):
 
         dims = kwargs.get('dims')
 
-        if dims:
-            string_query = {}
-            if isinstance(dims, dict):
-                for coord, level in dims.items():
-                    if coord in self._dims:
-                        if self._dims[coord]['type'](level) in self._dims[coord]['values']:
-                            if self._dims[coord]['type'] == str:
-                                string_query[coord] = self._dims[coord]['type'](level)
-                            else:
-                                query_params[coord] = self._dims[coord]['type'](level)
-                        else:
-                            raise ProviderInvalidQueryError(
-                                user_msg=f"""Invalid Value '{level}' for Dimension Parameter '{coord}'. Valid Values are '{self._dims[coord]['values']}'""")
-
-                        data = data.sel(string_query)
-                    else:
-                        raise ProviderInvalidQueryError(user_msg=f"""Invalid Dimension Parameter '{coord}'""")
-
         LOGGER.debug(f'query parameters: {query_params}')
         try:
             if select_properties:
@@ -254,6 +236,25 @@ class XarrayEDRProvider(BaseEDRProvider, XarrayProvider):
                 data = self._data[[*select_properties]]
             else:
                 data = self._data
+
+            if dims:
+                string_query = {}
+                if isinstance(dims, dict):
+                    for coord, level in dims.items():
+                        if coord in self._dims:
+                            if self._dims[coord]['type'](level) in self._dims[coord]['values']:
+                                if self._dims[coord]['type'] == str:
+                                    string_query[coord] = self._dims[coord]['type'](level)
+                                else:
+                                    query_params[coord] = self._dims[coord]['type'](level)
+                            else:
+                                raise ProviderInvalidQueryError(
+                                    user_msg=f"""Invalid Value '{level}' for Dimension Parameter '{coord}'. Valid Values are '{self._dims[coord]['values']}'""")
+
+                            data = data.sel(string_query)
+                        else:
+                            raise ProviderInvalidQueryError(user_msg=f"""Invalid Dimension Parameter '{coord}'""")
+
             data = data.sel(query_params)
             data = _convert_float32_to_float64(data)
         except KeyError:

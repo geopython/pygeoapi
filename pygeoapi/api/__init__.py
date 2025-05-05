@@ -1510,6 +1510,7 @@ def validate_bbox(value=None) -> list:
 
     return bbox
 
+
 def validate_filter_dims(query_string):
     if not isinstance(query_string, str):
         msg = 'dimension query must be string'
