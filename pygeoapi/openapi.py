@@ -619,7 +619,7 @@ def get_oas_30_parameters(cfg: dict, locale_: str):
             'schema': {
                 'type': 'string',
                 'items': {
-                    'type': 'any'
+                    'type': 'string'
                 },
                 'format': 'dim1:value1,dim2:value2'
             }
