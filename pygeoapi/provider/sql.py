@@ -231,7 +231,7 @@ class GenericSQLProvider(BaseProvider):
                 'type': 'FeatureCollection',
                 'features': [],
                 'numberMatched': matched,
-                'numberReturned': 0,
+                'numberReturned': 0
             }
 
             if resulttype == 'hits' or not results:
