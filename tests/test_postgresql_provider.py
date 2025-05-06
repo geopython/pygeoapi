@@ -57,8 +57,8 @@ from pygeoapi.provider.base import (
     ProviderItemNotFoundError,
     ProviderQueryError
 )
-from pygeoapi.provider.postgresql import PostgreSQLProvider
-import pygeoapi.provider.postgresql as postgresql_provider_module
+from pygeoapi.provider.sql import PostgreSQLProvider
+import pygeoapi.provider.sql as postgresql_provider_module
 
 from pygeoapi.util import (yaml_load, geojson_to_geom,
                            get_transform_from_crs, get_crs_from_uri)

@@ -19,6 +19,7 @@ pygeofilter[backend-sqlalchemy]
 pygeoif
 pygeometa
 pymongo==4.6.3
+pymysql
 scipy
 sodapy
 xarray
