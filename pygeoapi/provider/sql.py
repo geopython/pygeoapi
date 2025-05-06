@@ -154,7 +154,7 @@ class GenericSQLProvider(BaseProvider):
             self.db_name,
             self.db_user,
             self._db_password,
-            **{**(self.db_options or {}), **(extra_conn_args or {})}
+            **(self.db_options or {}) | (extra_conn_args or {})
         )
         self.table_model = get_table_model(
             self.table, self.id_field, self.db_search_path, self._engine
