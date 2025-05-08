@@ -163,9 +163,9 @@ This code block shows how to configure pygeoapi to render Mapbox vector tiles fr
            table: hotosm_bdi_waterways
            geom_field: foo_geom
            options:
-           zoom:
-               min: 0
-               max: 10 
+               zoom:
+                   min: 0
+                   max: 15
            format:
                name: pbf
                mimetype: application/vnd.mapbox-vector-tile
