@@ -29,7 +29,7 @@ jobs:
           - suite-id: ogcapi-edr10
             arguments: >-
               iut=http://host.docker.internal:5001
-              apiDefinition=http://localhost:5001/openapi
+              apiDefinition=http://host.docker.internal:5001/openapi
           - suite-id: ogcapi-tiles-1.0
             arguments: >-
               iut=http://host.docker.internal:5001
