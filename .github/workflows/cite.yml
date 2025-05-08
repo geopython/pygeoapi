@@ -12,8 +12,10 @@ jobs:
 
   perform-cite-testing:
     name: ${{ matrix.test-suite.suite-id }} CITE testing
-    continue-on-error: true
+#    continue-on-error: true
+    continue-on-error: false
     strategy:
+      fail-fast: false
       matrix:
         test-suite:
           - suite-id: ogcapi-features-1.0
@@ -67,19 +69,3 @@ jobs:
         with:
           test_suite_identifier: ${{ matrix.test-suite.suite-id }}
           test_session_arguments: ${{ matrix.test-suite.arguments }}
-
-  set-final-status:
-    needs: perform-cite-testing
-    runs-on: ubuntu-22.04
-    if: always()
-    steps:
-      - name: check status of workflow
-        run: |
-          echo "${{ toJSON(needs) }}"
-          echo "${{ toJSON(needs.*.result) }}"
-          if [ "${{ contains(needs.*.result, 'failure') }}" = "true" ]; then
-              echo "One or more workflow jobs have failed"
-              exit 1
-          else
-              echo "All workflow jobs have passed"
-          fi
