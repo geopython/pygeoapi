@@ -18,15 +18,15 @@ jobs:
         test-suite:
           - suite-id: ogcapi-features-1.0
             arguments: >-
-              iut=http://localhost:5001 
+              iut=http://host.docker.internal:5001 
               noofcollections=-1
           - suite-id: ogcapi-processes-1.0
             arguments: >-
-              iut=http://localhost:5001
+              iut=http://host.docker.internal:5001
               noofcollections=-1
           - suite-id: ogcapi-edr10
             arguments: >-
-              iut=http://localhost:5001
+              iut=http://host.docker.internal:5001
               apiDefinition=http://localhost:5001/openapi
           - suite-id: ogcapi-tiles-1.0
             arguments: >-
