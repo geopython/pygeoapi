@@ -75,8 +75,8 @@ jobs:
     steps:
       - name: check status of workflow
         run: |
-          echo "${{ needs }}"
-          echo "${{ needs.*.result }}"
+          echo "${{ toJSON(needs) }}"
+          echo "${{ toJSON(needs.*.result) }}"
           if [ "${{ contains(needs.*.result, 'failure') }}" = "true" ]; then
               echo "One or more workflow jobs have failed"
               exit 1
