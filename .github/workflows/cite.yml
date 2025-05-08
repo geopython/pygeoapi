@@ -54,16 +54,30 @@ jobs:
         with:
           container-name: pygeoapi-cite-pygeoapi-1
           timeout: 120
-
-      - name: collect docker logs on failure
-        if: failure()
-        uses: jwalton/gh-docker-logs@v2.2.2
-        with:
-          images: ghcr.io/geopython/pygeoapi
-          tail: 500
+#
+#      - name: collect docker logs on failure
+#        if: failure()
+#        uses: jwalton/gh-docker-logs@v2.2.2
+#        with:
+#          images: ghcr.io/geopython/pygeoapi
+#          tail: 500
 
       - name: test {{ matrix.test-suite.suite-id }} compliance
         uses: OSGeo/cite-runner@main
         with:
           test_suite_identifier: ${{ matrix.test-suite.suite-id }}
           test_session_arguments: ${{ matrix.test-suite.arguments }}
+
+  set-final-status:
+    needs: perform-cite-testing
+    runs-on: ubuntu-22.04
+    if: always()
+    steps:
+      - name: check status of workflow
+        run: |
+          if [[ "${{ contains(needs.*.result, 'failure') }}" == "true" ]]; then
+              echo "One or more workflow jobs have failed"
+              exit 1
+          else
+              echo "All workflow jobs have passed"
+          fi
