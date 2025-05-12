@@ -56,13 +56,6 @@ jobs:
         with:
           container-name: pygeoapi-cite-pygeoapi-1
           timeout: 120
-#
-#      - name: collect docker logs on failure
-#        if: failure()
-#        uses: jwalton/gh-docker-logs@v2.2.2
-#        with:
-#          images: ghcr.io/geopython/pygeoapi
-#          tail: 500
 
       - name: test {{ matrix.test-suite.suite-id }} compliance
         uses: OSGeo/cite-runner@v0.2.0
