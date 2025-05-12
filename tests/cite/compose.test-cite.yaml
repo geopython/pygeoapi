@@ -1,22 +1,28 @@
-# compose file suitable for running CITE tests in a local dev environment
-# This is meant to emulate the conditions found on pygeoapi's CI
-
-# initialization:
+# docker compose file suitable for running CITE tests in both pygeoapi CI and in a local
+# dev environment
 #
-# 0 - Navigate to the root of the pygeoapi repo
+# How to use this to run CITE tests locally:
 #
-# 1 - Stand up this stack:
+# 0. install cite-runner
+# pipx install cite-runner
+#
+# 1. Navigate to the root of the pygeoapi repo
+#
+# 2. Stand up this stack:
 # docker compose -f tests/cite/compose.test-cite.yaml up --detach
 #
-# 2 - Bootstrap the teamengine service, basically create a user for running tests)
-# ./tests/cite/bootstrap-teamengine.sh
+# 3. Stand up a local teamengine instance
+# docker run --rm --name teamengine \
+#     --add-host=host.docker.internal:host-gateway \
+#     --publish 9081:8080 \
+#     ogccite/teamengine-production:1.0-SNAPSHOT
 #
-# 3 - Access the teamengine GUI at http://localhost:8080/teamengine and login
-# with:
-#    - user: teamengine
-#    - password: tester
-#
-# 4 - Use the teamengine GUI to run tests suite(s)
+# 4. Use cite-runner to run CITE tests
+# cite-runner \
+#     execute-test-suite \
+#     http://localhost:9081/teamengine \
+#     ogcapi-features-1.0 \
+#     --suite-input iut http://host.docker.internal:5001
 
 
 
@@ -31,8 +37,8 @@ services:
         published: 5001
     environment:
       PYGEOAPI_PORT: 5000
-      PYGEOAPI_PUBLIC_URL: http://localhost:5001
-      PYGEOAPI_CONFIG: /pygeoapi/tests/cite/cite.config.yml
+      PYGEOAPI_PUBLIC_URL: http://host.docker.internal:5001
+      PYGEOAPI_CONFIG: /pygeoapi/tests/cite/cite.config.docker.yml
       PYGEOAPI_OPENAPI: /pygeoapi/tests/cite/cite.openapi.yml
       PYGEOAPI_ELASTICSEARCH_SERVER_URL: http://elasticsearch-server:9200
       PYGEOAPI_DATA_ROOT: /pygeoapi/tests/data
@@ -40,19 +46,15 @@ services:
       - type: bind
         source: $PWD
         target: /pygeoapi
-    depends_on:
-      elasticsearch-server:
-        condition: service_healthy
     entrypoint: ['/bin/bash', '-c']
     command:
       - |
         pip3 install -r requirements.txt
-        pip3 install 'elasticsearch-dsl>=8.0.0,<9.0.0'
-        python3 tests/load_es_data.py tests/data/ne_110m_populated_places_simple.geojson geonameid
-        python3 tests/load_es_data.py tests/cite/canada-hydat-daily-mean-02HC003.geojson IDENTIFIER
+        # pip3 install 'elasticsearch-dsl>=8.0.0,<9.0.0'
+        # python3 tests/load_es_data.py /pygeoapi/tests/data/ne_110m_populated_places_simple.geojson geonameid
         pip3 install -e .
-        pygeoapi openapi generate /pygeoapi/tests/cite/cite.config.yml --output-file /pygeoapi/tests/cite/cite.openapi.yml
-        gunicorn --bind 0.0.0.0:5000 pygeoapi.flask_app:APP
+        pygeoapi openapi generate /pygeoapi/tests/cite/cite.config.docker.yml --output-file /pygeoapi/tests/cite/cite.openapi.yml
+        gunicorn --access-logfile - --bind 0.0.0.0:5000 pygeoapi.flask_app:APP
     healthcheck:
       interval: 10s
       timeout: 3s
@@ -63,28 +65,4 @@ services:
         if [ $${response} = '200' ];
         then exit 0;
         else echo "++++++++++ pygeoapi is not ready ++++++++++"; exit 1;
-        fi
-
-  elasticsearch-server:
-    image: elasticsearch:8.12.2
-    ports:
-      - target: 9200
-        published: 9200
-      - target: 9300
-        published: 9300
-    environment:
-      ES_JAVA_OPTS: -Xms2g -Xmx2g
-      discovery.type: single-node
-      xpack.security.enabled: false
-      xpack.security.enrollment.enabled: false
-    healthcheck:
-      interval: 10s
-      timeout: 3s
-      start_period: 1m
-      retries: 10
-      test: |
-        response=$$(curl --silent --write-out "%{http_code}" --output /dev/null localhost:9200)
-        if [ $${response} = '200' ];
-        then exit 0;
-        else echo "++++++++++ elasticsearch is not ready ++++++++++"; exit 1;
         fi
