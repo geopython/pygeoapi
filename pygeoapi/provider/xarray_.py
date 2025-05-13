@@ -388,9 +388,7 @@ class XarrayProvider(BaseProvider):
                               metadata['width']]
                 }
                 cj['ranges'][key]['values'] = [
-                    None if (
-                        v is None or np.isnan(v)
-                    ) else v
+                    None if np.isnan(v) else v
                     for v in data[key].values.flatten()
                 ]
 
