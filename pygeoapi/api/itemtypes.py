@@ -199,6 +199,8 @@ def get_collection_queryables(api: API, request: Union[APIRequest, Any],
                 'title': k,
                 'type': v['type']
             }
+            if v['type'] == 'float':
+                queryables['properties'][k]['type'] = 'number'
             if v.get('format') is not None:
                 queryables['properties'][k]['format'] = v['format']
             if 'values' in v:

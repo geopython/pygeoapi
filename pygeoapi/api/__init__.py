@@ -1425,6 +1425,8 @@ def get_collection_schema(api: API, request: Union[APIRequest, Any],
 
     for k, v in p.fields.items():
         schema['properties'][k] = v
+        if v['type'] == 'float':
+            schema['properties'][k]['type'] = 'number'
         if v.get('format') is None:
             schema['properties'][k].pop('format', None)
 
