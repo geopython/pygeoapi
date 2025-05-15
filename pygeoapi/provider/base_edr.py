@@ -94,6 +94,7 @@ class BaseEDRProvider(BaseProvider):
         :param wkt: `shapely.geometry` WKT geometry
         :param datetime_: temporal (datestamp or extent)
         :param select_properties: list of parameters
+        :param dims: dims to select data from
         :param z: vertical level(s)
         :param format_: data format of output
         :param bbox: bbox geometry (for cube queries)
