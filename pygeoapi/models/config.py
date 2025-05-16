@@ -1,5 +1,3 @@
-# ****************************** -*-
-# flake8: noqa
 # =================================================================
 #
 # Authors: Sander Schaminee <sander.schaminee@geocat.net>
@@ -75,11 +73,10 @@ class APIRules(BaseModel):
         """
         Returns a new APIRules instance for the current API version
         and configured rules.
-
-        :param 
         """
         obj = {
-            k: v for k, v in rules_config.items() if k in getattr(APIRules, model_fields)
+            k: v for k, v in rules_config.items()
+            if k in getattr(APIRules, model_fields)
         }
         # Validation will fail if required `api_version` is missing
         # or if `api_version` is not a semantic version number
@@ -97,7 +94,7 @@ class APIRules(BaseModel):
             headers[self.version_header] = self.api_version
         return headers
 
-    def get_url_prefix(self, style: str = None) -> str:
+    def get_url_prefix(self, style: str = '') -> str:
         """
         Returns an API URL prefix to use in all paths.
         May include a (partial) API version. See docs for syntax.
@@ -115,12 +112,13 @@ class APIRules(BaseModel):
             api_minor=minor,
             api_build=build
         ).strip('/')
-        style = (style or '').lower()
+
         if style == 'django':
             # Django requires the slash at the end
             return rf'^{prefix}/'
         elif style in ('flask', 'starlette'):
             # Flask and Starlette need the slash in front
             return f'/{prefix}'
-        # If no format is specified, return only the bare prefix
-        return prefix
+        else:
+            # If no format is specified, return only the bare prefix
+            return prefix
