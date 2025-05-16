@@ -69,6 +69,7 @@ ARG ADD_DEB_PACKAGES="\
     python3-netcdf4 \
     python3-pandas \
     python3-psycopg2 \
+    python3-pydantic \
     python3-pymongo \
     python3-pyproj \
     python3-rasterio \
