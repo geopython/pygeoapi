@@ -50,7 +50,7 @@ LOGGER = logging.getLogger(__name__)
 class MVTPostgreSQLProvider(BaseMVTProvider):
     """
     MVT PostgreSQL Provider
-    Provider for serving tiles rendered on-the-fly from 
+    Provider for serving tiles rendered on-the-fly from
     feature tables in PostgreSQL
     """
 
@@ -66,7 +66,8 @@ class MVTPostgreSQLProvider(BaseMVTProvider):
         super().__init__(provider_def)
 
         pg_def = deepcopy(provider_def)
-        # delete the zoom option before initializing the PostgreSQL provider, it breaks otherwise
+        # delete the zoom option before initializing the PostgreSQL provider
+        # that provider breaks otherwise
         del pg_def["options"]["zoom"]
         self.postgres = PostgreSQLProvider(pg_def)
 
@@ -147,7 +148,7 @@ class MVTPostgreSQLProvider(BaseMVTProvider):
 
         query = ''
         if tileset == TileMatrixSetEnum.WEBMERCATORQUAD.value.tileMatrixSet:
-            if not self.is_in_limits(TileMatrixSetEnum.WEBMERCATORQUAD.value, z, x, y):
+            if not self.is_in_limits(TileMatrixSetEnum.WEBMERCATORQUAD.value, z, x, y): # noqa
                 raise ProviderTileNotFoundError
 
             query = text("""
@@ -164,7 +165,7 @@ class MVTPostgreSQLProvider(BaseMVTProvider):
             """.format(geom=self.geom, table=self.table, fields=fields)) # noqa
 
         if tileset == TileMatrixSetEnum.WORLDCRS84QUAD.value.tileMatrixSet:
-            if not self.is_in_limits(TileMatrixSetEnum.WORLDCRS84QUAD.value, z, x, y):
+            if not self.is_in_limits(TileMatrixSetEnum.WORLDCRS84QUAD.value, z, x, y): # noqa
                 raise ProviderTileNotFoundError
 
             query = text("""
