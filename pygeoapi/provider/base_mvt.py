@@ -95,7 +95,8 @@ class BaseMVTProvider(BaseTileProvider):
         :returns: `dict` of item tile service
         """
 
-        url = urlparse(self.data)
+        # self.data will be a dict when using MVTPostgresProvider
+        url = urlparse(self.data) if isinstance(self.data, str) else urlparse('/') # noqa
         baseurl = baseurl or f'{url.scheme}://{url.netloc}'
         # @TODO: support multiple types
         tile_type = tile_type or self.format_type
