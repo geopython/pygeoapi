@@ -41,6 +41,7 @@ from pygeoapi.models.provider.base import (
 from pygeoapi.provider.base import ProviderConnectionError
 from pygeoapi.provider.base_mvt import BaseMVTProvider
 from pygeoapi.provider.postgresql import PostgreSQLProvider
+from pygeoapi.provider.tile import ProviderTileNotFoundError
 from pygeoapi.util import url_join
 
 LOGGER = logging.getLogger(__name__)
@@ -65,6 +66,7 @@ class MVTPostgreSQLProvider(BaseMVTProvider):
         super().__init__(provider_def)
 
         pg_def = deepcopy(provider_def)
+        # delete the zoom option before initializing the PostgreSQL provider, it breaks otherwise
         del pg_def["options"]["zoom"]
         self.postgres = PostgreSQLProvider(pg_def)
 
@@ -145,6 +147,9 @@ class MVTPostgreSQLProvider(BaseMVTProvider):
 
         query = ''
         if tileset == TileMatrixSetEnum.WEBMERCATORQUAD.value.tileMatrixSet:
+            if not self.is_in_limits(TileMatrixSetEnum.WEBMERCATORQUAD.value, z, x, y):
+                raise ProviderTileNotFoundError
+
             query = text("""
                 WITH
                     bounds AS (
@@ -159,6 +164,9 @@ class MVTPostgreSQLProvider(BaseMVTProvider):
             """.format(geom=self.geom, table=self.table, fields=fields)) # noqa
 
         if tileset == TileMatrixSetEnum.WORLDCRS84QUAD.value.tileMatrixSet:
+            if not self.is_in_limits(TileMatrixSetEnum.WORLDCRS84QUAD.value, z, x, y):
+                raise ProviderTileNotFoundError
+
             query = text("""
                 WITH
                     bounds AS (
