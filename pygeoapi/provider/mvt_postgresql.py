@@ -1,8 +1,12 @@
 # =================================================================
 #
-# Authors:
+# Authors: Prajwal Amaravati <prajwal.s@satsure.co>
+#          Tanvi Prasad <tanvi.prasad@cdpg.org.in>
+#          Bryan Robert <bryan.robert@cdpg.org.in>
 #
-# Copyright (c)
+# Copyright (c) 2025 Prajwal Amaravati
+# Copyright (c) 2025 Tanvi Prasad
+# Copyright (c) 2025 Bryan Robert
 #
 # Permission is hereby granted, free of charge, to any person
 # obtaining a copy of this software and associated documentation
@@ -27,23 +31,27 @@
 #
 # =================================================================
 
+from copy import deepcopy
 import logging
-
-from pygeoapi.provider.base_mvt import BaseMVTProvider
-from pygeoapi.provider.postgresql import PostgreSQLProvider
-from pygeoapi.provider.base import ProviderConnectionError
-from pygeoapi.models.provider.base import (
-    TileSetMetadata, TileMatrixSetEnum, LinkType)
-from pygeoapi.util import url_join
 
 from sqlalchemy.sql import text
 
-from copy import deepcopy
+from pygeoapi.models.provider.base import (
+    TileSetMetadata, TileMatrixSetEnum, LinkType)
+from pygeoapi.provider.base import ProviderConnectionError
+from pygeoapi.provider.base_mvt import BaseMVTProvider
+from pygeoapi.provider.postgresql import PostgreSQLProvider
+from pygeoapi.util import url_join
 
 LOGGER = logging.getLogger(__name__)
 
 
-class MVTPostgresProvider(BaseMVTProvider):
+class MVTPostgreSQLProvider(BaseMVTProvider):
+    """
+    MVT PostgreSQL Provider
+    Provider for serving tiles rendered on-the-fly from 
+    feature tables in PostgreSQL
+    """
 
     def __init__(self, provider_def):
         """
@@ -51,7 +59,7 @@ class MVTPostgresProvider(BaseMVTProvider):
 
         :param provider_def: provider definition
 
-        :returns: pygeoapi.provider.MVT.MVTPostgresProvider
+        :returns: pygeoapi.provider.MVT.MVTPostgreSQLProvider
         """
 
         super().__init__(provider_def)
@@ -59,6 +67,7 @@ class MVTPostgresProvider(BaseMVTProvider):
         pg_def = deepcopy(provider_def)
         del pg_def["options"]["zoom"]
         self.postgres = PostgreSQLProvider(pg_def)
+
         self.layer_name = provider_def["table"]
         self.table = provider_def['table']
         self.id_field = provider_def['id_field']
@@ -67,7 +76,7 @@ class MVTPostgresProvider(BaseMVTProvider):
         LOGGER.debug(f'DB connection: {repr(self.postgres._engine.url)}')
 
     def __repr__(self):
-        return f'<MVTPostgresProvider> {self.data}'
+        return f'<MVTPostgreSQLProvider> {self.data}'
 
     @property
     def service_url(self):
