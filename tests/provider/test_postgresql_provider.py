@@ -353,7 +353,7 @@ def test_get_not_existing_item_raise_exception(config):
          80835475, 80835478, 80835483, 80835486]),
     ("osm_id BETWEEN 80800000 AND 80900000 AND waterway = 'stream'",
         [80835470]),
-    ("osm_id BETWEEN 80800000 AND 80900000 AND waterway CASEI 'sTrEam'",
+    ("osm_id BETWEEN 80800000 AND 80900000 AND CASEI(waterway) LIKE 'sTrEam'",
         [80835470]),
     ("osm_id BETWEEN 80800000 AND 80900000 AND waterway LIKE 's%'",
         [80835470]),
