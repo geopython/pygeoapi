@@ -107,7 +107,7 @@ To publish an Elasticsearch index, the following are required in your index:
 The ES provider also has the support for the CQL queries as indicated in the table above.
 
 .. seealso::
-  :ref:`cql` for more details on how to use Common Query Language (CQL) to filter the collection with specific queries.
+  :ref:`cql2` for more details on how to use Common Query Language (CQL) to filter the collection with specific queries.
 
 .. _ERDDAP Tabledap Service:
 
@@ -284,7 +284,7 @@ These are optional and if not specified, the default from the engine will be use
 This provider has support for the CQL queries as indicated in the Provider table above.
 
 .. seealso::
-  :ref:`cql` for more details on how to use Common Query Language (CQL) to filter the collection with specific queries.
+  :ref:`cql2` for more details on how to use Common Query Language (CQL) to filter the collection with specific queries.
 
 
 OGR
@@ -424,7 +424,7 @@ To publish an OpenSearch index, the following are required in your index:
 The OpenSearch provider also has the support for the CQL queries as indicated in the table above.
 
 .. seealso::
-  :ref:`cql` for more details on how to use Common Query Language (CQL) to filter the collection with specific queries.
+  :ref:`cql2` for more details on how to use Common Query Language (CQL) to filter the collection with specific queries.
 
 .. _Oracle:
 
@@ -722,7 +722,7 @@ block contains the necessary socket connection information.
 This provider has support for the CQL queries as indicated in the Provider table above.
 
 .. seealso::
-  :ref:`cql` for more details on how to use Common Query Language (CQL) to filter the collection with specific queries.
+  :ref:`cql2` for more details on how to use Common Query Language (CQL) to filter the collection with specific queries.
 
 SQLiteGPKG
 ^^^^^^^^^^
