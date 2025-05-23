@@ -1,9 +1,9 @@
-.. _cql:
+.. _cql2:
 
-CQL support
-===========
+CQL2 support
+============
 
-OGC Common Query Language (`CQL2`_) is a generic language designed to provide enhanced query and subset/filtering to (primarily) feature and record data.
+`OGC Common Query Language`_ (CQL2) is a generic language designed to provide enhanced query and subset/filtering to (primarily) feature and record data.
 
 Providers
 ---------
@@ -14,7 +14,7 @@ for current provider support.
 Limitations
 -----------
 
-Support of CQL is limited to `Basic CQL2 <https://docs.ogc.org/is/21-065r2/21-065r2.html#cql2-core>`_ and thus it allows to query with the
+Support is limited to `Basic CQL2 <https://docs.ogc.org/is/21-065r2/21-065r2.html#cql2-core>`_ and thus it allows to query with the
 following predicates:
 
 * comparison predicates
@@ -24,9 +24,9 @@ following predicates:
 Formats
 -------
 
-Supported providers leverage the CQL2 dialect with the JSON encoding `CQL-JSON <https://docs.ogc.org/is/21-065r2/21-065r2.html#cql2-json>`_.
+Supported providers leverage the CQL2 dialect with the JSON encoding `CQL JSON <https://docs.ogc.org/is/21-065r2/21-065r2.html#cql2-json>`_.
 
-PostgreSQL supports both `CQL2 JSON <https://docs.ogc.org/is/21-065r2/21-065r2.html#cql2-json>`_ and `CQL text <https://docs.ogc.org/is/21-065r2/21-065r2.html#cql2-text>`_ dialects.
+PostgreSQL supports both `CQL JSON <https://docs.ogc.org/is/21-065r2/21-065r2.html#cql2-json>`_ and `CQL Text <https://docs.ogc.org/is/21-065r2/21-065r2.html#cql2-text>`_ dialects.
 
 Queries
 ^^^^^^^
@@ -83,7 +83,7 @@ Or
     ]
   }'
 
-The same ``BETWEEN`` query using HTTP GET request formatted as CQL text and URL encoded as below:
+The same ``BETWEEN`` query using HTTP GET request formatted as CQL2 text and URL encoded as below:
 
 .. code-block:: bash
 
@@ -103,7 +103,7 @@ An ``EQUALS`` example for a specific property:
     ]
   }'
 
-A ``CROSSES`` example via an HTTP GET request.  The CQL text is passed via the ``filter`` parameter.
+A ``CROSSES`` example via an HTTP GET request.  The CQL2 text is passed via the ``filter`` parameter.
 
 .. code-block:: bash
 
@@ -122,6 +122,6 @@ The same example, but this time providing a geometry in EWKT format:
 
   curl "http://localhost:5000/collections/beni/items?filter=DWITHIN(geometry,SRID=3857;POINT(1392921%205145517),100,meters)"
 
-Note that the CQL text has been URL encoded. This is required in curl commands but when entering in a browser, plain text can be used e.g. ``CROSSES(foo_geom, LINESTRING(28 -2, 30 -4))``.
+Note that the CQL2 text has been URL encoded. This is required in curl commands but when entering in a browser, plain text can be used e.g. ``CROSSES(foo_geom, LINESTRING(28 -2, 30 -4))``.
 
-.. _`CQL2`: https://docs.ogc.org/is/21-065r2/21-065r2.html
+.. _`OGC Common Query Language`: https://docs.ogc.org/is/21-065r2/21-065r2.html

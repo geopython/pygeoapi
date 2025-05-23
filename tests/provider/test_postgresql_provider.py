@@ -46,7 +46,7 @@ import pytest
 import pyproj
 from http import HTTPStatus
 
-from pygeofilter.parsers.ecql import parse
+from pygeofilter.parsers.cql2_text import parse
 
 from pygeoapi.api import API
 from pygeoapi.api.itemtypes import (
@@ -353,7 +353,7 @@ def test_get_not_existing_item_raise_exception(config):
          80835475, 80835478, 80835483, 80835486]),
     ("osm_id BETWEEN 80800000 AND 80900000 AND waterway = 'stream'",
         [80835470]),
-    ("osm_id BETWEEN 80800000 AND 80900000 AND waterway ILIKE 'sTrEam'",
+    ("osm_id BETWEEN 80800000 AND 80900000 AND waterway CASEI 'sTrEam'",
         [80835470]),
     ("osm_id BETWEEN 80800000 AND 80900000 AND waterway LIKE 's%'",
         [80835470]),
