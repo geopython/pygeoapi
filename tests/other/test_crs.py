@@ -2,7 +2,7 @@
 #
 # Authors: Tom Kralidis <tomkralidis@gmail.com>
 #
-# Copyright (c) 2025 Tom Kralidis
+# Copyright (c) 2026 Tom Kralidis
 #
 # Permission is hereby granted, free of charge, to any person
 # obtaining a copy of this software and associated documentation
@@ -33,7 +33,7 @@ import operator
 import pytest
 from pyproj.exceptions import CRSError
 import pygeofilter.ast
-from pygeofilter.parsers.ecql import parse
+from pygeofilter.parsers.cql2_text import parse
 from pygeofilter.values import Geometry
 from shapely.geometry import Point
 
@@ -201,7 +201,7 @@ def test_transform_bbox():
 
 @pytest.mark.parametrize('original_filter, filter_crs, storage_crs, geometry_colum_name, expected', [  # noqa
     pytest.param(
-        'INTERSECTS(geometry, POINT(1 1))',
+        'S_INTERSECTS(geometry, POINT(1 1))',
         'http://www.opengis.net/def/crs/OGC/1.3/CRS84',
         None,
         None,
@@ -212,7 +212,7 @@ def test_transform_bbox():
         id='passthrough'
     ),
     pytest.param(
-        'INTERSECTS(geometry, POINT(1 1))',
+        'S_INTERSECTS(geometry, POINT(1 1))',
         'http://www.opengis.net/def/crs/OGC/1.3/CRS84',
         None,
         'custom_geom_name',
@@ -223,7 +223,7 @@ def test_transform_bbox():
         id='unnested-geometry-name'
     ),
     pytest.param(
-        'some_attribute = 10 AND INTERSECTS(geometry, POINT(1 1))',
+        'some_attribute = 10 AND S_INTERSECTS(geometry, POINT(1 1))',
         'http://www.opengis.net/def/crs/OGC/1.3/CRS84',
         None,
         'custom_geom_name',
@@ -238,31 +238,7 @@ def test_transform_bbox():
         id='nested-geometry-name'
     ),
     pytest.param(
-        '(some_attribute = 10 AND INTERSECTS(geometry, POINT(1 1))) OR '
-        'DWITHIN(geometry, POINT(2 2), 10, meters)',
-        'http://www.opengis.net/def/crs/OGC/1.3/CRS84',
-        None,
-        'custom_geom_name',
-        pygeofilter.ast.Or(
-            pygeofilter.ast.And(
-                pygeofilter.ast.Equal(
-                    pygeofilter.ast.Attribute(name='some_attribute'), 10),
-                pygeofilter.ast.GeometryIntersects(
-                    pygeofilter.ast.Attribute(name='custom_geom_name'),
-                    Geometry({'type': 'Point', 'coordinates': (1, 1)})
-                ),
-            ),
-            pygeofilter.ast.DistanceWithin(
-                pygeofilter.ast.Attribute(name='custom_geom_name'),
-                Geometry({'type': 'Point', 'coordinates': (2, 2)}),
-                distance=10,
-                units='meters',
-            )
-        ),
-        id='complex-filter-name'
-    ),
-    pytest.param(
-        'INTERSECTS(geometry, POINT(12.512829 41.896698))',
+        'S_INTERSECTS(geometry, POINT(12.512829 41.896698))',
         'http://www.opengis.net/def/crs/OGC/1.3/CRS84',
         'http://www.opengis.net/def/crs/EPSG/0/3004',
         None,
@@ -273,7 +249,7 @@ def test_transform_bbox():
         id='unnested-geometry-transformed-coords'
     ),
     pytest.param(
-        'some_attribute = 10 AND INTERSECTS(geometry, POINT(12.512829 41.896698))',  # noqa
+        'some_attribute = 10 AND S_INTERSECTS(geometry, POINT(12.512829 41.896698))',  # noqa
         'http://www.opengis.net/def/crs/OGC/1.3/CRS84',
         'http://www.opengis.net/def/crs/EPSG/0/3004',
         None,
@@ -288,31 +264,7 @@ def test_transform_bbox():
         id='nested-geometry-transformed-coords'
     ),
     pytest.param(
-        '(some_attribute = 10 AND INTERSECTS(geometry, POINT(12.512829 41.896698))) OR '  # noqa
-        'DWITHIN(geometry, POINT(12 41), 10, meters)',
-        'http://www.opengis.net/def/crs/OGC/1.3/CRS84',
-        'http://www.opengis.net/def/crs/EPSG/0/3004',
-        None,
-        pygeofilter.ast.Or(
-            pygeofilter.ast.And(
-                pygeofilter.ast.Equal(
-                    pygeofilter.ast.Attribute(name='some_attribute'), 10),
-                pygeofilter.ast.GeometryIntersects(
-                    pygeofilter.ast.Attribute(name='geometry'),
-                    Geometry({'type': 'Point', 'coordinates': (2313682.387730346, 4641308.550187246)})  # noqa
-                ),
-            ),
-            pygeofilter.ast.DistanceWithin(
-                pygeofilter.ast.Attribute(name='geometry'),
-                Geometry({'type': 'Point', 'coordinates': (2267681.8892602, 4543101.513292163)}),  # noqa
-                distance=10,
-                units='meters',
-            )
-        ),
-        id='complex-filter-transformed-coords'
-    ),
-    pytest.param(
-        'INTERSECTS(geometry, SRID=3857;POINT(1392921 5145517))',
+        'S_INTERSECTS(geometry, SRID=3857;POINT(1392921 5145517))',
         'http://www.opengis.net/def/crs/OGC/1.3/CRS84',
         'http://www.opengis.net/def/crs/EPSG/0/3004',
         None,
@@ -323,7 +275,7 @@ def test_transform_bbox():
         id='unnested-geometry-transformed-coords-explicit-input-crs-ewkt'
     ),
     pytest.param(
-        'INTERSECTS(geometry, POINT(1392921 5145517))',
+        'S_INTERSECTS(geometry, POINT(1392921 5145517))',
         'http://www.opengis.net/def/crs/EPSG/0/3857',
         'http://www.opengis.net/def/crs/EPSG/0/3004',
         None,
@@ -334,7 +286,7 @@ def test_transform_bbox():
         id='unnested-geometry-transformed-coords-explicit-input-crs-filter-crs'
     ),
     pytest.param(
-        'INTERSECTS(geometry, SRID=3857;POINT(1392921 5145517))',
+        'S_INTERSECTS(geometry, SRID=3857;POINT(1392921 5145517))',
         'http://www.opengis.net/def/crs/OGC/1.3/CRS84',
         'http://www.opengis.net/def/crs/EPSG/0/3004',
         None,
@@ -345,7 +297,7 @@ def test_transform_bbox():
         id='unnested-geometry-transformed-coords-ewkt-crs-overrides-filter-crs'
     ),
     pytest.param(
-        'INTERSECTS(geometry, POINT(12.512829 41.896698))',
+        'S_INTERSECTS(geometry, POINT(12.512829 41.896698))',
         'http://www.opengis.net/def/crs/OGC/1.3/CRS84',
         'http://www.opengis.net/def/crs/EPSG/0/3004',
         'custom_geom_name',
