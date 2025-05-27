@@ -44,7 +44,7 @@ reference documentation on all aspects of the project.
    plugins
    html-templating
    crs
-   cql
+   cql2
    language
    development
    ogc-compliance
