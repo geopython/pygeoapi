@@ -136,7 +136,7 @@ def config_gpkg_28992():
              'http://www.opengis.net/def/crs/OGC/1.3/CRS84',
              'http://www.opengis.net/def/crs/EPSG/0/28992'
          ],
-        'storageCRS': 'http://www.opengis.net/def/crs/EPSG/0/28992',
+        'storageCrs': 'http://www.opengis.net/def/crs/EPSG/0/28992',
         'id_field': 'id',
         'layer': 'OGRGeoJSON'
     }

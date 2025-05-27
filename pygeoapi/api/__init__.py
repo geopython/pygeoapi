@@ -657,7 +657,7 @@ class API:
 
         if not query_crs_uri:
             if storage_crs_uri in DEFAULT_CRS_LIST:
-                # Could be that storageCRS is
+                # Could be that storageCrs is
                 # http://www.opengis.net/def/crs/OGC/1.3/CRS84h
                 query_crs_uri = storage_crs_uri
             else:
@@ -714,7 +714,7 @@ class API:
             # If empty use default CRS
             storage_crs_uri = config.get('storage_crs', DEFAULT_STORAGE_CRS)
             if storage_crs_uri in DEFAULT_CRS_LIST:
-                # Could be that storageCRS is one of the defaults like
+                # Could be that storageCrs is one of the defaults like
                 # http://www.opengis.net/def/crs/OGC/1.3/CRS84h
                 content_crs_uri = storage_crs_uri
             else:
@@ -1136,7 +1136,7 @@ def describe_collections(api: API, request: APIRequest,
         # OAPIF Part 2 - list supported CRSs and StorageCRS
         if collection_data_type in ['edr', 'feature']:
             collection['crs'] = get_supported_crs_list(collection_data, DEFAULT_CRS_LIST)  # noqa
-            collection['storageCRS'] = collection_data.get('storage_crs', DEFAULT_STORAGE_CRS)  # noqa
+            collection['storageCrs'] = collection_data.get('storage_crs', DEFAULT_STORAGE_CRS)  # noqa
             if 'storage_crs_coordinate_epoch' in collection_data:
                 collection['storageCrsCoordinateEpoch'] = collection_data.get('storage_crs_coordinate_epoch')  # noqa
 
