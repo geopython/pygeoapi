@@ -399,8 +399,8 @@ def get_collection_items(
         # bbox but no bbox-crs param: assume bbox is in default CRS
         bbox_crs = DEFAULT_CRS
 
-    # Transform bbox to storageCRS
-    # when bbox-crs different from storageCRS.
+    # Transform bbox to storageCrs
+    # when bbox-crs different from storageCrs.
     if len(bbox) > 0:
         try:
             # Get a pyproj CRS instance for the Collection's Storage CRS
@@ -1008,7 +1008,7 @@ def create_crs_transform_spec(
 
     if not query_crs_uri:
         if storage_crs_uri in DEFAULT_CRS_LIST:
-            # Could be that storageCRS is
+            # Could be that storageCrs is
             # http://www.opengis.net/def/crs/OGC/1.3/CRS84h
             query_crs_uri = storage_crs_uri
         else:
@@ -1065,7 +1065,7 @@ def set_content_crs_header(
         # If empty use default CRS
         storage_crs_uri = config.get('storage_crs', DEFAULT_STORAGE_CRS)
         if storage_crs_uri in DEFAULT_CRS_LIST:
-            # Could be that storageCRS is one of the defaults like
+            # Could be that storageCrs is one of the defaults like
             # http://www.opengis.net/def/crs/OGC/1.3/CRS84h
             content_crs_uri = storage_crs_uri
         else:
