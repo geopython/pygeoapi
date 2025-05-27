@@ -30,7 +30,7 @@ Metadata
 The conformance class `http://www.opengis.net/spec/ogcapi-features-2/1.0/conf/crs` is present as a `conformsTo` field
 in the root landing page response.
 
-The configured CRSs, or their defaults, `crs` and `storageCRS` and optionally `storageCrsCoordinateEpoch` will be present in the "Describe Collection" response.
+The configured CRSs, or their defaults, `crs` and `storageCrs` and optionally `storageCrsCoordinateEpoch` will be present in the "Describe Collection" response.
 
 Parameters
 ----------
@@ -95,7 +95,7 @@ Suppose an addresses collection with the following CRS support in its collection
     "http://www.opengis.net/def/crs/EPSG/0/28992",
     "http://www.opengis.net/def/crs/OGC/1.3/CRS84"
    ],
-   "storageCRS": "http://www.opengis.net/def/crs/OGC/1.3/CRS84"
+   "storageCrs": "http://www.opengis.net/def/crs/OGC/1.3/CRS84"
 
 
 This allows a `bbox-crs` query using Dutch "RD" coordinates with CRS `http://www.opengis.net/def/crs/EPSG/0/28992` to retrieve
