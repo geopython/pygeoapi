@@ -43,7 +43,7 @@ from pygeoapi.models.provider.base import (
 from pygeoapi.provider.base import ProviderConnectionError
 from pygeoapi.provider.base_mvt import BaseMVTProvider
 from pygeoapi.provider.postgresql import PostgreSQLProvider
-from pygeoapi.provider.tile import ProviderTileNotFoundError
+from pygeoapi.provider.base_tile import ProviderTileNotFoundError
 from pygeoapi.util import url_join
 
 LOGGER = logging.getLogger(__name__)
