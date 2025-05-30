@@ -3,10 +3,12 @@
 # Authors: Prajwal Amaravati <prajwal.s@satsure.co>
 #          Tanvi Prasad <tanvi.prasad@cdpg.org.in>
 #          Bryan Robert <bryan.robert@cdpg.org.in>
+#          Benjamin Webb <bwebb@lincolninst.edu>
 #
 # Copyright (c) 2025 Prajwal Amaravati
 # Copyright (c) 2025 Tanvi Prasad
 # Copyright (c) 2025 Bryan Robert
+# Copyright (c) 2025 Benjamin Webb
 #
 # Permission is hereby granted, free of charge, to any person
 # obtaining a copy of this software and associated documentation
@@ -34,20 +36,29 @@
 from copy import deepcopy
 import logging
 
-from sqlalchemy.sql import text
-
+from sqlalchemy.sql import func, select
+from sqlalchemy.orm import Session
 from pygeoapi.models.provider.base import (
     TileSetMetadata, TileMatrixSetEnum, LinkType)
 from pygeoapi.provider.base import ProviderConnectionError
 from pygeoapi.provider.base_mvt import BaseMVTProvider
 from pygeoapi.provider.postgresql import PostgreSQLProvider
-from pygeoapi.provider.tile import ProviderTileNotFoundError
+from pygeoapi.provider.base_tile import ProviderTileNotFoundError
 from pygeoapi.util import url_join
 
 LOGGER = logging.getLogger(__name__)
 
+WEBMERCATORQUAD = TileMatrixSetEnum.WEBMERCATORQUAD.value
+WORLDCRS84QUAD = TileMatrixSetEnum.WORLDCRS84QUAD.value
 
-class MVTPostgreSQLProvider(BaseMVTProvider):
+CRS_CODES = {
+    'http://www.opengis.net/def/crs/OGC/1.3/CRS84': 4326,
+    'https://www.opengis.net/def/crs/OGC/0/CRS84': 4326,
+    'http://www.opengis.net/def/crs/EPSG/0/3857': 3857
+}
+
+
+class MVTPostgreSQLProvider(BaseMVTProvider, PostgreSQLProvider):
     """
     MVT PostgreSQL Provider
     Provider for serving tiles rendered on-the-fly from
@@ -62,32 +73,20 @@ class MVTPostgreSQLProvider(BaseMVTProvider):
 
         :returns: pygeoapi.provider.MVT.MVTPostgreSQLProvider
         """
-
-        super().__init__(provider_def)
-
         pg_def = deepcopy(provider_def)
         # delete the zoom option before initializing the PostgreSQL provider
         # that provider breaks otherwise
-        del pg_def["options"]["zoom"]
-        self.postgres = PostgreSQLProvider(pg_def)
+        del pg_def['options']['zoom']
+        PostgreSQLProvider.__init__(self, pg_def)
+        BaseMVTProvider.__init__(self, provider_def)
 
-        self.layer_name = provider_def["table"]
-        self.table = provider_def['table']
-        self.id_field = provider_def['id_field']
-        self.geom = provider_def.get('geom_field', 'geom')
+    def get_fields(self):
+        """
+        Get Postgrres fields
 
-        LOGGER.debug(f'DB connection: {repr(self.postgres._engine.url)}')
-
-    def __repr__(self):
-        return f'<MVTPostgreSQLProvider> {self.data}'
-
-    @property
-    def service_url(self):
-        return self._service_url
-
-    @property
-    def service_metadata_url(self):
-        return self._service_metadata_url
+        :returns: `dict` of item fields
+        """
+        PostgreSQLProvider.get_fields(self)
 
     def get_layer(self):
         """
@@ -95,15 +94,10 @@ class MVTPostgreSQLProvider(BaseMVTProvider):
 
         :returns: layer name
         """
-
-        return self.layer_name
+        return self.table
 
     def get_tiling_schemes(self):
-
-        return [
-                TileMatrixSetEnum.WEBMERCATORQUAD.value,
-                TileMatrixSetEnum.WORLDCRS84QUAD.value
-            ]
+        return [WEBMERCATORQUAD, WORLDCRS84QUAD]
 
     def get_tiles_service(self, baseurl=None, servicepath=None,
                           dirpath=None, tile_type=None):
@@ -118,13 +112,14 @@ class MVTPostgreSQLProvider(BaseMVTProvider):
         :returns: `dict` of item tile service
         """
 
-        super().get_tiles_service(baseurl, servicepath,
-                                  dirpath, tile_type)
+        BaseMVTProvider.get_tiles_service(self,
+                                          baseurl, servicepath,
+                                          dirpath, tile_type)
 
         self._service_url = servicepath
         return self.get_tms_links()
 
-    def get_tiles(self, layer=None, tileset=None,
+    def get_tiles(self, layer='default', tileset=None,
                   z=None, y=None, x=None, format_=None):
         """
         Gets tile
@@ -141,64 +136,52 @@ class MVTPostgreSQLProvider(BaseMVTProvider):
         if format_ == 'mvt':
             format_ = self.format_type
 
-        fields_arr = self.postgres.get_fields().keys()
-        fields = ', '.join(['"' + f + '"' for f in fields_arr])
-        if len(fields) != 0:
-            fields = ',' + fields
+        geom_column = getattr(self.table_model, self.geom)
+        tile_envelope = func.ST_TileEnvelope(z, x, y)
+        [tileset_schema] = [
+            schema for schema in self.get_tiling_schemes()
+            if tileset == schema.tileMatrixSet
+        ]
 
-        query = ''
-        if tileset == TileMatrixSetEnum.WEBMERCATORQUAD.value.tileMatrixSet:
-            if not self.is_in_limits(TileMatrixSetEnum.WEBMERCATORQUAD.value, z, x, y): # noqa
-                raise ProviderTileNotFoundError
+        if not self.is_in_limits(tileset_schema, z, x, y):
+            return ProviderTileNotFoundError
 
-            query = text("""
-                WITH
-                    bounds AS (
-                        SELECT ST_TileEnvelope(:z, :x, :y) AS boundgeom
-                    ),
-                    mvtgeom AS (
-                        SELECT ST_AsMVTGeom(ST_Transform(ST_CurveToLine({geom}), 3857), bounds.boundgeom) AS geom {fields}
-                        FROM "{table}", bounds
-                        WHERE ST_Intersects({geom}, ST_Transform(bounds.boundgeom, 4326))
-                    )
-                SELECT ST_AsMVT(mvtgeom, 'default') FROM mvtgeom;
-            """.format(geom=self.geom, table=self.table, fields=fields)) # noqa
+        if tileset_schema.crs != self.storage_crs:
+            LOGGER.debug('Transforming geometry')
+            tile_envelope = func.ST_Transform(
+                tile_envelope, CRS_CODES[tileset_schema.crs]
+            )
+            geom_column = func.ST_Transform(
+                geom_column, CRS_CODES[tileset_schema.crs]
+            )
 
-        if tileset == TileMatrixSetEnum.WORLDCRS84QUAD.value.tileMatrixSet:
-            if not self.is_in_limits(TileMatrixSetEnum.WORLDCRS84QUAD.value, z, x, y): # noqa
-                raise ProviderTileNotFoundError
+        all_columns = [
+            c for c in self.table_model.__table__.columns if c.name != 'geom'
+        ]
+        all_columns.append(
+            func.ST_AsMVTGeom(geom_column, tile_envelope).label('mvt')
+        )
+        tile_query = select(
+            func.ST_AsMVT(
+                select(*all_columns)
+                .select_from(self.table_model)
+                .cte('tile')
+                .table_valued(),
+                layer
+            )
+        )
 
-            query = text("""
-                WITH
-                    bounds AS (
-                        SELECT ST_TileEnvelope(:z, :x, :y,
-                                'SRID=4326;POLYGON((-180 -90,-180 90,180 90,180 -90,-180 -90))'::geometry) AS boundgeom
-                    ),
-                    mvtgeom AS (
-                        SELECT ST_AsMVTGeom(ST_CurveToLine({geom}), bounds.boundgeom) AS geom {fields}
-                        FROM "{table}", bounds
-                        WHERE ST_Intersects({geom}, bounds.boundgeom)
-                    )
-                SELECT ST_AsMVT(mvtgeom, 'default') FROM mvtgeom;
-            """.format(geom=self.geom, table=self.table, fields=fields)) # noqa
-
-        with self.postgres._engine.connect() as session:
-            result = session.execute(query, {
-                    'z': z,
-                    'y': y,
-                    'x': x
-            }).fetchone()
-
-            if len(bytes(result[0])) == 0:
-                return None
-            return bytes(result[0])
+        with Session(self._engine) as session:
+            result = session.execute(tile_query).scalar()
+            return bytes(result) or None
 
     def get_html_metadata(self, dataset, server_url, layer, tileset,
                           title, description, keywords, **kwargs):
 
         service_url = url_join(
             server_url,
-            f'collections/{dataset}/tiles/{tileset}/{{tileMatrix}}/{{tileRow}}/{{tileCol}}?f=mvt')  # noqa
+            f'collections/{dataset}/tiles/{tileset}'
+            '{tileMatrix}/{tileRow}/{tileCol}?f=mvt')
         metadata_url = url_join(
             server_url,
             f'collections/{dataset}/tiles/{tileset}/metadata')
@@ -217,9 +200,10 @@ class MVTPostgreSQLProvider(BaseMVTProvider):
 
         service_url = url_join(
             server_url,
-            f'collections/{dataset}/tiles/{tileset}/{{tileMatrix}}/{{tileRow}}/{{tileCol}}?f=mvt')  # noqa
+            f'collections/{dataset}/tiles/{tileset}',
+            '{tileMatrix}/{tileRow}/{tileCol}?f=mvt'
+            )
 
-        content = {}
         tiling_schemes = self.get_tiling_schemes()
         # Default values
         tileMatrixSetURI = tiling_schemes[0].tileMatrixSetURI
@@ -231,17 +215,18 @@ class MVTPostgreSQLProvider(BaseMVTProvider):
                 tileMatrixSetURI = schema.tileMatrixSetURI
 
                 tiling_scheme_url = url_join(
-                    server_url, f'/TileMatrixSets/{schema.tileMatrixSet}')
-                tiling_scheme_url_type = "application/json"
+                    server_url, 'TileMatrixSets', schema.tileMatrixSet)
+                tiling_scheme_url_type = 'application/json'
                 tiling_scheme_url_title = f'{schema.tileMatrixSet} tile matrix set definition' # noqa
 
-                tiling_scheme = LinkType(href=tiling_scheme_url,
-                                         rel="http://www.opengis.net/def/rel/ogc/1.0/tiling-scheme", # noqa
-                                         type_=tiling_scheme_url_type,
-                                         title=tiling_scheme_url_title)
+                tiling_scheme = LinkType(
+                    href=tiling_scheme_url,
+                    rel='http://www.opengis.net/def/rel/ogc/1.0/tiling-scheme',
+                    type_=tiling_scheme_url_type,
+                    title=tiling_scheme_url_title)
 
         if tiling_scheme is None:
-            msg = f'Could not identify a valid tiling schema'  # noqa
+            msg = 'Could not identify a valid tiling schema'
             LOGGER.error(msg)
             raise ProviderConnectionError(msg)
 
@@ -250,9 +235,9 @@ class MVTPostgreSQLProvider(BaseMVTProvider):
                                   tileMatrixSetURI=tileMatrixSetURI)
 
         links = []
-        service_url_link_type = "application/vnd.mapbox-vector-tile"
+        service_url_link_type = 'application/vnd.mapbox-vector-tile'
         service_url_link_title = f'{tileset} vector tiles for {layer}'
-        service_url_link = LinkType(href=service_url, rel="item",
+        service_url_link = LinkType(href=service_url, rel='item',
                                     type_=service_url_link_type,
                                     title=service_url_link_title)
 
@@ -261,4 +246,7 @@ class MVTPostgreSQLProvider(BaseMVTProvider):
 
         content.links = links
 
-        return content.dict(exclude_none=True)
+        return content.model_dump(exclude_none=True)
+
+    def __repr__(self):
+        return f'<MVTPostgreSQLProvider> {self.data}'

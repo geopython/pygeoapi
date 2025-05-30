@@ -35,8 +35,8 @@ import logging
 import requests
 from urllib.parse import urlparse, urlencode
 
-from pygeoapi.provider.tile import (ProviderTileNotFoundError,
-                                    BaseTileProvider)
+from pygeoapi.provider.base_tile import (
+    ProviderTileNotFoundError, BaseTileProvider)
 from pygeoapi.provider.base import ProviderConnectionError
 from pygeoapi.models.provider.base import (
     TileMatrixSetEnum, TilesMetadataFormat, TileSetMetadata, LinkType)

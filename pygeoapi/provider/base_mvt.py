@@ -32,7 +32,7 @@
 import logging
 from urllib.parse import urlparse
 
-from pygeoapi.provider.tile import BaseTileProvider
+from pygeoapi.provider.base_tile import BaseTileProvider
 from pygeoapi.models.provider.base import (
     TileMatrixSetEnum, TilesMetadataFormat)
 from pygeoapi.util import url_join

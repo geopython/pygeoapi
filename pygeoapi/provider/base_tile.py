@@ -47,7 +47,7 @@ class BaseTileProvider:
 
         :param provider_def: provider definition
 
-        :returns: pygeoapi.provider.tile.BaseTileProvider
+        :returns: pygeoapi.provider.base_tile.BaseTileProvider
         """
 
         self.name = provider_def['name']
@@ -56,7 +56,6 @@ class BaseTileProvider:
         self.mimetype = provider_def['format']['mimetype']
         self.options = provider_def.get('options')
         self.tile_type = None
-        self.fields = {}
 
     def get_layer(self):
         """
