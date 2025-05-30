@@ -49,7 +49,7 @@ from pygeoapi.models.provider.base import (TilesMetadataFormat,
 from pygeoapi.provider.base import (
     ProviderGenericError, ProviderTypeError
 )
-from pygeoapi.provider.tile import ProviderTileNotFoundError
+from pygeoapi.provider.base_tile import ProviderTileNotFoundError
 
 from pygeoapi.util import (
     get_provider_by_type, to_json, filter_dict_by_key_value,
