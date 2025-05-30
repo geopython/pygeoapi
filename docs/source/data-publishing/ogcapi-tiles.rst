@@ -140,9 +140,6 @@ MVT-postgresql
 .. note::
    Must have PostGIS installed with protobuf-c support 
 
-.. note::
-   Geometry must be using EPSG:4326
-
 This provider gives support to serving tiles generated using `PostgreSQL <https://www.postgresql.org/>`_ with `PostGIS <https://postgis.net/>`_.
 The tiles are rendered on-the-fly using `ST_AsMVT <https://postgis.net/docs/ST_AsMVT.html>`_ and related methods.
 
