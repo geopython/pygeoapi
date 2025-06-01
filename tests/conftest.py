@@ -59,7 +59,7 @@ def api_(config, openapi):
 
 @pytest.fixture
 def basic_provider_def():
-    """Basic provider definition for testing"""
+    """Basic provider definition for testing."""
     return {
         "name": "test_provider",
         "type": "feature",
@@ -69,7 +69,7 @@ def basic_provider_def():
 
 @pytest.fixture
 def extended_provider_def():
-    """Extended provider definition with all optional fields"""
+    """Extended provider definition with all optional fields."""
     return {
         "name": "test_provider",
         "type": "feature",
@@ -89,19 +89,19 @@ def extended_provider_def():
 
 @pytest.fixture
 def basic_provider(basic_provider_def):
-    """Basic BaseProvider instance"""
+    """Basic BaseProvider instance."""
     return BaseProvider(basic_provider_def)
 
 
 @pytest.fixture
 def extended_provider(extended_provider_def):
-    """Extended BaseProvider instance"""
+    """Extended BaseProvider instance."""
     return BaseProvider(extended_provider_def)
 
 
 @pytest.fixture
 def mock_provider_with_get():
-    """Mock provider that implements get() method for testing _load_and_prepare_item"""
+    """Mock provider that implements get() method."""
     class MockProvider(BaseProvider):
         def get(self, identifier, **kwargs):
             if identifier == "mock_id":
@@ -119,7 +119,7 @@ def mock_provider_with_get():
 
 @pytest.fixture
 def valid_geojson_item():
-    """Valid GeoJSON item for testing"""
+    """Valid GeoJSON item for testing."""
     return json.dumps({
         "type": "Feature",
         "id": "test_id",
@@ -130,7 +130,7 @@ def valid_geojson_item():
 
 @pytest.fixture
 def geojson_item_with_props_id():
-    """GeoJSON item with identifier in properties"""
+    """GeoJSON item with identifier in properties."""
     return json.dumps({
         "type": "Feature",
         "geometry": {"type": "Point", "coordinates": [0, 0]},
@@ -140,7 +140,7 @@ def geojson_item_with_props_id():
 
 @pytest.fixture
 def remove_stdout():
-    """Fixture to remove standard output during tests"""
+    """Fixture to remove standard output during tests."""
     class RemoveStdout:
         def __enter__(self):
             self.original_stdout = sys.stdout

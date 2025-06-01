@@ -32,9 +32,11 @@ import json
 from http import HTTPStatus
 
 from pygeoapi.provider.base import (
-    BaseProvider, ProviderTypeError, ProviderItemNotFoundError, ProviderInvalidDataError,
-    ProviderInvalidQueryError, ProviderRequestEntityTooLargeError, ProviderConnectionError,
-    ProviderGenericError, ProviderQueryError, ProviderNoDataError, SchemaType
+    BaseProvider, ProviderTypeError,
+    ProviderItemNotFoundError, ProviderInvalidDataError,
+    ProviderInvalidQueryError, ProviderRequestEntityTooLargeError,
+    ProviderConnectionError, ProviderGenericError, ProviderQueryError,
+    ProviderNoDataError, SchemaType
 )
 
 
@@ -228,10 +230,13 @@ def test_fields_property_without_fields_attribute():
         _ = provider.fields
 
 
-def test_load_and_prepare_item_valid_geojson(mock_provider_with_get, valid_geojson_item, remove_stdout):
+def test_load_and_prepare_item_valid_geojson(
+    mock_provider_with_get, valid_geojson_item, remove_stdout
+):
     """Test loading valid GeoJSON item."""
     with remove_stdout():
-        identifier, data = mock_provider_with_get._load_and_prepare_item(valid_geojson_item)
+        identifier, data = mock_provider_with_get._load_and_prepare_item(
+            valid_geojson_item)
 
         assert identifier == "test_id"
         assert data["type"] == "Feature"
@@ -240,32 +245,44 @@ def test_load_and_prepare_item_valid_geojson(mock_provider_with_get, valid_geojs
         assert "properties" in data
 
 
-def test_load_and_prepare_item_identifier_in_properties(mock_provider_with_get, geojson_item_with_props_id, remove_stdout):
+def test_load_and_prepare_item_identifier_in_properties(
+    mock_provider_with_get, geojson_item_with_props_id, remove_stdout
+):
     """Test loading item with identifier in properties."""
     with remove_stdout():
-        identifier, data = mock_provider_with_get._load_and_prepare_item(geojson_item_with_props_id)
+        identifier, data = mock_provider_with_get._load_and_prepare_item(
+            geojson_item_with_props_id)
 
         assert identifier == "props_id"
         assert data["properties"]["identifier"] == "props_id"
 
 
-def test_load_and_prepare_item_invalid_json(mock_provider_with_get, remove_stdout):
+def test_load_and_prepare_item_invalid_json(
+    mock_provider_with_get, remove_stdout
+):
     """Test loading invalid JSON."""
     invalid_json = "{ invalid json }"
 
     with remove_stdout():
-        with pytest.raises(ProviderInvalidDataError, match="Invalid JSON data"):
+        with pytest.raises(
+            ProviderInvalidDataError,
+            match="Invalid JSON data"
+        ):
             mock_provider_with_get._load_and_prepare_item(invalid_json)
 
 
-def test_load_and_prepare_item_invalid_data_type(mock_provider_with_get, remove_stdout):
+def test_load_and_prepare_item_invalid_data_type(
+    mock_provider_with_get, remove_stdout
+):
     """Test loading invalid data type."""
     with remove_stdout():
         with pytest.raises(ProviderInvalidDataError, match="Invalid data"):
             mock_provider_with_get._load_and_prepare_item(123)
 
 
-def test_load_and_prepare_item_missing_identifier(mock_provider_with_get, remove_stdout):
+def test_load_and_prepare_item_missing_identifier(
+    mock_provider_with_get, remove_stdout
+):
     """Test loading item without identifier."""
     item_no_id = json.dumps({
         "type": "Feature",
@@ -274,11 +291,16 @@ def test_load_and_prepare_item_missing_identifier(mock_provider_with_get, remove
     })
 
     with remove_stdout():
-        with pytest.raises(ProviderInvalidDataError, match="Missing identifier \\(id or properties.identifier\\)"):
+        with pytest.raises(
+            ProviderInvalidDataError,
+            match="Missing identifier \\(id or properties.identifier\\)"
+        ):
             mock_provider_with_get._load_and_prepare_item(item_no_id)
 
 
-def test_load_and_prepare_item_accept_missing_identifier(mock_provider_with_get, remove_stdout):
+def test_load_and_prepare_item_accept_missing_identifier(
+    mock_provider_with_get, remove_stdout
+):
     """Test loading item without identifier when accepting missing."""
     item_no_id = json.dumps({
         "type": "Feature",
@@ -308,12 +330,17 @@ def test_load_and_prepare_item_accept_missing_identifier(mock_provider_with_get,
         "geometry": {"type": "Point", "coordinates": [0, 0]}
     })
 ])
-def test_load_and_prepare_item_missing_geojson_parts(mock_provider_with_get, missing_part, item_data, remove_stdout):
+def test_load_and_prepare_item_missing_geojson_parts(
+    mock_provider_with_get, missing_part, item_data, remove_stdout
+):
     """Test loading item without required GeoJSON parts."""
     item_json = json.dumps(item_data)
 
     with remove_stdout():
-        with pytest.raises(ProviderInvalidDataError, match="Missing core GeoJSON geometry or properties"):
+        with pytest.raises(
+            ProviderInvalidDataError,
+            match=f"Missing core GeoJSON {missing_part}"
+        ):
             mock_provider_with_get._load_and_prepare_item(item_json)
 
 
