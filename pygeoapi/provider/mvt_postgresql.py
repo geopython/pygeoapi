@@ -78,8 +78,9 @@ class MVTPostgreSQLProvider(PostgreSQLProvider, BaseMVTProvider):
         :returns: `list` of columns
         """
         return [
-            column for column in self.table_model.__table__.columns
-            if column.name != self.geom
+            c.label('id') if c.name == self.id_field else c
+            for c in self.table_model.__table__.columns
+            if c.name != self.geom
         ]
 
     def get_layer(self):
