@@ -153,7 +153,7 @@ class MVTPostgreSQLProvider(PostgreSQLProvider, BaseMVTProvider):
         geom_column = getattr(self.table_model, self.geom)
         mvtgeom = (
             func.ST_AsMVTGeom(
-                func.ST_Transform(geom_column, out_srid),
+                func.ST_Transform(func.ST_CurveToLine(geom_column), out_srid),
                 func.ST_Transform(envelope.c.bounds, out_srid))
             .label('mvtgeom')
         )
