@@ -125,7 +125,7 @@ class ParquetProvider(BaseProvider):
             geo_metadata = json.loads(self.ds.schema.metadata[b'geo'])
             geom_column = geo_metadata['primary_column']
             # if the CRS is not set default to EPSG:4326, per geoparquet spec
-            self.crs = (geo_metadata['columns'][geom_column]['crs']
+            self.crs = (geo_metadata['columns'][geom_column].get('crs')
                         or 'EPSG:4326')
 
     def _read_parquet(self, return_scanner=False, **kwargs):
