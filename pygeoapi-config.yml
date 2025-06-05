@@ -301,6 +301,44 @@ resources:
               time_field: created
               title_field: title
 
+    spd-collection:
+        type: collection
+        title:
+            en: spd-Open Canada sample data
+        description:
+            en: spd-Sample metadata records from open.canada.ca
+        keywords:
+            en:
+                - spd-keyword
+        links:
+            - type: text/html
+              rel: canonical
+              title: information
+              href: https://open.canada.ca/en/open-data
+              hreflang: en-CA
+            - type: text/html
+              rel: alternate
+              title: informations
+              href: https://ouvert.canada.ca/fr/donnees-ouvertes
+              hreflang: fr-CA
+        extents:
+            spatial:
+                bbox: [-180,-90,180,90]
+                crs: http://www.opengis.net/def/crs/OGC/1.3/CRS84
+        providers:
+            - type: feature
+              name: Parquet
+              data:
+                source: s3://[redacted]/part-00000-[redacted].snappy.parquet
+              id_field: id
+              time_field: time
+              x_field:
+              - -180
+              - 180
+              y_field:
+              - -90
+              - 90
+
     hello-world:
         type: process
         processor:
