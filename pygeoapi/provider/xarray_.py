@@ -570,7 +570,7 @@ class XarrayProvider(BaseProvider):
         for var_name, var in self._data.variables.items():
             if all(dim in var.dims for dim in spatiotemporal_dims):
                 try:
-                    grid_mapping_name = self._data[var_name].attrs['grid_mapping']  # noqa 
+                    grid_mapping_name = self._data[var_name].attrs['grid_mapping']  # noqa
                     LOGGER.debug(f'Grid mapping: {grid_mapping_name}')
                 except KeyError as err:
                     LOGGER.debug(err)
