@@ -193,7 +193,7 @@ def get_stac_path(api: API, request: APIRequest,
                         content, request.locale)
                 elif content['type'] == 'Feature':
                     content = render_j2_template(
-                        api.tpl_config, api.config['server']['templattes'],
+                        api.tpl_config, api.config['server']['templates'],
                         'stac/item.html', content, request.locale)
                 else:
                     msg = f'Unknown STAC type {content.type}'
