@@ -43,7 +43,7 @@ import logging
 from typing import Any, Tuple, Union, Optional
 import urllib.parse
 
-from pygeofilter.parsers.ecql import parse as parse_ecql_text
+from pygeofilter.parsers.cql2_text import parse as parse_cql2_text
 from pygeofilter.parsers.cql2_json import parse as parse_cql2_json
 from pyproj.exceptions import CRSError
 
@@ -477,7 +477,7 @@ def get_collection_items(
 
     if cql_text is not None:
         try:
-            filter_ = parse_ecql_text(cql_text)
+            filter_ = parse_cql2_text(cql_text)
             filter_ = modify_pygeofilter(
                 filter_,
                 filter_crs_uri=filter_crs_uri,
