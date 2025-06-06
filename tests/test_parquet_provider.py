@@ -40,6 +40,9 @@ path = get_test_file_path(
 path_nogeom = get_test_file_path(
     'data/random_nogeom.parquet')
 
+path_nocrs = get_test_file_path(
+    'data/random_nocrs.parquet')
+
 
 @pytest.fixture()
 def config_parquet():
@@ -67,6 +70,22 @@ def config_parquet_nogeom_notime():
             'source': path_nogeom,
         },
         'id_field': 'id'
+    }
+
+
+@pytest.fixture()
+def config_parquet_nocrs():
+    return {
+        'name': 'ParquetNoCrs',
+        'type': 'feature',
+        'data': {
+            'source_type': 'Parquet',
+            'source': path_nocrs,
+        },
+        'id_field': 'id',
+        'time_field': 'time',
+        'x_field': 'lon',
+        'y_field': 'lat',
     }
 
 
@@ -209,3 +228,13 @@ def test_query_nogeom(config_parquet_nogeom_notime):
     assert len(feature_collection.get('features')) > 0
     for feature in feature_collection['features']:
         assert feature.get('geometry') is None
+
+
+def test_query_nocrs(config_parquet_nocrs):
+    """Testing a parquet provider without CRS"""
+
+    p = ParquetProvider(config_parquet_nocrs)
+    results = p.get_fields()
+    assert results['lat']['type'] == 'number'
+    assert results['lon']['format'] == 'double'
+    assert results['time']['format'] == 'date-time'
