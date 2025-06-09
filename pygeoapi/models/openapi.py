@@ -32,12 +32,17 @@
 from enum import Enum
 
 from pydantic import BaseModel
+import pydantic
 
 
 class SupportedFormats(Enum):
-    JSON = "json"
-    YAML = "yaml"
+    JSON = 'json'
+    YAML = 'yaml'
 
-
-class OAPIFormat(BaseModel):
-    root: SupportedFormats = SupportedFormats.YAML
+# Handle Pydantic v1/v2 compatibility
+if pydantic.VERSION.startswith('1'):
+    class OAPIFormat(BaseModel):
+        __root__: SupportedFormats = SupportedFormats.YAML
+else:
+    class OAPIFormat(BaseModel):
+        root: SupportedFormats = SupportedFormats.YAML
