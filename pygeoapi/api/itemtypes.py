@@ -35,7 +35,7 @@
 #
 # =================================================================
 
-
+from collections import ChainMap
 from copy import deepcopy
 from datetime import datetime
 from http import HTTPStatus
@@ -1101,6 +1101,21 @@ def get_oas_30(cfg: dict, locale: str) -> tuple[list[dict[str, str]], dict[str, 
         }
     }
 
+    limit = {
+        'name': 'limit',
+        'in': 'query',
+        'description': 'The optional limit parameter limits the number of items that are presented in the response document',  # noqa
+        'required': False,
+        'schema': {
+            'type': 'integer',
+            'minimum': 1,
+            'maximum': 10000,
+            'default': 100,
+            'style': 'form',
+            'explode': False
+        }
+    }
+
     profile = {
         'name': 'profile',
         'in': 'query',
@@ -1144,6 +1159,11 @@ def get_oas_30(cfg: dict, locale: str) -> tuple[list[dict[str, str]], dict[str, 
 
             coll_properties['schema']['items']['enum'] = list(p.fields.keys())
 
+            coll_limit = _derive_limit(
+                deepcopy(limit), cfg['server'].get('limits', {}),
+                v.get('limits', {})
+            )
+
             paths[items_path] = {
                 'get': {
                     'summary': f'Get {title} items',
@@ -1154,7 +1174,7 @@ def get_oas_30(cfg: dict, locale: str) -> tuple[list[dict[str, str]], dict[str, 
                         {'$ref': '#/components/parameters/f'},
                         {'$ref': '#/components/parameters/lang'},
                         {'$ref': '#/components/parameters/bbox'},
-                        {'$ref': f"{OPENAPI_YAML['oapif-1']}#/components/parameters/limit"},  # noqa
+                        coll_limit,
                         {'$ref': '#/components/parameters/crs'},  # noqa
                         {'$ref': '#/components/parameters/bbox-crs'},
                         coll_properties,
@@ -1405,3 +1425,28 @@ def get_oas_30(cfg: dict, locale: str) -> tuple[list[dict[str, str]], dict[str, 
             LOGGER.debug('collection is not feature/item based')
 
     return [{'name': 'records'}, {'name': 'features'}], {'paths': paths}
+
+
+def _derive_limit(limit_object, server_limits, collection_limits) -> dict:
+    """
+    Helper function to derive a limit object for a given collection
+
+    :param limit_object: OpenAPI limit parameter
+    :param server_limits: server level limits configuration
+    :param collection_limits: collection level limits configuration
+
+    :returns: updated limit object
+    """
+
+    effective_limits = ChainMap(collection_limits, server_limits)
+
+    default_limit = effective_limits.get('default_items', 10)
+    max_limit = effective_limits.get('max_items', 10)
+
+    limit_object['schema']['default'] = default_limit
+    limit_object['schema']['maximum'] = max_limit
+
+    text = f' (maximum={max_limit}, default={default_limit}).'
+    limit_object['description'] += text
+
+    return limit_object
