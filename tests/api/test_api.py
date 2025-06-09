@@ -614,8 +614,8 @@ def test_describe_collections(config, api_):
     ]
     for crs in crs_set:
         assert crs in collection['crs']
-    assert collection['storageCRS'] is not None
-    assert collection['storageCRS'] == 'http://www.opengis.net/def/crs/OGC/1.3/CRS84' # noqa
+    assert collection['storageCrs'] is not None
+    assert collection['storageCrs'] == 'http://www.opengis.net/def/crs/OGC/1.3/CRS84' # noqa
     assert 'storageCrsCoordinateEpoch' not in collection
 
     # French language request
@@ -652,8 +652,8 @@ def test_describe_collections(config, api_):
         if crs in default_crs_list:
             contains_default = True
     assert contains_default
-    assert collection['storageCRS'] is not None
-    assert collection['storageCRS'] == 'http://www.opengis.net/def/crs/OGC/1.3/CRS84' # noqa
+    assert collection['storageCrs'] is not None
+    assert collection['storageCrs'] == 'http://www.opengis.net/def/crs/OGC/1.3/CRS84' # noqa
     assert collection['storageCrsCoordinateEpoch'] == 2017.23
 
 

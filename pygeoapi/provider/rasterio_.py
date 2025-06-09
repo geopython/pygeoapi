@@ -2,7 +2,7 @@
 #
 # Authors: Tom Kralidis <tomkralidis@gmail.com>
 #
-# Copyright (c) 2024 Tom Kralidis
+# Copyright (c) 2025 Tom Kralidis
 #
 # Permission is hereby granted, free of charge, to any person
 # obtaining a copy of this software and associated documentation
@@ -79,9 +79,11 @@ class RasterioProvider(BaseProvider):
 
                 dtype2 = dtype
                 if dtype.startswith('float'):
-                    dtype2 = 'number'
+                    dtype2 = 'float'
                 elif dtype.startswith('int'):
                     dtype2 = 'integer'
+                elif dtype.startswith('str'):
+                    dtype2 = 'string'
 
                 self._fields[i2] = {
                     'title': name,
@@ -306,7 +308,9 @@ class RasterioProvider(BaseProvider):
 
             parameter = {
                 'type': 'Parameter',
-                'description': pm['description'],
+                'description': {
+                    'en': pm['description']
+                },
                 'unit': {
                     'symbol': pm['unit_label']
                 },

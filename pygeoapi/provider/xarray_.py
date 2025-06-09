@@ -4,7 +4,7 @@
 # Authors: Tom Kralidis <tomkralidis@gmail.com>
 #
 # Copyright (c) 2020 Gregory Petrochenkov
-# Copyright (c) 2022 Tom Kralidis
+# Copyright (c) 2025 Tom Kralidis
 #
 # Permission is hereby granted, free of charge, to any person
 # obtaining a copy of this software and associated documentation
@@ -111,9 +111,11 @@ class XarrayProvider(BaseProvider):
                     LOGGER.debug('Adding variable')
                     dtype = value.dtype
                     if dtype.name.startswith('float'):
-                        dtype = 'number'
+                        dtype = 'float'
                     elif dtype.name.startswith('int'):
                         dtype = 'integer'
+                    elif dtype.name.startswith('str'):
+                        dtype = 'string'
 
                     self._fields[key] = {
                         'type': dtype,
@@ -330,18 +332,35 @@ class XarrayProvider(BaseProvider):
             'ranges': {}
         }
 
-        if self.time_field is not None:
-            mint, maxt = metadata['time']
-            cj['domain']['axes'][self.time_field] = {
-                'start': mint,
-                'stop': maxt,
-                'num': metadata['time_steps'],
+        if (data.coords[self.x_field].size == 1 and
+                data.coords[self.y_field].size == 1):
+            LOGGER.debug('Modelling as PointSeries')
+            cj['domain']['axes']['x'] = {
+                'values': [float(data.coords[self.x_field].values)]
             }
+            cj['domain']['axes']['y'] = {
+                'values': [float(data.coords[self.y_field].values)]
+            }
+            cj['domain']['domainType'] = 'PointSeries'
+
+        if self.time_field is not None:
+            cj['domain']['axes']['t'] = {
+                'values': [str(v) for v in data[self.time_field].values]
+            }
+            cj['domain']['referencing'].append({
+                'coordinates': ['t'],
+                'system': {
+                    'type': 'TemporalRS',
+                    'calendar': 'Gregorian'
+                }
+            })
 
         for key, value in selected_fields.items():
             parameter = {
                 'type': 'Parameter',
-                'description': value['title'],
+                'description': {
+                    'en': value['title']
+                },
                 'unit': {
                     'symbol': value['x-ogc-unit']
                 },
@@ -368,12 +387,13 @@ class XarrayProvider(BaseProvider):
                     'shape': [metadata['height'],
                               metadata['width']]
                 }
-                cj['ranges'][key]['values'] = data[key].values.flatten().tolist()  # noqa
+                cj['ranges'][key]['values'] = [
+                    None if np.isnan(v) else v
+                    for v in data[key].values.flatten()
+                ]
 
                 if self.time_field is not None:
-                    cj['ranges'][key]['axisNames'].append(
-                        self._coverage_properties['time_axis_label']
-                    )
+                    cj['ranges'][key]['axisNames'].append('t')
                     cj['ranges'][key]['shape'].append(metadata['time_steps'])
         except IndexError as err:
             LOGGER.warning(err)

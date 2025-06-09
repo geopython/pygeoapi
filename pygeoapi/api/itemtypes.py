@@ -35,7 +35,7 @@
 #
 # =================================================================
 
-
+from collections import ChainMap
 from copy import deepcopy
 from datetime import datetime
 from http import HTTPStatus
@@ -199,6 +199,8 @@ def get_collection_queryables(api: API, request: Union[APIRequest, Any],
                 'title': k,
                 'type': v['type']
             }
+            if v['type'] == 'float':
+                queryables['properties'][k]['type'] = 'number'
             if v.get('format') is not None:
                 queryables['properties'][k]['format'] = v['format']
             if 'values' in v:
@@ -397,8 +399,8 @@ def get_collection_items(
         # bbox but no bbox-crs param: assume bbox is in default CRS
         bbox_crs = DEFAULT_CRS
 
-    # Transform bbox to storageCRS
-    # when bbox-crs different from storageCRS.
+    # Transform bbox to storageCrs
+    # when bbox-crs different from storageCrs.
     if len(bbox) > 0:
         try:
             # Get a pyproj CRS instance for the Collection's Storage CRS
@@ -580,7 +582,21 @@ def get_collection_items(
         'href': f'{uri}?f={F_HTML}{serialized_query_params}'
     }])
 
-    if offset > 0:
+    next_link = False
+    prev_link = False
+
+    if 'next' in [link['rel'] for link in content['links']]:
+        LOGGER.debug('Using next link from provider')
+    else:
+        if content.get('numberMatched', -1) > (limit + offset):
+            next_link = True
+        elif len(content['features']) == limit:
+            next_link = True
+
+        if offset > 0:
+            prev_link = True
+
+    if prev_link:
         prev = max(0, offset - limit)
         content['links'].append(
             {
@@ -589,13 +605,6 @@ def get_collection_items(
                 'title': l10n.translate('Items (prev)', request.locale),
                 'href': f'{uri}?offset={prev}{serialized_query_params}'
             })
-
-    next_link = False
-
-    if content.get('numberMatched', -1) > (limit + offset):
-        next_link = True
-    elif len(content['features']) == limit:
-        next_link = True
 
     if next_link:
         next_ = offset + limit
@@ -999,7 +1008,7 @@ def create_crs_transform_spec(
 
     if not query_crs_uri:
         if storage_crs_uri in DEFAULT_CRS_LIST:
-            # Could be that storageCRS is
+            # Could be that storageCrs is
             # http://www.opengis.net/def/crs/OGC/1.3/CRS84h
             query_crs_uri = storage_crs_uri
         else:
@@ -1056,7 +1065,7 @@ def set_content_crs_header(
         # If empty use default CRS
         storage_crs_uri = config.get('storage_crs', DEFAULT_STORAGE_CRS)
         if storage_crs_uri in DEFAULT_CRS_LIST:
-            # Could be that storageCRS is one of the defaults like
+            # Could be that storageCrs is one of the defaults like
             # http://www.opengis.net/def/crs/OGC/1.3/CRS84h
             content_crs_uri = storage_crs_uri
         else:
@@ -1090,6 +1099,21 @@ def get_oas_30(cfg: dict, locale: str) -> tuple[list[dict[str, str]], dict[str, 
                 'type': 'string'
             }
         }
+    }
+
+    limit = {
+        'name': 'limit',
+        'in': 'query',
+        'description': 'The optional limit parameter limits the number of items that are presented in the response document',  # noqa
+        'required': False,
+        'schema': {
+            'type': 'integer',
+            'minimum': 1,
+            'maximum': 10000,
+            'default': 100
+        },
+        'style': 'form',
+        'explode': False
     }
 
     profile = {
@@ -1135,6 +1159,11 @@ def get_oas_30(cfg: dict, locale: str) -> tuple[list[dict[str, str]], dict[str, 
 
             coll_properties['schema']['items']['enum'] = list(p.fields.keys())
 
+            coll_limit = _derive_limit(
+                deepcopy(limit), cfg['server'].get('limits', {}),
+                v.get('limits', {})
+            )
+
             paths[items_path] = {
                 'get': {
                     'summary': f'Get {title} items',
@@ -1145,7 +1174,7 @@ def get_oas_30(cfg: dict, locale: str) -> tuple[list[dict[str, str]], dict[str, 
                         {'$ref': '#/components/parameters/f'},
                         {'$ref': '#/components/parameters/lang'},
                         {'$ref': '#/components/parameters/bbox'},
-                        {'$ref': f"{OPENAPI_YAML['oapif-1']}#/components/parameters/limit"},  # noqa
+                        coll_limit,
                         {'$ref': '#/components/parameters/crs'},  # noqa
                         {'$ref': '#/components/parameters/bbox-crs'},
                         coll_properties,
@@ -1396,3 +1425,28 @@ def get_oas_30(cfg: dict, locale: str) -> tuple[list[dict[str, str]], dict[str, 
             LOGGER.debug('collection is not feature/item based')
 
     return [{'name': 'records'}, {'name': 'features'}], {'paths': paths}
+
+
+def _derive_limit(limit_object, server_limits, collection_limits) -> dict:
+    """
+    Helper function to derive a limit object for a given collection
+
+    :param limit_object: OpenAPI limit parameter
+    :param server_limits: server level limits configuration
+    :param collection_limits: collection level limits configuration
+
+    :returns: updated limit object
+    """
+
+    effective_limits = ChainMap(collection_limits, server_limits)
+
+    default_limit = effective_limits.get('default_items', 10)
+    max_limit = effective_limits.get('max_items', 10)
+
+    limit_object['schema']['default'] = default_limit
+    limit_object['schema']['maximum'] = max_limit
+
+    text = f' (maximum={max_limit}, default={default_limit}).'
+    limit_object['description'] += text
+
+    return limit_object

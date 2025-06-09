@@ -54,6 +54,7 @@ PLUGINS = {
         'MVT-elastic': 'pygeoapi.provider.mvt_elastic.MVTElasticProvider',
         'MVT-proxy': 'pygeoapi.provider.mvt_proxy.MVTProxyProvider',
         'MySQL': 'pygeoapi.provider.sql.MySQLProvider',
+        'MVT-postgresql': 'pygeoapi.provider.mvt_postgresql.MVTPostgreSQLProvider',  # noqa: E501
         'OracleDB': 'pygeoapi.provider.oracle.OracleProvider',
         'OGR': 'pygeoapi.provider.ogr.OGRProvider',
         'OpenSearch': 'pygeoapi.provider.opensearch_.OpenSearchProvider',
