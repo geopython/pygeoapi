@@ -693,7 +693,7 @@ class PostgreSQLProvider(GenericSQLProvider):
     """
     A provider for querying a PostgreSQL database
     """
-    deafult_port = 5432
+    default_port = 5432
 
     def __init__(self, provider_def: dict):
         """
@@ -732,7 +732,7 @@ class MySQLProvider(GenericSQLProvider):
     """
     A provider for a MySQL database
     """
-    deafult_port = 3306
+    default_port = 3306
 
     def __init__(self, provider_def: dict):
         """
