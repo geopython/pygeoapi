@@ -42,6 +42,8 @@ For more information related to API design rules (the ``api_rules`` property in 
         host: 0.0.0.0  # listening address for incoming connections
         port: 5000  # listening port for incoming connections
     url: http://localhost:5000/  # url of server
+    icon: https://example.org/favicon.ico  # favicon / shortcut icon for default HTML template customization
+    logo: https://example.org/logo.png  # logo/banner for default HTML template customization
     mimetype: application/json; charset=UTF-8  # default MIME type
     encoding: utf-8  # default server encoding
     language: en-US  # default server language

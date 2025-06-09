@@ -25,6 +25,12 @@ properties:
             url:
                 type: string
                 description: URL of server (as used by client)
+            icon:
+                type: string
+                description: URL of favicon for default HTML customization
+            logo:
+                type: string
+                description: URL of logo image for default HTML customization
             admin:
                 type: boolean
                 description: whether to enable the Admin API (default is false)
