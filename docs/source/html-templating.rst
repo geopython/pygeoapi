@@ -71,6 +71,15 @@ Featured themes
 
 Community based themes can be found on the `pygeoapi Community Plugins and Themes wiki page`_.
 
+Customizing the default HTML templates
+--------------------------------------
+
+The following aspects of the default HTML templates can be customized (within the ``server`` :ref:`configuration section <Configuration>`):
+
+- **icon**: shortcut icon (typically displays on a given web browser tab)
+- **logo**: logo/image banner (displays at the top of HTML pages)
+
+
 .. _`Jinja`: https://palletsprojects.com/p/jinja/
 .. _`Jinja documentation`: https://jinja.palletsprojects.com
 .. _`Flask`: https://palletsprojects.com/p/flask/
