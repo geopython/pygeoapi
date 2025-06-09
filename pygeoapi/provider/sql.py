@@ -436,7 +436,7 @@ class GenericSQLProvider(BaseProvider):
     def _store_db_parameters(self, parameters, options):
         self.db_user = parameters.get('user')
         self.db_host = parameters.get('host')
-        self.db_port = parameters.get('port', 5432)
+        self.db_port = parameters.get('port', self.default_port)
         self.db_name = parameters.get('dbname')
         # db_search_path gets converted to a tuple here in order to ensure it
         # is hashable - which allows us to use functools.cache() when
@@ -693,6 +693,7 @@ class PostgreSQLProvider(GenericSQLProvider):
     """
     A provider for querying a PostgreSQL database
     """
+    deafult_port = 5432
 
     def __init__(self, provider_def: dict):
         """
@@ -731,6 +732,7 @@ class MySQLProvider(GenericSQLProvider):
     """
     A provider for a MySQL database
     """
+    deafult_port = 3306
 
     def __init__(self, provider_def: dict):
         """
