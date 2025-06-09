@@ -1110,10 +1110,10 @@ def get_oas_30(cfg: dict, locale: str) -> tuple[list[dict[str, str]], dict[str, 
             'type': 'integer',
             'minimum': 1,
             'maximum': 10000,
-            'default': 100,
-            'style': 'form',
-            'explode': False
-        }
+            'default': 100
+        },
+        'style': 'form',
+        'explode': False
     }
 
     profile = {
