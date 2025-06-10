@@ -144,37 +144,37 @@ class MVTPostgreSQLProvider(PostgreSQLProvider, BaseMVTProvider):
 
         storage_srid = get_crs_from_uri(self.storage_crs).to_string()
         out_srid = get_crs_from_uri(tileset_schema.crs).to_string()
-
-        tile_envelope = func.ST_TileEnvelope(z, x, y)
-        envelope = (
-            select(tile_envelope.label('bounds'))
-            .cte('envelope')
-        )
+        envelope = func.ST_TileEnvelope(z, x, y).label('bounds')
 
         geom_column = getattr(self.table_model, self.geom)
+        geom_filter = geom_column.intersects(
+            func.ST_Transform(envelope, storage_srid)
+        )
+
         mvtgeom = (
             func.ST_AsMVTGeom(
                 func.ST_Transform(func.ST_CurveToLine(geom_column), out_srid),
-                func.ST_Transform(envelope.c.bounds, out_srid))
+                func.ST_Transform(envelope, out_srid))
             .label('mvtgeom')
         )
 
-        geom_filter = geom_column.intersects(
-            func.ST_Transform(tile_envelope, storage_srid))
         mvtrow = (
-            select(*self.get_fields(), mvtgeom)
+            select(mvtgeom, *self.fields)
             .filter(geom_filter)
-            .select_from(self.table_model)
             .cte('mvtrow')
             .table_valued()
         )
 
-        mvt_query = select(func.ST_AsMVT(mvtrow, layer))
+        mvtquery = select(
+            func.ST_AsMVT(mvtrow, layer)
+        )
 
         with Session(self._engine) as session:
-            result = session.execute(mvt_query).scalar()
+            result = bytes(
+                session.execute(mvtquery).scalar()
+            ) or None
 
-        return bytes(result) or None
+        return result
 
     def get_html_metadata(self, dataset, server_url, layer, tileset,
                           title, description, keywords, **kwargs):
