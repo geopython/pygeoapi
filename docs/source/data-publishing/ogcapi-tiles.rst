@@ -149,24 +149,24 @@ This code block shows how to configure pygeoapi to render Mapbox vector tiles fr
 
    providers:
        - type: tile
-           name: MVT-postgresql
-           data:
-               host: 127.0.0.1
-               port: 3010 # Default 5432 if not provided
-               dbname: test
-               user: postgres
-               password: postgres
-               search_path: [osm, public]
-           id_field: osm_id
-           table: hotosm_bdi_waterways
-           geom_field: foo_geom
-           options:
-               zoom:
-                   min: 0
-                   max: 15
-           format:
-               name: pbf
-               mimetype: application/vnd.mapbox-vector-tile
+         name: MVT-postgresql
+         data:
+             host: 127.0.0.1
+             port: 3010 # Default 5432 if not provided
+             dbname: test
+             user: postgres
+             password: postgres
+             search_path: [osm, public]
+         id_field: osm_id
+         table: hotosm_bdi_waterways
+         geom_field: foo_geom
+         options:
+             zoom:
+                 min: 0
+                 max: 15
+         format:
+             name: pbf
+             mimetype: application/vnd.mapbox-vector-tile
 
 PostgreSQL-related connection options can also be added to `options`. Please refer to the :ref:`PostgreSQL OGC Features Provider<PostgreSQL>` documentation for more information.
 
