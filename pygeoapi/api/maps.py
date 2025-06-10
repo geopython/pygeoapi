@@ -42,6 +42,7 @@ from copy import deepcopy
 from http import HTTPStatus
 import logging
 from typing import Tuple
+
 from pygeoapi.openapi import get_oas_30_parameters
 from pygeoapi.plugin import load_plugin
 from pygeoapi.provider.base import ProviderGenericError
@@ -57,6 +58,9 @@ LOGGER = logging.getLogger(__name__)
 CONFORMANCE_CLASSES = [
     'http://www.opengis.net/spec/ogcapi-maps-1/1.0/conf/core'
 ]
+
+
+DEFAULT_CRS = 'http://www.opengis.net/def/crs/EPSG/0/4326'
 
 
 def get_collection_map(api: API, request: APIRequest,
@@ -101,10 +105,9 @@ def get_collection_map(api: API, request: APIRequest,
 
     query_args['format_'] = request.params.get('f', 'png')
     query_args['style'] = style
-    epsg4326 = 'http://www.opengis.net/def/crs/EPSG/0/4326'
-    query_args['crs'] = collection_def.get('crs', epsg4326)
+    query_args['crs'] = collection_def.get('crs', DEFAULT_CRS)
     query_args['bbox_crs'] = request.params.get(
-        'bbox-crs', epsg4326
+        'bbox-crs', DEFAULT_CRS
     )
     query_args['transparent'] = request.params.get('transparent', True)
 
@@ -135,13 +138,8 @@ def get_collection_map(api: API, request: APIRequest,
                 exception, api.pretty_print)
     except AttributeError:
         bbox = api.config['resources'][dataset]['extents']['spatial']['bbox']  # noqa
-
-    LOGGER.debug('Reprojecting coordinates')
-    LOGGER.debug(f"Output bbox CRS: {query_args['crs']}")
-    bbox = transform_bbox(bbox, query_args['bbox_crs'], query_args['crs'])
-
     try:
-        query_args['bbox'] = [float(c) for c in bbox]
+        bbox = [float(c) for c in bbox]
     except ValueError:
         exception = {
             'code': 'InvalidParameterValue',
@@ -151,6 +149,12 @@ def get_collection_map(api: API, request: APIRequest,
         LOGGER.error(exception)
         return headers, HTTPStatus.BAD_REQUEST, to_json(
             exception, api.pretty_print)
+
+    if query_args['bbox_crs'] != query_args['crs']:
+        LOGGER.debug(f'Reprojecting bbox CRS: {query_args["crs"]}')
+        bbox = transform_bbox(bbox, query_args['bbox_crs'], query_args['crs'])
+
+    query_args['bbox'] = bbox
 
     LOGGER.debug('Processing datetime parameter')
     datetime_ = request.params.get('datetime')

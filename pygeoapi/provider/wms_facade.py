@@ -42,9 +42,9 @@ OUTPUT_FORMATS = {
 }
 
 CRS_CODES = {
-    4326: "EPSG:4326",
-    "http://www.opengis.net/def/crs/EPSG/0/3857": "EPSG:3857",
-    "http://www.opengis.net/def/crs/EPSG/0/4326": "EPSG:4326",
+    4326: 'EPSG:4326',
+    'http://www.opengis.net/def/crs/EPSG/0/4326': 'EPSG:4326',
+    'http://www.opengis.net/def/crs/EPSG/0/3857': 'EPSG:3857'
 }
 
 
@@ -89,6 +89,7 @@ class WMSFacadeProvider(BaseProvider):
 
         if version == '1.3.0' and CRS_CODES[bbox_crs] == 'EPSG:4326':
             bbox = [bbox[1], bbox[0], bbox[3], bbox[2]]
+        bbox2 = ','.join(map(str, bbox))
 
         if not transparent:
             self._transparent = 'FALSE'
@@ -98,7 +99,7 @@ class WMSFacadeProvider(BaseProvider):
             'version': version,
             'service': 'WMS',
             'request': 'GetMap',
-            'bbox': ",".join(map(str, bbox)),
+            'bbox': bbox2,
             crs_param: CRS_CODES[crs],
             'layers': self.options['layer'],
             'styles': self.options.get('style', 'default'),
