@@ -31,7 +31,14 @@ import json
 import logging
 from enum import Enum
 from http import HTTPStatus
-from typing import Literal, NotRequired, Optional, TypedDict
+from typing import Literal, Optional, TypedDict
+import sys
+
+if sys.version_info >= (3, 11):
+    from typing import NotRequired
+else:
+    from typing_extensions import NotRequired
+
 
 from pygeoapi.error import GenericError
 
