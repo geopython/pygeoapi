@@ -31,7 +31,7 @@ import json
 import logging
 from enum import Enum
 from http import HTTPStatus
-from typing import Literal, Optional, TypedDict
+from typing import Literal, NotRequired, Optional, TypedDict
 
 from pygeoapi.error import GenericError
 
@@ -46,9 +46,18 @@ class SchemaType(Enum):
 
 # Dict type representing a mapping of the field
 # to its associated data type
-FieldMapping = dict[
-    str, dict[Literal["type"], Literal["number", "string", "integer"]]
-]
+FieldMapping = TypedDict(
+    "FieldMapping",
+    {
+        "type": Literal["string", "number", "integer", "boolean", "object", "array"],
+        "title": str,
+        "description": str,
+        "format": NotRequired[str],
+        "x-ogc-unit": NotRequired[str],
+        "x-ogc-role": NotRequired[str],
+        "enum": NotRequired[list[str]],
+    },
+)
 
 class BaseProvider:
     """generic Provider ABC"""
