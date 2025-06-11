@@ -48,7 +48,7 @@ from pygeoapi.plugin import load_plugin
 from pygeoapi.provider.base import ProviderGenericError
 from pygeoapi.util import (
     get_provider_by_type, to_json, filter_providers_by_type,
-    filter_dict_by_key_value
+    filter_dict_by_key_value, transform_bbox
 )
 
 from . import APIRequest, API, validate_datetime
@@ -58,6 +58,9 @@ LOGGER = logging.getLogger(__name__)
 CONFORMANCE_CLASSES = [
     'http://www.opengis.net/spec/ogcapi-maps-1/1.0/conf/core'
 ]
+
+
+DEFAULT_CRS = 'http://www.opengis.net/def/crs/EPSG/0/4326'
 
 
 def get_collection_map(api: API, request: APIRequest,
@@ -102,7 +105,10 @@ def get_collection_map(api: API, request: APIRequest,
 
     query_args['format_'] = request.params.get('f', 'png')
     query_args['style'] = style
-    query_args['crs'] = request.params.get('bbox-crs', 4326)
+    query_args['crs'] = collection_def.get('crs', DEFAULT_CRS)
+    query_args['bbox_crs'] = request.params.get(
+        'bbox-crs', DEFAULT_CRS
+    )
     query_args['transparent'] = request.params.get('transparent', True)
 
     try:
@@ -133,7 +139,7 @@ def get_collection_map(api: API, request: APIRequest,
     except AttributeError:
         bbox = api.config['resources'][dataset]['extents']['spatial']['bbox']  # noqa
     try:
-        query_args['bbox'] = [float(c) for c in bbox]
+        bbox = [float(c) for c in bbox]
     except ValueError:
         exception = {
             'code': 'InvalidParameterValue',
@@ -143,6 +149,12 @@ def get_collection_map(api: API, request: APIRequest,
         LOGGER.error(exception)
         return headers, HTTPStatus.BAD_REQUEST, to_json(
             exception, api.pretty_print)
+
+    if query_args['bbox_crs'] != query_args['crs']:
+        LOGGER.debug(f'Reprojecting bbox CRS: {query_args["crs"]}')
+        bbox = transform_bbox(bbox, query_args['bbox_crs'], query_args['crs'])
+
+    query_args['bbox'] = bbox
 
     LOGGER.debug('Processing datetime parameter')
     datetime_ = request.params.get('datetime')
