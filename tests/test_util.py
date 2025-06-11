@@ -2,7 +2,7 @@
 #
 # Authors: Tom Kralidis <tomkralidis@gmail.com>
 #
-# Copyright (c) 2021 Tom Kralidis
+# Copyright (c) 2025 Tom Kralidis
 #
 # Permission is hereby granted, free of charge, to any person
 # obtaining a copy of this software and associated documentation
@@ -38,7 +38,7 @@ import uuid
 import pytest
 from pyproj.exceptions import CRSError
 import pygeofilter.ast
-from pygeofilter.parsers.ecql import parse
+from pygeofilter.parsers.cql2_text import parse
 from pygeofilter.values import Geometry
 from shapely.geometry import Point
 
