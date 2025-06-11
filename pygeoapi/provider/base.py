@@ -44,7 +44,7 @@ class SchemaType(Enum):
     update = 'update'
     replace = 'replace'
 
-# Dict type representing a mapping of the field 
+# Dict type representing a mapping of the field
 # to its associated data type
 FieldMapping = dict[
     str, dict[Literal["type"], Literal["number", "string", "integer"]]
