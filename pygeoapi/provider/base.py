@@ -51,12 +51,14 @@ class SchemaType(Enum):
     update = 'update'
     replace = 'replace'
 
+
 # All the potential properties on a field
 # as defined by the OGC API features spec
 FieldProperties = TypedDict(
     "FieldProperties",
     {
-        "type": Literal["string", "number", "integer", "boolean", "object", "array"],
+        "type": Literal["string", "number", "integer",
+                        "boolean", "object", "array"],
         "title": str,
         "description": str,
         "format": NotRequired[str],
@@ -66,9 +68,11 @@ FieldProperties = TypedDict(
     },
 )
 
+
 # Dict type representing a mapping of the field
 # to its associated data type
 FieldMapping = dict[str, FieldProperties]
+
 
 class BaseProvider:
     """generic Provider ABC"""
@@ -148,7 +152,7 @@ class BaseProvider:
 
         raise NotImplementedError()
 
-    def get_data_path(self, baseurl: str , urlpath: str, dirpath: str) -> dict:
+    def get_data_path(self, baseurl: str, urlpath: str, dirpath: str) -> dict:
         """
         Gets directory listing or file description or raw file dump
 
@@ -239,7 +243,8 @@ class BaseProvider:
 
         raise NotImplementedError()
 
-    def _load_and_prepare_item(self, item: str, identifier: Optional[str]=None,
+    def _load_and_prepare_item(self, item: str,
+                               identifier: Optional[str] = None,
                                accept_missing_identifier=False,
                                raise_if_exists=True):
         """
