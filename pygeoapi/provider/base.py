@@ -44,10 +44,10 @@ class SchemaType(Enum):
     update = 'update'
     replace = 'replace'
 
-# Dict type representing a mapping of the field
-# to its associated data type
-FieldMapping = TypedDict(
-    "FieldMapping",
+# All the potential properties on a field
+# as defined by the OGC API features spec
+FieldProperties = TypedDict(
+    "FieldProperties",
     {
         "type": Literal["string", "number", "integer", "boolean", "object", "array"],
         "title": str,
@@ -58,6 +58,10 @@ FieldMapping = TypedDict(
         "enum": NotRequired[list[str]],
     },
 )
+
+# Dict type representing a mapping of the field
+# to its associated data type
+FieldMapping = dict[str, FieldProperties]
 
 class BaseProvider:
     """generic Provider ABC"""
