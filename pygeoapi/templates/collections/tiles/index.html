@@ -108,7 +108,7 @@
             maxZoom: {{ data['maxzoom'] }},
             indexMaxZoom: 5,
             getFeatureId: function(feat) {
-                return feat.properties["id"]
+                return feat.properties.id || feat.properties.fid || feat.properties.uri;
             }
         };
 
@@ -129,7 +129,7 @@
                     .openOn(map);
 
                 clearHighlight();
-                highlight = e.layer.properties.id;
+                highlight = e.layer.properties.id || e.layer.properties.fid || e.layer.properties.uri;
                 tilesPbfLayer.setFeatureStyle(highlight, {
                     weight: 2,
                     color: 'red',
