@@ -239,9 +239,20 @@ def test_get_tiles_WebMercatorQuad(config):
     tile = p.get_tiles(
         tileset=tileset,
         z=z, x=x, y=y,
+        layer=p.get_layer()
     )
     assert isinstance(tile, bytes)
     assert len(tile) > 0
+
+    # Layer name
+    assert b'waterways' in tile
+    assert b'default' not in tile
+
+    # Feature properties
+    assert b'id' in tile
+    assert b'waterway' in tile
+    assert b'name' in tile
+    assert b'z_index' in tile
 
     # Tile does not exist in matrixset
     z, x, y = 1, 1000000, 1000000
@@ -272,6 +283,16 @@ def test_get_tiles_WorldCRS84Quad(config):
     )
     assert isinstance(tile, bytes)
     assert len(tile) > 0
+
+    # Layer name
+    assert b'waterways' not in tile
+    assert b'default' in tile
+
+    # Feature properties
+    assert b'id' in tile
+    assert b'waterway' in tile
+    assert b'name' in tile
+    assert b'z_index' in tile
 
     # Tile does not exist in matrixset
     z, x, y = 1, 1000000, 1000000

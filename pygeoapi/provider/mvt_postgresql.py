@@ -77,11 +77,19 @@ class MVTPostgreSQLProvider(BaseMVTProvider, PostgreSQLProvider):
 
         :returns: `list` of columns
         """
-        return [
-            c.label('id') if c.name == self.id_field else c
-            for c in self.table_model.__table__.columns
-            if c.name != self.geom
-        ]
+        if not self._fields:
+            for column in self.table_model.__table__.columns:
+                LOGGER.debug(f'Testing {column.name}')
+                if column.name == self.geom:
+                    continue
+
+                self._fields[str(column.name)] = (
+                    column.label('id') 
+                    if column.name == self.id_field else
+                    column
+                )
+
+        return self._fields
 
     def get_layer(self):
         """
@@ -159,7 +167,7 @@ class MVTPostgreSQLProvider(BaseMVTProvider, PostgreSQLProvider):
         )
 
         mvtrow = (
-            select(mvtgeom, *self.fields)
+            select(mvtgeom, *self.fields.values())
             .filter(geom_filter)
             .cte('mvtrow')
             .table_valued()
