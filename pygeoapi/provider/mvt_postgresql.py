@@ -84,7 +84,7 @@ class MVTPostgreSQLProvider(BaseMVTProvider, PostgreSQLProvider):
                     continue
 
                 self._fields[str(column.name)] = (
-                    column.label('id') 
+                    column.label('id')
                     if column.name == self.id_field else
                     column
                 )
