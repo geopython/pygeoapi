@@ -160,6 +160,7 @@ This code block shows how to configure pygeoapi to render Mapbox vector tiles fr
          id_field: osm_id
          table: hotosm_bdi_waterways
          geom_field: foo_geom
+         storage_crs: http://www.opengis.net/def/crs/EPSG/0/4326
          options:
              zoom:
                  min: 0
@@ -167,6 +168,9 @@ This code block shows how to configure pygeoapi to render Mapbox vector tiles fr
          format:
              name: pbf
              mimetype: application/vnd.mapbox-vector-tile
+
+.. tip::
+   Geometry must have correctly defined :ref:`storage_crs<crs>`
 
 PostgreSQL-related connection options can also be added to `options`. Please refer to the :ref:`PostgreSQL OGC Features Provider<PostgreSQL>` documentation for more information.
 
