@@ -49,7 +49,7 @@ from pygeoapi.util import url_join, get_crs_from_uri
 LOGGER = logging.getLogger(__name__)
 
 
-class MVTPostgreSQLProvider(PostgreSQLProvider, BaseMVTProvider):
+class MVTPostgreSQLProvider(BaseMVTProvider, PostgreSQLProvider):
     """
     MVT PostgreSQL Provider
     Provider for serving tiles rendered on-the-fly from

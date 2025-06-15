@@ -74,11 +74,32 @@ def config():
 def test_metadata(config):
     """Testing query for a valid JSON object with geometry"""
     p = MVTPostgreSQLProvider(config)
+    ts = 'WebMercatorQuad'
 
     assert p.table == 'hotosm_bdi_waterways'
     assert p.geom == 'foo_geom'
     assert p.id_field == 'osm_id'
     assert p.get_layer() == config['table']
+
+    md = p.get_metadata(
+        dataset=DATASET,
+        server_url=SERVER_URL,
+        layer='layer1',
+        tileset=ts,
+        metadata_format='json',
+        title='Waterways',
+        description='OpenStreetMap Waterways',
+    )
+    assert md['crs'] == \
+        'http://www.opengis.net/def/crs/EPSG/0/3857'
+
+    assert 'links' in md
+    assert any(link['rel'].endswith('tiling-scheme') for link in md['links'])
+
+    [tile_format,] = [link for link in md['links'] if link['rel'] == 'item']
+    assert tile_format['href'].startswith(SERVER_URL)
+    assert DATASET in tile_format['href']
+    assert ts in tile_format['href']
 
 
 def test_get_tiling_schemes(config):
