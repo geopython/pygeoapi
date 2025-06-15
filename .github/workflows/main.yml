@@ -164,6 +164,7 @@ jobs:
         pytest tests/test_oracle_provider.py
         pytest tests/test_parquet_provider.py
         pytest tests/test_postgresql_provider.py
+        pytest tests/test_postgresql_mvt_provider.py
         pytest tests/test_mysql_provider.py
         pytest tests/test_rasterio_provider.py
         pytest tests/test_sensorthings_edr_provider.py 
