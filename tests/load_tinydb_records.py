@@ -2,7 +2,7 @@
 #
 # Authors: Tom Kralidis <tomkralidis@gmail.com>
 #
-# Copyright (c) 2023 Tom Kralidis
+# Copyright (c) 2025 Tom Kralidis
 #
 # Permission is hereby granted, free of charge, to any person
 # obtaining a copy of this software and associated documentation
@@ -60,44 +60,48 @@ def contact2party(ci: CI_ResponsibleParty) -> dict:
     :returns: `dict` of OARec party object
     """
 
-    party = {
-        'contactInfo': {
-            'address': {
-                'office': {}
-            }
-        }
-    }
+    party = {}
+    address_obj = {}
 
     party['name'] = ci.name or ci.position
 
+    if ci.organization:
+        party['organization'] = ci.organization
+
     if ci.phone:
-        party['contactInfo']['phone'] = {
-            'office': ci.phone
-        }
+        party['phones'] = [{
+            'value': ci.phone
+        }]
+
     if ci.email:
-        party['contactInfo']['email'] = {
-            'office': ci.email
-        }
+        party['emails'] = [{
+            'value': ci.email
+        }]
+
     if ci.address:
-        party['contactInfo']['address']['office']['deliveryPoint'] = ci.address
+        address_obj['deliveryPoint'] = [ci.address]
     if ci.city:
-        party['contactInfo']['address']['office']['city'] = ci.city
+        address_obj['city'] = [ci.city]
     if ci.region:
-        party['contactInfo']['address']['office']['administrativeArea'] = ci.region  # noqa
+        address_obj['administrativeArea'] = [ci.region]
     if ci.postcode:
-        party['contactInfo']['address']['office']['postalCode'] = ci.postcode
+        address_obj['postalCode'] = [ci.postcode]
     if ci.country:
-        party['contactInfo']['address']['office']['country'] = ci.country
+        address_obj['country'] = [ci.country]
+
+    if address_obj:
+        party['addresses'] = [{address_obj}]
+
     if ci.onlineresource:
-        party['contactInfo']['url'] = {
+        party['links'] = [{
             'href': ci.onlineresource.url,
             'rel': ci.onlineresource.protocol,
             'title': ci.onlineresource.name,
             'description': ci.onlineresource.description,
-        }
+        }]
 
     if ci.role:
-        party['roles'] = [{'name': ci.role}]
+        party['roles'] = [ci.role]
 
     return party
 
@@ -206,7 +210,9 @@ for xml_file in xml_dir.glob('*.xml'):
             'http://www.opengis.net/spec/ogcapi-records-1/1.0/req/record-core'
         ],
         'type': 'Feature',
-        'time': [te_begin, te_end],
+        'time': {
+            'interval': [te_begin, te_end]
+        },
         'geometry': {
             'type': 'Polygon',
             'coordinates': [[
@@ -223,7 +229,7 @@ for xml_file in xml_dir.glob('*.xml'):
             'type': type_,
             'title': title,
             'description': description,
-            'providers': providers,
+            'contacts': providers,
             'externalIds': [{
                 'scheme': 'default',
                 'value': identifier
