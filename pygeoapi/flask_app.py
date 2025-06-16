@@ -514,6 +514,28 @@ def get_collection_edr_query(collection_id, instance_id=None,
 
 
 @BLUEPRINT.route('/stac')
+def stac_landing_page():
+    """
+    STAC API landing page endpoint
+
+    :returns: HTTP response
+    """
+
+    return execute_from_flask(stac_api.landing_page, request)
+
+
+@BLUEPRINT.route('/stac/search')
+def stac_search():
+    """
+    STAC API search endpoint
+
+    :returns: HTTP response
+    """
+
+    return execute_from_flask(stac_api.get_search, request)
+
+
+@BLUEPRINT.route('/stac/catalog')
 def stac_catalog_root():
     """
     STAC root endpoint
@@ -524,7 +546,7 @@ def stac_catalog_root():
     return execute_from_flask(stac_api.get_stac_root, request)
 
 
-@BLUEPRINT.route('/stac/<path:path>')
+@BLUEPRINT.route('/stac/catalog/<path:path>')
 def stac_catalog_path(path):
     """
     STAC path endpoint

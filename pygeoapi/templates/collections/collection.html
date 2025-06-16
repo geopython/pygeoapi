@@ -128,7 +128,7 @@
             {% trans %}CRS{% endtrans %}: <a title="{{ data['storageCrs'] }}" href="{{ data['storageCrs'] }}"><span>{{ data['storageCrs'] }}</span></a>
           </li>
         <li>
-          {% trans %}Epoch{% endtrans %}: <span>{{ data['storageCrsCoordinateEpoch'] or '_(not specified)' }}</span></a>
+          {% trans %}Epoch{% endtrans %}: <a><span>{{ data['storageCrsCoordinateEpoch'] or '_(not specified)' }}</span></a>
         </li>
       </ul>
      {% endif %}

@@ -8,7 +8,7 @@
 #          Ricardo Garcia Silva <ricardo.garcia.silva@geobeyond.it>
 #          Bernhard Mallinger <bernhard.mallinger@eox.at>
 #
-# Copyright (c) 2024 Tom Kralidis
+# Copyright (c) 2025 Tom Kralidis
 # Copyright (c) 2025 Francesco Bartoli
 # Copyright (c) 2022 John A Stevenson and Colin Blackburn
 # Copyright (c) 2023 Ricardo Garcia Silva
@@ -37,12 +37,15 @@
 #
 # =================================================================
 
-
+from copy import deepcopy
 from http import HTTPStatus
+import json
 import logging
-from typing import Tuple
+from typing import Any, Tuple, Union
 
 from pygeoapi import l10n
+from pygeoapi import api as ogc_api
+from pygeoapi.api import itemtypes as itemtypes_api
 from pygeoapi.plugin import load_plugin
 
 from pygeoapi.provider.base import (
@@ -217,6 +220,120 @@ def get_stac_path(api: API, request: APIRequest,
         return headers, HTTPStatus.OK, stac_data
 
 
+def landing_page(api: API,
+                 request: APIRequest) -> Tuple[dict, int, str]:
+    """
+    Provide API landing page
+
+    :param request: A request object
+
+    :returns: tuple of headers, status code, content
+    """
+
+    request._format = F_JSON
+
+    headers, status, content = ogc_api.landing_page(api, request)
+
+    content = json.loads(content)
+
+    content['stac_version'] = '1.0.0'
+    content['conformsTo'] = ['https://api.stacspec.org/v1.0.0/core']
+    content['type'] = 'Catalog'
+
+    content['links'] = [{
+        'rel': request.get_linkrel(F_JSON),
+        'type': FORMAT_TYPES[F_JSON],
+        'title': l10n.translate('This document as JSON', request.locale),
+        'href': f"{api.base_url}/stac?f={F_JSON}"
+    }, {
+        'rel': 'root',
+        'type': FORMAT_TYPES[F_JSON],
+        'title': l10n.translate('This document as JSON', request.locale),
+        'href': f"{api.base_url}/stac?f={F_JSON}"
+    }, {
+        'rel': 'service-desc',
+        'type': 'application/vnd.oai.openapi+json;version=3.0',
+        'title': l10n.translate('The OpenAPI definition as JSON', request.locale),  # noqa
+        'href': f"{api.base_url}/openapi"
+    }, {
+        'rel': 'service-doc',
+        'type': FORMAT_TYPES[F_HTML],
+        'title': l10n.translate('The OpenAPI definition as HTML', request.locale),  # noqa
+        'href': f"{api.base_url}/openapi?f={F_HTML}",
+        'hreflang': api.default_locale
+    }, {
+        'rel': 'search',
+        'type': FORMAT_TYPES[F_JSON],
+        'title': l10n.translate('STAC search', request.locale),
+        'href': f"{api.base_url}/stac/search?f={F_JSON}"
+    }]
+
+    return headers, status, to_json(content, api.pretty_print)
+
+
+def get_search(api: API, request: Union[APIRequest, Any]) -> Tuple[dict, int, str]:  # noqa
+    """
+    STAC API Queries stac-collection
+
+    :param request: A request object
+    :param dataset: dataset name
+
+    :returns: tuple of headers, status code, content
+    """
+
+    headers = request.get_response_headers(**api.api_headers)
+
+    collections = filter_dict_by_key_value(api.config['resources'],
+                                           'type', 'stac-collection')
+
+    if not collections:
+        return api.get_exception(
+            HTTPStatus.NOT_IMPLEMENTED, headers, F_JSON, 'NotImplemented',
+            'No configured STAC searchable collection')
+
+    collection_id = next(iter(collections.keys()))
+
+    api.config['resources'][collection_id]['type'] = 'collection'
+
+    if request.data:
+        LOGGER.debug('Intercepting STAC POST request into query args')
+        request_data = json.loads(request.data)
+        request_params = deepcopy(dict(request.params))
+
+        for qp in ['bbox', 'datetime', 'limit']:
+            if qp in request_data:
+                request_params[qp] = request_data[qp]
+
+        request._args = request_params
+        request._data = None
+
+    headers, status, content = itemtypes_api.get_collection_items(
+        api, request, collection_id)
+
+    api.config['resources'][collection_id]['type'] = 'stac-collection'
+
+    content = json.loads(content)
+
+    if len(content.get('features', [])) > 0:
+        for feature in content['features']:
+            if 'stac_version' not in feature:
+                feature['stac_version'] = '1.0.0'
+
+    for link in content.get('links', []):
+        if 'items' in link['href']:
+            link['href'] = link['href'].replace(
+                f'collections/{collection_id}/items', 'search')
+
+    content['links'].append({
+        'rel': 'root',
+        'type': FORMAT_TYPES[F_JSON],
+        'title': l10n.translate('STAC landing page', request.locale),
+        'href': f"{api.base_url}/stac?f={F_JSON}"
+    })
+
+    return headers, status, to_json(content, api.pretty_print)
+
+
 def get_oas_30(cfg: dict, locale: str) -> tuple[list[dict[str, str]], dict[str, dict]]:  # noqa
     """
     Get OpenAPI fragments
@@ -232,7 +349,7 @@ def get_oas_30(cfg: dict, locale: str) -> tuple[list[dict[str, str]], dict[str, 
                                                 'type', 'stac-collection')
     paths = {}
     if stac_collections:
-        paths['/stac'] = {
+        paths['/stac/catalog'] = {
             'get': {
                 'summary': 'SpatioTemporal Asset Catalog',
                 'description': 'SpatioTemporal Asset Catalog',
