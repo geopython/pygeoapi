@@ -64,7 +64,7 @@ def test_landing_page(config, api_):
     assert 'description' in response
     assert response['description'] == 'pygeoapi provides an API to geospatial data'  # noqa
 
-    assert len(response['conformsTo']) == 1
+    assert len(response['conformsTo']) == 2
 
 
 @pytest.mark.parametrize('params,matched,returned', [
