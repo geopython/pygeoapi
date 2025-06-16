@@ -52,8 +52,8 @@ from pygeoapi.provider.base import (
     ProviderConnectionError, ProviderNotFoundError
 )
 from pygeoapi.util import (
-    get_provider_by_type, to_json, filter_dict_by_key_value,
-    render_j2_template
+    filter_dict_by_key_value, get_current_datetime, get_provider_by_type,
+    render_j2_template, to_json
 )
 
 from . import APIRequest, API, FORMAT_TYPES, F_JSON, F_HTML
@@ -236,8 +236,13 @@ def landing_page(api: API,
 
     content = json.loads(content)
 
+    content['id'] = 'pygeoapi-catalogue'
     content['stac_version'] = '1.0.0'
-    content['conformsTo'] = ['https://api.stacspec.org/v1.0.0/core']
+    content['conformsTo'] = [
+        'https://api.stacspec.org/v1.0.0/core',
+        'https://api.stacspec.org/v1.0.0/item-search'
+        'https://api.stacspec.org/v1.0.0/item-search#sort'
+    ]
     content['type'] = 'Catalog'
 
     content['links'] = [{
@@ -318,11 +323,12 @@ def get_search(api: API, request: Union[APIRequest, Any]) -> Tuple[dict, int, st
         for feature in content['features']:
             if 'stac_version' not in feature:
                 feature['stac_version'] = '1.0.0'
+            feature['properties'].update(get_temporal(feature))
 
     for link in content.get('links', []):
         if 'items' in link['href']:
             link['href'] = link['href'].replace(
-                f'collections/{collection_id}/items', 'search')
+                f'collections/{collection_id}/items', 'stac/search')
 
     content['links'].append({
         'rel': 'root',
@@ -363,3 +369,42 @@ def get_oas_30(cfg: dict, locale: str) -> tuple[list[dict[str, str]], dict[str, 
             }
         }
     return [{'name': 'stac'}], {'paths': paths}
+
+
+def get_temporal(feature: dict) -> dict:
+    """
+    Helper function to try and derive a useful temporal
+    definition on a non-STAC item
+
+    :param feature: `dict` of GeoJSON feature
+
+    :returns: `dict` of `datetime` or `start_datetime` and `end_datetime`
+    """
+
+    value = {}
+
+    datetime_ = feature['properties'].get('datetime')
+    start_datetime = feature['properties'].get('start_datetime')
+    end_datetime = feature['properties'].get('end_datetime')
+
+    if datetime_ is None and None not in [start_datetime, end_datetime]:
+        LOGGER.debug('Temporal range partially exists')
+    elif datetime_ is not None:
+        LOGGER.debug('Temporal instant exists')
+
+    LOGGER.debug('Attempting to derive temporal from GeoJSON feature')
+    LOGGER.debug(feature)
+    if feature.get('time') is not None:
+        if feature['time'].get('timestamp') is not None:
+            value['datetime'] = feature['time']['timestamp']
+        if feature['time'].get('interval') is not None:
+            value['start_datetime'] = feature['time']['interval'][0]
+            value['end_datetime'] = feature['time']['interval'][1]
+
+    if feature['properties'].get('created') is not None:
+        value['datetime'] = feature['properties']['created']
+
+    if not value:
+        value['datetime'] = get_current_datetime()
+
+    return value

@@ -524,7 +524,7 @@ def stac_landing_page():
     return execute_from_flask(stac_api.landing_page, request)
 
 
-@BLUEPRINT.route('/stac/search')
+@BLUEPRINT.route('/stac/search', methods=['GET', 'POST'])
 def stac_search():
     """
     STAC API search endpoint
