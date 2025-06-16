@@ -144,7 +144,7 @@ for xml_file in xml_dir.glob('*.xml'):
     title = m.identification[0].title
     description = m.identification[0].abstract
 
-    issued = m.datestamp
+    issued = m.datestamp + 'Z'
 
     links = []
     if m.distribution and m.distribution.online:
@@ -207,7 +207,7 @@ for xml_file in xml_dir.glob('*.xml'):
     json_record = {
         'id': identifier,
         'conformsTo': [
-            'http://www.opengis.net/spec/ogcapi-records-1/1.0/req/record-core'
+            'http://www.opengis.net/spec/ogcapi-records-1/1.0/conf/record-core'
         ],
         'type': 'Feature',
         'time': {
