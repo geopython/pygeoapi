@@ -454,6 +454,30 @@ def get_collection_edr_query(
     )
 
 
+def stac_landing_page(request: HttpRequest) -> HttpResponse:
+    """
+    STAC API landing page endpoint
+
+    :request Django HTTP Request
+
+    :returns: Django HTTP response
+    """
+
+    return execute_from_django(stac_api.landing_page, request)
+
+
+def stac_search(request: HttpRequest) -> HttpResponse:
+    """
+    STAC API search endpoint
+
+    :request Django HTTP Request
+
+    :returns: Django HTTP response
+    """
+
+    return execute_from_django(stac_api.search, request)
+
+
 def stac_catalog_root(request: HttpRequest) -> HttpResponse:
     """
     STAC root endpoint

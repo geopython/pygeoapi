@@ -1,7 +1,7 @@
 .. _stac:
 
 Publishing files to a SpatioTemporal Asset Catalog
-**************************************************
+==================================================
 
 The `SpatioTemporal Asset Catalog (STAC)`_ family of specifications aim to standardize
 the way geospatial asset metadata is structured and queried. A "spatiotemporal asset"
@@ -16,9 +16,11 @@ years, and is used in numerous production deployments.
 
 pygeoapi built-in providers to browse STAC catalogs are described below:
 
+Static catalog
+--------------
 
 FileSystem Provider
-===================
+^^^^^^^^^^^^^^^^^^^
 
 The FileSystem Provider implements STAC as a geospatial file browser through the server's file system,
 supporting any level of file/directory nesting/hierarchy.
@@ -27,7 +29,7 @@ Configuring STAC in pygeoapi is done by simply pointing the ``data`` provider pr
 to the given directory and specifying allowed file types:
 
 Connection examples
--------------------
+*******************
 
 .. code-block:: yaml
 
@@ -47,7 +49,7 @@ Connection examples
 
 
 pygeometa metadata control files
---------------------------------
+********************************
 
 pygeoapi's STAC filesystem functionality supports `pygeometa`_ MCF files residing
 in the same directory as data files.  If an MCF file is found, it will be used
@@ -57,13 +59,13 @@ pygeometa will generate the STAC item metadata from configuration and by
 reading the data's properties.
 
 Publishing ESRI Shapefiles
---------------------------
+**************************
 
 ESRI Shapefile publishing requires to specify all required component file extensions
 (``.shp``, ``.shx``, ``.dbf``) with the provider ``file_types`` option.
 
 Data access examples
---------------------
+********************
 
 * STAC root page
 
@@ -72,7 +74,7 @@ Data access examples
 From here, browse the filesystem accordingly.
 
 Azure Blob Storage Provider
-===========================
+^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 The AzureBlobStorage Provider implements STAC as a geospatial file browser through Azure Blob Storage,
 supporting any level of file/directory nesting/hierarchy.
@@ -81,7 +83,7 @@ Configuring STAC in pygeoapi is done by simply pointing the ``data`` provider pr
 to the given container and specifying allowed file types:
 
 Connection examples
--------------------
+*******************
 
 .. code-block:: yaml
 
@@ -104,7 +106,7 @@ Connection examples
 
 
 Hateoas Provider
-================
+^^^^^^^^^^^^^^^^
 
 HATEOAS (Hypermedia as the Engine of Application State) is a way of implementing a REST
 application that allows the client to dynamically navigate to the appropriate resources
@@ -149,7 +151,7 @@ So, the following rules must be respected:
 -------------
 
 File examples
--------------
+*************
 
 **Structure of the catalog.json file**
 
@@ -213,7 +215,7 @@ The code above shows the root catalog. The sub-catalogs have an additional ``rel
 
 -------------------------------------
 
-**Structure of the collection.json file**
+**Structure of the ``collection.json`` file**
 
 Collections are similar to Catalogs with extra fields.
 
@@ -270,10 +272,9 @@ Collections are similar to Catalogs with extra fields.
   }
 
 
+**Structure of the Item ``<id>.json`` file**
 
-**Structure of the Item <id>.json file**
-
-The example below shows the content of a file named *arcticdem-frontiere-0.json*.
+The example below shows the content of a file named ``arcticdem-frontiere-0.json``:
 
 .. code-block:: json
 
@@ -351,14 +352,14 @@ The example below shows the content of a file named *arcticdem-frontiere-0.json*
 
 
 
-HATEOAS Configuration
----------------------
+HATEOAS configuration
+*********************
 
 Configuring HATEOAS STAC Provider in pygeoapi is done by simply pointing the ``data`` provider property
-to the local directory or remote URL and specifying the root file name (catalog.json or collection.json) in the file_types property:
+to the local directory or remote URL and specifying the root file name (``catalog.json`` or ``collection.json``) in the ``file_types`` property:
 
 Connection examples
--------------------
+*******************
 
 .. code-block:: yaml
 
@@ -380,6 +381,106 @@ Connection examples
              data: tests/stac
              file_types: catalog.json
 
+STAC API
+--------
+
+`STAC API`_ support is provided as a wrapper on top of resources that have feature or record providers configured.
+
+To enable STAC API support, configure a resource with a feature or record provider, and set the resource ``type`` to ``stac-collection``:
+
+.. code-block:: yaml
+
+   canada-metadata:
+       type: stac-collection
+       title:
+           en: Open Canada sample data
+           fr: Exemple de donn\u00e9es Canada Ouvert
+       description:
+           en: Sample metadata records from open.canada.ca
+           fr: Exemples d'enregistrements de m\u00e9tadonn\u00e9es sur ouvert.canada.ca
+       keywords:
+           en: 
+               - canada
+               - open data
+           fr: 
+               - canada
+               - donn\u00e9es ouvertes
+       links:
+           - type: text/html
+             rel: canonical
+             title: information
+             href: https://open.canada.ca/en/open-data
+             hreflang: en-CA
+           - type: text/html
+             rel: alternate
+             title: informations
+             href: https://ouvert.canada.ca/fr/donnees-ouvertes
+             hreflang: fr-CA
+       extents:
+           spatial:
+               bbox: [-180,-90,180,90]
+               crs: http://www.opengis.net/def/crs/OGC/1.3/CRS84
+       providers:
+           - type: record
+             name: TinyDBCatalogue
+             data: tests/data/open.canada.ca/sample-records.tinydb
+             id_field: externalId
+             time_field: created
+             title_field: title
+
+STAC API queries will search all feature or record based resources configured as ``stac-collection``.  Results
+are decorated with the required STAC elements (unless they already exist).
+
+.. note::
+
+   pygeoapi STAC API support is minimally designed to leverage the OGC API - Features and OGC API - Records
+   implementations.  A typical setup would be a features or records backend of STAC Items.  pygeoapi does not
+   add or implement any STAC Catalog/Item relationships beyond what is encoded in a STAC resource.
+
+
+Data access examples
+--------------------
+
+* landing page
+   
+  * http://localhost:5000/stac-api
+
+* query all STAC resources
+   
+  * http://localhost:5000/stac-api/search
+
+* query features (spatial)
+
+  * http://localhost:5000/stac-api/search?bbox=-142,52,-140,55
+
+* paging
+
+  * http://localhost:5000/stac-api/search?offset=10&limit=10
+
+* query features (temporal)
+
+  * http://localhost:5000/stac-api/search?datetime=2019-11-11T11:11:11Z/..
+  * http://localhost:5000/stac-api/search?datetime=2018-11-11T11:11:11Z/2019-11-11T11:11:11Z
+  * http://localhost:5000/stac-api/search?datetime=../2019-11-11T11:11:11Z
+
+.. code-block:: bash
+
+   # query features (spatial)
+   curl -X POST http://localhost:5000/stac-api/search \
+       -H "Content-Type: application/json" \
+       -d "{\"bbox\": [-142, 52, -140, 55]}"
+
+   # paging
+   curl -X POST http://localhost:5000/stac-api/search \
+       -H "Content-Type: application/json" \
+       -d "{\"offset\": 10, \"limit\": 10}"
+
+   # query features (temporal)
+   curl -X POST http://localhost:5000/stac-api/search \
+       -H "Content-Type: application/json" \
+       -d "{\"datetime\": \"2019-11-11T11:11:11Z/..\"}"
+
 
 .. _`SpatioTemporal Asset Catalog (STAC)`: https://stacspec.org
 .. _`pygeometa`: https://geopython.github.io/pygeometa
+.. _`STAC API`: https://github.com/radiantearth/stac-api-spec

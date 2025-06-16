@@ -513,6 +513,28 @@ def get_collection_edr_query(collection_id, instance_id=None,
     )
 
 
+@BLUEPRINT.route('/stac-api')
+def stac_landing_page():
+    """
+    STAC API landing page endpoint
+
+    :returns: HTTP response
+    """
+
+    return execute_from_flask(stac_api.landing_page, request)
+
+
+@BLUEPRINT.route('/stac-api/search', methods=['GET', 'POST'])
+def stac_search():
+    """
+    STAC API search endpoint
+
+    :returns: HTTP response
+    """
+
+    return execute_from_flask(stac_api.search, request)
+
+
 @BLUEPRINT.route('/stac')
 def stac_catalog_root():
     """

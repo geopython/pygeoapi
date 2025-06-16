@@ -551,6 +551,30 @@ async def stac_catalog_path(request: Request):
     return await execute_from_starlette(stac_api.get_stac_path, request, path)
 
 
+async def stac_landing_page(request: Request):
+    """
+    STAC API landing page endpoint
+
+    :param request: Starlette Request instance
+
+    :returns: Starlette HTTP response
+    """
+
+    return execute_from_starlette(stac_api.landing_page, request)
+
+
+async def stac_search(request: Request):
+    """
+    STAC API search endpoint
+
+    :param request: Starlette Request instance
+
+    :returns: Starlette HTTP response
+    """
+
+    return execute_from_starlette(stac_api.search, request)
+
+
 async def admin_config(request: Request):
     """
     Admin endpoint
@@ -692,7 +716,9 @@ api_routes = [
     Route('/collections', collections),
     Route('/collections/{collection_id:path}', collections),
     Route('/stac', stac_catalog_root),
-    Route('/stac/{path:path}', stac_catalog_path)
+    Route('/stac/{path:path}', stac_catalog_path),
+    Route('/stac-api', stac_landing_page),
+    Route('/stac-api/search', stac_search, methods=['GET', 'POST'])
 ]
 
 admin_routes = [
