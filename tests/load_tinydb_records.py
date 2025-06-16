@@ -90,7 +90,7 @@ def contact2party(ci: CI_ResponsibleParty) -> dict:
         address_obj['country'] = [ci.country]
 
     if address_obj:
-        party['addresses'] = [{address_obj}]
+        party['addresses'] = [address_obj]
 
     if ci.onlineresource:
         party['links'] = [{
@@ -192,12 +192,24 @@ for xml_file in xml_dir.glob('*.xml'):
 
     bbox_crs = 'http://www.opengis.net/def/crs/OGC/1.3/CRS84'
 
-    minx = float(m.identification[0].bbox.minx)
-    miny = float(m.identification[0].bbox.miny)
-    maxx = float(m.identification[0].bbox.maxx)
-    maxy = float(m.identification[0].bbox.maxy)
+    try:
+        minx = float(m.identification[0].bbox.minx)
+        miny = float(m.identification[0].bbox.miny)
+        maxx = float(m.identification[0].bbox.maxx)
+        maxy = float(m.identification[0].bbox.maxy)
 
-    bbox = [minx, miny, maxx, maxy]
+        geometry = {
+            'type': 'Polygon',
+            'coordinates': [[
+                [minx, miny],
+                [minx, maxy],
+                [maxx, maxy],
+                [maxx, miny],
+                [minx, miny]
+            ]]
+        }
+    except TypeError:
+        geometry = None
 
     te_begin = m.identification[0].temporalextent_start
     if te_begin == 'missing':
@@ -213,16 +225,7 @@ for xml_file in xml_dir.glob('*.xml'):
         'time': {
             'interval': [te_begin, te_end]
         },
-        'geometry': {
-            'type': 'Polygon',
-            'coordinates': [[
-                [minx, miny],
-                [minx, maxy],
-                [maxx, maxy],
-                [maxx, miny],
-                [minx, miny]
-            ]]
-        },
+        'geometry': geometry,
         'properties': {
             'created': issued,
             'updated': datetime.utcnow().strftime('%Y-%m-%dT%H:%M:%SZ'),
