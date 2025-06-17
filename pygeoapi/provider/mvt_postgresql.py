@@ -35,8 +35,12 @@
 
 import logging
 
-from sqlalchemy.sql import func, select
+from geoalchemy2.functions import (ST_TileEnvelope, ST_Transform, ST_AsMVTGeom,
+                                   ST_AsMVT, ST_CurveToLine, ST_MakeEnvelope)
+
+from sqlalchemy.sql import select
 from sqlalchemy.orm import Session
+
 from pygeoapi.models.provider.base import (
     TileSetMetadata, TileMatrixSetEnum, LinkType)
 from pygeoapi.provider.base import ProviderConnectionError
@@ -134,8 +138,7 @@ class MVTPostgreSQLProvider(BaseMVTProvider, PostgreSQLProvider):
 
         :returns: an encoded mvt tile
         """
-        if format_ == 'mvt':
-            format_ = self.format_type
+        z, y, x = map(int, [z, y, x])
 
         [tileset_schema] = [
             schema for schema in self.get_tiling_schemes()
@@ -151,13 +154,13 @@ class MVTPostgreSQLProvider(BaseMVTProvider, PostgreSQLProvider):
 
         geom_column = getattr(self.table_model, self.geom)
         geom_filter = geom_column.intersects(
-            func.ST_Transform(envelope, storage_srid)
+            ST_Transform(envelope, storage_srid)
         )
 
         mvtgeom = (
-            func.ST_AsMVTGeom(
-                func.ST_Transform(func.ST_CurveToLine(geom_column), out_srid),
-                func.ST_Transform(envelope, out_srid))
+            ST_AsMVTGeom(
+                ST_Transform(ST_CurveToLine(geom_column), out_srid),
+                ST_Transform(envelope, out_srid))
             .label('mvtgeom')
         )
 
@@ -165,11 +168,10 @@ class MVTPostgreSQLProvider(BaseMVTProvider, PostgreSQLProvider):
             select(mvtgeom, *self.fields.values())
             .filter(geom_filter)
             .cte('mvtrow')
-            .table_valued()
         )
 
         mvtquery = select(
-            func.ST_AsMVT(mvtrow, layer)
+            ST_AsMVT(mvtrow.table_valued(), layer)
         )
 
         with Session(self._engine) as session:
@@ -184,7 +186,7 @@ class MVTPostgreSQLProvider(BaseMVTProvider, PostgreSQLProvider):
 
         service_url = url_join(
             server_url,
-            f'collections/{dataset}/tiles/{tileset}'
+            f'collections/{dataset}/tiles/{tileset}',
             '{tileMatrix}/{tileRow}/{tileCol}?f=mvt')
         metadata_url = url_join(
             server_url,
