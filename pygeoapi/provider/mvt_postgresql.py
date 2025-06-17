@@ -150,7 +150,7 @@ class MVTPostgreSQLProvider(BaseMVTProvider, PostgreSQLProvider):
 
         storage_srid = get_crs_from_uri(self.storage_crs).to_string()
         out_srid = get_crs_from_uri(tileset_schema.crs).to_string()
-        envelope = func.ST_TileEnvelope(z, x, y).label('bounds')
+        envelope = self.get_envelope(z, y, x, tileset)
 
         geom_column = getattr(self.table_model, self.geom)
         geom_filter = geom_column.intersects(
@@ -253,6 +253,41 @@ class MVTPostgreSQLProvider(BaseMVTProvider, PostgreSQLProvider):
         content.links = links
 
         return content.model_dump(exclude_none=True)
+
+    @staticmethod
+    def get_envelope(z, y, x, tileset):
+        """
+        Calculate the Tile bounding box of a tile at zoom z, y, x.
+
+        WorldCRS84Quad tiles have:
+        - origin top-left (y=0 is north)
+        - full lon: -180 to 180
+
+        :param tileset: mvt tileset
+        :param z: z index
+        :param y: y index
+        :param x: x index
+
+        :returns: SQL Alchemy Tile Envelope
+        """
+
+        if tileset == TileMatrixSetEnum.WORLDCRS84QUAD.value.tileMatrixSet:
+
+            tile_size = 180 / 2 ** z
+
+            xmin = tile_size * x - 180
+            ymax = tile_size * -y + 90
+
+            # getting bottom-right coordinates of the tile
+            xmax = xmin + tile_size
+            ymin = ymax - tile_size
+
+            envelope = ST_MakeEnvelope(xmin, ymin, xmax, ymax, 4326)
+
+        else:
+            envelope = ST_TileEnvelope(z, x, y)
+
+        return envelope.label('bounds')
 
     def __repr__(self):
         return f'<MVTPostgreSQLProvider> {self.data}'

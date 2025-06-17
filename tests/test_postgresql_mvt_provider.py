@@ -276,7 +276,7 @@ def test_get_tiles_WorldCRS84Quad(config):
     assert tile is None
 
     # Valid tile, content
-    z, x, y = 10, 595, 521
+    z, x, y = 9, 595, 267
     tile = p.get_tiles(
         tileset=tileset,
         z=z, x=x, y=y,
