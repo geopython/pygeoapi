@@ -1,5 +1,3 @@
-# ****************************** -*-
-# flake8: noqa
 # =================================================================
 #
 # Authors: Sander Schaminee <sander.schaminee@geocat.net>
@@ -32,20 +30,33 @@
 # =================================================================
 
 from pydantic import BaseModel, Field
+import pydantic
+
+# Handle Pydantic v1/v2 compatibility
+if pydantic.VERSION.startswith('1'):
+    model_validator = 'parse_obj'
+    model_fields = '__fields__'
+    regex_param = {'regex': r'^\d+\.\d+\..+$'}
+else:
+    model_validator = 'model_validate'
+    model_fields = 'model_fields'
+    regex_param = {'pattern': r'^\d+\.\d+\..+$'}
 
 
 class APIRules(BaseModel):
-    """ Pydantic model for API design rules that must be adhered to. """
-    api_version: str = Field(pattern=r'^\d+\.\d+\..+$',
-                             description="Semantic API version number.")
+    """
+    Pydantic model for API design rules that must be adhered to.
+    """
+    api_version: str = Field(**regex_param,
+                             description='Semantic API version number.')
     url_prefix: str = Field(
-        "",
+        '',
         description="If set, pygeoapi routes will be prepended with the "
                     "given URL path prefix (e.g. '/v1'). "
                     "Defaults to an empty string (no prefix)."
     )
     version_header: str = Field(
-        "",
+        '',
         description="If set, pygeoapi will set a response header with this "
                     "name and its value will hold the API version. "
                     "Defaults to an empty string (i.e. no header). "
@@ -59,34 +70,41 @@ class APIRules(BaseModel):
 
     @staticmethod
     def create(**rules_config) -> 'APIRules':
-        """ Returns a new APIRules instance for the current API version
-        and configured rules. """
+        """
+        Returns a new APIRules instance for the current API version
+        and configured rules.
+        """
         obj = {
-            k: v for k, v in rules_config.items() if k in APIRules.model_fields
+            k: v for k, v in rules_config.items()
+            if k in getattr(APIRules, model_fields)
         }
         # Validation will fail if required `api_version` is missing
         # or if `api_version` is not a semantic version number
-        return APIRules.model_validate(obj)
+        model_validator_ = getattr(APIRules, model_validator)
+        return model_validator_(obj)
 
     @property
     def response_headers(self) -> dict:
-        """ Gets a dictionary of additional response headers for the current
-        API rules. Returns an empty dict if no rules apply. """
+        """
+        Gets a dictionary of additional response headers for the current
+        API rules. Returns an empty dict if no rules apply.
+        """
         headers = {}
         if self.version_header:
             headers[self.version_header] = self.api_version
         return headers
 
-    def get_url_prefix(self, style: str = None) -> str:
+    def get_url_prefix(self, style: str = '') -> str:
         """
         Returns an API URL prefix to use in all paths.
         May include a (partial) API version. See docs for syntax.
+
         :param style: Set to 'django', 'flask' or 'starlette' to return a
                       specific prefix formatted for those frameworks.
                       If not set, only the prefix itself will be returned.
         """
         if not self.url_prefix:
-            return ""
+            return ''
         major, minor, build = self.api_version.split('.')
         prefix = self.url_prefix.format(
             api_version=self.api_version,
@@ -94,12 +112,13 @@ class APIRules(BaseModel):
             api_minor=minor,
             api_build=build
         ).strip('/')
-        style = (style or '').lower()
+
         if style == 'django':
             # Django requires the slash at the end
-            return rf"^{prefix}/"
+            return rf'^{prefix}/'
         elif style in ('flask', 'starlette'):
             # Flask and Starlette need the slash in front
-            return f"/{prefix}"
-        # If no format is specified, return only the bare prefix
-        return prefix
+            return f'/{prefix}'
+        else:
+            # If no format is specified, return only the bare prefix
+            return prefix

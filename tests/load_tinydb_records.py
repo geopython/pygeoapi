@@ -2,7 +2,7 @@
 #
 # Authors: Tom Kralidis <tomkralidis@gmail.com>
 #
-# Copyright (c) 2023 Tom Kralidis
+# Copyright (c) 2025 Tom Kralidis
 #
 # Permission is hereby granted, free of charge, to any person
 # obtaining a copy of this software and associated documentation
@@ -60,44 +60,48 @@ def contact2party(ci: CI_ResponsibleParty) -> dict:
     :returns: `dict` of OARec party object
     """
 
-    party = {
-        'contactInfo': {
-            'address': {
-                'office': {}
-            }
-        }
-    }
+    party = {}
+    address_obj = {}
 
     party['name'] = ci.name or ci.position
 
+    if ci.organization:
+        party['organization'] = ci.organization
+
     if ci.phone:
-        party['contactInfo']['phone'] = {
-            'office': ci.phone
-        }
+        party['phones'] = [{
+            'value': ci.phone
+        }]
+
     if ci.email:
-        party['contactInfo']['email'] = {
-            'office': ci.email
-        }
+        party['emails'] = [{
+            'value': ci.email
+        }]
+
     if ci.address:
-        party['contactInfo']['address']['office']['deliveryPoint'] = ci.address
+        address_obj['deliveryPoint'] = [ci.address]
     if ci.city:
-        party['contactInfo']['address']['office']['city'] = ci.city
+        address_obj['city'] = [ci.city]
     if ci.region:
-        party['contactInfo']['address']['office']['administrativeArea'] = ci.region  # noqa
+        address_obj['administrativeArea'] = [ci.region]
     if ci.postcode:
-        party['contactInfo']['address']['office']['postalCode'] = ci.postcode
+        address_obj['postalCode'] = [ci.postcode]
     if ci.country:
-        party['contactInfo']['address']['office']['country'] = ci.country
+        address_obj['country'] = [ci.country]
+
+    if address_obj:
+        party['addresses'] = [address_obj]
+
     if ci.onlineresource:
-        party['contactInfo']['url'] = {
+        party['links'] = [{
             'href': ci.onlineresource.url,
             'rel': ci.onlineresource.protocol,
             'title': ci.onlineresource.name,
             'description': ci.onlineresource.description,
-        }
+        }]
 
     if ci.role:
-        party['roles'] = [{'name': ci.role}]
+        party['roles'] = [ci.role]
 
     return party
 
@@ -140,7 +144,7 @@ for xml_file in xml_dir.glob('*.xml'):
     title = m.identification[0].title
     description = m.identification[0].abstract
 
-    issued = m.datestamp
+    issued = m.datestamp + 'Z'
 
     links = []
     if m.distribution and m.distribution.online:
@@ -188,12 +192,24 @@ for xml_file in xml_dir.glob('*.xml'):
 
     bbox_crs = 'http://www.opengis.net/def/crs/OGC/1.3/CRS84'
 
-    minx = float(m.identification[0].bbox.minx)
-    miny = float(m.identification[0].bbox.miny)
-    maxx = float(m.identification[0].bbox.maxx)
-    maxy = float(m.identification[0].bbox.maxy)
+    try:
+        minx = float(m.identification[0].bbox.minx)
+        miny = float(m.identification[0].bbox.miny)
+        maxx = float(m.identification[0].bbox.maxx)
+        maxy = float(m.identification[0].bbox.maxy)
 
-    bbox = [minx, miny, maxx, maxy]
+        geometry = {
+            'type': 'Polygon',
+            'coordinates': [[
+                [minx, miny],
+                [minx, maxy],
+                [maxx, maxy],
+                [maxx, miny],
+                [minx, miny]
+            ]]
+        }
+    except TypeError:
+        geometry = None
 
     te_begin = m.identification[0].temporalextent_start
     if te_begin == 'missing':
@@ -203,27 +219,20 @@ for xml_file in xml_dir.glob('*.xml'):
     json_record = {
         'id': identifier,
         'conformsTo': [
-            'http://www.opengis.net/spec/ogcapi-records-1/1.0/req/record-core'
+            'http://www.opengis.net/spec/ogcapi-records-1/1.0/conf/record-core'
         ],
         'type': 'Feature',
-        'time': [te_begin, te_end],
-        'geometry': {
-            'type': 'Polygon',
-            'coordinates': [[
-                [minx, miny],
-                [minx, maxy],
-                [maxx, maxy],
-                [maxx, miny],
-                [minx, miny]
-            ]]
+        'time': {
+            'interval': [te_begin, te_end]
         },
+        'geometry': geometry,
         'properties': {
             'created': issued,
             'updated': datetime.utcnow().strftime('%Y-%m-%dT%H:%M:%SZ'),
             'type': type_,
             'title': title,
             'description': description,
-            'providers': providers,
+            'contacts': providers,
             'externalIds': [{
                 'scheme': 'default',
                 'value': identifier
