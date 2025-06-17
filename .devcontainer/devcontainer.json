@@ -1,0 +1,44 @@
+{
+    "name": "Pygeoapi Devcontainer",
+
+    // build from root using the standard Dockerfile
+    "build" :{
+        "context": "../",
+        "dockerfile": "../Dockerfile"
+    },
+
+    // by default use the example configs
+    // for development 
+    "containerEnv": {
+        "PYGEOAPI_CONFIG": "example-config.yml",
+        "PYGEOAPI_OPENAPI": "example-openapi.yml"
+    },
+
+    // what folder to open when the container starts
+    // this is set to the workdir in the Dockerfile
+    "workspaceFolder": "/pygeoapi",
+
+    // install git in the container for convenience
+    // however, since everything is mount to the host, you
+    // can also use git on the host after exiting the container
+    "features": {
+        "ghcr.io/devcontainers/features/git:1.3.3": {}
+    },
+
+    // Uncomment to run the container on the same network
+    // as another container on your host; you can specify
+    // --network=host to directly connect to the host
+    // but this is not supported on all platforms 
+    // "runArgs": [
+    //     "--network=YOUR-APP-NETWORK-HERE",
+    // ],
+
+    // mount the entire pygeoapi folder into the container
+    // so any changes in the container will be reflected in the host
+    "workspaceMount": "source=${localWorkspaceFolder},target=/pygeoapi,type=bind,consistency=cached",
+
+    // install dependencies upon container start 
+    "postAttachCommand": {
+        "server": "python3 -m pip install -r requirements.txt && python3 -m pip install -r requirements-dev.txt"
+    }
+}
