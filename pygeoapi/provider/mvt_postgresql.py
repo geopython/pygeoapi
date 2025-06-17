@@ -33,7 +33,6 @@
 #
 # =================================================================
 
-from copy import deepcopy
 import logging
 
 from sqlalchemy.sql import func, select
@@ -64,11 +63,7 @@ class MVTPostgreSQLProvider(BaseMVTProvider, PostgreSQLProvider):
 
         :returns: pygeoapi.provider.MVT.MVTPostgreSQLProvider
         """
-        pg_def = deepcopy(provider_def)
-        # delete the zoom option before initializing the PostgreSQL provider
-        # that provider breaks otherwise
-        del pg_def['options']['zoom']
-        PostgreSQLProvider.__init__(self, pg_def)
+        PostgreSQLProvider.__init__(self, provider_def)
         BaseMVTProvider.__init__(self, provider_def)
 
     def get_fields(self):
