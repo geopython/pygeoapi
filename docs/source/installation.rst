@@ -44,6 +44,12 @@ For developers and the truly impatient
    curl http://localhost:5000
 
 
+.. note::
+
+   If you get this error: `ModuleNotFoundError: No module named 'setuptools'`, it is because `setuptools` 
+   is not installed on your system. Although some Python installers will install it, `setuptools` is `not part of the Python standard library <https://docs.python.org/3/py-modindex.html#cap-s>`_. 
+   See this `guide <https://packaging.python.org/en/latest/guides/installing-using-linux-tools/>`_ to install it in your system.
+
 pip
 ---
 
