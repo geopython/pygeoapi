@@ -154,7 +154,7 @@ class MVTPostgreSQLProvider(BaseMVTProvider):
             query = text("""
                 WITH
                     bounds AS (
-                        SELECT ST_TileEnvelope(:z, :x, :y) AS boundgeom
+                        SELECT ST_TileEnvelope({z}, {x}, {y}) AS boundgeom
                     ),
                     mvtgeom AS (
                         SELECT ST_AsMVTGeom(ST_Transform(ST_CurveToLine({geom}), 3857), bounds.boundgeom) AS geom {fields}
@@ -162,17 +162,30 @@ class MVTPostgreSQLProvider(BaseMVTProvider):
                         WHERE ST_Intersects({geom}, ST_Transform(bounds.boundgeom, 4326))
                     )
                 SELECT ST_AsMVT(mvtgeom, 'default') FROM mvtgeom;
-            """.format(geom=self.geom, table=self.table, fields=fields)) # noqa
+            """.format(geom=self.geom, table=self.table, fields=fields, z=z, x=x, y=y)) # noqa
 
         if tileset == TileMatrixSetEnum.WORLDCRS84QUAD.value.tileMatrixSet:
             if not self.is_in_limits(TileMatrixSetEnum.WORLDCRS84QUAD.value, z, x, y): # noqa
                 raise ProviderTileNotFoundError
 
+            # get tile size in degrees based on zoom level.
+            # Tile size is a function of the zoom level,
+            # e.g at zoom level 0, tile size is 180,
+            # at zoom level 1, tile size is 90 and so on.
+            tile_size_deg = 180/pow(2, int(z))
+
+            # getting top-left coordinates of the tile
+            xmin = (tile_size_deg * int(x)) - 180
+            ymax = (-tile_size_deg * int(y)) + 90
+
+            # getting bottom-right coordinates of the tile
+            xmax = xmin + tile_size_deg
+            ymin = ymax - tile_size_deg
+
             query = text("""
                 WITH
                     bounds AS (
-                        SELECT ST_TileEnvelope(:z, :x, :y,
-                                'SRID=4326;POLYGON((-180 -90,-180 90,180 90,180 -90,-180 -90))'::geometry) AS boundgeom
+                        SELECT ST_MakeEnvelope({xmin},{ymin},{xmax},{ymax}, 4326) AS boundgeom
                     ),
                     mvtgeom AS (
                         SELECT ST_AsMVTGeom(ST_CurveToLine({geom}), bounds.boundgeom) AS geom {fields}
@@ -180,14 +193,10 @@ class MVTPostgreSQLProvider(BaseMVTProvider):
                         WHERE ST_Intersects({geom}, bounds.boundgeom)
                     )
                 SELECT ST_AsMVT(mvtgeom, 'default') FROM mvtgeom;
-            """.format(geom=self.geom, table=self.table, fields=fields)) # noqa
+            """.format(geom=self.geom, table=self.table, fields=fields, xmin=xmin, ymin=ymin, xmax=xmax, ymax=ymax)) # noqa
 
         with self.postgres._engine.connect() as session:
-            result = session.execute(query, {
-                    'z': z,
-                    'y': y,
-                    'x': x
-            }).fetchone()
+            result = session.execute(query).fetchone()
 
             if len(bytes(result[0])) == 0:
                 return None
