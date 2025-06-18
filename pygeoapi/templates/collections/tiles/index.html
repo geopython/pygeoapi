@@ -69,6 +69,7 @@
 
 {% block extrafoot %}
     <script>
+    if (scheme !== "WorldCRS84Quad"){
     var map = L.map('items-map').setView([{{ 45 }}, {{ -75 }}], 10);
 
     map.addLayer(new L.TileLayer(
@@ -78,6 +79,27 @@
         }
     ));
 
+    } else {
+
+    var map = L.map('items-map',{
+        crs: L.CRS.EPSG4326
+    }).setView([{{ 45 }}, {{ -75 }}], 10);
+
+    map.addLayer(new L.TileLayer(
+        '{{ config["server"]["map"]["url"] }}', {
+            maxZoom: {{ data['maxzoom'] }},
+            attribution: '{{ config["server"]["map"]["attribution"] | safe }}',
+            tileSize: L.point(512, 256)
+        }
+    ));
+    document.getElementById('items-map').insertAdjacentHTML(
+        'afterend', 
+        '<div style="margin-top: 1rem; text-align: center;">' +
+        '{% trans %}Warning: Basemap may be in a different projection{% endtrans %}' +
+        '</div>'
+    );
+
+    }
     {% for link in data["links"] %}
       {% if link["rel"] == "item" %}
         var tilesUrl = '{{ link["href"] }}';
@@ -108,7 +130,7 @@
             maxZoom: {{ data['maxzoom'] }},
             indexMaxZoom: 5,
             getFeatureId: function(feat) {
-                return feat.properties["id"]
+                return feat.properties.id || feat.properties.fid || feat.properties.uri;
             }
         };
 
@@ -129,7 +151,7 @@
                     .openOn(map);
 
                 clearHighlight();
-                highlight = e.layer.properties.id;
+                highlight = e.layer.properties.id || e.layer.properties.fid || e.layer.properties.uri;
                 tilesPbfLayer.setFeatureStyle(highlight, {
                     weight: 2,
                     color: 'red',
