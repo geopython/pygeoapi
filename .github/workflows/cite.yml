@@ -4,6 +4,9 @@ on:
   push:
   pull_request:
 
+  schedule:
+    - cron: '43 4 * * *'  # run once per day at 04h43
+
 env:
   COLUMNS: 120
 
@@ -58,7 +61,7 @@ jobs:
           timeout: 120
 
       - name: test {{ matrix.test-suite.suite-id }} compliance
-        uses: OSGeo/cite-runner@v0.2.0
+        uses: OSGeo/ogc-cite-runner@v0.3.0
         with:
           test_suite_identifier: ${{ matrix.test-suite.suite-id }}
           test_session_arguments: ${{ matrix.test-suite.arguments }}
