@@ -154,7 +154,7 @@ class MVTPostgreSQLProvider(BaseMVTProvider):
             query = text("""
                 WITH
                     bounds AS (
-                        SELECT ST_TileEnvelope(:z, :x, :y) AS boundgeom
+                        SELECT ST_TileEnvelope({z}, {x}, {y}) AS boundgeom
                     ),
                     mvtgeom AS (
                         SELECT ST_AsMVTGeom(ST_Transform(ST_CurveToLine({geom}), 3857), bounds.boundgeom) AS geom {fields}
@@ -162,7 +162,7 @@ class MVTPostgreSQLProvider(BaseMVTProvider):
                         WHERE ST_Intersects({geom}, ST_Transform(bounds.boundgeom, 4326))
                     )
                 SELECT ST_AsMVT(mvtgeom, 'default') FROM mvtgeom;
-            """.format(geom=self.geom, table=self.table, fields=fields)) # noqa
+            """.format(geom=self.geom, table=self.table, fields=fields, z=z, x=x, y=y)) # noqa
 
         if tileset == TileMatrixSetEnum.WORLDCRS84QUAD.value.tileMatrixSet:
             if not self.is_in_limits(TileMatrixSetEnum.WORLDCRS84QUAD.value, z, x, y): # noqa
@@ -185,7 +185,7 @@ class MVTPostgreSQLProvider(BaseMVTProvider):
             query = text("""
                 WITH
                     bounds AS (
-                        SELECT ST_MakeEnvelope(:xmin,:ymin,:xmax,:ymax, 4326) AS boundgeom
+                        SELECT ST_MakeEnvelope({xmin},{ymin},{xmax},{ymax}, 4326) AS boundgeom
                     ),
                     mvtgeom AS (
                         SELECT ST_AsMVTGeom(ST_CurveToLine({geom}), bounds.boundgeom) AS geom {fields}
@@ -193,15 +193,10 @@ class MVTPostgreSQLProvider(BaseMVTProvider):
                         WHERE ST_Intersects({geom}, bounds.boundgeom)
                     )
                 SELECT ST_AsMVT(mvtgeom, 'default') FROM mvtgeom;
-            """.format(geom=self.geom, table=self.table, fields=fields)) # noqa
+            """.format(geom=self.geom, table=self.table, fields=fields, xmin=xmin, ymin=ymin, xmax=xmax, ymax=ymax)) # noqa
 
         with self.postgres._engine.connect() as session:
-            result = session.execute(query, {
-                    'xmin': xmin,
-                    'ymin': ymin,
-                    'xmax': xmax,
-                    'ymax': ymax
-            }).fetchone()
+            result = session.execute(query).fetchone()
 
             if len(bytes(result[0])) == 0:
                 return None
