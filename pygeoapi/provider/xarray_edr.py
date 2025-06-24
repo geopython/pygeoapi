@@ -105,6 +105,13 @@ class XarrayEDRProvider(BaseEDRProvider, XarrayProvider):
         if datetime_ is not None:
             query_params[self.time_field] = self._make_datetime(datetime_)
 
+        z = kwargs.get('z')
+        if z is not None:
+            if self.z_field is not None:
+                query_params[self.z_field] = z
+            else:
+                LOGGER.debug('No vertical level found')
+
         LOGGER.debug(f'query parameters: {query_params}')
 
         try:
