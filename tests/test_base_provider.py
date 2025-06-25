@@ -400,3 +400,17 @@ def test_provider_request_entity_too_large_error_with_message():
 def test_schema_type_values(schema_type, expected_value):
     """Test SchemaType enum values."""
     assert schema_type.value == expected_value
+
+
+def test_unique_subclass_query_types():
+    from pygeoapi.provider.base_edr import BaseEDRProvider
+    assert BaseEDRProvider.query_types == []
+
+    from pygeoapi.provider.xarray_edr import XarrayEDRProvider
+    assert BaseEDRProvider.query_types != XarrayEDRProvider.query_types
+    assert XarrayEDRProvider.query_types == ['position', 'cube']
+
+    from pygeoapi.provider.sensorthings_edr import SensorThingsEDRProvider
+    assert BaseEDRProvider.query_types != SensorThingsEDRProvider.query_types
+    assert SensorThingsEDRProvider.query_types == \
+        ['items', 'locations', 'cube', 'area']
