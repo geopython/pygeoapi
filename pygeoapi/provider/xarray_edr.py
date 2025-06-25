@@ -57,7 +57,6 @@ class XarrayEDRProvider(BaseEDRProvider, XarrayProvider):
         BaseEDRProvider.__init__(self, provider_def)
         XarrayProvider.__init__(self, provider_def)
 
-    @BaseEDRProvider.register()
     def position(self, **kwargs):
         """
         Extract data from collection collection
@@ -168,7 +167,6 @@ class XarrayEDRProvider(BaseEDRProvider, XarrayProvider):
 
         return self.gen_covjson(out_meta, data, self.fields)
 
-    @BaseEDRProvider.register()
     def cube(self, **kwargs):
         """
         Extract data from collection
