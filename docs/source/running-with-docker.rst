@@ -103,14 +103,14 @@ The base Docker image supports two additional environment variables for configur
    To learn more about the Admin API see :ref:`admin-api`.
 
 3. **`CONTAINER_HOST`**: 
-   This variable sets the listening address for incoming connections. Normally the server is listening on localhost (the default), but other values are also possible. 
+   This variable sets the listening address for incoming connections. Normally the server is listening on `localhost` (the default), but other values are also possible. 
 
    .. code-block:: bash
 
       docker run -p 5000:80 -e CONTAINER_HOST=192.168.0.7 -it geopython/pygeoapi
 
 4. **`CONTAINER_PORT`**: 
-   This variable sets the listening port for incoming connections. The default port is `80`; in this example, we change it to 5001.
+   This variable sets the listening port for incoming connections. The default port is `80`; in this example, we change it to `5001`.
 
    .. code-block:: bash
 
@@ -127,7 +127,7 @@ The base Docker image supports two additional environment variables for configur
 
 6. **`WSGI_WORKER_TIMEOUT`**: 
 
-   Gunicorn workers silent for more than the seconds set by this variable are killed and restarted. The default value is 6000.
+   Gunicorn workers silent for more than the seconds set by this variable are killed and restarted. The default value is `6000`.
 
    .. code-block:: bash
 
