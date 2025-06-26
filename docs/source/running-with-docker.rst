@@ -15,7 +15,7 @@ The `pygeoapi demo server`_ runs various services from Docker images which also 
 The basics
 ----------
 
-The official pygeoapi Docker image will start a pygeoapi Docker container using Gunicorn on internal port 80.
+The official pygeoapi Docker image will start a pygeoapi Docker container using `Gunicorn <https://docs.gunicorn.org/en/latest/>`_ on internal port 80.
 
 Either ``IMAGE`` can be called with the ``docker`` command, ``geopython/pygeoapi`` from DockerHub or ``ghcr.io/geopython/pygeoapi`` from the GitHub Container Registry. Examples below use ``geopython/pygeoapi``. 
 
@@ -118,7 +118,7 @@ The base Docker image supports two additional environment variables for configur
 
 5. **`WSGI_WORKERS`**: 
 
-   This variable sets the number of workers used by the `gunicorn server <https://docs.gunicorn.org/en/latest/>`_, the default being 4.
+   This variable sets the number of workers used by the Gunicorn server, the default being 4.
    For performance reasons, `it is not recommended to use a high number of workers <https://docs.gunicorn.org/en/latest/design.html#how-many-workers>`_ .
 
    .. code-block:: bash
@@ -133,7 +133,7 @@ The base Docker image supports two additional environment variables for configur
 
       docker run -p 5000:80 -e WSGI_WORKERS=10 -it geopython/pygeoapi
 
-   You can read more about this and other gunicorn settings in the `official documentation <https://docs.gunicorn.org/en/stable/>`_
+   You can read more about this and other Gunicorn settings in the `official documentation <https://docs.gunicorn.org/en/stable/>`_
 
 Deploying on a sub-path
 -----------------------
