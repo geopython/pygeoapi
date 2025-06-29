@@ -381,6 +381,18 @@ def test_query_cql_properties_bbox_filters(config):
     assert ids == expected_ids
 
 
+def test_bbox_is_same_as_cql(config):
+    provider = PostgreSQLProvider(config)
+
+    bbox = [30.560389, -3.134991, 30.604849, -3.061970]
+    fc_bbox = provider.query(bbox=bbox)
+
+    bbox_cql = parse('BBOX(foo_geom, {}, {}, {}, {})'.format(*bbox))
+    fc_bbox_cql = provider.query(filterq=bbox_cql)
+
+    assert fc_bbox == fc_bbox_cql
+
+
 def test_get_fields_types(config_types):
     provider = PostgreSQLProvider(config_types)
 
