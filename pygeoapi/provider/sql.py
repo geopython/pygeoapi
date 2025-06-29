@@ -60,7 +60,7 @@ import logging
 from typing import Optional
 
 from geoalchemy2 import Geometry  # noqa - this isn't used explicitly but is needed to process Geometry columns
-from geoalchemy2.functions import ST_MakeEnvelope
+from geoalchemy2.functions import ST_MakeEnvelope, ST_Intersects
 from geoalchemy2.shape import to_shape, from_shape
 from pygeofilter.backends.sqlalchemy.evaluate import to_filter
 import pyproj
@@ -91,7 +91,7 @@ from pygeoapi.provider.base import (
     ProviderQueryError,
     ProviderItemNotFoundError
 )
-from pygeoapi.util import get_transform_from_crs
+from pygeoapi.util import get_transform_from_crs, get_crs_from_uri
 
 
 LOGGER = logging.getLogger(__name__)
@@ -720,9 +720,11 @@ class PostgreSQLProvider(GenericSQLProvider):
             return True  # Let everything through if no bbox
 
         # Since this provider uses postgis, we can use ST_MakeEnvelope
-        envelope = ST_MakeEnvelope(*bbox)
+        storage_srid = get_crs_from_uri(self.storage_crs).to_epsg()
+        envelope = ST_MakeEnvelope(*bbox, storage_srid or 4326)
+
         geom_column = getattr(self.table_model, self.geom)
-        bbox_filter = geom_column.intersects(envelope)
+        bbox_filter = ST_Intersects(envelope, geom_column)
 
         return bbox_filter
 
