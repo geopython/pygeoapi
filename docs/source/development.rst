@@ -15,7 +15,7 @@ A given GitHub Pull Request is evaluated against the following GitHub actions:
 
 - main: mainline testing harness (as defined in ``tests``)
 - flake8: code linting
-- docss: documentation updates (for files updated in ``docs/**.rst``)
+- docs: documentation updates (for files updated in ``docs/**.rst``)
 - vulnerabilities: Trivy vulnerability scanning
 
 Testing
@@ -98,9 +98,9 @@ Or using the following ``make`` command:
 After building the documentation, the folder ``docs/build`` will contain the website generated with the documentation. 
 Add the folder to a web server or open the file ``docs/build/html/index.html`` file in a web browser to see the contents of the documentation.
 
-The documentation is hosted on `readthedocs`_. It is automatically generated from the contents of the ``master`` branch on GitHub.
+The documentation is hosted on `Read the Docs`_. It is automatically generated from the contents of the ``master`` branch on GitHub.
 
-The file ``.readthedocs.yaml`` contains the configuration of the readthedocs build. Refer to the `readthedocs configuration file`_ documentation for more information.
+The file ``.readthedocs.yaml`` contains the configuration of the Read the Docs build. Refer to the `Read the Docs configuration file`_ documentation for more information.
 
 
 Working with Spatialite on OSX
@@ -149,6 +149,6 @@ Set the variable for the Spatialite library under OSX:
 
 .. _`flake8`: https://flake8.pycqa.org
 .. _`GitHub Actions setup`: https://github.com/geopython/pygeoapi/blob/master/.github/workflows/main.yml
-.. _`Sphinx`: https://www.djangoproject.com
-.. _`readthedocs`: https://docs.readthedocs.io/en/stable/index.html
-.. _`readthedocs configuration file`: https://docs.readthedocs.io/en/stable/config-file/v2.html
+.. _`Sphinx`: https://www.sphinx-doc.org
+.. _`Read the Docs`: https://docs.readthedocs.io/en/stable/index.html
+.. _`Read the Docs configuration file`: https://docs.readthedocs.io/en/stable/config-file/v2.html
