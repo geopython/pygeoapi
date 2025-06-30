@@ -92,7 +92,7 @@ Your contribution will be under our [license](https://github.com/geopython/pygeo
 
 ### Testing
 
-* testing is peformed using `pytest <https://pytest.org>`_ and covers all major components (API core, providers, formatters, managers, etc.)
+* testing is performed using `pytest <https://pytest.org>`_ and covers all major components (API core, providers, formatters, managers, etc.)
 * additional information can be found in the `documentation <https://docs.pygeoapi.io/en/latest/development.html#testing>`_
 
 
