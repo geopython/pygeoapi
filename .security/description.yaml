@@ -1,0 +1,4 @@
+organization: Land
+product: GeoNorge
+repo_types: [PuclicApi]
+platforms: [OS_VM]
