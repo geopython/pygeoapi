@@ -47,6 +47,7 @@ class MongoDBManager(BaseManager):
         super().__init__(manager_def)
         self.is_async = True
         self.supports_subscribing = True
+        self.supports_request_headers = True
 
     def _connect(self):
         try:
