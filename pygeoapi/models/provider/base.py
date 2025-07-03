@@ -36,6 +36,7 @@ from enum import Enum
 from typing import List, Optional
 
 from pydantic import BaseModel
+import pydantic
 
 
 class TilesMetadataFormat(str, Enum):
@@ -875,3 +876,10 @@ class TileSetMetadata(BaseModel):
     tileMatrixSetURI: Optional[str] = None
     # Links to related resources.
     links: Optional[List[LinkType]] = None
+
+
+if pydantic.VERSION.startswith('1'):
+    def _dump(self, *, exclude_none: bool = False, **kwargs):
+        return self.dict(exclude_none=exclude_none, **kwargs)
+
+    TileSetMetadata.model_dump = _dump
