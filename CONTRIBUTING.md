@@ -65,7 +65,7 @@ Your contribution will be under our [license](https://github.com/geopython/pygeo
 * Pull requests may include copyright in the source code header by the contributor if the contribution is significant or the contributor wants to claim copyright on their contribution.
 * All contributors shall be listed at https://github.com/geopython/pygeoapi/graphs/contributors
 * Unclaimed copyright, by default, is assigned to the main copyright holders as specified in https://github.com/geopython/pygeoapi/blob/master/LICENSE.md
-* further notes can be found in the `documentation <https://docs.pygeoapi.io/en/latest/development.html#testing>`_
+* further notes can be found in the [documentation](https://docs.pygeoapi.io/en/latest/development.html#testing)
 
 ### Version Control Branching
 
@@ -92,8 +92,8 @@ Your contribution will be under our [license](https://github.com/geopython/pygeo
 
 ### Testing
 
-* testing is performed using `pytest <https://pytest.org>`_ and covers all major components (API core, providers, formatters, managers, etc.)
-* additional information can be found in the `documentation <https://docs.pygeoapi.io/en/latest/development.html#testing>`_
+* testing is performed using [pytest](https://pytest.org) and covers all major components (API core, providers, formatters, managers, etc.)
+* additional information can be found in the [documentation](https://docs.pygeoapi.io/en/latest/development.html#testing)
 
 
 ### Documentation
@@ -101,7 +101,7 @@ Your contribution will be under our [license](https://github.com/geopython/pygeo
 * documentation is managed in `docs/`, in reStructuredText format
 * [Sphinx](https://www.sphinx-doc.org) is used to generate the documentation
 * See the [reStructuredText Primer](https://www.sphinx-doc.org/en/master/usage/restructuredtext/basics.html) on rST markup and syntax
-* additional information can be found in the `documentation <https://docs.pygeoapi.io/en/latest/development.html#building-the-documentation>`_
+* additional information can be found in the [documentation](https://docs.pygeoapi.io/en/latest/development.html#building-the-documentation)
 
 
 ### Wiki
@@ -116,7 +116,7 @@ Your contribution will be under our [license](https://github.com/geopython/pygeo
 * 80 characters
 * spaces, not tabs
 * pygeoapi, NOT PyGeoAPI, pygeoAPI, etc.
-* additional information can be found in the `documentation <https://docs.pygeoapi.io/en/latest/development.html#linting>`_
+* additional information can be found in the [documentation](https://docs.pygeoapi.io/en/latest/development.html#linting)
 
 ## Suggesting Enhancements
 
