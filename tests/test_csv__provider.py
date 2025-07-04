@@ -136,6 +136,10 @@ def test_query(config):
     results = p.query()
     assert len(results['features'][0]['properties']) == 2
 
+    p = CSVProvider(config)
+    results = p.query(bbox=[-75, 45, -64, 55])
+    assert len(results['features'][0]['properties']) == 2
+
 
 def test_get_invalid_property(config):
     """Testing query for an invalid property name"""
