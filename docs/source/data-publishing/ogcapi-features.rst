@@ -19,11 +19,11 @@ parameters.
    :header: Provider, property filters/display, resulttype, bbox, datetime, sortby, skipGeometry, domains, CQL, transactions, crs
    :align: left
 
-   `CSV`_,✅/✅,results/hits,❌,❌,❌,✅,❌,❌,❌,✅
+   `CSV`_,✅/✅,results/hits,✅,❌,❌,✅,❌,❌,❌,✅
    `Elasticsearch`_,✅/✅,results/hits,✅,✅,✅,✅,✅,✅,✅,✅
    `ERDDAP Tabledap Service`_,❌/❌,results/hits,✅,✅,❌,❌,❌,❌,❌,✅
    `ESRI Feature Service`_,✅/✅,results/hits,✅,✅,✅,✅,❌,❌,❌,✅
-   `GeoJSON`_,✅/✅,results/hits,❌,❌,❌,✅,❌,❌,❌,✅
+   `GeoJSON`_,✅/✅,results/hits,✅,❌,❌,✅,❌,❌,❌,✅
    `MongoDB`_,✅/❌,results,✅,✅,✅,✅,❌,❌,❌,✅
    `MySQL`_,✅/✅,results/hits,✅,✅,✅,✅,❌,✅,✅,✅
    `OGR`_,✅/❌,results/hits,✅,❌,❌,✅,❌,❌,❌,✅
