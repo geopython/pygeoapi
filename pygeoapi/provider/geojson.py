@@ -126,6 +126,7 @@ class GeoJSONProvider(BaseProvider):
 
         # filter by bbox if set
         if bbox:
+            LOGGER.debug('processing bbox parameter')
             data['features'] = [f for f in data['features'] if \
                 self._intersects(f['geometry'], bbox)]  # noqa
 
@@ -151,7 +152,7 @@ class GeoJSONProvider(BaseProvider):
         """
 
         if geometry is None:
-            return False
+            return True
 
         bbox2 = box(*bbox)
         geometry2 = from_geojson(json.dumps(geometry))

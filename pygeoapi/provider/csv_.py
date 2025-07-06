@@ -136,6 +136,7 @@ class CSVProvider(BaseProvider):
                         [p[prop[0]] == prop[1] for prop in properties]), data_)
 
             if bbox:
+                LOGGER.debug('processing bbox parameter')
                 data_ = filter(
                     lambda f: all(
                         [self._intersects(f, bbox)]), data_)
@@ -214,7 +215,7 @@ class CSVProvider(BaseProvider):
         """
 
         if None in [data.get(self.geometry_x), data.get(self.geometry_y)]:
-            return False
+            return True
 
         point = Point(data[self.geometry_x], data[self.geometry_y])
         bbox2 = box(*bbox)
