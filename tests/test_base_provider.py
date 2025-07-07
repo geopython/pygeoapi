@@ -318,20 +318,20 @@ def test_load_and_prepare_item_accept_missing_identifier(
         assert data["type"] == "Feature"
 
 
-@pytest.mark.parametrize("missing_part,item_data", [
-    ("geometry", {
+@pytest.mark.parametrize("item_data", [
+    {
         "type": "Feature",
         "id": "test_id",
         "properties": {"name": "Test Feature"}
-    }),
-    ("properties", {
+    },
+    {
         "type": "Feature",
         "id": "test_id",
         "geometry": {"type": "Point", "coordinates": [0, 0]}
-    })
+    }
 ])
 def test_load_and_prepare_item_missing_geojson_parts(
-    mock_provider_with_get, missing_part, item_data, remove_stdout
+    mock_provider_with_get, item_data, remove_stdout
 ):
     """Test loading item without required GeoJSON parts."""
     item_json = json.dumps(item_data)
@@ -339,7 +339,7 @@ def test_load_and_prepare_item_missing_geojson_parts(
     with remove_stdout():
         with pytest.raises(
             ProviderInvalidDataError,
-            match=f"Missing core GeoJSON {missing_part}"
+            match="Missing core GeoJSON geometry or properties"
         ):
             mock_provider_with_get._load_and_prepare_item(item_json)
 
@@ -400,3 +400,17 @@ def test_provider_request_entity_too_large_error_with_message():
 def test_schema_type_values(schema_type, expected_value):
     """Test SchemaType enum values."""
     assert schema_type.value == expected_value
+
+
+def test_unique_subclass_query_types():
+    from pygeoapi.provider.base_edr import BaseEDRProvider
+    assert BaseEDRProvider.query_types == []
+
+    from pygeoapi.provider.xarray_edr import XarrayEDRProvider
+    assert BaseEDRProvider.query_types != XarrayEDRProvider.query_types
+    assert XarrayEDRProvider.query_types == ['position', 'cube']
+
+    from pygeoapi.provider.sensorthings_edr import SensorThingsEDRProvider
+    assert BaseEDRProvider.query_types != SensorThingsEDRProvider.query_types
+    assert SensorThingsEDRProvider.query_types == \
+        ['items', 'locations', 'cube', 'area']

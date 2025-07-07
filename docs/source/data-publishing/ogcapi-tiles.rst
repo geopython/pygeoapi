@@ -140,9 +140,6 @@ MVT-postgresql
 .. note::
    Must have PostGIS installed with protobuf-c support 
 
-.. note::
-   Geometry must be using EPSG:4326
-
 This provider gives support to serving tiles generated using `PostgreSQL <https://www.postgresql.org/>`_ with `PostGIS <https://postgis.net/>`_.
 The tiles are rendered on-the-fly using `ST_AsMVT <https://postgis.net/docs/ST_AsMVT.html>`_ and related methods.
 
@@ -152,24 +149,28 @@ This code block shows how to configure pygeoapi to render Mapbox vector tiles fr
 
    providers:
        - type: tile
-           name: MVT-postgresql
-           data:
-               host: 127.0.0.1
-               port: 3010 # Default 5432 if not provided
-               dbname: test
-               user: postgres
-               password: postgres
-               search_path: [osm, public]
-           id_field: osm_id
-           table: hotosm_bdi_waterways
-           geom_field: foo_geom
-           options:
-               zoom:
-                   min: 0
-                   max: 15
-           format:
-               name: pbf
-               mimetype: application/vnd.mapbox-vector-tile
+         name: MVT-postgresql
+         data:
+             host: 127.0.0.1
+             port: 3010 # Default 5432 if not provided
+             dbname: test
+             user: postgres
+             password: postgres
+             search_path: [osm, public]
+         id_field: osm_id
+         table: hotosm_bdi_waterways
+         geom_field: foo_geom
+         storage_crs: http://www.opengis.net/def/crs/EPSG/0/4326
+         options:
+             zoom:
+                 min: 0
+                 max: 15
+         format:
+             name: pbf
+             mimetype: application/vnd.mapbox-vector-tile
+
+.. tip::
+   Geometry must have correctly defined :ref:`storage_crs<crs>`
 
 PostgreSQL-related connection options can also be added to `options`. Please refer to the :ref:`PostgreSQL OGC Features Provider<PostgreSQL>` documentation for more information.
 

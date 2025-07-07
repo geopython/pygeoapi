@@ -57,7 +57,6 @@ class XarrayEDRProvider(BaseEDRProvider, XarrayProvider):
         BaseEDRProvider.__init__(self, provider_def)
         XarrayProvider.__init__(self, provider_def)
 
-    @BaseEDRProvider.register()
     def position(self, **kwargs):
         """
         Extract data from collection collection
@@ -104,6 +103,13 @@ class XarrayEDRProvider(BaseEDRProvider, XarrayProvider):
         datetime_ = kwargs.get('datetime_')
         if datetime_ is not None:
             query_params[self.time_field] = self._make_datetime(datetime_)
+
+        z = kwargs.get('z')
+        if z is not None:
+            if self.z_field is not None:
+                query_params[self.z_field] = z
+            else:
+                LOGGER.debug('No vertical level found')
 
         LOGGER.debug(f'query parameters: {query_params}')
 
@@ -161,7 +167,6 @@ class XarrayEDRProvider(BaseEDRProvider, XarrayProvider):
 
         return self.gen_covjson(out_meta, data, self.fields)
 
-    @BaseEDRProvider.register()
     def cube(self, **kwargs):
         """
         Extract data from collection

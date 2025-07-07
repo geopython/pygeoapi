@@ -100,7 +100,6 @@ class SensorThingsEDRProvider(BaseEDRProvider, SensorThingsProvider):
 
         return self._fields
 
-    @BaseEDRProvider.register()
     def items(self, **kwargs):
         """
         Retrieve a collection of items.
@@ -113,7 +112,6 @@ class SensorThingsEDRProvider(BaseEDRProvider, SensorThingsProvider):
         # We implement this method inside of the feature provider
         pass
 
-    @BaseEDRProvider.register()
     def locations(
         self,
         select_properties: list = [],
@@ -188,7 +186,6 @@ class SensorThingsEDRProvider(BaseEDRProvider, SensorThingsProvider):
 
         return fc
 
-    @BaseEDRProvider.register()
     def cube(
         self,
         select_properties: list = [],
@@ -240,7 +237,6 @@ class SensorThingsEDRProvider(BaseEDRProvider, SensorThingsProvider):
 
         return self._make_coverage_collection(response)
 
-    @BaseEDRProvider.register()
     def area(
         self,
         wkt: str,

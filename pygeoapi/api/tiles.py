@@ -246,7 +246,7 @@ def get_collection_tiles_data(
         if content is None:
             msg = 'identifier not found'
             return api.get_exception(
-                HTTPStatus.NO_CONTENT, headers, format_, 'NocContent', msg)
+                HTTPStatus.NO_CONTENT, headers, format_, 'NoContent', msg)
         else:
             return headers, HTTPStatus.OK, content
 

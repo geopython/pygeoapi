@@ -60,7 +60,7 @@ import logging
 from typing import Optional
 
 from geoalchemy2 import Geometry  # noqa - this isn't used explicitly but is needed to process Geometry columns
-from geoalchemy2.functions import ST_MakeEnvelope
+from geoalchemy2.functions import ST_MakeEnvelope, ST_Intersects
 from geoalchemy2.shape import to_shape, from_shape
 from pygeofilter.backends.sqlalchemy.evaluate import to_filter
 import pyproj
@@ -91,7 +91,7 @@ from pygeoapi.provider.base import (
     ProviderQueryError,
     ProviderItemNotFoundError
 )
-from pygeoapi.util import get_transform_from_crs
+from pygeoapi.util import get_transform_from_crs, get_crs_from_uri
 
 
 LOGGER = logging.getLogger(__name__)
@@ -107,7 +107,7 @@ class GenericSQLProvider(BaseProvider):
         self,
         provider_def: dict,
         driver_name: str,
-        extra_conn_args: Optional[dict]
+        extra_conn_args: Optional[dict] = {}
     ):
         """
         GenericSQLProvider Class constructor
@@ -143,9 +143,7 @@ class GenericSQLProvider(BaseProvider):
         LOGGER.debug(f'Configured Storage CRS: {self.storage_crs}')
 
         # Read table information from database
-        options = None
-        if provider_def.get('options'):
-            options = provider_def['options']
+        options = provider_def.get('options', {})
         self._store_db_parameters(provider_def['data'], options)
         self._engine = get_engine(
             driver_name,
@@ -154,7 +152,7 @@ class GenericSQLProvider(BaseProvider):
             self.db_name,
             self.db_user,
             self._db_password,
-            **(self.db_options or {}) | (extra_conn_args or {})
+            **self.db_options | extra_conn_args
         )
         self.table_model = get_table_model(
             self.table, self.id_field, self.db_search_path, self._engine
@@ -443,7 +441,11 @@ class GenericSQLProvider(BaseProvider):
         # reflecting the table definition from the DB
         self.db_search_path = tuple(parameters.get('search_path', ['public']))
         self._db_password = parameters.get('password')
-        self.db_options = options
+        self.db_options = {
+            k: v
+            for k, v in options.items()
+            if not isinstance(v, dict)
+        }
 
     def _sqlalchemy_to_feature(self, item, crs_transform_out=None):
         feature = {'type': 'Feature'}
@@ -608,7 +610,7 @@ def get_engine(
     database: str,
     user: str,
     password: str,
-    **connection_options
+    **connect_args
 ):
     """Create SQL Alchemy engine."""
     conn_str = URL.create(
@@ -619,11 +621,8 @@ def get_engine(
         port=int(port),
         database=database
     )
-    conn_args = {
-        **connection_options
-    }
     engine = create_engine(
-        conn_str, connect_args=conn_args, pool_pre_ping=True
+        conn_str, connect_args=connect_args, pool_pre_ping=True
     )
     return engine
 
@@ -721,9 +720,11 @@ class PostgreSQLProvider(GenericSQLProvider):
             return True  # Let everything through if no bbox
 
         # Since this provider uses postgis, we can use ST_MakeEnvelope
-        envelope = ST_MakeEnvelope(*bbox)
+        storage_srid = get_crs_from_uri(self.storage_crs).to_epsg()
+        envelope = ST_MakeEnvelope(*bbox, storage_srid or 4326)
+
         geom_column = getattr(self.table_model, self.geom)
-        bbox_filter = geom_column.intersects(envelope)
+        bbox_filter = ST_Intersects(envelope, geom_column)
 
         return bbox_filter
 

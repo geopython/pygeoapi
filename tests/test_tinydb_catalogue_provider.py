@@ -133,10 +133,10 @@ def test_query(config):
         assert results['numberMatched'] == 6
         assert results['numberReturned'] == 6
 
-    results = p.query(q='crops barley')
-    assert len(results['features']) == 2
-    assert results['numberMatched'] == 2
-    assert results['numberReturned'] == 2
+    results = p.query(q='Frost free')
+    assert len(results['features']) == 1
+    assert results['numberMatched'] == 1
+    assert results['numberReturned'] == 1
 
     results = p.query(limit=1)
     assert len(results['features']) == 1
