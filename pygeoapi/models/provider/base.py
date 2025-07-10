@@ -35,8 +35,8 @@ from datetime import datetime
 from enum import Enum
 from typing import List, Optional
 
-from pydantic import BaseModel
 import pydantic
+from pydantic import BaseModel
 
 
 class TilesMetadataFormat(str, Enum):
