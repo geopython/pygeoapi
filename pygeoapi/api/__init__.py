@@ -392,8 +392,10 @@ class APIRequest:
         :param headers: Dict of Request headers
         :returns: digest method or None if not found/specified
         """
-        hash_methods = get_choice_from_headers(
-            headers, 'want-content-digest', all=True)
+        hash_methods = get_choice_from_headers(headers, 'want-content-digest', all=True)
+        if hash_methods is None:
+            return
+
         for hash_method in hash_methods:
             if hash_method in DIGEST_METHODS:
                 return hash_method
