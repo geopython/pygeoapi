@@ -176,10 +176,9 @@ def apply_integrity(headers: dict, content: Union[str, bytes]):
     """
     Apply content header integrete hash to header.
     """
+    hash_method = get_choice_from_headers(headers, 'want-content-digest')
 
-    try:
-        hash_method = get_choice_from_headers(headers, 'want-content-digest')
-    except KeyError:
+    if hash_method is None:
         LOGGER.debug('No digest requested')
         return
 
