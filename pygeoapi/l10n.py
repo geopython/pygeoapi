@@ -136,7 +136,7 @@ def best_match(accept_languages, available_locales) -> Locale:
                              but it's also possible to include a territory
                              (e.g. "en-US" or "fr_BE") or even a complex
                              list sorted by quality values, e.g.
-                             ["fr-CH, "fr", "en", "de", "*"].
+                             ["fr-CH", "fr", "en", "de", "*"].
     :param available_locales: A list containing the available locales.
                               For example, a pygeoapi provider might only
                               support ["de", "en"].
