@@ -33,7 +33,7 @@ import logging
 import os
 import uuid
 
-from shapely import box, from_geojson
+from shapely.geometry import box, from_geojson
 
 from pygeoapi.provider.base import BaseProvider, ProviderItemNotFoundError
 from pygeoapi.util import crs_transform

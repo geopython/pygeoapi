@@ -32,7 +32,7 @@ import csv
 import itertools
 import logging
 
-from shapely import box, Point
+from shapely.geometry import box, Point
 
 from pygeoapi.provider.base import (BaseProvider, ProviderInvalidQueryError,
                                     ProviderItemNotFoundError,
