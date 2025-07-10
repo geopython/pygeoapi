@@ -33,7 +33,7 @@ import logging
 import os
 import uuid
 
-from shapely.geometry import box, from_geojson
+from shapely.geometry import box, shape
 
 from pygeoapi.provider.base import BaseProvider, ProviderItemNotFoundError
 from pygeoapi.util import crs_transform
@@ -155,7 +155,7 @@ class GeoJSONProvider(BaseProvider):
             return True
 
         bbox2 = box(*bbox)
-        geometry2 = from_geojson(json.dumps(geometry))
+        geometry2 = shape(geometry)
 
         return geometry2.intersects(bbox2)
 
