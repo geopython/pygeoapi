@@ -263,4 +263,4 @@ class MVTElasticProvider(BaseMVTProvider):
 
         content.links = links
 
-        return content.dict(exclude_none=True)
+        return content.model_dump(exclude_none=True)
