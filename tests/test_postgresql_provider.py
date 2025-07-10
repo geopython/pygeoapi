@@ -57,8 +57,8 @@ from pygeoapi.provider.base import (
     ProviderItemNotFoundError,
     ProviderQueryError
 )
-from pygeoapi.provider.postgresql import PostgreSQLProvider
-import pygeoapi.provider.postgresql as postgresql_provider_module
+from pygeoapi.provider.sql import PostgreSQLProvider
+import pygeoapi.provider.sql as postgresql_provider_module
 
 from pygeoapi.util import (yaml_load, geojson_to_geom,
                            get_transform_from_crs, get_crs_from_uri)
@@ -379,6 +379,18 @@ def test_query_cql_properties_bbox_filters(config):
     # Assert
     ids = [feature["id"] for feature in feature_collection.get('features')]
     assert ids == expected_ids
+
+
+def test_bbox_is_same_as_cql(config):
+    provider = PostgreSQLProvider(config)
+
+    bbox = [30.560389, -3.134991, 30.604849, -3.061970]
+    fc_bbox = provider.query(bbox=bbox)
+
+    bbox_cql = parse('BBOX(foo_geom, {}, {}, {}, {})'.format(*bbox))
+    fc_bbox_cql = provider.query(filterq=bbox_cql)
+
+    assert fc_bbox == fc_bbox_cql
 
 
 def test_get_fields_types(config_types):

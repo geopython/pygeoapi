@@ -55,6 +55,7 @@ The `xarray-edr`_ provider plugin reads and extracts `NetCDF`_ and `Zarr`_ data 
          # to derive automagically
          x_field: lon
          y_field: lat
+         z_field: z
          time_field: time
          # optionally specify the coordinate reference system of your dataset
          # else pygeoapi assumes it is WGS84 (EPSG:4326).

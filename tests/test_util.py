@@ -549,3 +549,32 @@ def test_modify_pygeofilter(
         geometry_column_name=geometry_colum_name
     )
     assert result == expected
+
+
+def test_get_choice_from_headers():
+    _headers = {
+        'accept': 'text/html;q=0.5,application/ld+json',
+        'accept-encoding': 'deflate;q=0.5,gzip'
+    }
+
+    # Test various capitalizations
+    assert util.get_choice_from_headers(_headers, 'accept-language') is None
+    assert util.get_choice_from_headers(
+        {**_headers, 'accept-language': 'en;q=0.8,de;q=0.6,fr;q=0.4'},
+        'accept-language') == 'en'
+    assert util.get_choice_from_headers(
+        {**_headers, 'Accept-Language': 'en;q=0.8,de'},
+        'accept-language') == 'de'
+    assert util.get_choice_from_headers(
+        {**_headers, 'Accept-Language': 'en,de'}, 'accept-language') == 'en'
+    assert util.get_choice_from_headers(
+        {**_headers, 'ACCEPT-LANGUAGE': 'en;q=0.8,de;q=0.2,fr'},
+        'accept-language') == 'fr'
+    assert util.get_choice_from_headers(
+        {**_headers, 'accept-language': 'en_US'}, 'accept-language') == 'en_US'
+
+    assert util.get_choice_from_headers(_headers, 'accept-encoding') == 'gzip'
+    assert util.get_choice_from_headers(_headers,
+                                        'accept') == 'application/ld+json'
+    assert util.get_choice_from_headers(
+        {'accept-language': 'en_US', 'accept': '*/*'}, 'accept') == '*/*'

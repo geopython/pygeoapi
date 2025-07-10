@@ -333,7 +333,11 @@ class ElasticsearchProvider(BaseProvider):
 
         if q is not None:
             LOGGER.debug('Adding free-text search')
-            query['query']['bool']['must'] = {'query_string': {'query': q}}
+            # split inclusive on ',' (OR)
+            q_tokens = [f'"{t}"' for t in q.split(',')]
+            # enclose each token as a search phrase
+            q2 = ' OR '.join(q_tokens)
+            query['query']['bool']['must'] = {'query_string': {'query': q2}}
 
             query['_source'] = {
                 'excludes': [

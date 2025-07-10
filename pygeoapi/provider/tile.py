@@ -56,7 +56,6 @@ class BaseTileProvider:
         self.mimetype = provider_def['format']['mimetype']
         self.options = provider_def.get('options')
         self.tile_type = None
-        self.fields = {}
 
     def get_layer(self):
         """

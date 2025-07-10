@@ -67,7 +67,8 @@ from pygeoapi.util import (
     CrsTransformSpec, TEMPLATES, UrlPrefetcher, dategetter,
     filter_dict_by_key_value, filter_providers_by_type, get_api_rules,
     get_base_url, get_provider_by_type, get_provider_default, get_typed_value,
-    get_crs_from_uri, get_supported_crs_list, render_j2_template, to_json
+    get_crs_from_uri, get_supported_crs_list, render_j2_template, to_json,
+    get_choice_from_headers, get_from_headers
 )
 
 LOGGER = logging.getLogger(__name__)
@@ -155,7 +156,8 @@ def apply_gzip(headers: dict, content: Union[str, bytes]) -> Union[str, bytes]:
     Compress content if requested in header.
     """
     charset = CHARSET[0]
-    if F_GZIP in headers.get('Content-Encoding', []):
+
+    if F_GZIP in get_from_headers(headers, 'content-encoding'):
         try:
             if isinstance(content, bytes):
                 # bytes means Content-Type needs to be set upstream
@@ -340,16 +342,18 @@ class APIRequest:
             raise ValueError(f"{self.__class__.__name__} must be initialized"
                              f"with a list of valid supported locales")
 
-        for func, mapping in ((l10n.locale_from_params, self._args),
-                              (l10n.locale_from_headers, headers)):
-            loc_str = func(mapping)
-            if loc_str:
-                if not raw:
+        for field, mapping in ((l10n.QUERY_PARAM, self._args),
+                               ('accept-language', headers)):
+
+            loc_strs = get_choice_from_headers(mapping, field, all=True)
+            if loc_strs:
+                if raw is None:
                     # This is the first-found locale string: set as raw
-                    raw = loc_str
+                    raw = get_from_headers(mapping, field)
+
                 # Check if locale string is a good match for the UI
-                loc = l10n.best_match(loc_str, supported_locales)
-                is_override = func is l10n.locale_from_params
+                loc = l10n.best_match(loc_strs, supported_locales)
+                is_override = field is l10n.QUERY_PARAM
                 if loc != default_locale or is_override:
                     return raw, loc
 
@@ -370,17 +374,16 @@ class APIRequest:
             return format_
 
         # Format not specified: get from Accept headers (MIME types)
-        # e.g. format_ = 'text/html'
-        h = headers.get('accept', headers.get('Accept', '')).strip()  # noqa
+        # e.g. Accept: 'text/html;q=0.5,application/ld+json'
+        types_ = get_choice_from_headers(headers, 'accept', all=True)
+        if types_ is None:
+            return
+
         (fmts, mimes) = zip(*FORMAT_TYPES.items())
-        # basic support for complex types (i.e. with "q=0.x")
-        for type_ in (t.split(';')[0].strip() for t in h.split(',') if t):
+        for type_ in types_:
             if type_ in mimes:
                 idx_ = mimes.index(type_)
-                format_ = fmts[idx_]
-                break
-
-        return format_ or None
+                return fmts[idx_]
 
     def _get_digest(self, headers) -> Union[str, None]:
         """
@@ -553,7 +556,7 @@ class APIRequest:
         if F_GZIP in FORMAT_TYPES:
             if force_encoding:
                 headers['Content-Encoding'] = force_encoding
-            elif F_GZIP in self._headers.get('Accept-Encoding', ''):
+            elif F_GZIP in get_from_headers(self._headers, 'accept-encoding'):
                 headers['Content-Encoding'] = F_GZIP
 
         if force_digest:
@@ -711,7 +714,7 @@ class API:
 
         if not query_crs_uri:
             if storage_crs_uri in DEFAULT_CRS_LIST:
-                # Could be that storageCRS is
+                # Could be that storageCrs is
                 # http://www.opengis.net/def/crs/OGC/1.3/CRS84h
                 query_crs_uri = storage_crs_uri
             else:
@@ -768,7 +771,7 @@ class API:
             # If empty use default CRS
             storage_crs_uri = config.get('storage_crs', DEFAULT_STORAGE_CRS)
             if storage_crs_uri in DEFAULT_CRS_LIST:
-                # Could be that storageCRS is one of the defaults like
+                # Could be that storageCrs is one of the defaults like
                 # http://www.opengis.net/def/crs/OGC/1.3/CRS84h
                 content_crs_uri = storage_crs_uri
             else:
@@ -1190,7 +1193,7 @@ def describe_collections(api: API, request: APIRequest,
         # OAPIF Part 2 - list supported CRSs and StorageCRS
         if collection_data_type in ['edr', 'feature']:
             collection['crs'] = get_supported_crs_list(collection_data, DEFAULT_CRS_LIST)  # noqa
-            collection['storageCRS'] = collection_data.get('storage_crs', DEFAULT_STORAGE_CRS)  # noqa
+            collection['storageCrs'] = collection_data.get('storage_crs', DEFAULT_STORAGE_CRS)  # noqa
             if 'storage_crs_coordinate_epoch' in collection_data:
                 collection['storageCrsCoordinateEpoch'] = collection_data.get('storage_crs_coordinate_epoch')  # noqa
 
@@ -1479,6 +1482,8 @@ def get_collection_schema(api: API, request: Union[APIRequest, Any],
 
     for k, v in p.fields.items():
         schema['properties'][k] = v
+        if v['type'] == 'float':
+            schema['properties'][k]['type'] = 'number'
         if v.get('format') is None:
             schema['properties'][k].pop('format', None)
 

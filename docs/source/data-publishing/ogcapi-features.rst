@@ -19,12 +19,13 @@ parameters.
    :header: Provider, property filters/display, resulttype, bbox, datetime, sortby, skipGeometry, domains, CQL, transactions, crs
    :align: left
 
-   `CSV`_,✅/✅,results/hits,❌,❌,❌,✅,❌,❌,❌,✅
+   `CSV`_,✅/✅,results/hits,✅,❌,❌,✅,❌,❌,❌,✅
    `Elasticsearch`_,✅/✅,results/hits,✅,✅,✅,✅,✅,✅,✅,✅
    `ERDDAP Tabledap Service`_,❌/❌,results/hits,✅,✅,❌,❌,❌,❌,❌,✅
    `ESRI Feature Service`_,✅/✅,results/hits,✅,✅,✅,✅,❌,❌,❌,✅
-   `GeoJSON`_,✅/✅,results/hits,❌,❌,❌,✅,❌,❌,❌,✅
+   `GeoJSON`_,✅/✅,results/hits,✅,❌,❌,✅,❌,❌,❌,✅
    `MongoDB`_,✅/❌,results,✅,✅,✅,✅,❌,❌,❌,✅
+   `MySQL`_,✅/✅,results/hits,✅,✅,✅,✅,❌,✅,✅,✅
    `OGR`_,✅/❌,results/hits,✅,❌,❌,✅,❌,❌,❌,✅
    `OpenSearch`_,✅/✅,results/hits,✅,✅,✅,✅,❌,✅,✅,✅
    `Oracle`_,✅/✅,results/hits,✅,❌,✅,✅,❌,❌,❌,✅
@@ -221,6 +222,76 @@ Here `test` is the name of database , `points` is the target collection name.
          name: MongoDB
          data: mongodb://localhost:27017/testdb
          collection: testplaces
+
+
+.. _MySQL:
+
+MySQL
+^^^^^
+
+.. note::
+   Requires Python packages sqlalchemy, geoalchemy2 and pymysql
+
+Must have MySQL installed.
+
+.. code-block:: yaml
+
+   providers:
+       - type: feature
+         name: MySQL
+         data:
+             host: 127.0.0.1
+             port: 3306 # Default 3306 if not provided
+             dbname: test_geo_app
+             user: mysql
+             password: mysql
+             search_path: [test_geo_app] # Same as dbname
+         id_field: locationID
+         table: location
+         geom_field: locationCoordinates
+
+A number of database connection options can be also configured in the provider in order to adjust properly the sqlalchemy engine client.
+These are optional and if not specified, the default from the engine will be used. Please see also `SQLAlchemy docs <https://docs.sqlalchemy.org/en/14/core/engines.html#custom-dbapi-connect-arguments-on-connect-routines>`_.
+
+.. code-block:: yaml
+
+    providers:
+       - type: feature
+         name: MySQL
+         data:
+             host: 127.0.0.1
+             port: 3306 # Default 3306 if not provided
+             dbname: test_geo_app
+             user: mysql
+             password: mysql
+             search_path: [test_geo_app] # Same as dbname
+         options:
+             # Maximum time to wait while connecting, in seconds.
+             connect_timeout: 10
+             # Number of *milliseconds* that transmitted data may remain
+             # unacknowledged before a connection is forcibly closed.
+             tcp_user_timeout: 10000
+             # Whether client-side TCP keepalives are used. 1 = use keepalives,
+             # 0 = don't use keepalives.
+             keepalives: 1
+             # Number of seconds of inactivity after which TCP should send a
+             # keepalive message to the server.
+             keepalives_idle: 5
+             # Number of TCP keepalives that can be lost before the client's
+             # connection to the server is considered dead.
+             keepalives_count: 5
+             # Number of seconds after which a TCP keepalive message that is not
+             # acknowledged by the server should be retransmitted.
+             keepalives_interval: 1
+         id_field: locationID
+         table: location
+         geom_field: locationCoordinates
+
+This provider has support for the CQL queries as indicated in the Provider table above.
+
+.. seealso::
+  :ref:`cql` for more details on how to use Common Query Language (CQL) to filter the collection with specific queries.
+
 
 OGR
 ^^^

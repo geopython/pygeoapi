@@ -7,12 +7,14 @@
 #          Colin Blackburn <colb@bgs.ac.uk>
 #          Francesco Bartoli <xbartolone@gmail.com>
 #          Bernhard Mallinger <bernhard.mallinger@eox.at>
+#          Colton Loftus <cloftus@lincolninst.edu>
 #
 # Copyright (c) 2018 Jorge Samuel Mendes de Jesus
 # Copyright (c) 2025 Tom Kralidis
 # Copyright (c) 2022 John A Stevenson and Colin Blackburn
 # Copyright (c) 2025 Francesco Bartoli
 # Copyright (c) 2024 Bernhard Mallinger
+# Copyright (c) 2025 Colton Loftus
 #
 # Permission is hereby granted, free of charge, to any person
 # obtaining a copy of this software and associated documentation
@@ -37,7 +39,7 @@
 #
 # =================================================================
 
-# Testing local docker:
+# Testing local postgis with docker:
 # docker run --name "postgis" \
 # -v postgres_data:/var/lib/postgresql -p 5432:5432 \
 # -e ALLOW_IP_RANGE=0.0.0.0/0 \
@@ -55,54 +57,78 @@ from datetime import datetime
 from decimal import Decimal
 import functools
 import logging
+from typing import Optional
 
 from geoalchemy2 import Geometry  # noqa - this isn't used explicitly but is needed to process Geometry columns
-from geoalchemy2.functions import ST_MakeEnvelope
+from geoalchemy2.functions import ST_MakeEnvelope, ST_Intersects
 from geoalchemy2.shape import to_shape, from_shape
 from pygeofilter.backends.sqlalchemy.evaluate import to_filter
 import pyproj
 import shapely
-from sqlalchemy import create_engine, MetaData, PrimaryKeyConstraint, asc, \
-    desc, delete
+from sqlalchemy.sql import func
+from sqlalchemy import (
+    create_engine,
+    MetaData,
+    PrimaryKeyConstraint,
+    asc,
+    desc,
+    delete
+)
 from sqlalchemy.engine import URL
-from sqlalchemy.exc import ConstraintColumnNotFoundError, \
-    InvalidRequestError, OperationalError
+from sqlalchemy.exc import (
+    ConstraintColumnNotFoundError,
+    InvalidRequestError,
+    OperationalError
+)
 from sqlalchemy.ext.automap import automap_base
 from sqlalchemy.orm import Session, load_only
 from sqlalchemy.sql.expression import and_
 
-from pygeoapi.provider.base import BaseProvider, \
-    ProviderConnectionError, ProviderInvalidDataError, ProviderQueryError, \
+from pygeoapi.provider.base import (
+    BaseProvider,
+    ProviderConnectionError,
+    ProviderInvalidDataError,
+    ProviderQueryError,
     ProviderItemNotFoundError
-from pygeoapi.util import get_transform_from_crs
+)
+from pygeoapi.util import get_transform_from_crs, get_crs_from_uri
 
 
 LOGGER = logging.getLogger(__name__)
 
 
-class PostgreSQLProvider(BaseProvider):
-    """Generic provider for Postgresql based on psycopg2
-    using sync approach and server side
-    cursor (using support class DatabaseCursor)
+class GenericSQLProvider(BaseProvider):
+    """
+    Generic provider for sql databases it can be inherited
+    from to create specific providers for different databases
     """
 
-    def __init__(self, provider_def):
+    def __init__(
+        self,
+        provider_def: dict,
+        driver_name: str,
+        extra_conn_args: Optional[dict] = {}
+    ):
         """
-        PostgreSQLProvider Class constructor
+        GenericSQLProvider Class constructor
 
         :param provider_def: provider definitions from yml pygeoapi-config.
                              data,id_field, name set in parent class
                              data contains the connection information
                              for class DatabaseCursor
+        :param driver_name: database driver name
+        :param extra_conn_args: additional custom connection arguments to
+                                pass for a query
 
-        :returns: pygeoapi.provider.base.PostgreSQLProvider
+        :returns: pygeoapi.provider.GenericSQLProvider
         """
-        LOGGER.debug('Initialising PostgreSQL provider.')
+        LOGGER.debug('Initialising GenericSQL provider.')
         super().__init__(provider_def)
 
         self.table = provider_def['table']
         self.id_field = provider_def['id_field']
         self.geom = provider_def.get('geom_field', 'geom')
+        self.driver_name = driver_name
 
         LOGGER.debug(f'Name: {self.name}')
         LOGGER.debug(f'Table: {self.table}')
@@ -112,40 +138,47 @@ class PostgreSQLProvider(BaseProvider):
         # conforming to the docs:
         # https://docs.pygeoapi.io/en/latest/data-publishing/ogcapi-features.html#connection-examples # noqa
         self.storage_crs = provider_def.get(
-            'storage_crs',
-            'https://www.opengis.net/def/crs/OGC/0/CRS84'
+            'storage_crs', 'https://www.opengis.net/def/crs/OGC/0/CRS84'
         )
         LOGGER.debug(f'Configured Storage CRS: {self.storage_crs}')
 
         # Read table information from database
-        options = None
-        if provider_def.get('options'):
-            options = provider_def['options']
+        options = provider_def.get('options', {})
         self._store_db_parameters(provider_def['data'], options)
         self._engine = get_engine(
+            driver_name,
             self.db_host,
             self.db_port,
             self.db_name,
             self.db_user,
             self._db_password,
-            **(self.db_options or {})
+            **self.db_options | extra_conn_args
         )
         self.table_model = get_table_model(
-            self.table,
-            self.id_field,
-            self.db_search_path,
-            self._engine
+            self.table, self.id_field, self.db_search_path, self._engine
         )
 
         LOGGER.debug(f'DB connection: {repr(self._engine.url)}')
         self.get_fields()
 
-    def query(self, offset=0, limit=10, resulttype='results',
-              bbox=[], datetime_=None, properties=[], sortby=[],
-              select_properties=[], skip_geometry=False, q=None,
-              filterq=None, crs_transform_spec=None, **kwargs):
+    def query(
+        self,
+        offset=0,
+        limit=10,
+        resulttype='results',
+        bbox=[],
+        datetime_=None,
+        properties=[],
+        sortby=[],
+        select_properties=[],
+        skip_geometry=False,
+        q=None,
+        filterq=None,
+        crs_transform_spec=None,
+        **kwargs
+    ):
         """
-        Query Postgis for all the content.
+        Query sql database for all the content.
         e,g: http://localhost:5000/collections/hotosm_bdi_waterways/items?
         limit=1&resulttype=results
 
@@ -171,18 +204,21 @@ class PostgreSQLProvider(BaseProvider):
         bbox_filter = self._get_bbox_filter(bbox)
         time_filter = self._get_datetime_filter(datetime_)
         order_by_clauses = self._get_order_by_clauses(sortby, self.table_model)
-        selected_properties = self._select_properties_clause(select_properties,
-                                                             skip_geometry)
+        selected_properties = self._select_properties_clause(
+            select_properties, skip_geometry
+        )
 
-        LOGGER.debug('Querying PostGIS')
+        LOGGER.debug('Querying Database')
         # Execute query within self-closing database Session context
         with Session(self._engine) as session:
-            results = (session.query(self.table_model)
-                       .filter(property_filters)
-                       .filter(cql_filters)
-                       .filter(bbox_filter)
-                       .filter(time_filter)
-                       .options(selected_properties))
+            results = (
+                session.query(self.table_model)
+                .filter(property_filters)
+                .filter(cql_filters)
+                .filter(bbox_filter)
+                .filter(time_filter)
+                .options(selected_properties)
+            )
 
             matched = results.count()
 
@@ -196,12 +232,14 @@ class PostgreSQLProvider(BaseProvider):
                 'numberReturned': 0
             }
 
-            if resulttype == "hits" or not results:
+            if resulttype == 'hits' or not results:
                 return response
 
             crs_transform_out = self._get_crs_transform(crs_transform_spec)
 
-            for item in results.order_by(*order_by_clauses).offset(offset).limit(limit):  # noqa
+            for item in (
+                results.order_by(*order_by_clauses).offset(offset).limit(limit)
+            ):
                 response['numberReturned'] += 1
                 response['features'].append(
                     self._sqlalchemy_to_feature(item, crs_transform_out)
@@ -211,7 +249,7 @@ class PostgreSQLProvider(BaseProvider):
 
     def get_fields(self):
         """
-        Return fields (columns) from PostgreSQL table
+        Return fields (columns) from database table
 
         :returns: dict of fields
         """
@@ -269,7 +307,9 @@ class PostgreSQLProvider(BaseProvider):
 
                 self._fields[str(column.name)] = {
                     'type': _column_type_to_json_schema_type(column.type),
-                    'format': _column_format_to_json_schema_format(column.type)
+                    'format': _column_format_to_json_schema_format(
+                        column.type
+                    )
                 }
 
         return self._fields
@@ -291,7 +331,7 @@ class PostgreSQLProvider(BaseProvider):
             # Retrieve data from database as feature
             item = session.get(self.table_model, identifier)
             if item is None:
-                msg = f"No such item: {self.id_field}={identifier}."
+                msg = f'No such item: {self.id_field}={identifier}.'
                 raise ProviderItemNotFoundError(msg)
             crs_transform_out = self._get_crs_transform(crs_transform_spec)
             feature = self._sqlalchemy_to_feature(item, crs_transform_out)
@@ -306,18 +346,28 @@ class PostgreSQLProvider(BaseProvider):
 
             # Add fields for previous and next items
             id_field = getattr(self.table_model, self.id_field)
-            prev_item = (session.query(self.table_model)
-                         .order_by(id_field.desc())
-                         .filter(id_field < identifier)
-                         .first())
-            next_item = (session.query(self.table_model)
-                         .order_by(id_field.asc())
-                         .filter(id_field > identifier)
-                         .first())
-            feature['prev'] = (getattr(prev_item, self.id_field)
-                               if prev_item is not None else identifier)
-            feature['next'] = (getattr(next_item, self.id_field)
-                               if next_item is not None else identifier)
+            prev_item = (
+                session.query(self.table_model)
+                .order_by(id_field.desc())
+                .filter(id_field < identifier)
+                .first()
+            )
+            next_item = (
+                session.query(self.table_model)
+                .order_by(id_field.asc())
+                .filter(id_field > identifier)
+                .first()
+            )
+            feature['prev'] = (
+                getattr(prev_item, self.id_field)
+                if prev_item is not None
+                else identifier
+            )
+            feature['next'] = (
+                getattr(next_item, self.id_field)
+                if next_item is not None
+                else identifier
+            )
 
         return feature
 
@@ -331,7 +381,8 @@ class PostgreSQLProvider(BaseProvider):
         """
 
         identifier, json_data = self._load_and_prepare_item(
-            item, accept_missing_identifier=True)
+            item, accept_missing_identifier=True
+        )
 
         new_instance = self._feature_to_sqlalchemy(json_data, identifier)
         with Session(self._engine) as session:
@@ -353,7 +404,8 @@ class PostgreSQLProvider(BaseProvider):
         """
 
         identifier, json_data = self._load_and_prepare_item(
-            item, raise_if_exists=False)
+            item, raise_if_exists=False
+        )
 
         new_instance = self._feature_to_sqlalchemy(json_data, identifier)
         with Session(self._engine) as session:
@@ -373,8 +425,7 @@ class PostgreSQLProvider(BaseProvider):
         with Session(self._engine) as session:
             id_column = getattr(self.table_model, self.id_field)
             result = session.execute(
-                delete(self.table_model)
-                .where(id_column == identifier)
+                delete(self.table_model).where(id_column == identifier)
             )
             session.commit()
 
@@ -383,19 +434,21 @@ class PostgreSQLProvider(BaseProvider):
     def _store_db_parameters(self, parameters, options):
         self.db_user = parameters.get('user')
         self.db_host = parameters.get('host')
-        self.db_port = parameters.get('port', 5432)
+        self.db_port = parameters.get('port', self.default_port)
         self.db_name = parameters.get('dbname')
         # db_search_path gets converted to a tuple here in order to ensure it
         # is hashable - which allows us to use functools.cache() when
         # reflecting the table definition from the DB
         self.db_search_path = tuple(parameters.get('search_path', ['public']))
         self._db_password = parameters.get('password')
-        self.db_options = options
+        self.db_options = {
+            k: v
+            for k, v in options.items()
+            if not isinstance(v, dict)
+        }
 
     def _sqlalchemy_to_feature(self, item, crs_transform_out=None):
-        feature = {
-            'type': 'Feature'
-        }
+        feature = {'type': 'Feature'}
 
         # Add properties from item
         item_dict = item.__dict__
@@ -406,7 +459,10 @@ class PostgreSQLProvider(BaseProvider):
         # Convert geometry to GeoJSON style
         if feature['properties'].get(self.geom):
             wkb_geom = feature['properties'].pop(self.geom)
-            shapely_geom = to_shape(wkb_geom)
+            try:
+                shapely_geom = to_shape(wkb_geom)
+            except TypeError:
+                shapely_geom = shapely.geometry.shape(wkb_geom)
             if crs_transform_out is not None:
                 shapely_geom = crs_transform_out(shapely_geom)
             geojson_geom = shapely.geometry.mapping(shapely_geom)
@@ -457,7 +513,8 @@ class PostgreSQLProvider(BaseProvider):
         # Convert filterq into SQL Alchemy filters
         field_mapping = {
             column_name: getattr(self.table_model, column_name)
-            for column_name in self.table_model.__table__.columns.keys()}
+            for column_name in self.table_model.__table__.columns.keys()
+        }
         cql_filters = to_filter(filterq, field_mapping)
 
         return cql_filters
@@ -476,16 +533,13 @@ class PostgreSQLProvider(BaseProvider):
 
         return property_filters
 
-    def _get_bbox_filter(self, bbox):
-        if not bbox:
-            return True  # Let everything through
-
-        # Convert bbx to SQL Alchemy clauses
-        envelope = ST_MakeEnvelope(*bbox)
-        geom_column = getattr(self.table_model, self.geom)
-        bbox_filter = geom_column.intersects(envelope)
-
-        return bbox_filter
+    def _get_bbox_filter(self, bbox: list[float]):
+        """
+        Construct the bounding box filter function that
+        will be used in the query; this is dependent on the
+        underlying db driver
+        """
+        raise NotImplementedError
 
     def _get_datetime_filter(self, datetime_):
         if datetime_ in (None, '../..'):
@@ -541,7 +595,7 @@ class PostgreSQLProvider(BaseProvider):
         if crs_transform_spec is not None:
             crs_transform = get_transform_from_crs(
                 pyproj.CRS.from_wkt(crs_transform_spec.source_crs_wkt),
-                pyproj.CRS.from_wkt(crs_transform_spec.target_crs_wkt),
+                pyproj.CRS.from_wkt(crs_transform_spec.target_crs_wkt)
             )
         else:
             crs_transform = None
@@ -550,40 +604,35 @@ class PostgreSQLProvider(BaseProvider):
 
 @functools.cache
 def get_engine(
-        host: str,
-        port: str,
-        database: str,
-        user: str,
-        password: str,
-        **connection_options
+    driver_name: str,
+    host: str,
+    port: str,
+    database: str,
+    user: str,
+    password: str,
+    **connect_args
 ):
     """Create SQL Alchemy engine."""
     conn_str = URL.create(
-        'postgresql+psycopg2',
+        drivername=driver_name,
         username=user,
         password=password,
         host=host,
         port=int(port),
         database=database
     )
-    conn_args = {
-        'client_encoding': 'utf8',
-        'application_name': 'pygeoapi',
-        **connection_options,
-    }
     engine = create_engine(
-        conn_str,
-        connect_args=conn_args,
-        pool_pre_ping=True)
+        conn_str, connect_args=connect_args, pool_pre_ping=True
+    )
     return engine
 
 
 @functools.cache
 def get_table_model(
-        table_name: str,
-        id_field: str,
-        db_search_path: tuple[str],
-        engine,
+    table_name: str,
+    id_field: str,
+    db_search_path: tuple[str],
+    engine
 ):
     """Reflect table."""
     metadata = MetaData()
@@ -592,14 +641,16 @@ def get_table_model(
     schema = db_search_path[0]
     try:
         metadata.reflect(
-            bind=engine, schema=schema, only=[table_name], views=True)
+            bind=engine, schema=schema, only=[table_name], views=True
+        )
     except OperationalError:
         raise ProviderConnectionError(
-            f"Could not connect to {repr(engine.url)} (password hidden).")
+            f'Could not connect to {repr(engine.url)} (password hidden).'
+        )
     except InvalidRequestError:
         raise ProviderQueryError(
             f"Table '{table_name}' not found in schema '{schema}' "
-            f"on {repr(engine.url)}."
+            f'on {repr(engine.url)}.'
         )
 
     # Create SQLAlchemy model from reflected table
@@ -611,7 +662,8 @@ def get_table_model(
         sqlalchemy_table_def.append_constraint(PrimaryKeyConstraint(id_field))
     except (ConstraintColumnNotFoundError, KeyError):
         raise ProviderQueryError(
-            f"No such id_field column ({id_field}) on {schema}.{table_name}.")
+            f'No such id_field column ({id_field}) on {schema}.{table_name}.'
+        )
 
     _Base = automap_base(metadata=metadata)
     _Base.prepare(
@@ -634,3 +686,89 @@ def _name_for_scalar_relationship(base, local_cls, referred_cls, constraint):
         )
         return newname
     return name
+
+
+class PostgreSQLProvider(GenericSQLProvider):
+    """
+    A provider for querying a PostgreSQL database
+    """
+    default_port = 5432
+
+    def __init__(self, provider_def: dict):
+        """
+        PostgreSQLProvider Class constructor
+
+        :param provider_def: provider definitions from yml pygeoapi-config.
+                             data,id_field, name set in parent class
+                             data contains the connection information
+                             for class DatabaseCursor
+        :returns: pygeoapi.provider.sql.PostgreSQLProvider
+        """
+
+        driver_name = 'postgresql+psycopg2'
+        extra_conn_args = {
+            'client_encoding': 'utf8',
+            'application_name': 'pygeoapi'
+        }
+        super().__init__(provider_def, driver_name, extra_conn_args)
+
+    def _get_bbox_filter(self, bbox: list[float]):
+        """
+        Construct the bounding box filter function
+        """
+        if not bbox:
+            return True  # Let everything through if no bbox
+
+        # Since this provider uses postgis, we can use ST_MakeEnvelope
+        storage_srid = get_crs_from_uri(self.storage_crs).to_epsg()
+        envelope = ST_MakeEnvelope(*bbox, storage_srid or 4326)
+
+        geom_column = getattr(self.table_model, self.geom)
+        bbox_filter = ST_Intersects(envelope, geom_column)
+
+        return bbox_filter
+
+
+class MySQLProvider(GenericSQLProvider):
+    """
+    A provider for a MySQL database
+    """
+    default_port = 3306
+
+    def __init__(self, provider_def: dict):
+        """
+        MySQLProvider Class constructor
+
+        :param provider_def: provider definitions from yml pygeoapi-config.
+                             data,id_field, name set in parent class
+                             data contains the connection information
+                             for class DatabaseCursor
+        :returns: pygeoapi.provider.sql.MySQLProvider
+        """
+
+        driver_name = 'mysql+pymysql'
+        extra_conn_args = {
+            'charset': 'utf8mb4'
+        }
+        super().__init__(provider_def, driver_name, extra_conn_args)
+
+    def _get_bbox_filter(self, bbox: list[float]):
+        """
+        Construct the bounding box filter function
+        """
+        if not bbox:
+            return True  # Let everything through if no bbox
+
+        # If we are using mysql we can't use ST_MakeEnvelope since it is
+        # postgis specific and thus we have to use MBRContains with a WKT
+        # POLYGON
+
+        # Create WKT POLYGON from bbox: (minx, miny, maxx, maxy)
+        minx, miny, maxx, maxy = bbox
+        polygon_wkt = f'POLYGON(({minx} {miny}, {maxx} {miny}, {maxx} {maxy}, {minx} {maxy}, {minx} {miny}))'  # noqa
+        geom_column = getattr(self.table_model, self.geom)
+        # Use MySQL MBRContains for index-accelerated bounding box checks
+        bbox_filter = func.MBRContains(
+            func.ST_GeomFromText(polygon_wkt), geom_column
+        )
+        return bbox_filter

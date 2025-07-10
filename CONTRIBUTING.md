@@ -65,6 +65,7 @@ Your contribution will be under our [license](https://github.com/geopython/pygeo
 * Pull requests may include copyright in the source code header by the contributor if the contribution is significant or the contributor wants to claim copyright on their contribution.
 * All contributors shall be listed at https://github.com/geopython/pygeoapi/graphs/contributors
 * Unclaimed copyright, by default, is assigned to the main copyright holders as specified in https://github.com/geopython/pygeoapi/blob/master/LICENSE.md
+* further notes can be found in the [documentation](https://docs.pygeoapi.io/en/latest/development.html#testing)
 
 ### Version Control Branching
 
@@ -89,16 +90,23 @@ Your contribution will be under our [license](https://github.com/geopython/pygeo
       while, __make sure you rebase or merge to latest ``master``__ to ensure a
         speedier resolution.
 
+### Testing
+
+* testing is performed using [pytest](https://pytest.org) and covers all major components (API core, providers, formatters, managers, etc.)
+* additional information can be found in the [documentation](https://docs.pygeoapi.io/en/latest/development.html#testing)
+
+
 ### Documentation
 
 * documentation is managed in `docs/`, in reStructuredText format
 * [Sphinx](https://www.sphinx-doc.org) is used to generate the documentation
 * See the [reStructuredText Primer](https://www.sphinx-doc.org/en/master/usage/restructuredtext/basics.html) on rST markup and syntax
+* additional information can be found in the [documentation](https://docs.pygeoapi.io/en/latest/development.html#building-the-documentation)
 
 
 ### Wiki
 
-* the [pygeoapi wiki](https://github.com/geopython/pygeoapi/wiki) provides working level documentation
+* the [pygeoapi wiki](https://github.com/geopython/pygeoapi/wiki) provides working level documentation and various community resources
 
 
 ### Code Formatting
@@ -107,7 +115,8 @@ Your contribution will be under our [license](https://github.com/geopython/pygeo
 * pygeoapi follows the [PEP-8](http://www.python.org/dev/peps/pep-0008/) guidelines
 * 80 characters
 * spaces, not tabs
-* pygeoapi, instead of PyGeoAPI, pygeoAPI, etc.
+* pygeoapi, NOT PyGeoAPI, pygeoAPI, etc.
+* additional information can be found in the [documentation](https://docs.pygeoapi.io/en/latest/development.html#linting)
 
 ## Suggesting Enhancements
 

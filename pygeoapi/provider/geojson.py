@@ -33,6 +33,8 @@ import logging
 import os
 import uuid
 
+from shapely.geometry import box, shape
+
 from pygeoapi.provider.base import BaseProvider, ProviderItemNotFoundError
 from pygeoapi.util import crs_transform
 
@@ -96,7 +98,8 @@ class GeoJSONProvider(BaseProvider):
 
         return self._fields
 
-    def _load(self, skip_geometry=None, properties=[], select_properties=[]):
+    def _load(self, bbox=[], skip_geometry=None, properties=[],
+              select_properties=[]):
         """Load and validate the source GeoJSON file
         at self.data
 
@@ -121,6 +124,12 @@ class GeoJSONProvider(BaseProvider):
             data['features'] = [f for f in data['features'] if \
                 all([str(f['properties'][p[0]]) == str(p[1]) for p in properties])]  # noqa
 
+        # filter by bbox if set
+        if bbox:
+            LOGGER.debug('processing bbox parameter')
+            data['features'] = [f for f in data['features'] if \
+                self._intersects(f['geometry'], bbox)]  # noqa
+
         # All features must have ids, TODO must be unique strings
         for i in data['features']:
             if 'id' not in i and self.id_field in i['properties']:
@@ -131,6 +140,24 @@ class GeoJSONProvider(BaseProvider):
                 i['properties'] = {k: v for k, v in i['properties'].items()
                                    if k in set(self.properties) | set(select_properties)}  # noqa
         return data
+
+    def _intersects(self, geometry, bbox):
+        """
+        Helper function to evaluate feature geometry intersection with a bbox
+
+        :param geometry: `dict` of GeoJSON geometry
+        :param bbox: `list` of bbox
+
+        :returns: `bool` of whether geometry intersects with bbox
+        """
+
+        if geometry is None:
+            return True
+
+        bbox2 = box(*bbox)
+        geometry2 = shape(geometry)
+
+        return geometry2.intersects(bbox2)
 
     @crs_transform
     def query(self, offset=0, limit=10, resulttype='results',
@@ -154,7 +181,8 @@ class GeoJSONProvider(BaseProvider):
         """
 
         # TODO filter by bbox without resorting to third-party libs
-        data = self._load(skip_geometry=skip_geometry, properties=properties,
+        data = self._load(bbox=bbox, skip_geometry=skip_geometry,
+                          properties=properties,
                           select_properties=select_properties)
 
         data['numberMatched'] = len(data['features'])

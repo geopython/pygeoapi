@@ -113,7 +113,7 @@ def locale2str(value: Locale) -> str:
 
 def best_match(accept_languages, available_locales) -> Locale:
     """
-    Takes an Accept-Languages string (from header or request query params)
+    Takes an Accept-Languages sorted list (from header or request query params)
     and finds the best matching locale from a list of available locales.
 
     This function provides a framework-independent alternative to the
@@ -131,12 +131,12 @@ def best_match(accept_languages, available_locales) -> Locale:
                 or unknown locale is ignored. However, if no
                 `available_locales` are specified, a `LocaleError` is raised.
 
-    :param accept_languages: A Locale or string with one or more languages.
+    :param accept_languages: A Locale or list of one or more languages.
                              This can be as simple as "de" for example,
                              but it's also possible to include a territory
                              (e.g. "en-US" or "fr_BE") or even a complex
-                             string with quality values, e.g.
-                             "fr-CH, fr;q=0.9, en;q=0.8, de;q=0.7, *;q=0.5".
+                             list sorted by quality values, e.g.
+                             ["fr-CH", "fr", "en", "de", "*"].
     :param available_locales: A list containing the available locales.
                               For example, a pygeoapi provider might only
                               support ["de", "en"].
@@ -170,49 +170,12 @@ def best_match(accept_languages, available_locales) -> Locale:
 
     if isinstance(accept_languages, Locale):
         # If a Babel Locale was used as input, transform back into a string
-        accept_languages = locale2str(accept_languages)
+        accept_languages = [locale2str(accept_languages)]
 
-    if not isinstance(accept_languages, str):
+    if not isinstance(accept_languages, list):
         # If `accept_languages` is not a string, ignore it
         LOGGER.debug(f"ignoring invalid accept-languages '{accept_languages}'")
-        accept_languages = ''
-
-    tags = accept_languages.split(',')
-    num_tags = len(tags)
-    req_locales = {}
-    for i, lang in enumerate(tags):
-        q_raw = None
-        q_out = None
-        if not lang:
-            continue
-
-        # Check if complex (i.e. with quality weights)
-        try:
-            lang, q_raw = (v.strip() for v in lang.split(';'))
-        except ValueError:
-            # Tuple unpacking failed: tag is not complex (or too complex :))
-            pass
-
-        # Validate locale tag
-        loc = str2locale(lang, True)
-        if not loc:
-            LOGGER.debug(f"ignoring invalid accept-language '{lang}'")
-            continue
-
-        # Validate quality weight (e.g. "q=0.7")
-        if q_raw:
-            try:
-                q_out = float([v.strip() for v in q_raw.split('=')][1])
-            except (ValueError, IndexError):
-                # Tuple unpacking failed: not a valid q tag
-                pass
-
-        # If there's no actual q, set one based on the language order
-        if not q_out:
-            q_out = num_tags - i
-
-        # Store locale
-        req_locales[q_out] = loc
+        accept_languages = []
 
     # Process supported locales
     prv_locales = OrderedDict()
@@ -221,7 +184,11 @@ def best_match(accept_languages, available_locales) -> Locale:
         prv_locales.setdefault(loc.language, []).append(loc.territory)
 
     # Return best match from accepted languages
-    for _, loc in sorted(req_locales.items(), reverse=True):
+    for lang in accept_languages:
+        loc = str2locale(lang, True)
+        if not loc:
+            LOGGER.debug(f"ignoring invalid accept-language '{lang}'")
+            continue
         match = get_match(loc, prv_locales)
         if match:
             LOGGER.debug(f"'{match}' matches requested '{accept_languages}'")
@@ -281,7 +248,7 @@ def translate(value, language: Union[Locale, str]):
         return value
 
     # Find best language match and return value by its key
-    out_locale = best_match(language, loc_items.keys())
+    out_locale = best_match([language], loc_items.keys())
     return value[loc_items[out_locale]]
 
 
@@ -338,42 +305,6 @@ def translate_struct(struct, locale_: Locale, is_config: bool = False):
             _cfg_cache[locale_] = result
 
     return result
-
-
-def locale_from_headers(headers) -> str:
-    """
-    Gets a valid Locale from a request headers dictionary.
-    Supported are complex strings (e.g. "fr-CH, fr;q=0.9, en;q=0.8"),
-    web locales (e.g. "en-US") or basic language tags (e.g. "en").
-    A value of `None` is returned if the locale was not found or invalid.
-
-    :param headers: Mapping of request headers.
-
-    :returns: locale string or None
-    """
-
-    lang = {k.lower(): v for k, v in headers.items()}.get('accept-language')
-    if lang:
-        LOGGER.debug(f"Got locale '{lang}' from 'Accept-Language' header")
-    return lang
-
-
-def locale_from_params(params) -> str:
-    """
-    Gets a valid Locale from a request query parameters dictionary.
-    Supported are complex strings (e.g. "fr-CH, fr;q=0.9, en;q=0.8"),
-    web locales (e.g. "en-US") or basic language tags (e.g. "en").
-    A value of `None` is returned if the locale was not found or invalid.
-
-    :param params: Mapping of request query parameters.
-
-    :returns: locale string or None
-    """
-
-    lang = params.get(QUERY_PARAM)
-    if lang:
-        LOGGER.debug(f"Got locale '{lang}' from query parameter '{QUERY_PARAM}'")  # noqa
-    return lang
 
 
 def set_response_language(headers: dict, *locale_: Locale):

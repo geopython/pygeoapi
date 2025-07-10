@@ -15,7 +15,7 @@ The `pygeoapi demo server`_ runs various services from Docker images which also 
 The basics
 ----------
 
-The official pygeoapi Docker image will start a pygeoapi Docker container using Gunicorn on internal port 80.
+The official pygeoapi Docker image will start a pygeoapi Docker container using `Gunicorn <https://docs.gunicorn.org/en/latest/>`_ on internal port 80.
 
 Either ``IMAGE`` can be called with the ``docker`` command, ``geopython/pygeoapi`` from DockerHub or ``ghcr.io/geopython/pygeoapi`` from the GitHub Container Registry. Examples below use ``geopython/pygeoapi``. 
 
@@ -102,6 +102,38 @@ The base Docker image supports two additional environment variables for configur
 
    To learn more about the Admin API see :ref:`admin-api`.
 
+3. **`CONTAINER_HOST`**: 
+   This variable sets the listening address for incoming connections. Normally the server is listening on ``localhost`` (the default), but other values are also possible. 
+
+   .. code-block:: bash
+
+      docker run -p 5000:80 -e CONTAINER_HOST=192.168.0.7 -it geopython/pygeoapi
+
+4. **`CONTAINER_PORT`**: 
+   This variable sets the listening port for incoming connections. The default port is ``80``; in this example, we change it to ``5001``.
+
+   .. code-block:: bash
+
+      docker run -p 5000:5001 -e CONTAINER_PORT=5001 -it geopython/pygeoapi
+
+5. **`WSGI_WORKERS`**: 
+
+   This variable sets the number of workers used by the Gunicorn server, the default being ``4``.
+   For performance reasons, `it is not recommended to use a high number of workers <https://docs.gunicorn.org/en/latest/design.html#how-many-workers>`_ .
+
+   .. code-block:: bash
+
+      docker run -p 5000:80 -e WSGI_WORKERS=10 -it geopython/pygeoapi
+
+6. **`WSGI_WORKER_TIMEOUT`**: 
+
+   Gunicorn workers silent for more than the seconds set by this variable are killed and restarted. The default value is ``6000``.
+
+   .. code-block:: bash
+
+      docker run -p 5000:80 -e WSGI_WORKERS=10 -it geopython/pygeoapi
+
+   You can read more about this and other Gunicorn settings in the `official documentation <https://docs.gunicorn.org/en/stable/>`_
 
 Deploying on a sub-path
 -----------------------

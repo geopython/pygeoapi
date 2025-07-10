@@ -258,7 +258,7 @@ def test_get_collection_items(config, api_):
     req = mock_api_request({
         'offset': '1',
         'limit': '1',
-        'bbox': '-180,90,180,90'
+        'bbox': '-180,-90,180,90'
     })
     rsp_headers, code, response = get_collection_items(api_, req, 'obs')
     features = json.loads(response)
@@ -267,16 +267,16 @@ def test_get_collection_items(config, api_):
 
     links = features['links']
     assert len(links) == 6
-    assert '/collections/obs/items?f=json&limit=1&bbox=-180,90,180,90' in \
+    assert '/collections/obs/items?f=json&limit=1&bbox=-180,-90,180,90' in \
         links[0]['href']
     assert links[0]['rel'] == 'self'
-    assert '/collections/obs/items?f=jsonld&limit=1&bbox=-180,90,180,90' in \
+    assert '/collections/obs/items?f=jsonld&limit=1&bbox=-180,-90,180,90' in \
         links[1]['href']
     assert links[1]['rel'] == 'alternate'
-    assert '/collections/obs/items?f=html&limit=1&bbox=-180,90,180,90' in \
+    assert '/collections/obs/items?f=html&limit=1&bbox=-180,-90,180,90' in \
         links[2]['href']
     assert links[2]['rel'] == 'alternate'
-    assert '/collections/obs/items?offset=0&limit=1&bbox=-180,90,180,90' \
+    assert '/collections/obs/items?offset=0&limit=1&bbox=-180,-90,180,90' \
         in links[3]['href']
     assert links[3]['rel'] == 'prev'
     assert '/collections/obs' in links[4]['href']
@@ -526,7 +526,7 @@ def test_get_collection_items_crs(config, api_):
         assert code == HTTPStatus.OK
         assert rsp_headers['Content-Crs'] == f'<{crs}>'
 
-    # With CRS query parameter, using storageCRS
+    # With CRS query parameter, using storageCrs
     req = mock_api_request({'crs': storage_crs})
     rsp_headers, code, response = get_collection_items(
         api_, req, 'norway_pop')

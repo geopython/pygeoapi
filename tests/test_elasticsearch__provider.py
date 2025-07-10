@@ -251,6 +251,22 @@ def test_query(config):
     assert len(results['features'][0]['properties']) == 1
 
 
+def test_query_q(config):
+    p = ElasticsearchProvider(config)
+
+    result = p.query(q='vatican')
+    assert len(result['features']) == 1
+
+    result = p.query(q='vatican,lazio')
+    assert len(result['features']) == 2
+
+    result = p.query(q='vatican lazio')
+    assert len(result['features']) == 0
+
+    result = p.query(q='holy see')
+    assert len(result['features']) == 1
+
+
 def test_query_ordered_properties(config_ordered_properties):
     p = ElasticsearchProvider(config_ordered_properties)
 

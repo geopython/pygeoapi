@@ -238,7 +238,7 @@ def get_collection_tiles_data(
         p = load_plugin('provider', t)
 
         format_ = p.format_type
-        headers['Content-Type'] = format_
+        headers['Content-Type'] = t['format']['mimetype']
 
         LOGGER.debug(f'Fetching tileset id {matrix_id} and tile {z_idx}/{y_idx}/{x_idx}')  # noqa
         content = p.get_tiles(layer=p.get_layer(), tileset=matrix_id,
@@ -246,7 +246,7 @@ def get_collection_tiles_data(
         if content is None:
             msg = 'identifier not found'
             return api.get_exception(
-                HTTPStatus.NO_CONTENT, headers, format_, 'NocContent', msg)
+                HTTPStatus.NO_CONTENT, headers, format_, 'NoContent', msg)
         else:
             return headers, HTTPStatus.OK, content
 

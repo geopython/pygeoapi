@@ -38,4 +38,4 @@ def test_django_edr_without_instance_id(django_):
     # Validate CoverageJSON is returned
     response_json = response.json()
     assert response_json["type"] == "Coverage"
-    assert response_json["domain"]["domainType"] == "Grid"
+    assert response_json["domain"]["domainType"] == "PointSeries"
