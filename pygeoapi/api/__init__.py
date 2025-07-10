@@ -174,11 +174,11 @@ def apply_gzip(headers: dict, content: Union[str, bytes]) -> Union[str, bytes]:
 
 def apply_integrity(headers: dict, content: Union[str, bytes]):
     """
-    Apply content header integret hash to header.
+    Apply content header integrete hash to header.
     """
 
     try:
-        hash_method = headers.pop('Want-Content-Digest')
+        hash_method = get_choice_from_headers(headers, 'want-content-digest')
     except KeyError:
         LOGGER.debug('No digest requested')
         return
@@ -392,9 +392,9 @@ class APIRequest:
         :param headers: Dict of Request headers
         :returns: digest method or None if not found/specified
         """
-        h = headers.get('Want-Content-Digest', headers.get('want-content-digest', '')).strip() # noqa
-        # basic support for complex types (i.e. with "q=0.x")
-        for hash_method in (t.split(';')[0].strip().lower() for t in h.split(',') if t): # noqa
+        hash_methods = get_choice_from_headers(
+            headers, 'want-content-digest', all=True)
+        for hash_method in hash_methods:
             if hash_method in DIGEST_METHODS:
                 return hash_method
 
