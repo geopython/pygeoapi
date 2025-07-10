@@ -27,8 +27,8 @@
 #
 # =================================================================
 
-from pydantic import BaseModel
 import pydantic
+from pydantic import BaseModel
 from typing import List, Optional
 
 
