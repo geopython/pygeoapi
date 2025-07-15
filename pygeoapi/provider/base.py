@@ -31,6 +31,14 @@ import json
 import logging
 from enum import Enum
 from http import HTTPStatus
+from typing import Literal, Optional, TypedDict
+import sys
+
+if sys.version_info >= (3, 11):
+    from typing import NotRequired
+else:
+    from typing_extensions import NotRequired
+
 
 from pygeoapi.error import GenericError
 
@@ -44,10 +52,32 @@ class SchemaType(Enum):
     replace = 'replace'
 
 
+# All the potential properties on a field
+# as defined by the OGC API features spec
+FieldProperties = TypedDict(
+    "FieldProperties",
+    {
+        "type": Literal["string", "number", "integer",
+                        "boolean", "object", "array"],
+        "title": str,
+        "description": str,
+        "format": NotRequired[str],
+        "x-ogc-unit": NotRequired[str],
+        "x-ogc-role": NotRequired[str],
+        "enum": NotRequired[list[str]],
+    },
+)
+
+
+# Dict type representing a mapping of the field
+# to its associated data type
+FieldMapping = dict[str, FieldProperties]
+
+
 class BaseProvider:
     """generic Provider ABC"""
 
-    def __init__(self, provider_def):
+    def __init__(self, provider_def: dict):
         """
         Initialize object
 
@@ -74,7 +104,7 @@ class BaseProvider:
         self.title_field = provider_def.get('title_field')
         self.properties = provider_def.get('properties', [])
         self.file_types = provider_def.get('file_types', [])
-        self._fields = {}
+        self._fields: FieldMapping = {}
         self.filename = None
 
         # for coverage providers
@@ -82,7 +112,7 @@ class BaseProvider:
         self.crs = None
         self.num_bands = None
 
-    def get_fields(self):
+    def get_fields(self) -> FieldMapping:
         """
         Get provider field information (names, types)
 
@@ -95,7 +125,7 @@ class BaseProvider:
         raise NotImplementedError()
 
     @property
-    def fields(self) -> dict:
+    def fields(self) -> FieldMapping:
         """
         Store provider field information (names, types)
 
@@ -111,7 +141,7 @@ class BaseProvider:
         else:
             return self.get_fields()
 
-    def get_schema(self, schema_type: SchemaType = SchemaType.item):
+    def get_schema(self, schema_type: SchemaType = SchemaType.item) -> tuple:
         """
         Get provider schema model
 
@@ -123,7 +153,7 @@ class BaseProvider:
 
         raise NotImplementedError()
 
-    def get_data_path(self, baseurl, urlpath, dirpath):
+    def get_data_path(self, baseurl: str, urlpath: str, dirpath: str) -> dict:
         """
         Gets directory listing or file description or raw file dump
 
@@ -146,7 +176,7 @@ class BaseProvider:
 
         raise NotImplementedError()
 
-    def get_domains(self, properties=[], current=False):
+    def get_domains(self, properties: list[str] = [], current=False):
         """
         Get domains from dataset
 
@@ -169,7 +199,7 @@ class BaseProvider:
 
         raise NotImplementedError()
 
-    def get(self, identifier, **kwargs):
+    def get(self, identifier: str, **kwargs):
         """
         query the provider by id
 
@@ -180,7 +210,7 @@ class BaseProvider:
 
         raise NotImplementedError()
 
-    def create(self, item):
+    def create(self, item: dict) -> str:
         """
         Create a new item
 
@@ -191,7 +221,7 @@ class BaseProvider:
 
         raise NotImplementedError()
 
-    def update(self, identifier, item):
+    def update(self, identifier: str, item: dict) -> bool:
         """
         Updates an existing item
 
@@ -203,7 +233,7 @@ class BaseProvider:
 
         raise NotImplementedError()
 
-    def delete(self, identifier):
+    def delete(self, identifier: str) -> bool:
         """
         Deletes an existing item
 
@@ -214,7 +244,8 @@ class BaseProvider:
 
         raise NotImplementedError()
 
-    def _load_and_prepare_item(self, item, identifier=None,
+    def _load_and_prepare_item(self, item: str,
+                               identifier: Optional[str] = None,
                                accept_missing_identifier=False,
                                raise_if_exists=True):
         """
