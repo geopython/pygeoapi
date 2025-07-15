@@ -39,7 +39,7 @@ parameters.
 .. note::
 
    * All Providers that support `bbox` also support the `bbox-crs` parameter. `bbox-crs` is handled within pygeoapi core.
-   * All Providers support the `crs` parameter to reproject (transform) response data. Some, like PostgreSQL and OGR, perform this natively: '✅n'.
+   * All Providers support the `crs` parameter to reproject (transform) response data. Some, like PostgreSQL and OGR, perform this natively.
 
 
 Connection examples
