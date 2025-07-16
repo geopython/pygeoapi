@@ -45,6 +45,7 @@ from copy import deepcopy
 from datetime import datetime
 from functools import partial
 from gzip import compress
+import hashlib
 from http import HTTPStatus
 import logging
 import re
@@ -99,6 +100,10 @@ FORMAT_TYPES = OrderedDict((
     (F_MVT, 'application/vnd.mapbox-vector-tile'),
     (F_NETCDF, 'application/x-netcdf'),
 ))
+
+#: Digest integrity methods supported
+DIGEST_METHODS = ['sha1', 'sha256', 'sha384', 'sha512',
+                  'sha3-256', 'sha3-384', 'sha3-512']
 
 #: Locale used for system responses (e.g. exceptions)
 SYSTEM_LOCALE = l10n.Locale('en', 'US')
@@ -165,6 +170,31 @@ def apply_gzip(headers: dict, content: Union[str, bytes]) -> Union[str, bytes]:
             headers.pop('Content-Encoding')
             LOGGER.error(f'Error in compression: {err}')
     return content
+
+
+def apply_integrity(headers: dict, content: Union[str, bytes]):
+    """
+    Apply content header integrete hash to header.
+    """
+    hash_method = get_choice_from_headers(headers, 'want-content-digest')
+
+    if hash_method is None:
+        LOGGER.debug('No digest requested')
+        return
+
+    try:
+        LOGGER.debug(f'Hashing with {hash_method}')
+        hash_func = hashlib.new(hash_method)
+
+        charset = CHARSET[0]
+        content_bytes = (content if isinstance(content, bytes)
+                         else content.encode(charset))
+
+        hash_func.update(content_bytes)
+        headers['Content-Digest'] = f'{hash_method}={hash_func.hexdigest()}'
+
+    except ValueError:
+        raise ValueError(f'Unsupported hash method: {hash_method}')
 
 
 class APIRequest:
@@ -236,6 +266,9 @@ class APIRequest:
 
         # Determine format
         self._format = self._get_format(request.headers)
+
+        # Determine digest
+        self._digest = self._get_digest(request.headers)
 
         # Get received headers
         self._headers = self.get_request_headers(request.headers)
@@ -350,6 +383,22 @@ class APIRequest:
             if type_ in mimes:
                 idx_ = mimes.index(type_)
                 return fmts[idx_]
+
+    def _get_digest(self, headers) -> Union[str, None]:
+        """
+        Get `Request` digest type from query parameters or headers.
+
+        :param headers: Dict of Request headers
+        :returns: digest method or None if not found/specified
+        """
+        hash_methods = get_choice_from_headers(headers, 'want-content-digest',
+                                               all=True)
+        if hash_methods is None:
+            return
+
+        for hash_method in hash_methods:
+            if hash_method in DIGEST_METHODS:
+                return hash_method
 
     @property
     def data(self) -> bytes:
@@ -467,6 +516,7 @@ class APIRequest:
     def get_response_headers(self, force_lang: l10n.Locale = None,
                              force_type: str = None,
                              force_encoding: str = None,
+                             force_digest: str = None,
                              **custom_headers) -> dict:
         """
         Prepares and returns a dictionary with Response object headers.
@@ -491,6 +541,7 @@ class APIRequest:
         :param force_lang: An optional Content-Language header override.
         :param force_type: An optional Content-Type header override.
         :param force_encoding: An optional Content-Encoding header override.
+        :param force_digest: An optional Want-Digest header override.
         :returns: A header dict
         """
 
@@ -510,6 +561,11 @@ class APIRequest:
             elif F_GZIP in get_from_headers(self._headers, 'accept-encoding'):
                 headers['Content-Encoding'] = F_GZIP
 
+        if force_digest:
+            headers['Want-Content-Digest'] = force_digest
+        elif self._digest:
+            headers['Want-Content-Digest'] = self._digest
+
         return headers
 
     def get_request_headers(self, headers) -> dict:
@@ -522,7 +578,7 @@ class APIRequest:
         :returns: A header dict
         """
 
-        headers_ = {item[0]: item[1] for item in headers.items()}
+        headers_ = {item[0].title(): item[1] for item in headers.items()}
         return headers_
 
 

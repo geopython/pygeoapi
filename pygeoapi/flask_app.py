@@ -37,7 +37,7 @@ import click
 from flask import (Flask, Blueprint, make_response, request,
                    send_from_directory, Response, Request)
 
-from pygeoapi.api import API, APIRequest, apply_gzip
+from pygeoapi.api import API, APIRequest, apply_gzip, apply_integrity
 import pygeoapi.api as core_api
 import pygeoapi.api.coverages as coverages_api
 import pygeoapi.api.environmental_data_retrieval as edr_api
@@ -151,6 +151,7 @@ def execute_from_flask(api_function, request: Request, *args,
         headers, status, content = actual_api.get_format_exception(api_request)
     else:
         headers, status, content = api_function(actual_api, api_request, *args)
+        apply_integrity(headers, content)
         content = apply_gzip(headers, content)
 
     response = make_response(content, status)
