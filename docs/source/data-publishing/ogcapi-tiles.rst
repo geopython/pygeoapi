@@ -53,6 +53,7 @@ This code block shows how to configure pygeoapi to read Mapbox vector tiles gene
          format:
              name: pbf
              mimetype: application/vnd.mapbox-vector-tile
+         id_field: objectid
 
 .. tip::
 
@@ -83,6 +84,7 @@ This code block shows how to configure pygeoapi to read Mapbox vector tiles from
          format:
              name: pbf
              mimetype: application/vnd.mapbox-vector-tile
+         id_field: objectid
 
 .. tip::
    On `this tutorial <https://dive.pygeoapi.io/publishing/ogcapi-tiles/#publish-vector-tiles-from-elasticsearch>`_  you can find detailed instructions on publish tiles stored in an Elasticsearch endpoint.
@@ -112,6 +114,7 @@ Following block shows how to configure pygeoapi to read Mapbox vector tiles from
          format:
              name: pbf
              mimetype: application/vnd.mapbox-vector-tile
+         id_field: objectid
 
 Following code block shows how to configure pygeoapi to read Mapbox vector tiles from martin endpoint.
 
@@ -130,6 +133,7 @@ Following code block shows how to configure pygeoapi to read Mapbox vector tiles
          format:
              name: pbf
              mimetype: application/vnd.mapbox-vector-tile
+         id_field: objectid
 
 MVT-postgresql
 ^^^^^^^^^^^^^^
@@ -200,6 +204,7 @@ This code block shows how to configure pygeoapi to read map tiles from a WMTS.
              zoom:
                  min: 0
                  max: 20
+         id_field: objectid
 
 Data access examples
 --------------------

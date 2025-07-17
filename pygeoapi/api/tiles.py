@@ -189,6 +189,7 @@ def get_collection_tiles(api: API, request: APIRequest,
         tiles['maxzoom'] = p.options['zoom']['max']
         tiles['collections_path'] = api.get_collections_url()
         tiles['tile_type'] = p.tile_type
+        tiles['id_field'] = p.id_field
 
         content = render_j2_template(api.tpl_config, tpl_config,
                                      'collections/tiles/index.html', tiles,
