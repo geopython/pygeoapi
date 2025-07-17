@@ -145,8 +145,7 @@
         var tilesPbfLayer = L.vectorGrid.protobuf(url, VectorTileOptions)
             .on('click', function(e) { // The .on method attaches an event handler
                 L.popup()
-                    .setContent("<b>Name</b>: " + e.layer.properties.name +
-                        "<br><b>Class</b>: " + e.layer.properties.featureclass)
+                    .setContent('id: ' + e.layer.properties.{{ data['id_field'] }})
                     .setLatLng(e.latlng)
                     .openOn(map);
 
