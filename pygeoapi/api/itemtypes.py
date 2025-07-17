@@ -539,6 +539,16 @@ def get_collection_items(
     LOGGER.debug(f'filter-lang: {filter_lang}')
     LOGGER.debug(f'filter-crs: {filter_crs_uri}')
 
+    uri = f'{api.get_collections_url()}/{dataset}/items'
+
+    serialized_query_params = ''
+    for k, v in request.params.items():
+        if k not in ('f', 'offset', 'cursor'):
+            serialized_query_params += '&'
+            serialized_query_params += urllib.parse.quote(k, safe='')
+            serialized_query_params += '='
+            serialized_query_params += urllib.parse.quote(str(v), safe=',')
+
     try:
         content = p.query(offset=offset, limit=limit,
                           resulttype=resulttype, bbox=bbox,
@@ -546,25 +556,18 @@ def get_collection_items(
                           sortby=sortby, skip_geometry=skip_geometry,
                           select_properties=select_properties,
                           crs_transform_spec=crs_transform_spec,
-                          q=q, language=prv_locale, filterq=filter_)
+                          q=q, language=prv_locale, filterq=filter_,
+                          serialized_query_params=serialized_query_params, uri=uri)
     except ProviderGenericError as err:
         return api.get_exception(
             err.http_status_code, headers, request.format,
             err.ogc_exception_code, err.message)
 
-    serialized_query_params = ''
-    for k, v in request.params.items():
-        if k not in ('f', 'offset'):
-            serialized_query_params += '&'
-            serialized_query_params += urllib.parse.quote(k, safe='')
-            serialized_query_params += '='
-            serialized_query_params += urllib.parse.quote(str(v), safe=',')
 
     if 'links' not in content:
         content['links'] = []
 
     # TODO: translate titles
-    uri = f'{api.get_collections_url()}/{dataset}/items'
     content['links'].extend([{
         'type': 'application/geo+json',
         'rel': request.get_linkrel(F_JSON),
