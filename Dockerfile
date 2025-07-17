@@ -140,6 +140,10 @@ RUN python3 -m pip install --no-cache-dir -e .
 RUN \
     # Set default config and entrypoint for Docker Image
     cp /pygeoapi/docker/default.config.yml /pygeoapi/local.config.yml \
-    && cp /pygeoapi/docker/entrypoint.sh /entrypoint.sh
+    && cp /pygeoapi/docker/entrypoint.sh /entrypoint.sh \
+    # compile language files
+    && cd /pygeoapi \
+    && for i in locale/*; do echo $i && pybabel compile -d locale -l `basename $i`; done
+
 
 ENTRYPOINT ["/entrypoint.sh"]
