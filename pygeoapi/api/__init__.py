@@ -1670,7 +1670,7 @@ def evaluate_limit(requested: Union[None, int], server_limits: dict,
     if requested2 <= 0:
         raise ValueError('limit value should be strictly positive')
     elif requested2 > max_ and on_exceed == 'error':
-        raise RuntimeError('Limit exceeded; throwing errror')
+        raise ValueError(f'Limit of {max_} exceeded')
     else:
         LOGGER.debug('limit requested')
         return min(requested2, max_)
