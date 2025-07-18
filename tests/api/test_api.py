@@ -879,7 +879,7 @@ def test_evaluate_limit():
     collection = {}
     server = {'default_items': 2, 'max_items': 3, 'on_exceed': 'error'}
 
-    with pytest.raises(RuntimeError):
+    with pytest.raises(ValueError):
         assert evaluate_limit('40', server, collection) == 40
 
     collection = {'default_items': 10}
