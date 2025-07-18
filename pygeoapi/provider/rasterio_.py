@@ -335,8 +335,8 @@ class RasterioProvider(BaseProvider):
                     'shape': [metadata['height'], metadata['width']],
                 }
                 # TODO: deal with multi-band value output
-                cj['ranges'][key]['values'] = [None if np.isnan(v) else v for v in 
-                                               data.flatten()]
+                cj['ranges'][key]['values'] = [None if np.isnan(v) else v for v
+                                               in data.flatten()]
         except IndexError as err:
             LOGGER.warning(err)
             raise ProviderQueryError('Invalid query parameter')
