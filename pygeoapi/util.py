@@ -55,6 +55,7 @@ import dateutil.parser
 from babel.support import Translations
 from jinja2 import Environment, FileSystemLoader, select_autoescape
 from jinja2.exceptions import TemplateNotFound
+import numpy as np
 import pyproj
 import pygeofilter.ast
 import pygeofilter.values
@@ -412,6 +413,8 @@ def json_serial(obj: Any) -> str:
         return str(obj)
     elif isinstance(obj, uuid.UUID):
         return str(obj)
+    elif isinstance(obj, np.ma.core.MaskedConstant):
+        return None
     else:
         msg = f'{obj} type {type(obj)} not serializable'
         LOGGER.error(msg)
