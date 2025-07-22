@@ -410,9 +410,7 @@ def get_oas_30(cfg: dict, fail_on_invalid_collection: bool = True) -> dict:
                     'language': {
                         'description': 'the language used for the title and description', # noqa
                         'type': 'string',
-                        'default': [
-                            'en'
-                        ]
+                        'default': 'en'
                     },
                     'type': {
                         'description': 'the data type of the queryable', # noqa

@@ -345,7 +345,12 @@ class XarrayProvider(BaseProvider):
 
         if self.time_field is not None:
             cj['domain']['axes']['t'] = {
-                'values': [str(v) for v in data[self.time_field].values]
+                'values': [str(v) for v in (
+                    data[self.time_field].values
+                    if hasattr(data[self.time_field].values, '__iter__')
+                    else [data[self.time_field].values]
+                    )
+                ]
             }
             cj['domain']['referencing'].append({
                 'coordinates': ['t'],

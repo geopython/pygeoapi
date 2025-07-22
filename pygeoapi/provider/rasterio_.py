@@ -29,6 +29,7 @@
 
 import logging
 
+import numpy as np
 from pyproj import CRS, Transformer
 import rasterio
 from rasterio.io import MemoryFile
@@ -334,7 +335,10 @@ class RasterioProvider(BaseProvider):
                     'shape': [metadata['height'], metadata['width']],
                 }
                 # TODO: deal with multi-band value output
-                cj['ranges'][key]['values'] = data.flatten().tolist()
+                cj['ranges'][key]['values'] = [None if isinstance(v, float)
+                                               and np.isnan(v)
+                                               else v for v in
+                                               data.flatten().tolist()]
         except IndexError as err:
             LOGGER.warning(err)
             raise ProviderQueryError('Invalid query parameter')
