@@ -157,6 +157,7 @@ This code block shows how to configure pygeoapi to render Mapbox vector tiles fr
              user: postgres
              password: postgres
              search_path: [osm, public]
+         id_field: osm_id
          table: hotosm_bdi_waterways
          geom_field: foo_geom
          storage_crs: http://www.opengis.net/def/crs/EPSG/0/4326
