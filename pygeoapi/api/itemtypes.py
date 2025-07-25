@@ -543,7 +543,7 @@ def get_collection_items(
 
     serialized_query_params = ''
     for k, v in request.params.items():
-        if k not in ('f', 'offset', 'cursor'):
+        if k not in ('f', 'offset'):
             serialized_query_params += '&'
             serialized_query_params += urllib.parse.quote(k, safe='')
             serialized_query_params += '='
