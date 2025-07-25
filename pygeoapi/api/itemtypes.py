@@ -557,12 +557,12 @@ def get_collection_items(
                           select_properties=select_properties,
                           crs_transform_spec=crs_transform_spec,
                           q=q, language=prv_locale, filterq=filter_,
-                          serialized_query_params=serialized_query_params, uri=uri)
+                          serialized_query_params=serialized_query_params,
+                          uri=uri)
     except ProviderGenericError as err:
         return api.get_exception(
             err.http_status_code, headers, request.format,
             err.ogc_exception_code, err.message)
-
 
     if 'links' not in content:
         content['links'] = []
