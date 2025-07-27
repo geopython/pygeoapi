@@ -10,7 +10,7 @@ server:
     pretty_print: true
     limits:
         default_items: 10
-        max_items: 10
+        max_items: 50
     # templates: /path/to/templates
     map:
         url: https://tile.openstreetmap.org/{z}/{x}/{y}.png
