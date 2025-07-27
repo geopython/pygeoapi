@@ -397,7 +397,6 @@ def test_get_collection_items_include_extra_query_parameters(config, api_):
     req = mock_api_request({'foo': 'bar'})
     rsp_headers, code, response = get_collection_items(api_, req, 'obs')
 
-    print(response)
     assert code == HTTPStatus.BAD_REQUEST
 
 
