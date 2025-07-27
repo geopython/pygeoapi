@@ -82,7 +82,6 @@ class CSVFormatter(BaseFormatter):
                 # TODO: implement wkt geometry serialization
                 LOGGER.debug('not a point geometry, skipping')
 
-        print("JJJ", fields)
         LOGGER.debug(f'CSV fields: {fields}')
 
         try:
