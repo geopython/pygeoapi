@@ -415,16 +415,16 @@ def get_collection_items(
 
     LOGGER.debug('processing property parameters')
     for k, v in request.params.items():
-        add_param = False
+        include_query_param = False
         if k not in reserved_fieldnames:
             if k in list(p.fields.keys()) or p.include_extra_query_parameters:
-                add_param = True
+                include_query_param = True
 
-        if add_param:
-            LOGGER.debug(f'Adding property filter {k}={v}')
+        if include_query_param:
+            LOGGER.debug(f'Including query parameter {k}={v}')
             properties.append((k, v))
         else:
-            LOGGER.debug(f'Discarding additional property filter {k}={v}')  # noqa
+            LOGGER.debug(f'Discarding query parameter {k}={v}')
 
     LOGGER.debug('processing sort parameter')
     val = request.params.get('sortby')
