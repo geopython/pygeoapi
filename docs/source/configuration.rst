@@ -250,6 +250,7 @@ default.
                     mimetype: application/json  # required: format mimetype
                 options:  # optional options to pass to provider (i.e. GDAL creation)
                     option_name: option_value
+                include_extra_query_parameters: false  # include extra query parameters that are not part of the collection properties (default: false)
 
       hello-world:  # name of process
           type: process  # REQUIRED (collection, process, or stac-collection)

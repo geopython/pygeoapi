@@ -96,6 +96,11 @@ CSW Record core model is supported as a baseline.
          title_field: title
 
 
+Including extra query parameters
+--------------------------------
+
+See the :ref:`publishing vector section <including-extra-query-parameters>` for more information on including extra query parameters.
+
 Metadata search examples
 ------------------------
 

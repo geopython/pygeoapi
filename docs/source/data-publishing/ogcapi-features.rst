@@ -804,6 +804,32 @@ To publish a TinyDB (`see website <https://tinydb.readthedocs.io>`_) index, the 
          id_field: identifier
          time_field: datetimefield
 
+.. _including-extra-query-parameters:
+
+Including extra query parameters
+--------------------------------
+
+By default, pygeoapi ignores any extra query parameters.  For example, for a given ``.../items`` query, the query key-value pair ``foo1=bar1`` (if ``foo1`` is not a valid property of a given collection) would be ignored by pygeoapi as well as the underlying provider.
+
+To include/accept extra query parameters, the ``include_extra_query_parameters`` directive can be set in provider configuration:
+
+.. code-block:: yaml
+
+   providers:
+       - type: feature
+         editable: true|false  # optional, default is false
+         name: TinyDB
+         data: /path/to/file.db
+         id_field: identifier
+         time_field: datetimefield
+         include_extra_query_parameters: true
+
+
+With the above configuration, pygeoapi will pass ``foo1=bar1`` to the underlying provider.  If the underlying provider does not have ``foo1`` as a queryable property, then an exception will be returned citing an unknown property.
+
+Extra query parameters are useful for custom providers who may wish for specific functionality to be triggered by query parameters that are not bound to a given collection's properties.
+
+
 Controlling the order of properties
 -----------------------------------
 

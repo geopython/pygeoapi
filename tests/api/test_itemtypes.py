@@ -385,6 +385,21 @@ def test_get_collection_items(config, api_):
     assert code == HTTPStatus.BAD_REQUEST
 
 
+def test_get_collection_items_include_extra_query_parameters(config, api_):
+    req = mock_api_request()
+    rsp_headers, code, response = get_collection_items(api_, req, 'obs')
+
+    assert code == HTTPStatus.OK
+    response = json.loads(response)
+    assert response['numberMatched'] == 5
+
+    api_.config['resources']['obs']['providers'][0]['include_extra_query_parameters'] = True  # noqa
+    req = mock_api_request({'foo': 'bar'})
+    rsp_headers, code, response = get_collection_items(api_, req, 'obs')
+
+    assert code == HTTPStatus.BAD_REQUEST
+
+
 def test_collection_items_gzip_csv(config, api_, openapi):
     # Add gzip to server
     config['server']['gzip'] = True

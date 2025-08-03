@@ -573,6 +573,10 @@ properties:
                                               year in the Gregorian calendar.
                                           example:
                                               2017-03-25 in the Gregorian calendar is epoch 2017.23
+                                      include_extra_query_parameters:
+                                          type: boolean
+                                          description: whether to include extra query parameters
+                                          default: false
                                   required:
                                       - type
                                       - name
