@@ -8,7 +8,7 @@
 # Copyright (c) 2020 Tom Kralidis
 # Copyright (c) 2019 Just van den Broecke
 # Copyright (c) 2025 Francesco Bartoli
-# Copyright (c) 2024 Angelos Tzotsos
+# Copyright (c) 2025 Angelos Tzotsos
 # Copyright (c) 2023 Bernhard Mallinger
 #
 # Permission is hereby granted, free of charge, to any person
@@ -34,7 +34,7 @@
 #
 # =================================================================
 
-FROM ubuntu:jammy-20240911.1
+FROM ubuntu:jammy-20250714
 
 LABEL maintainer="Just van den Broecke <justb4@gmail.com>"
 
