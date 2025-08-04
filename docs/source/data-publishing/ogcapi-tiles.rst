@@ -49,7 +49,7 @@ This code block shows how to configure pygeoapi to read Mapbox vector tiles gene
              zoom:
                  min: 0
                  max: 5
-        # MVT-elastic always uses WebMercatorQuad tiling scheme
+        # MVT-tippecanoe always uses WebMercatorQuad tiling scheme
          format:
              name: pbf
              mimetype: application/vnd.mapbox-vector-tile
