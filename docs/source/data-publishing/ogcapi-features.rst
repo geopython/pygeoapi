@@ -558,12 +558,18 @@ The ``ORACLE_POOL_MIN`` and ``ORACLE_POOL_MAX`` environment variables are used t
 If none or only one of the environment variables is set, session pooling will not be activated and standalone connections are established at every request.
 
 
+Extra_params
+"""""""""""""""""""""""""""""
+The oracle provider allows for additional parameters that can be passed in the request. It allows for the processing of additional parameters that are not defined in the ``pygeoapi-config.yml`` to be passed to a custom SQL-Manipulator-Plugin. An example use case of this is advanced filtering without exposing the filtered columns like follows ``.../collections/some_data/items?is_recent=true``. The ``SqlManipulator`` plugin's ``process_query`` method would receive ``extra_params = {'is_recent': 'true'}`` and could dynamically add a custom condition to the SQL query, like ``AND SYSDATE - create_date < 30``.
+
+
+
 Custom SQL Manipulator Plugin
 """""""""""""""""""""""""""""
 The provider supports a SQL-Manipulator-Plugin class. With this, the SQL statement could be manipulated. This is
 useful e.g. for authorization at row level or manipulation of the explain plan with hints. 
 
-An example an more information about that feature you can find in the test class in tests/test_oracle_provider.py.
+An example and more information about that feature can be found in the test class in tests/test_oracle_provider.py.
 
 .. _Parquet:
 
