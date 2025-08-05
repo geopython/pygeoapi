@@ -561,7 +561,7 @@ If none or only one of the environment variables is set, session pooling will no
 Extra_params
 """""""""""""""""""""""""""""
 The oracle provider allows for additional parameters that can be passed in the request. It allows for the processing of additional parameters that are not defined in the ``pygeoapi-config.yml`` to be passed to a custom SQL-Manipulator-Plugin. An example use case of this is advanced filtering without exposing the filtered columns like follows ``.../collections/some_data/items?is_recent=true``. The ``SqlManipulator`` plugin's ``process_query`` method would receive ``extra_params = {'is_recent': 'true'}`` and could dynamically add a custom condition to the SQL query, like ``AND SYSDATE - create_date < 30``.
-
+The ``include_extra_query_parameters`` has to be set to ``true`` for the collection in the ``pygeoapi-config.yml``. This ensures that the additional request parameters (e.g. ``is_recent=true``) are not discarded. 
 
 
 Custom SQL Manipulator Plugin
