@@ -1,5 +1,5 @@
 # =================================================================
-
+#
 # Authors: Tom Kralidis <tomkralidis@gmail.com>
 #          Francesco Bartoli <xbartolone@gmail.com>
 #          Sander Schaminee <sander.schaminee@geocat.net>
@@ -8,7 +8,7 @@
 #          Ricardo Garcia Silva <ricardo.garcia.silva@geobeyond.it>
 #          Bernhard Mallinger <bernhard.mallinger@eox.at>
 #
-# Copyright (c) 2024 Tom Kralidis
+# Copyright (c) 2025 Tom Kralidis
 # Copyright (c) 2025 Francesco Bartoli
 # Copyright (c) 2022 John A Stevenson and Colin Blackburn
 # Copyright (c) 2023 Ricardo Garcia Silva
@@ -52,8 +52,8 @@ from pygeoapi.plugin import load_plugin, PLUGINS
 from pygeoapi.provider.base import (
     ProviderGenericError, ProviderItemNotFoundError)
 from pygeoapi.util import (
-    filter_providers_by_type, get_provider_by_type, render_j2_template,
-    to_json, filter_dict_by_key_value
+    filter_providers_by_type, get_provider_by_type, get_typed_value,
+    render_j2_template, to_json, filter_dict_by_key_value
 )
 
 from . import (APIRequest, API, F_COVERAGEJSON, F_HTML, F_JSON, F_JSONLD,
@@ -334,7 +334,10 @@ def get_collection_edr_query(api: API, request: APIRequest,
         within_units = request.params.get('within-units')
 
     LOGGER.debug('Processing z parameter')
-    z = request.params.get('z')
+    try:
+        z = get_typed_value(request.params.get('z'))
+    except TypeError:
+        z = None
 
     if parameternames and not any((fld in parameternames)
                                   for fld in p.get_fields().keys()):
