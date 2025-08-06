@@ -334,7 +334,10 @@ def get_collection_edr_query(api: API, request: APIRequest,
         within_units = request.params.get('within-units')
 
     LOGGER.debug('Processing z parameter')
-    z = get_typed_value(request.params.get('z'))
+    try:
+        z = get_typed_value(request.params.get('z'))
+    except TypeError:
+        z = None
 
     if parameternames and not any((fld in parameternames)
                                   for fld in p.get_fields().keys()):
