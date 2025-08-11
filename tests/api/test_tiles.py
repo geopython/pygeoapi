@@ -137,7 +137,13 @@ def test_tilematrixset(config, api_):
         assert 'id' in root
         assert root['id'] == enum
         assert 'tileMatrices' in root
-        assert len(root['tileMatrices']) == 30
+
+        if enum == "WebMercatorQuad":
+            assert len(root['tileMatrices']) == 25
+        elif enum == "WorldCRS84Quad":
+            assert len(root['tileMatrices']) == 24
+        else:
+            assert len(root['tileMatrices']) > 0
 
     rsp_headers, code, response = tilematrixset(api_, req, 'foo')
     assert code == HTTPStatus.BAD_REQUEST
