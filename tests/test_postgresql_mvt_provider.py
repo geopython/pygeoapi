@@ -102,6 +102,22 @@ def test_metadata(config):
     assert ts in tile_format['href']
 
 
+def test_tile_out_of_bounds(config):
+    config['options']['zoom']['min'] = 4
+    config['options']['zoom']['max'] = 5
+
+    p = MVTPostgreSQLProvider(config)
+
+    [tileset_schema] = [
+        schema for schema in p.get_tiling_schemes()
+        if 'WebMercatorQuad' == schema.tileMatrixSet
+    ]
+    assert p.is_in_limits(tileset_schema, 0, 0, 3) is False
+    assert p.is_in_limits(tileset_schema, 6, 0, 3) is False
+
+    assert p.is_in_limits(tileset_schema, 5, 0, 3) is True
+
+
 def test_get_tiling_schemes(config):
     provider = MVTPostgreSQLProvider(config)
 
