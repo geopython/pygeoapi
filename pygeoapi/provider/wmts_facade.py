@@ -37,7 +37,9 @@ from urllib.parse import urlparse, urlencode
 
 from pygeoapi.provider.tile import (ProviderTileNotFoundError,
                                     BaseTileProvider)
-from pygeoapi.provider.base import ProviderConnectionError
+from pygeoapi.provider.base import (ProviderConnectionError,
+                                    ProviderInvalidQueryError,
+                                    ProviderGenericError)
 from pygeoapi.models.provider.base import (
     TileMatrixSetEnum, TilesMetadataFormat, TileSetMetadata, LinkType)
 from pygeoapi.util import is_url, url_join
@@ -169,13 +171,27 @@ class WMTSFacadeProvider(BaseTileProvider):
 
             LOGGER.debug(f'WMTS 1.0.0 request url: {request_url}')
 
-            with requests.Session() as session:
-                resp = session.get(request_url)
+            try:
+                with requests.Session() as session:
+                    resp = session.get(request_url)
 
-                if resp.status_code == 400:
-                    raise ProviderTileNotFoundError
+                    if resp.status_code == 400:
 
-                return resp.content
+                        tms = self.get_tilematrixset(tileset)
+
+                        if (self.is_in_limits(tms, z, x, y)):
+                            return None
+                        raise ProviderTileNotFoundError
+
+                    resp.raise_for_status()
+                    return resp.content
+
+            except requests.exceptions.RequestException as e:
+                LOGGER.debug(e)
+                if resp.status_code < 500:
+                    raise ProviderInvalidQueryError  # Client is sending an invalid request # noqa
+                raise ProviderGenericError  # Server error
+
         else:
             msg = f'Wrong data path configuration: {self.data}'
             LOGGER.error(msg)

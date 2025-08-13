@@ -32,6 +32,9 @@
 import logging
 from http import HTTPStatus
 
+from pygeoapi.models.provider.base import (
+    TileMatrixSetEnum)
+
 from pygeoapi.provider.base import (
     ProviderGenericError, ProviderItemNotFoundError)
 
@@ -122,6 +125,48 @@ class BaseTileProvider:
         """
 
         raise NotImplementedError()
+
+    def is_in_limits(self, tilematrixset, z, x, y):
+        """
+        Is within the limits of the tilematrixset
+
+        :param z: tilematrix
+        :param x: x
+        :param y: y
+
+        :returns: wether this tile is within the tile matrix
+        set limits (Boolean)
+        """
+
+        try:
+            if int(x) < tilematrixset.tileMatrices[int(z)]['matrixWidth'] and int(y) < tilematrixset.tileMatrices[int(z)]['matrixHeight']: # noqa
+                return True
+            return False
+        except ValueError as err:
+            LOGGER.error(err)
+
+    def get_tilematrixset(self, tileMatrixSetId):
+        """
+        Get tilematrixset
+
+        :param tileMatrixSetId: tilematrixsetid str
+
+        :returns: tilematrixset enum object
+        """
+
+        enums = [e.value for e in TileMatrixSetEnum]
+        enum = None
+
+        try:
+            for e in enums:
+                if tileMatrixSetId == e.tileMatrixSet:
+                    enum = e
+            if not enum:
+                raise ValueError('could not find this tilematrixset')
+            return enum
+
+        except ValueError as err:
+            LOGGER.error(err)
 
 
 class ProviderTileQueryError(ProviderGenericError):
