@@ -141,7 +141,8 @@ class BaseTileProvider:
         try:
             x, y, z = map(int, (x, y, z))
         except ValueError as err:
-            LOGGER.error(err)
+            LOGGER.warning('Unable to cast tile index to integer')
+            return False
 
         return all([
             x < tilematrixset.tileMatrices[z]['matrixWidth'],
