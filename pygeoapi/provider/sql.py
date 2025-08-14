@@ -242,7 +242,8 @@ class GenericSQLProvider(BaseProvider):
             ):
                 response['numberReturned'] += 1
                 response['features'].append(
-                    self._sqlalchemy_to_feature(item, crs_transform_out)
+                    self._sqlalchemy_to_feature(item, crs_transform_out,
+                                                select_properties)
                 )
 
         return response
@@ -447,18 +448,16 @@ class GenericSQLProvider(BaseProvider):
             if not isinstance(v, dict)
         }
 
-    def _sqlalchemy_to_feature(self, item, crs_transform_out=None):
-        feature = {'type': 'Feature'}
+    def _sqlalchemy_to_feature(self, item, crs_transform_out=None,
+                               select_properties=[]):
+        feature = {'type': 'Feature', 'properties': {}}
 
-        # Add properties from item
-        item_dict = item.__dict__
-        item_dict.pop('_sa_instance_state')  # Internal SQLAlchemy metadata
-        feature['properties'] = item_dict
-        feature['id'] = item_dict.pop(self.id_field)
+        # set feature id
+        feature['id'] = item.__dict__[self.id_field]
 
         # Convert geometry to GeoJSON style
-        if feature['properties'].get(self.geom):
-            wkb_geom = feature['properties'].pop(self.geom)
+        if item.__dict__.get(self.geom) is not None:
+            wkb_geom = item.__dict__[self.geom]
             try:
                 shapely_geom = to_shape(wkb_geom)
             except TypeError:
@@ -469,6 +468,13 @@ class GenericSQLProvider(BaseProvider):
             feature['geometry'] = geojson_geom
         else:
             feature['geometry'] = None
+
+        keys = select_properties or self.fields.keys()
+        for key in keys:
+            if key in item.__dict__:
+                feature['properties'][key] = item.__dict__[key]
+
+        feature['properties'].pop(self.id_field, None)
 
         return feature
 
@@ -567,17 +573,19 @@ class GenericSQLProvider(BaseProvider):
     def _select_properties_clause(self, select_properties, skip_geometry):
         # List the column names that we want
         if select_properties:
-            column_names = set(select_properties)
+            column_names = sorted(set(select_properties),
+                                  key=select_properties.index)
         else:
             # get_fields() doesn't include geometry column
-            column_names = set(self.fields.keys())
+            column_names = self.fields.keys()
 
         if self.properties:  # optional subset of properties defined in config
-            properties_from_config = set(self.properties)
-            column_names = column_names.intersection(properties_from_config)
+            properties_from_config = self.properties
+            column_names = column_names and properties_from_config
 
         if not skip_geometry:
-            column_names.add(self.geom)
+            column_names = list(column_names)
+            column_names.append(self.geom)
 
         # Convert names to SQL Alchemy clause
         selected_columns = []
