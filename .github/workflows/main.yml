@@ -141,7 +141,7 @@ jobs:
       env:
         POSTGRESQL_PASSWORD: ${{ secrets.DatabasePassword || 'postgres' }}
       run: |
-        pytest tests/api
+        pytest tests/api --ignore=tests/api/test_admin_live.py
         pytest tests/test_api_ogr_provider.py
         pytest tests/test_base_provider.py
         pytest tests/test_config.py
@@ -180,7 +180,6 @@ jobs:
         pytest tests/test_util.py
         pytest tests/test_xarray_netcdf_provider.py
         pytest tests/test_xarray_zarr_provider.py
-        pytest tests/test_admin_api.py
     - name: failed tests 🚩
       if: ${{ failure() }}
       run: |

@@ -46,7 +46,7 @@ from pygeoapi.admin import (
 
 from tests.util import mock_api_request
 
-THISDIR = Path(__file__).resolve().parent
+THISDIR = Path(__file__).resolve().parent.parent
 
 
 @pytest.fixture()
