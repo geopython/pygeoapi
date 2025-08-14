@@ -116,6 +116,7 @@ def test_tile_out_of_bounds(config):
     assert not p.is_in_limits(tileset_schema, 6, 0, 3)
     assert p.is_in_limits(tileset_schema, 5, 0, 3)
 
+
 def test_get_tiling_schemes(config):
     provider = MVTPostgreSQLProvider(config)
 
