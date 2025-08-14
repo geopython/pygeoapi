@@ -140,7 +140,7 @@ class BaseTileProvider:
 
         try:
             x, y, z = map(int, (x, y, z))
-        except ValueError as err:
+        except ValueError:
             LOGGER.warning('Unable to cast tile index to integer')
             return False
 
