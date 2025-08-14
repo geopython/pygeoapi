@@ -139,11 +139,16 @@ class BaseTileProvider:
         """
 
         try:
-            if int(x) < tilematrixset.tileMatrices[int(z)]['matrixWidth'] and int(y) < tilematrixset.tileMatrices[int(z)]['matrixHeight']: # noqa
-                return True
+            x, y, z = map(int, (x, y, z))
+        except ValueError:
+            LOGGER.warning('Unable to cast tile index to integer')
             return False
-        except ValueError as err:
-            LOGGER.error(err)
+
+        return all([
+            x < tilematrixset.tileMatrices[z]['matrixWidth'],
+            y < tilematrixset.tileMatrices[z]['matrixHeight'],
+            self.options['zoom']['min'] <= z <= self.options['zoom']['max']
+        ])
 
     def get_tilematrixset(self, tileMatrixSetId):
         """
