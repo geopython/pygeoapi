@@ -1,0 +1,729 @@
+# Portuguese (Brazil) translations for pygeoapi.
+# Copyright (C) 2025 OSGeo
+# This file is distributed under the same license as the pygeoapi project.
+# FIRST AUTHOR Carlos Eduardo Mota <cmota.dev@gmail.com>, 2025.
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: PROJECT VERSION\n"
+"Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
+"POT-Creation-Date: 2025-08-06 01:37+0000\n"
+"PO-Revision-Date: 2025-08-05 22:38-0300\n"
+"Last-Translator: Carlos Eduardo Mota <cmota.dev@gmail.com>\n"
+"Language-Team: pt_BR <LL@li.org>\n"
+"Language: pt_BR\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=utf-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=2; plural=(n > 1);\n"
+"Generated-By: Babel 2.8.0\n"
+"X-Generator: Poedit 3.4.2\n"
+
+#: custom/templates/_base.html:2 pygeoapi/templates/_base.html:2
+msgid "text_direction"
+msgstr "ltr"
+
+#: custom/templates/_base.html:47 pygeoapi/templates/_base.html:60
+msgid "Contact"
+msgstr "Contato"
+
+#: custom/templates/_base.html:51 pygeoapi/templates/_base.html:64
+msgid "Admin"
+msgstr "Admin"
+
+#: custom/templates/_base.html:67 custom/templates/landing_page.html:2
+#: pygeoapi/templates/_base.html:80 pygeoapi/templates/landing_page.html:2
+msgid "Home"
+msgstr "Início"
+
+#: custom/templates/_base.html:75 custom/templates/_base.html:83
+#: pygeoapi/templates/_base.html:88 pygeoapi/templates/_base.html:96
+msgid "json"
+msgstr "json"
+
+#: custom/templates/_base.html:78 custom/templates/_base.html:86
+#: pygeoapi/templates/_base.html:91 pygeoapi/templates/_base.html:99
+msgid "jsonld"
+msgstr "jsonld"
+
+#: custom/templates/_base.html:118 pygeoapi/templates/_base.html:120
+msgid "Powered by "
+msgstr "Distribuído por "
+
+#: custom/templates/conformance.html:2 custom/templates/conformance.html:4
+#: custom/templates/conformance.html:8 custom/templates/landing_page.html:95
+#: pygeoapi/templates/conformance.html:2 pygeoapi/templates/conformance.html:4
+#: pygeoapi/templates/conformance.html:8
+#: pygeoapi/templates/landing_page.html:95
+msgid "Conformance"
+msgstr "Conformidade"
+
+#: custom/templates/exception.html:2 custom/templates/exception.html:5
+#: pygeoapi/templates/exception.html:2 pygeoapi/templates/exception.html:5
+msgid "Exception"
+msgstr "Exceção"
+
+#: custom/templates/landing_page.html:25
+#: pygeoapi/templates/landing_page.html:25
+msgid "Terms of service"
+msgstr "Termos de Serviço"
+
+#: custom/templates/collections/collection.html:38
+#: custom/templates/landing_page.html:35
+#: pygeoapi/templates/collections/collection.html:38
+#: pygeoapi/templates/landing_page.html:35
+msgid "License"
+msgstr "Licença"
+
+#: custom/templates/landing_page.html:45
+#: custom/templates/stac/collection_base.html:32
+#: custom/templates/stac/item.html:32 pygeoapi/templates/landing_page.html:45
+#: pygeoapi/templates/stac/collection_base.html:32
+#: pygeoapi/templates/stac/item.html:32
+msgid "URL"
+msgstr "URL"
+
+#: custom/templates/collections/collection.html:6
+#: custom/templates/collections/edr/instance.html:4
+#: custom/templates/collections/edr/instances.html:4
+#: custom/templates/collections/edr/query.html:4
+#: custom/templates/collections/index.html:2
+#: custom/templates/collections/index.html:4
+#: custom/templates/collections/items/index.html:4
+#: custom/templates/collections/items/item.html:27
+#: custom/templates/collections/queryables.html:4
+#: custom/templates/collections/schema.html:4
+#: custom/templates/collections/tiles/index.html:4
+#: custom/templates/collections/tiles/metadata.html:4
+#: custom/templates/landing_page.html:57
+#: custom/templates/stac/collection_base.html:19
+#: pygeoapi/templates/collections/collection.html:6
+#: pygeoapi/templates/collections/edr/instance.html:4
+#: pygeoapi/templates/collections/edr/instances.html:4
+#: pygeoapi/templates/collections/edr/query.html:4
+#: pygeoapi/templates/collections/index.html:2
+#: pygeoapi/templates/collections/index.html:4
+#: pygeoapi/templates/collections/items/index.html:4
+#: pygeoapi/templates/collections/items/item.html:27
+#: pygeoapi/templates/collections/queryables.html:4
+#: pygeoapi/templates/collections/schema.html:4
+#: pygeoapi/templates/collections/tiles/index.html:4
+#: pygeoapi/templates/collections/tiles/metadata.html:4
+#: pygeoapi/templates/landing_page.html:57
+#: pygeoapi/templates/stac/collection_base.html:19
+msgid "Collections"
+msgstr "Coleções"
+
+#: custom/templates/landing_page.html:59
+#: pygeoapi/templates/landing_page.html:59
+msgid "View the collections in this service"
+msgstr "Visualizar as Coleções neste serviço"
+
+#: custom/templates/landing_page.html:65
+#: pygeoapi/templates/landing_page.html:65
+msgid "SpatioTemporal Assets"
+msgstr "Ativos Espaço-Temporais (STAC)"
+
+#: custom/templates/landing_page.html:67
+#: pygeoapi/templates/landing_page.html:67
+msgid "View the SpatioTemporal Assets in this service"
+msgstr "Visualizar os Ativos Espaço-Temporais deste serviço"
+
+#: custom/templates/landing_page.html:73
+#: custom/templates/processes/index.html:2
+#: custom/templates/processes/index.html:4
+#: custom/templates/processes/process.html:4
+#: pygeoapi/templates/landing_page.html:73
+#: pygeoapi/templates/processes/index.html:2
+#: pygeoapi/templates/processes/index.html:4
+#: pygeoapi/templates/processes/process.html:4
+msgid "Processes"
+msgstr "Processos"
+
+#: custom/templates/landing_page.html:75
+#: pygeoapi/templates/landing_page.html:75
+msgid "View the processes in this service"
+msgstr "Visualizar os Processos deste serviço"
+
+#: custom/templates/jobs/index.html:2 custom/templates/jobs/index.html:4
+#: custom/templates/jobs/index.html:11 custom/templates/jobs/job.html:4
+#: custom/templates/jobs/results/index.html:4
+#: custom/templates/landing_page.html:79
+#: custom/templates/processes/process.html:76
+#: pygeoapi/templates/jobs/index.html:2 pygeoapi/templates/jobs/index.html:4
+#: pygeoapi/templates/jobs/index.html:11 pygeoapi/templates/jobs/job.html:4
+#: pygeoapi/templates/jobs/results/index.html:4
+#: pygeoapi/templates/landing_page.html:79
+#: pygeoapi/templates/processes/process.html:76
+msgid "Jobs"
+msgstr "Trabalhos"
+
+#: custom/templates/landing_page.html:81
+#: custom/templates/processes/process.html:77
+#: pygeoapi/templates/landing_page.html:81
+#: pygeoapi/templates/processes/process.html:77
+msgid "Browse jobs"
+msgstr "Navegar pelos Trabalhos"
+
+#: custom/templates/landing_page.html:86
+#: pygeoapi/templates/landing_page.html:86
+msgid "API Definition"
+msgstr "Definição da API"
+
+#: custom/templates/landing_page.html:88
+#: pygeoapi/templates/landing_page.html:88
+msgid "Documentation"
+msgstr "Documentação"
+
+#: custom/templates/landing_page.html:88
+#: pygeoapi/templates/landing_page.html:88
+msgid "Swagger UI"
+msgstr "Swagger UI"
+
+#: custom/templates/landing_page.html:88
+#: pygeoapi/templates/landing_page.html:88
+msgid "ReDoc"
+msgstr "ReDoc"
+
+#: custom/templates/landing_page.html:91
+#: pygeoapi/templates/landing_page.html:91
+msgid "OpenAPI Document"
+msgstr "Documento OpenAPI"
+
+#: custom/templates/landing_page.html:97
+#: pygeoapi/templates/landing_page.html:97
+msgid "View the conformance classes of this service"
+msgstr "Visualizar as classes de conformidade deste serviço"
+
+#: custom/templates/landing_page.html:102
+#: pygeoapi/templates/landing_page.html:102
+msgid "Tile Matrix Sets"
+msgstr "Grades Regulares de Tiles"
+
+#: custom/templates/landing_page.html:104
+#: pygeoapi/templates/landing_page.html:104
+msgid "View the Tile Matrix Sets available on this service"
+msgstr "Visualizar as Grades Regulares de Tiles deste serviço"
+
+#: custom/templates/landing_page.html:112
+#: pygeoapi/templates/landing_page.html:112
+msgid "Provider"
+msgstr "Provedor"
+
+#: custom/templates/landing_page.html:121
+#: pygeoapi/templates/landing_page.html:121
+msgid "Contact point"
+msgstr "Ponto de Contato"
+
+#: custom/templates/landing_page.html:124
+#: pygeoapi/templates/landing_page.html:124
+msgid "Address"
+msgstr "Endereço"
+
+#: custom/templates/landing_page.html:134
+#: pygeoapi/templates/landing_page.html:134
+msgid "Email"
+msgstr "E-mail"
+
+#: custom/templates/landing_page.html:137
+#: pygeoapi/templates/landing_page.html:137
+msgid "Telephone"
+msgstr "Telefone"
+
+#: custom/templates/landing_page.html:141
+#: pygeoapi/templates/landing_page.html:141
+msgid "Fax"
+msgstr "Fax"
+
+#: custom/templates/landing_page.html:145
+#: pygeoapi/templates/landing_page.html:145
+msgid "Contact URL"
+msgstr "URL para contato"
+
+#: custom/templates/landing_page.html:149
+#: pygeoapi/templates/landing_page.html:149
+msgid "Hours"
+msgstr "Horas"
+
+#: custom/templates/landing_page.html:153
+#: pygeoapi/templates/landing_page.html:153
+msgid "Contact instructions"
+msgstr "Instruções de contato"
+
+#: custom/templates/collections/collection.html:51
+#: pygeoapi/templates/collections/collection.html:51
+msgid "Browse"
+msgstr "Navegar"
+
+#: custom/templates/collections/collection.html:55
+#: pygeoapi/templates/collections/collection.html:55
+msgid "Browse Items"
+msgstr "Navegar pelos Items"
+
+#: custom/templates/collections/collection.html:56
+#: pygeoapi/templates/collections/collection.html:56
+msgid "Browse through the items of"
+msgstr "Navegue pelos itens de"
+
+#: custom/templates/collections/collection.html:59
+#: custom/templates/collections/queryables.html:6
+#: custom/templates/collections/queryables.html:17
+#: pygeoapi/templates/collections/collection.html:59
+#: pygeoapi/templates/collections/queryables.html:6
+#: pygeoapi/templates/collections/queryables.html:17
+msgid "Queryables"
+msgstr "Consultáveis (Queryables)"
+
+#: custom/templates/collections/collection.html:63
+#: pygeoapi/templates/collections/collection.html:63
+msgid "Display Queryables"
+msgstr "Exibir Consultáveis"
+
+#: custom/templates/collections/collection.html:64
+#: pygeoapi/templates/collections/collection.html:64
+msgid "Display Queryables of"
+msgstr "Exibir Consultáveis de"
+
+#: custom/templates/collections/collection.html:67
+#: custom/templates/collections/schema.html:6
+#: custom/templates/collections/schema.html:17
+#: pygeoapi/templates/collections/collection.html:67
+#: pygeoapi/templates/collections/schema.html:6
+#: pygeoapi/templates/collections/schema.html:17
+msgid "Schema"
+msgstr "Esquema (Schema)"
+
+#: custom/templates/collections/collection.html:71
+#: pygeoapi/templates/collections/collection.html:71
+msgid "Display Schema"
+msgstr "Exibir Esquema"
+
+#: custom/templates/collections/collection.html:72
+#: pygeoapi/templates/collections/collection.html:72
+msgid "Display Schema of"
+msgstr "Exibir Esquema de"
+
+#: custom/templates/collections/collection.html:77
+#: custom/templates/collections/tiles/index.html:6
+#: custom/templates/collections/tiles/metadata.html:6
+#: pygeoapi/templates/collections/collection.html:77
+#: pygeoapi/templates/collections/tiles/index.html:6
+#: pygeoapi/templates/collections/tiles/metadata.html:6
+msgid "Tiles"
+msgstr "Tiles"
+
+#: custom/templates/collections/collection.html:81
+#: pygeoapi/templates/collections/collection.html:81
+msgid "Display Tiles"
+msgstr "Exibir Tiles"
+
+#: custom/templates/collections/collection.html:81
+#: pygeoapi/templates/collections/collection.html:81
+msgid "Display Tiles of"
+msgstr "Exibir Tiles de"
+
+#: custom/templates/collections/collection.html:107
+#: custom/templates/collections/edr/instance.html:25
+#: custom/templates/collections/items/item.html:101
+#: custom/templates/jobs/job.html:50 custom/templates/processes/process.html:78
+#: pygeoapi/templates/collections/collection.html:107
+#: pygeoapi/templates/collections/edr/instance.html:25
+#: pygeoapi/templates/collections/items/item.html:101
+#: pygeoapi/templates/jobs/job.html:50
+#: pygeoapi/templates/processes/process.html:78
+msgid "Links"
+msgstr "Links"
+
+#: custom/templates/collections/collection.html:117
+#: pygeoapi/templates/collections/collection.html:117
+msgid "Reference Systems"
+msgstr "Sistemas de Referência"
+
+#: custom/templates/collections/collection.html:125
+#: pygeoapi/templates/collections/collection.html:125
+msgid "Storage CRS"
+msgstr "SRC de Armazenamento"
+
+#: custom/templates/collections/collection.html:128
+#: pygeoapi/templates/collections/collection.html:128
+msgid "CRS"
+msgstr "SRC"
+
+#: custom/templates/collections/collection.html:131
+#: pygeoapi/templates/collections/collection.html:131
+msgid "Epoch"
+msgstr "Época"
+
+#: custom/templates/collections/index.html:8
+#: pygeoapi/templates/collections/index.html:8
+msgid "Data collections in this service"
+msgstr "Coleções de dados neste serviço"
+
+#: custom/templates/collections/index.html:12
+#: custom/templates/collections/index.html:39
+#: custom/templates/processes/index.html:14
+#: custom/templates/stac/catalog.html:17
+#: custom/templates/stac/collection.html:17
+#: pygeoapi/templates/collections/index.html:12
+#: pygeoapi/templates/collections/index.html:39
+#: pygeoapi/templates/processes/index.html:14
+#: pygeoapi/templates/stac/catalog.html:17
+#: pygeoapi/templates/stac/collection.html:17
+msgid "Name"
+msgstr "Nome"
+
+#: custom/templates/collections/index.html:13
+#: custom/templates/collections/index.html:40
+#: custom/templates/processes/index.html:15
+#: custom/templates/processes/process.html:26
+#: custom/templates/processes/process.html:56
+#: custom/templates/stac/collection.html:18
+#: custom/templates/tilematrixsets/index.html:16
+#: pygeoapi/templates/collections/index.html:13
+#: pygeoapi/templates/collections/index.html:40
+#: pygeoapi/templates/processes/index.html:15
+#: pygeoapi/templates/processes/process.html:26
+#: pygeoapi/templates/processes/process.html:56
+#: pygeoapi/templates/stac/collection.html:18
+#: pygeoapi/templates/tilematrixsets/index.html:16
+msgid "Description"
+msgstr "Descrição"
+
+#: custom/templates/collections/index.html:35
+#: pygeoapi/templates/collections/index.html:35
+msgid "Record collections in this service"
+msgstr "Coleções de registros neste serviço"
+
+#: custom/templates/collections/edr/instance.html:11
+#: custom/templates/collections/edr/instances.html:11
+#: custom/templates/collections/edr/instances.html:22
+#: pygeoapi/templates/collections/edr/instance.html:11
+#: pygeoapi/templates/collections/edr/instances.html:11
+#: pygeoapi/templates/collections/edr/instances.html:22
+msgid "Instances"
+msgstr "Instâncias"
+
+#: custom/templates/collections/edr/instance.html:23
+#: pygeoapi/templates/collections/edr/instance.html:23
+msgid "Instance"
+msgstr "Instâncias"
+
+#: custom/templates/collections/edr/query.html:11
+#: pygeoapi/templates/collections/edr/query.html:11
+#, python-format
+msgid "%(query_type)s"
+msgstr "%(query_type)s"
+
+#: custom/templates/collections/edr/query.html:37
+#: custom/templates/collections/items/index.html:147
+#: pygeoapi/templates/collections/edr/query.html:37
+#: pygeoapi/templates/collections/items/index.html:147
+msgid "No items"
+msgstr "Sem itens"
+
+#: custom/templates/collections/items/index.html:11
+#: custom/templates/collections/items/item.html:33
+#: pygeoapi/templates/collections/items/index.html:11
+#: pygeoapi/templates/collections/items/item.html:33
+msgid "Items"
+msgstr "Itens"
+
+#: custom/templates/collections/items/index.html:38
+#: custom/templates/collections/items/index.html:142
+#: pygeoapi/templates/collections/items/index.html:38
+#: pygeoapi/templates/collections/items/index.html:142
+msgid "Items in this collection"
+msgstr "Itens nesta coleção"
+
+#: custom/templates/collections/items/index.html:44
+#: custom/templates/jobs/index.html:53
+#: pygeoapi/templates/collections/items/index.html:44
+#: pygeoapi/templates/jobs/index.html:53
+msgid "Limit"
+msgstr "Limite"
+
+#: custom/templates/collections/items/index.html:46
+#: custom/templates/jobs/index.html:55
+#: pygeoapi/templates/collections/items/index.html:46
+#: pygeoapi/templates/jobs/index.html:55
+msgid "default"
+msgstr "padrão"
+
+#: custom/templates/collections/items/index.html:51
+#: pygeoapi/templates/collections/items/index.html:51
+msgid "Warning: Higher limits not recommended!"
+msgstr "Atenção: Limites altos não são recomendados!"
+
+#: custom/templates/collections/items/index.html:68
+#: custom/templates/collections/items/item.html:62
+#: custom/templates/jobs/index.html:76
+#: pygeoapi/templates/collections/items/index.html:68
+#: pygeoapi/templates/collections/items/item.html:62
+#: pygeoapi/templates/jobs/index.html:76
+msgid "Prev"
+msgstr "Anterior"
+
+#: custom/templates/collections/items/index.html:70
+#: custom/templates/collections/items/item.html:64
+#: custom/templates/jobs/index.html:78
+#: pygeoapi/templates/collections/items/index.html:70
+#: pygeoapi/templates/collections/items/item.html:64
+#: pygeoapi/templates/jobs/index.html:78
+msgid "Next"
+msgstr "Próximo"
+
+#: custom/templates/collections/items/item.html:77
+#: custom/templates/stac/collection_base.html:58
+#: custom/templates/stac/item.html:58
+#: pygeoapi/templates/collections/items/item.html:77
+#: pygeoapi/templates/stac/collection_base.html:58
+#: pygeoapi/templates/stac/item.html:58
+msgid "Property"
+msgstr "Propriedade"
+
+#: custom/templates/collections/items/item.html:78
+#: custom/templates/stac/collection_base.html:59
+#: custom/templates/stac/item.html:59
+#: pygeoapi/templates/collections/items/item.html:78
+#: pygeoapi/templates/stac/collection_base.html:59
+#: pygeoapi/templates/stac/item.html:59
+msgid "Value"
+msgstr "Valor"
+
+#: custom/templates/collections/tiles/index.html:31
+#: pygeoapi/templates/collections/tiles/index.html:25
+msgid "Tile Matrix Set"
+msgstr "Grade Regular de Tiles"
+
+#: custom/templates/collections/tiles/index.html:42
+#: pygeoapi/templates/collections/tiles/index.html:36
+msgid "Metadata"
+msgstr "Metadados"
+
+#: custom/templates/collections/tiles/metadata.html:15
+#: pygeoapi/templates/collections/tiles/metadata.html:15
+msgid "TileJSON"
+msgstr "TileJSON"
+
+#: custom/templates/collections/tiles/metadata.html:17
+#: pygeoapi/templates/collections/tiles/metadata.html:17
+msgid "JSON"
+msgstr "JSON"
+
+#: custom/templates/jobs/index.html:14 pygeoapi/templates/jobs/index.html:14
+msgid "Job ID"
+msgstr "ID Trabalho"
+
+#: custom/templates/jobs/index.html:15 pygeoapi/templates/jobs/index.html:15
+msgid "Process ID"
+msgstr "ID Processo"
+
+#: custom/templates/jobs/index.html:16 pygeoapi/templates/jobs/index.html:16
+msgid "Start"
+msgstr "Início"
+
+#: custom/templates/jobs/index.html:17 custom/templates/jobs/job.html:37
+#: pygeoapi/templates/jobs/index.html:17 pygeoapi/templates/jobs/job.html:37
+msgid "Duration"
+msgstr "Duração"
+
+#: custom/templates/jobs/index.html:18 custom/templates/jobs/job.html:17
+#: custom/templates/jobs/job.html:35 pygeoapi/templates/jobs/index.html:18
+#: pygeoapi/templates/jobs/job.html:17 pygeoapi/templates/jobs/job.html:35
+msgid "Progress"
+msgstr "Progresso"
+
+#: custom/templates/jobs/index.html:19 custom/templates/jobs/job.html:16
+#: pygeoapi/templates/jobs/index.html:19 pygeoapi/templates/jobs/job.html:16
+msgid "Status"
+msgstr "Status"
+
+#: custom/templates/jobs/index.html:20 custom/templates/jobs/job.html:21
+#: pygeoapi/templates/jobs/index.html:20 pygeoapi/templates/jobs/job.html:21
+msgid "Message"
+msgstr "Mensagem"
+
+#: custom/templates/jobs/job.html:2 custom/templates/jobs/job.html:10
+#: pygeoapi/templates/jobs/job.html:2 pygeoapi/templates/jobs/job.html:10
+msgid "Job status"
+msgstr "Status do Trabalho"
+
+#: custom/templates/jobs/job.html:26 pygeoapi/templates/jobs/job.html:26
+msgid "Parameters"
+msgstr "Parâmetros"
+
+#: custom/templates/jobs/job.html:45 pygeoapi/templates/jobs/job.html:45
+msgid "Started processing"
+msgstr "Início do processamento"
+
+#: custom/templates/jobs/job.html:47 pygeoapi/templates/jobs/job.html:47
+msgid "Finished processing"
+msgstr "Processamento finalizado"
+
+#: custom/templates/jobs/results/index.html:2
+#: pygeoapi/templates/jobs/results/index.html:2
+msgid "Job result"
+msgstr "Resultado do trabalho"
+
+#: custom/templates/jobs/results/index.html:6
+#: pygeoapi/templates/jobs/results/index.html:6
+msgid "Results"
+msgstr "Resultados"
+
+#: custom/templates/jobs/results/index.html:10
+#: pygeoapi/templates/jobs/results/index.html:10
+msgid "Results of job"
+msgstr "Resultados do trabalho"
+
+#: custom/templates/processes/index.html:8
+#: pygeoapi/templates/processes/index.html:8
+msgid "Processes in this service"
+msgstr "Processos neste serviço"
+
+#: custom/templates/processes/process.html:20
+#: pygeoapi/templates/processes/process.html:20
+msgid "Inputs"
+msgstr "Entradas"
+
+#: custom/templates/processes/process.html:23
+#: custom/templates/processes/process.html:54
+#: pygeoapi/templates/processes/process.html:23
+#: pygeoapi/templates/processes/process.html:54
+msgid "Id"
+msgstr "ID"
+
+#: custom/templates/processes/process.html:24
+#: custom/templates/processes/process.html:55
+#: custom/templates/tilematrixsets/index.html:15
+#: pygeoapi/templates/processes/process.html:24
+#: pygeoapi/templates/processes/process.html:55
+#: pygeoapi/templates/tilematrixsets/index.html:15
+msgid "Title"
+msgstr "Título"
+
+#: custom/templates/processes/process.html:25
+#: pygeoapi/templates/processes/process.html:25
+msgid "Data Type"
+msgstr "Tipo de dado"
+
+#: custom/templates/processes/process.html:51
+#: pygeoapi/templates/processes/process.html:51
+msgid "Outputs"
+msgstr "Saídas"
+
+#: custom/templates/processes/process.html:71
+#: pygeoapi/templates/processes/process.html:71
+msgid "Execution modes"
+msgstr "Modos de Execução"
+
+#: custom/templates/processes/process.html:73
+#: pygeoapi/templates/processes/process.html:73
+msgid "Synchronous"
+msgstr "Síncrono"
+
+#: custom/templates/processes/process.html:74
+#: pygeoapi/templates/processes/process.html:74
+msgid "Asynchronous"
+msgstr "Assíncrono"
+
+#: custom/templates/stac/catalog.html:4 custom/templates/stac/collection.html:2
+#: custom/templates/stac/collection.html:4
+#: custom/templates/stac/collection_base.html:4
+#: custom/templates/stac/item.html:4 pygeoapi/templates/stac/catalog.html:4
+#: pygeoapi/templates/stac/collection.html:2
+#: pygeoapi/templates/stac/collection.html:4
+#: pygeoapi/templates/stac/collection_base.html:4
+#: pygeoapi/templates/stac/item.html:4
+msgid "SpatioTemporal Asset Catalog"
+msgstr "Catálogo de Ativos Espaço-Temporais (STAC)"
+
+#: custom/templates/stac/catalog.html:18
+#: pygeoapi/templates/stac/catalog.html:18
+msgid "Type"
+msgstr "Tipo"
+
+#: custom/templates/stac/catalog.html:19
+#: pygeoapi/templates/stac/catalog.html:19
+msgid "Last modified"
+msgstr "Ultima modificação"
+
+#: custom/templates/stac/catalog.html:20
+#: custom/templates/stac/collection_base.html:34
+#: custom/templates/stac/item.html:34 pygeoapi/templates/stac/catalog.html:20
+#: pygeoapi/templates/stac/collection_base.html:34
+#: pygeoapi/templates/stac/item.html:34
+msgid "Size"
+msgstr "Tamanho"
+
+#: custom/templates/stac/collection.html:9
+#: pygeoapi/templates/stac/collection.html:9
+msgid "STAC Version"
+msgstr "Versão do STAC"
+
+#: custom/templates/stac/collection_base.html:28
+#: custom/templates/stac/item.html:28
+#: pygeoapi/templates/stac/collection_base.html:28
+#: pygeoapi/templates/stac/item.html:28
+msgid "Assets"
+msgstr "Ativos"
+
+#: custom/templates/stac/collection_base.html:33
+#: custom/templates/stac/item.html:33
+#: pygeoapi/templates/stac/collection_base.html:33
+#: pygeoapi/templates/stac/item.html:33
+msgid "Last Modified"
+msgstr "Última modificação"
+
+#: custom/templates/stac/collection_base.html:64
+#: custom/templates/stac/item.html:64
+#: pygeoapi/templates/stac/collection_base.html:64
+#: pygeoapi/templates/stac/item.html:64
+msgid "id"
+msgstr "id"
+
+#: custom/templates/stac/collection_base.html:68
+#: pygeoapi/templates/stac/collection_base.html:68
+msgid "description"
+msgstr "descrição"
+
+#: custom/templates/stac/collection_base.html:72
+#: pygeoapi/templates/stac/collection_base.html:72
+msgid "extent"
+msgstr "extensão"
+
+#: custom/templates/stac/collection_base.html:77
+#: pygeoapi/templates/stac/collection_base.html:77
+msgid "cube:dimensions"
+msgstr "cubo:dimensões"
+
+#: custom/templates/stac/collection_base.html:83
+#: pygeoapi/templates/stac/collection_base.html:83
+msgid "cube:variables"
+msgstr "cub:variáveis"
+
+#: custom/templates/stac/item.html:19 pygeoapi/templates/stac/item.html:19
+msgid "Item"
+msgstr "Item"
+
+#: custom/templates/tilematrixsets/index.html:2
+#: custom/templates/tilematrixsets/index.html:4
+#: custom/templates/tilematrixsets/tilematrixset.html:4
+#: pygeoapi/templates/tilematrixsets/index.html:2
+#: pygeoapi/templates/tilematrixsets/index.html:4
+#: pygeoapi/templates/tilematrixsets/tilematrixset.html:4
+msgid "TileMatrixSets"
+msgstr "Grades Regulares de Tiles"
+
+#: custom/templates/tilematrixsets/index.html:9
+#: pygeoapi/templates/tilematrixsets/index.html:9
+msgid "Tile matrix sets available in this service"
+msgstr "Grades Regulares de Tiles disponíveis neste serviço"
+
+#: custom/templates/tilematrixsets/tilematrixset.html:2
+#: pygeoapi/templates/tilematrixsets/tilematrixset.html:2
+msgid "TileMatrixSet"
+msgstr "Grade Regular de Tiles"
+
+#: pygeoapi/templates/collections/tiles/index.html:92
+msgid "Warning: Basemap may be in a different projection"
+msgstr "Atenção: Mapa base pode estar em projeção diferente"
