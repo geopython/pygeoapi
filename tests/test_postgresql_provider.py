@@ -161,6 +161,14 @@ def test_query(config):
     feature = features[0]
     properties = feature.get('properties')
     assert properties is not None
+
+    properties_order = [
+        'name', 'waterway', 'covered', 'width', 'depth', 'layer', 'blockage',
+        'tunnel', 'natural', 'water', 'z_index'
+    ]
+
+    assert list(properties.keys()) == properties_order
+
     geometry = feature.get('geometry')
     assert geometry is not None
 
