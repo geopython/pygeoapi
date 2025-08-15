@@ -39,7 +39,7 @@ from pathlib import Path
 import pytest
 
 from pygeoapi.util import yaml_load
-from pygeoapi.admin import (
+from pygeoapi.api.admin import (
     Admin, delete_resource, get_config_, get_resource,
     get_resources, patch_config, patch_resource, post_resource,
     put_config, put_resource)
