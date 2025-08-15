@@ -450,14 +450,27 @@ class GenericSQLProvider(BaseProvider):
 
     def _sqlalchemy_to_feature(self, item, crs_transform_out=None,
                                select_properties=[]):
+        """
+        Helper function to transform an SQLAlchemy result to a
+        GeoJSON feature.
+
+        :param item: SQLAlchemy result
+        :param crs_transform_out: CRS transformation
+        :param select_properties: additional properties to filter on
+
+        :returns: `dict` of GeoJSON feature
+        """
+
         feature = {'type': 'Feature', 'properties': {}}
 
+        item_dict = item.__dict__
+
         # set feature id
-        feature['id'] = item.__dict__[self.id_field]
+        feature['id'] = item_dict[self.id_field]
 
         # Convert geometry to GeoJSON style
-        if item.__dict__.get(self.geom) is not None:
-            wkb_geom = item.__dict__[self.geom]
+        if item_dict.get(self.geom) is not None:
+            wkb_geom = item_dict[self.geom]
             try:
                 shapely_geom = to_shape(wkb_geom)
             except TypeError:
@@ -471,8 +484,8 @@ class GenericSQLProvider(BaseProvider):
 
         keys = select_properties or self.fields.keys()
         for key in keys:
-            if key in item.__dict__:
-                feature['properties'][key] = item.__dict__[key]
+            if key in item_dict:
+                feature['properties'][key] = item_dict[key]
 
         feature['properties'].pop(self.id_field, None)
 
