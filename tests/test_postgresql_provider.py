@@ -149,7 +149,8 @@ def test_valid_connection_options(config):
             assert key in ['connect_timeout', 'tcp_user_timeout', 'keepalives',
                            'keepalives_idle', 'keepalives_count',
                            'keepalives_interval']
-            
+
+
 def test_schema_path_search(config):
     config['data']['search_path'] = ['public', 'osm']
     PostgreSQLProvider(config)

@@ -657,8 +657,8 @@ def get_table_model(
         if len(db_search_path) > 1:
             # If the table is not found in the first schema, try the next one
             return get_table_model(
-                table_name, 
-                id_field, 
+                table_name,
+                id_field,
                 db_search_path[1:],
                 engine
             )
