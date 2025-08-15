@@ -33,16 +33,17 @@
 
 from datetime import datetime
 from enum import Enum
+import json
 from pathlib import Path
 from typing import List, Optional
-import json
 
 import pydantic
 from pydantic import BaseModel
 
+from pygeoapi.util import THISDIR
 
-BASE_DIR = Path(__file__).resolve().parents[2]
-TMS_DIR = BASE_DIR / "resources" / "tilematrixsets"
+
+TMS_DIR = THISDIR / 'resources' / 'tilematrixsets'
 
 
 class TilesMetadataFormat(str, Enum):
@@ -93,8 +94,9 @@ class TileMatrixSetLoader:
 
     def load_from_file(self, filename: str) -> TileMatrixSetEnumType:
         """Load a single TMS JSON file."""
-        with open(self.directory / filename, encoding="utf-8") as f:
-            data = json.load(f)
+        filepath = self.directory / filename
+        with filepath.open(encoding='utf-8') as fh:
+            data = json.load(fh)
         return TileMatrixSetEnumType(
             tileMatrixSet=data["id"],
             tileMatrixSetURI=data["uri"],
