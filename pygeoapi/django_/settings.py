@@ -179,6 +179,6 @@ APPEND_SLASH = not API_RULES.strict_slashes
 # CORS: optionally enable from config.
 if PYGEOAPI_CONFIG['server'].get('cors', False):
     INSTALLED_APPS.append('corsheaders')
-    MIDDLEWARE.append('corsheaders.middleware.CorsMiddleware')
+    MIDDLEWARE.insert(0, 'corsheaders.middleware.CorsMiddleware')
 
     CORS_ORIGIN_ALLOW_ALL = True
