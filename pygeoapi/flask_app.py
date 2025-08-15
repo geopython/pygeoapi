@@ -57,8 +57,8 @@ OPENAPI = load_openapi_document()
 API_RULES = get_api_rules(CONFIG)
 
 if CONFIG['server'].get('admin'):
-    import pygeoapi.admin as admin_api
-    from pygeoapi.admin import Admin
+    import pygeoapi.api.admin as admin_api
+    from pygeoapi.api.admin import Admin
 
 STATIC_FOLDER = 'static'
 if 'templates' in CONFIG['server']:

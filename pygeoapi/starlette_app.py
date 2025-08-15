@@ -70,8 +70,8 @@ if 'PYGEOAPI_OPENAPI' not in os.environ:
 OPENAPI = load_openapi_document()
 
 if CONFIG['server'].get('admin'):
-    import pygeoapi.admin as admin_api
-    from pygeoapi.admin import Admin
+    import pygeoapi.api.admin as admin_api
+    from pygeoapi.api.admin import Admin
 
 p = Path(__file__)
 
