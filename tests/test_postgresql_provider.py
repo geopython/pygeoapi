@@ -151,6 +151,15 @@ def test_valid_connection_options(config):
                            'keepalives_interval']
 
 
+def test_schema_path_search(config):
+    config['data']['search_path'] = ['public', 'osm']
+    PostgreSQLProvider(config)
+
+    config['data']['search_path'] = ['public', 'notosm']
+    with pytest.raises(ProviderQueryError):
+        PostgreSQLProvider(config)
+
+
 def test_query(config):
     """Testing query for a valid JSON object with geometry"""
     p = PostgreSQLProvider(config)

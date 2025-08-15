@@ -669,10 +669,23 @@ def get_table_model(
             f'Could not connect to {repr(engine.url)} (password hidden).'
         )
     except InvalidRequestError:
-        raise ProviderQueryError(
+        msg = (
             f"Table '{table_name}' not found in schema '{schema}' "
             f'on {repr(engine.url)}.'
         )
+        LOGGER.error(msg)
+
+        if len(db_search_path) > 1:
+            # If the table is not found in the first schema, try the next one
+            return get_table_model(
+                table_name,
+                id_field,
+                db_search_path[1:],
+                engine
+            )
+        else:
+            # If the table is not found in any schema, raise an error
+            raise ProviderQueryError(msg)
 
     # Create SQLAlchemy model from reflected table
     # It is necessary to add the primary key constraint because SQLAlchemy
