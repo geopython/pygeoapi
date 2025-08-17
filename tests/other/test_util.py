@@ -2,7 +2,7 @@
 #
 # Authors: Tom Kralidis <tomkralidis@gmail.com>
 #
-# Copyright (c) 2021 Tom Kralidis
+# Copyright (c) 2025 Tom Kralidis
 #
 # Permission is hereby granted, free of charge, to any person
 # obtaining a copy of this software and associated documentation
@@ -46,7 +46,7 @@ from pygeoapi import util
 from pygeoapi.api import __version__
 from pygeoapi.provider.base import ProviderTypeError
 
-from .util import get_test_file_path
+from ..util import get_test_file_path
 
 
 @pytest.fixture()

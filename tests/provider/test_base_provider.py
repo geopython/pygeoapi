@@ -27,9 +27,11 @@
 #
 # =================================================================
 
-import pytest
 import json
 from http import HTTPStatus
+
+import pytest
+
 
 from pygeoapi.provider.base import (
     BaseProvider, ProviderTypeError,

@@ -21,7 +21,7 @@ reference documentation on all aspects of the project.
 
 .. note::
 
-   Did you know about the `pygeoapi workshop`_?  Ready to get your hands dirty?  Dive in!
+   Did you know about the `Diving into pygeoapi workshop`_?  Ready to get your hands dirty?  Dive in!
 
 .. toctree::
    :maxdepth: 4

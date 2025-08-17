@@ -1,8 +1,10 @@
 # =================================================================
 #
 # Authors: Ricardo Garcia Silva <ricardo.garcia.silva@geobeyond.it>
+#          Tom Kralidis <tomkralidis@gmail.com>
 #
 # Copyright (c) 2023 Ricardo Garcia Silva
+# Copyright (c) 2025 Tom Kralidis
 #
 # Permission is hereby granted, free of charge, to any person
 # obtaining a copy of this software and associated documentation
@@ -26,6 +28,7 @@
 # OTHER DEALINGS IN THE SOFTWARE.
 #
 # =================================================================
+
 from typing import Dict
 
 import pytest
@@ -33,7 +36,7 @@ import pytest
 from pygeoapi.process.base import UnknownProcessError, JobNotFoundError
 from pygeoapi.process.manager.base import get_manager
 
-from .util import get_test_file_path
+from ..util import get_test_file_path
 
 
 @pytest.fixture()

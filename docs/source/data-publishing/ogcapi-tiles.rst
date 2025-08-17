@@ -201,6 +201,16 @@ This code block shows how to configure pygeoapi to read map tiles from a WMTS.
                  min: 0
                  max: 20
 
+
+Providing custom Tile Matrix Set definitions
+--------------------------------------------
+
+By default, pygeoapi provides the ``WorldCRS84Quad`` and ``WebMercatorQuad`` TMS
+definitions, for tile providers to use accordingly. Additional TMS definitions
+may be added in pygeoapi's ``resources/definitions/tiles`` (for example, by adding
+TMS definition files directly, volume mapping / Docker ``COPY``, Docker Compose ``volumes``, etc.).
+
+
 Data access examples
 --------------------
 

@@ -1,8 +1,10 @@
 # =================================================================
 #
 # Authors: Francesco Martinelli <francesco.martinelli@ingv.it>
+#          Tom Kralidis <tomkralidis@gmail.com>
 #
 # Copyright (c) 2024 Francesco Martinelli
+# Copyright (c) 2025 Tom Kralidis
 #
 # Permission is hereby granted, free of charge, to any person
 # obtaining a copy of this software and associated documentation
@@ -36,7 +38,7 @@ import pytest
 from werkzeug.wrappers import Request
 from werkzeug.test import create_environ
 
-from .util import get_test_file_path
+from ..util import get_test_file_path
 from pygeoapi.api import API, APIRequest
 import pygeoapi.api.processes as processes_api
 from pygeoapi.util import yaml_load

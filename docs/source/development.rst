@@ -11,12 +11,12 @@ The pygeoapi codebase exists at https://github.com/geopython/pygeoapi.
 Pull Requests and GitHub Actions
 --------------------------------
 
-A given GitHub Pull Request is evaluated against the following GitHub actions:
+A given GitHub Pull Request is evaluated against the following GitHub Actions:
 
-- main: mainline testing harness (as defined in ``tests``)
-- flake8: code linting
-- docs: documentation updates (for files updated in ``docs/**.rst``)
-- vulnerabilities: Trivy vulnerability scanning
+- ``main``: mainline testing harness (as defined in ``tests``)
+- ``flake8``: code linting
+- ``docs``: documentation updates (for files updated in ``docs/**.rst``)
+- ``vulnerabilities``: Trivy vulnerability scanning
 
 Testing
 -------
@@ -24,6 +24,11 @@ Testing
 pygeoapi uses `pytest <https://docs.pytest.org>`_ for managing its automated tests.  Tests
 exist in ``/tests`` and are developed for providers, formatters, processes, as well as the
 overall API.
+
+- API specific tests can be found in ``/tests/api``
+- Provider specific tests can be found in ``/tests/provider``
+- Manager specific tests can be found in ``/tests/manager``
+- Additional/other tests can be found in ``/tests/other``
 
 Tests can be run locally as part of development workflow.  They are also run on pygeoapi’s
 `GitHub Actions setup`_ against all commits and pull requests to the code repository.
@@ -57,24 +62,23 @@ Using pre-commit
 ^^^^^^^^^^^^^^^^
 
 You may optionally use `pre-commit`_ in order to check for linting and other static issues
-before committing changes. Pygeoapi's repo includes a ``.pre-commit.yml``
+before committing changes. pygeoapi's repo includes a ``.pre-commit.yml``
 file, check the pre-commit docs on how to set it up - in a nutshell:
 
-- pre-commit is mentioned in pygeoapi's ``requirements-dev.txt`` file, so it will be included
-  when you pip install those
-- run ``pre-commit install`` once in order to install its git commit hooks.
-- optionally, run ``pre-commit run --all-files``, which will run all pre-commit hooks for all files in the repo.
-  This also prepares the pre-commit environment.
-- from now on, whenever you do a ``git commit``, the pre-commit hooks will run and the commit
-  will only be done if all checks pass
+- pre-commit is part of ``requirements-dev.txt`` file, so it will be included when installing same
+- run ``pre-commit install`` once in order to install its git commit hooks
+- optionally, run ``pre-commit run --all-files``, which will run all pre-commit hooks for all files
+  in the repository.  Note that this also prepares the pre-commit environment
+- When subsequent ``git commit`` commands are run, the pre-commit hooks will run and commit
+  on passing checks
 
 Building the documentation
 --------------------------
 
-To build the documentation in pygeoapi we use `Sphinx`_. The documentation is located in the docs folder.
+Documentation is managed using `Sphinx`_ and located in the ``docs`` directory.
 
 .. note::
-   For the following instructions to work, you must be located in the root folder of pygeoapi.
+   The following commands should be run from the root folder of the repository.
 
 Install the dependencies necessary for building the documentation using the following command:
 
@@ -93,12 +97,17 @@ Or using the following ``make`` command:
 
 .. code-block:: bash
 
-   make -C docs html
+   make -C docs/ html
 
-After building the documentation, the folder ``docs/build`` will contain the website generated with the documentation. 
-Add the folder to a web server or open the file ``docs/build/html/index.html`` file in a web browser to see the contents of the documentation.
+After building the documentation, the ``docs/build`` directory will contain the generated documentation. 
 
-The documentation is hosted on `Read the Docs`_. It is automatically generated from the contents of the ``master`` branch on GitHub.
+To view the generated documentation locally, use one of the following options:
+
+- run ``python3 -m http.server`` and navigate to ``http://localhost:8000`` in a web browser.  To use a different port, use ``python3 -m http.server 8001``, for example, and navigate to ``http://localhost:8001``
+- add the directory to a web server
+- open the file ``docs/build/html/index.html`` file in a web browser
+
+The documentation is hosted on `Read the Docs`_ and automatically generated from the contents of the ``master`` branch on GitHub.
 
 The file ``.readthedocs.yaml`` contains the configuration of the Read the Docs build. Refer to the `Read the Docs configuration file`_ documentation for more information.
 

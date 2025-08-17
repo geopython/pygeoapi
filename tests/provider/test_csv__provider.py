@@ -35,7 +35,7 @@ from pygeoapi.provider.base import (ProviderItemNotFoundError,
                                     ProviderInvalidQueryError)
 from pygeoapi.provider.csv_ import CSVProvider
 
-from .util import get_test_file_path
+from ..util import get_test_file_path
 
 LOGGER = logging.getLogger(__name__)
 

@@ -4,7 +4,7 @@
 # Authors: Francesco Bartoli <xbartolone@gmail.com>
 # Authors: Ricardo Garcia Silva <ricardo.garcia.silva@geobeyond.it>
 #
-# Copyright (c) 2024 Tom Kralidis
+# Copyright (c) 2025 Tom Kralidis
 # Copyright (c) 2025 Francesco Bartoli
 # Copyright (c) 2023 Ricardo Garcia Silva
 #
@@ -47,7 +47,7 @@ from pygeoapi import l10n
 from pygeoapi.api import all_apis
 from pygeoapi.models.openapi import OAPIFormat
 from pygeoapi.util import (filter_dict_by_key_value, to_json, yaml_load,
-                           get_api_rules, get_base_url)
+                           get_api_rules, get_base_url, SCHEMASDIR)
 
 LOGGER = logging.getLogger(__name__)
 
@@ -61,8 +61,6 @@ OPENAPI_YAML = {
     'oapit': 'https://schemas.opengis.net/ogcapi/tiles/part1/1.0/openapi/ogcapi-tiles-1.yaml',  # noqa
     'pygeoapi': 'https://raw.githubusercontent.com/geopython/pygeoapi/master/pygeoapi/schemas/config/pygeoapi-config-0.x.yml'  # noqa
 }
-
-THISDIR = os.path.dirname(os.path.realpath(__file__))
 
 
 def get_ogc_schemas_location(server_config: dict) -> str:
@@ -706,10 +704,9 @@ def get_visible_collections(cfg: dict) -> dict:
 
 
 def get_config_schema():
-    schema_file = os.path.join(THISDIR, 'schemas', 'config',
-                               'pygeoapi-config-0.x.yml')
+    schema_file = SCHEMASDIR / 'config' / 'pygeoapi-config-0.x.yml'
 
-    with open(schema_file) as fh2:
+    with schema_file.open() as fh2:
         return yaml_load(fh2)
 
 
@@ -957,10 +954,9 @@ def validate_openapi_document(instance_dict: dict) -> bool:
     :returns: `bool` of validation
     """
 
-    schema_file = os.path.join(THISDIR, 'schemas', 'openapi',
-                               'openapi-3.0.x.json')
+    schema_file = SCHEMASDIR / 'openapi' / 'openapi-3.0.x.json'
 
-    with open(schema_file) as fh2:
+    with schema_file.open() as fh2:
         schema_dict = json.load(fh2)
         jsonschema_validate(instance_dict, schema_dict)
 
