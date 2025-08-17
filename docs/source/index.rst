@@ -61,4 +61,4 @@ Indices and tables
 * :ref:`modindex`
 * :ref:`search`
 
-.. _`pygeoapi workshop`: https://dive.pygeoapi.io
+.. _`Diving into pygeoapi workshop`: https://dive.pygeoapi.io
