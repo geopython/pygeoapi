@@ -3,7 +3,7 @@
 # Authors: Tom Kralidis <tomkralidis@gmail.com>
 #          Francesco Bartoli <xbartolone@gmail.com>
 #
-# Copyright (c) 2022 Tom Kralidis
+# Copyright (c) 2025 Tom Kralidis
 # Copyright (c) 2025 Francesco Bartoli
 #
 # Permission is hereby granted, free of charge, to any person
@@ -36,7 +36,7 @@ import logging
 import os
 import yaml
 
-from pygeoapi.util import to_json, yaml_load, THISDIR
+from pygeoapi.util import SCHEMASDIR, to_json, yaml_load
 
 LOGGER = logging.getLogger(__name__)
 
@@ -65,7 +65,7 @@ def get_config(raw: bool = False) -> dict:
 def load_schema() -> dict:
     """ Reads the JSON schema YAML file. """
 
-    schema_file = THISDIR / 'schemas' / 'config' / 'pygeoapi-config-0.x.yml'
+    schema_file = SCHEMASDIR / 'config' / 'pygeoapi-config-0.x.yml'
 
     with schema_file.open() as fh2:
         return yaml_load(fh2)

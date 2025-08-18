@@ -16,4 +16,4 @@ Setting up your own CITE testing instance
 -----------------------------------------
 
 Please see the pygeoapi `OGC Compliance <https://github.com/geopython/pygeoapi/wiki/OGCCompliance>`_
-for up to date information as well as technical details on setting up your own CITE instance.
+wiki page for up to date information as well as technical details on setting up your own CITE instance.

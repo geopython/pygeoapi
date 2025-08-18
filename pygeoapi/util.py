@@ -2,7 +2,7 @@
 #
 # Authors: Tom Kralidis <tomkralidis@gmail.com>
 #
-# Copyright (c) 2022 Tom Kralidis
+# Copyright (c) 2025 Tom Kralidis
 #
 # Permission is hereby granted, free of charge, to any person
 # obtaining a copy of this software and associated documentation
@@ -88,7 +88,10 @@ LOGGER = logging.getLogger(__name__)
 DATETIME_FORMAT = '%Y-%m-%dT%H:%M:%S.%fZ'
 
 THISDIR = Path(__file__).parent.resolve()
-TEMPLATES = THISDIR / 'templates'
+RESOURCESDIR = THISDIR / 'resources'
+TEMPLATESDIR = THISDIR / 'templates'
+DEFINITIONSDIR = RESOURCESDIR / 'definitions'
+SCHEMASDIR = RESOURCESDIR / 'schemas'
 
 
 # Type for Shapely geometrical objects.
@@ -449,7 +452,7 @@ def render_j2_template(config: dict, tpl_config: dict, template: Path,
     :returns: string of rendered template
     """
 
-    template_paths = [TEMPLATES, '.']
+    template_paths = [TEMPLATESDIR, '.']
 
     locale_dir = config['server'].get('locale_dir', 'locale')
     LOGGER.debug(f'Locale directory: {locale_dir}')
@@ -459,7 +462,7 @@ def render_j2_template(config: dict, tpl_config: dict, template: Path,
         template_paths.insert(0, templates)
         LOGGER.debug(f'using custom templates: {templates}')
     except (KeyError, TypeError):
-        LOGGER.debug(f'using default templates: {TEMPLATES}')
+        LOGGER.debug(f'using default templates: {TEMPLATESDIR}')
 
     env = Environment(loader=FileSystemLoader(template_paths),
                       extensions=['jinja2.ext.i18n'],

@@ -208,7 +208,7 @@ def config_private_synonym():
 def config_manipulator(config):
     return {
         **config,
-        "sql_manipulator": "tests.test_oracle_provider.SqlManipulator",
+        "sql_manipulator": "tests.provider.test_oracle_provider.SqlManipulator",  # noqa
         "sql_manipulator_options": {"foo": "bar"},
     }
 

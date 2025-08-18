@@ -2,7 +2,7 @@
 #
 # Authors: Tom Kralidis <tomkralidis@gmail.com>
 #
-# Copyright (c) 2021 Tom Kralidis
+# Copyright (c) 2025 Tom Kralidis
 #
 # Permission is hereby granted, free of charge, to any person
 # obtaining a copy of this software and associated documentation
@@ -27,16 +27,16 @@
 #
 # =================================================================
 
-import os
 from copy import deepcopy
+import os
 
-from jsonschema.exceptions import ValidationError
 import pytest
+from jsonschema.exceptions import ValidationError
 
 from pygeoapi.config import validate_config
 from pygeoapi.util import yaml_load
 
-from .util import get_test_file_path
+from ..util import get_test_file_path
 
 
 @pytest.fixture()

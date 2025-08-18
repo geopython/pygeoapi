@@ -36,7 +36,7 @@ from pygeoapi.provider.base import (ProviderItemNotFoundError,
                                     ProviderInvalidQueryError)
 from pygeoapi.provider.tinydb_ import TinyDBProvider
 
-from .util import get_test_file_path
+from ..util import get_test_file_path
 
 path = get_test_file_path('tests/data/canada-hydat-daily-mean-02HC003.tinydb')
 

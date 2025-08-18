@@ -570,7 +570,7 @@ Custom SQL Manipulator Plugin
 The provider supports a SQL-Manipulator-Plugin class. With this, the SQL statement could be manipulated. This is
 useful e.g. for authorization at row level or manipulation of the explain plan with hints. 
 
-An example and more information about that feature can be found in the test class in tests/test_oracle_provider.py.
+More information and examples about this feature can be found in ``tests/provider/test_oracle_provider.py``.
 
 .. _Parquet:
 

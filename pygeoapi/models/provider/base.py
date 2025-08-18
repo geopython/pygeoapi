@@ -1,12 +1,12 @@
-# ****************************** -*-
-# flake8: noqa
 # =================================================================
 #
 # Authors: Antonio Cerciello <anto.nio.cerciello@gmail.com>
 #          Francesco Bartoli <xbartolone@gmail.com>
+#          Tom Kralidis <tomkralidis@gmail.com>
 #
 # Copyright (c) 2022 Antonio Cerciello
 # Copyright (c) 2025 Francesco Bartoli
+# Copyright (c) 2025 Tom Kralidis
 #
 # Permission is hereby granted, free of charge, to any person
 # obtaining a copy of this software and associated documentation
@@ -40,10 +40,9 @@ from typing import List, Optional
 import pydantic
 from pydantic import BaseModel
 
-from pygeoapi.util import THISDIR
+from pygeoapi.util import DEFINITIONSDIR
 
-
-TMS_DIR = THISDIR / 'resources' / 'tilematrixsets'
+TMS_DIR = DEFINITIONSDIR / 'tiles'
 
 
 class TilesMetadataFormat(str, Enum):
@@ -93,10 +92,19 @@ class TileMatrixSetLoader:
         self.directory = directory
 
     def load_from_file(self, filename: str) -> TileMatrixSetEnumType:
-        """Load a single TMS JSON file."""
+        """
+        Load a single TMS JSON file.
+
+        :param filename: filename of TMS
+
+        :returns: `TileMatrixSetEnumType` of TMS
+        """
+
         filepath = self.directory / filename
+
         with filepath.open(encoding='utf-8') as fh:
             data = json.load(fh)
+
         return TileMatrixSetEnumType(
             tileMatrixSet=data["id"],
             tileMatrixSetURI=data["uri"],
@@ -108,12 +116,18 @@ class TileMatrixSetLoader:
         )
 
     def create_enum(self) -> Enum:
-        """Create an Enum with all TileMatrixSets in the directory."""
+        """
+        Create an Enum with all TileMatrixSets in the directory.
+
+        :returns: `Enum` of `TileMatrixSetEnum`
+        """
+
         members = {}
-        for file_path in self.directory.glob("*.json"):
-            tms = self.load_from_file(file_path.name)
-            enum_name = tms.tileMatrixSet.upper().replace("-", "").replace(" ", "")
+        for filepath in self.directory.glob("*.json"):
+            tms = self.load_from_file(filepath.name)
+            enum_name = tms.tileMatrixSet.upper().replace("-", "").replace(" ", "")  # noqa
             members[enum_name] = tms
+
         return Enum("TileMatrixSetEnum", members)
 
 
@@ -199,7 +213,7 @@ class TileSetMetadata(BaseModel):
     license_: Optional[str] = None
     # Restrictions on the availability of the Tile Set that the user needs to
     # be aware of before using or redistributing the Tile Set
-    accessConstraints: Optional[AccessConstraintsEnum] = AccessConstraintsEnum.UNCLASSIFIED
+    accessConstraints: Optional[AccessConstraintsEnum] = AccessConstraintsEnum.UNCLASSIFIED  # noqa
     # Media types available for the tiles
     mediaTypes:  Optional[List[str]] = None
     # Type of data represented in the tileset

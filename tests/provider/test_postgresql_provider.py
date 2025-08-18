@@ -63,7 +63,7 @@ import pygeoapi.provider.sql as postgresql_provider_module
 from pygeoapi.util import (yaml_load, geojson_to_geom,
                            get_transform_from_crs, get_crs_from_uri)
 
-from .util import get_test_file_path, mock_api_request
+from ..util import get_test_file_path, mock_api_request
 
 PASSWORD = os.environ.get('POSTGRESQL_PASSWORD', 'postgres')
 DEFAULT_CRS = 'http://www.opengis.net/def/crs/OGC/1.3/CRS84'

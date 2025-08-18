@@ -1,8 +1,10 @@
 # =================================================================
 #
 # Authors: Sander Schaminee <sander.schaminee@geocat.net>
+#          Tom Kralidis <tomkralidis@gmail.com>
 #
 # Copyright (c) 2021 GeoCat BV
+# Copyright (c) 2025 Tom Kralidis
 #
 # Permission is hereby granted, free of charge, to any person
 # obtaining a copy of this software and associated documentation
@@ -33,7 +35,7 @@ import pytest
 from pygeoapi import l10n
 from pygeoapi.util import yaml_load
 
-from .util import get_test_file_path
+from ..util import get_test_file_path
 
 
 def test_str2locale():
@@ -67,16 +69,16 @@ def test_bestmatch():
     assert l10n.best_match('de', ('en',)) == Locale('en')
     assert l10n.best_match(None, ['en', 'de']) == Locale('en')  # noqa
     assert l10n.best_match('', ['en', 'de']) == Locale('en')
-    assert l10n.best_match('de-DE', ['en', 'de']) == Locale('de')
-    assert l10n.best_match('de-DE, en', ['en', 'de']) == Locale('de')
-    assert l10n.best_match('de, en', ['en_US', 'de-DE']) == Locale.parse('de_DE')  # noqa
+    assert l10n.best_match('de-DE', ['de', 'en']) == Locale('de')
+    assert l10n.best_match('de-DE, en', ['de', 'en']) == Locale('de')
+    assert l10n.best_match('de, en', ['de-DE', 'en_US']) == Locale.parse('de_DE')  # noqa
 
     assert l10n.best_match(Locale('de'), ['nl', 'de']) == Locale('de')
 
     accept = "fr-CH, fr;q=0.9, en;q=0.8, de;q=0.7, *;q=0.5"
     assert l10n.best_match(accept, ['fr', 'en']) == Locale('fr')
-    assert l10n.best_match(accept, ['it', 'de']) == Locale('de')
-    assert l10n.best_match(accept, ['fr-BE', 'fr']) == Locale('fr')
+    assert l10n.best_match(accept, ['de', 'it']) == Locale('de')
+    assert l10n.best_match(accept, ['fr', 'fr-BE']) == Locale('fr')
     assert l10n.best_match(accept, ['fr-BE', 'fr-FR']) == Locale.parse('fr_BE')
     assert l10n.best_match(accept, ['fr-BE', 'fr-FR']) == Locale.parse('fr_BE')
     assert l10n.best_match(accept, ['it', 'es']) == Locale('it')
@@ -132,19 +134,6 @@ def test_translate(language_struct, nonlanguage_struct):
         l10n.translate(language_struct, 42)    # noqa
 
 
-def test_localefromheaders():
-    assert l10n.locale_from_headers({}) is None
-    assert l10n.locale_from_headers({'Accept-Language': 'de'}) == 'de'
-    assert l10n.locale_from_headers({'accept-language': 'en_US'}) == 'en_US'
-
-
-def test_localefromparams():
-    assert l10n.locale_from_params({}) is None
-    assert l10n.locale_from_params({'lang': 'de'}) == 'de'
-    assert l10n.locale_from_params({'language': 'en_US'}) is None
-    assert l10n.locale_from_params({'lang': 'en_US'}) == 'en_US'
-
-
 def test_addlocale():
     assert l10n.add_locale('http://a.pi/', None) == 'http://a.pi/'
     assert l10n.add_locale('http://a.pi/', 'en') == 'http://a.pi/?lang=en'
@@ -198,7 +187,7 @@ def test_getpluginlocale():
     assert l10n.get_plugin_locale({'languages': ['en']}, None) == Locale('en')  # noqa
     assert l10n.get_plugin_locale({'languages': []}, 'nl') is None
     assert l10n.get_plugin_locale({'languages': ['en']}, 'fr') == Locale('en')
-    assert l10n.get_plugin_locale({'languages': ['en', 'de']}, 'de') == Locale('de')  # noqa
+    assert l10n.get_plugin_locale({'languages': ['de', 'en']}, 'de') == Locale('de')  # noqa
     assert l10n.get_plugin_locale({'languages': ['en', 'de']}, None) == Locale('en')  # noqa
 
 

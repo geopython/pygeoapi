@@ -63,7 +63,7 @@ from pygeoapi.provider.base import (
     ProviderConnectionError, ProviderGenericError, ProviderTypeError)
 
 from pygeoapi.util import (
-    CrsTransformSpec, TEMPLATES, UrlPrefetcher, dategetter,
+    CrsTransformSpec, TEMPLATESDIR, UrlPrefetcher, dategetter,
     filter_dict_by_key_value, filter_providers_by_type, get_api_rules,
     get_base_url, get_provider_by_type, get_provider_default, get_typed_value,
     get_crs_from_uri, get_supported_crs_list, render_j2_template, to_json,
@@ -555,7 +555,7 @@ class API:
         self.default_locale = self.locales[0]
 
         if 'templates' not in self.config['server']:
-            self.config['server']['templates'] = {'path': TEMPLATES}
+            self.config['server']['templates'] = {'path': TEMPLATESDIR}
 
         if 'pretty_print' not in self.config['server']:
             self.config['server']['pretty_print'] = False

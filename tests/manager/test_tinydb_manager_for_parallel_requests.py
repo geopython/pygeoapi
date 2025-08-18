@@ -4,7 +4,7 @@
 #          Tom Kralidis <tomkralidis@gmail.com>
 #
 # Copyright (c) 2022 52°North Spatial Information Research GmbH
-# Copyright (c) 2022 Tom Kralidis
+# Copyright (c) 2025 Tom Kralidis
 #
 # Permission is hereby granted, free of charge, to any person
 # obtaining a copy of this software and associated documentation
@@ -30,9 +30,9 @@
 # =================================================================
 
 import json
+from multiprocessing import Process, Manager
 from pathlib import Path
 
-from multiprocessing import Process, Manager
 import pytest
 from tinydb import TinyDB, Query
 from werkzeug.wrappers import Request
@@ -41,7 +41,7 @@ from werkzeug.test import create_environ
 from pygeoapi.api import API, APIRequest
 import pygeoapi.api.processes as processes_api
 from pygeoapi.util import yaml_load
-from .util import get_test_file_path
+from ..util import get_test_file_path
 
 
 @pytest.fixture()

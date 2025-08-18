@@ -4,7 +4,7 @@
 #          Tom Kralidis <tomkralidis@gmail.com>
 #
 # Copyright (c) 2019 Just van den Broecke
-# Copyright (c) 2023 Tom Kralidis
+# Copyright (c) 2025 Tom Kralidis
 #
 # Permission is hereby granted, free of charge, to any person
 # obtaining a copy of this software and associated documentation
@@ -38,7 +38,7 @@ import pytest
 from pygeoapi.provider.base import ProviderItemNotFoundError
 from pygeoapi.provider.sqlite import SQLiteGPKGProvider
 
-from .util import get_test_file_path
+from ..util import get_test_file_path
 
 
 @pytest.fixture()
