@@ -71,14 +71,9 @@ class BaseMVTProvider(BaseTileProvider):
         raise NotImplementedError()
 
     def get_tiling_schemes(self):
-
-        tile_matrix_set_links_list = [
-            TileMatrixSetEnum.WORLDCRS84QUAD.value,
-            TileMatrixSetEnum.WEBMERCATORQUAD.value
-        ]
         tile_matrix_set_links = [
-            item for item in tile_matrix_set_links_list
-            if item.tileMatrixSet in self.options['schemes']]
+            item.value for item in TileMatrixSetEnum
+            if item.value.tileMatrixSet in self.schemes]
 
         return tile_matrix_set_links
 
