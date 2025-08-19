@@ -139,7 +139,7 @@ class MVTTippecanoeProvider(BaseMVTProvider):
             return Path(self.data).name
 
     def get_tiling_schemes(self):
-        "Only WebMercatorQuad tiling scheme is supported in Elasticsearch"
+        "Only WebMercatorQuad tiling scheme is supported in tippecanoe"
 
         return [TileMatrixSetEnum.WEBMERCATORQUAD.value]
 

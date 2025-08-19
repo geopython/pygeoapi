@@ -72,11 +72,13 @@ class BaseMVTProvider(BaseTileProvider):
 
     def get_tiling_schemes(self):
         if self.schemes:
+            LOGGER.debug('Using custom TMS definition')
             tile_matrix_set_links = [
                 item.value for item in TileMatrixSetEnum
                 if item.value.tileMatrixSet in self.schemes]
 
         else:
+            LOGGER.debug('Using default TMS definitions')
             tile_matrix_set_links = [
                 TileMatrixSetEnum.WORLDCRS84QUAD.value,
                 TileMatrixSetEnum.WEBMERCATORQUAD.value
