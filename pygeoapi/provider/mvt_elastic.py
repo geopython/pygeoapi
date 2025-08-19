@@ -122,7 +122,7 @@ class MVTElasticProvider(BaseMVTProvider):
 
     def get_tiling_schemes(self):
 
-        "Only WebMercatorQuad tiling scheme is supported in elastic"
+        "Only WebMercatorQuad tiling scheme is supported in Elasticsearch"
         return [
                 TileMatrixSetEnum.WEBMERCATORQUAD.value
             ]

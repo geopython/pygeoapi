@@ -103,12 +103,12 @@ Following block shows how to configure pygeoapi to read Mapbox vector tiles from
        - type: tile
          name: MVT-proxy
          data: http://localhost:7800/public.ne_50m_admin_0_countries/{z}/{x}/{y}.mvt
-            options:
-              zoom:
-                min: 0
-                max: 15
-              schemes:
-                - WebMercatorQuad # this option is needed in the MVT-proxy provider
+         options:
+             zoom:
+                 min: 0
+                 max: 15
+             schemes:
+                 - WebMercatorQuad # this option is needed in the MVT-proxy provider
          format:
              name: pbf
              mimetype: application/vnd.mapbox-vector-tile

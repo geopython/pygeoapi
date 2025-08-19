@@ -99,6 +99,11 @@ class MVTPostgreSQLProvider(BaseMVTProvider, PostgreSQLProvider):
         return self.table
 
     def get_tiling_schemes(self):
+        """
+        Only WebMercatorQuad and WorldCRS84Quad tiling schemes
+        are supported for PostgreSQL
+        """
+
         return [
             TileMatrixSetEnum.WEBMERCATORQUAD.value,
             TileMatrixSetEnum.WORLDCRS84QUAD.value
