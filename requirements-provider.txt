@@ -4,7 +4,7 @@ cftime
 elasticsearch
 elasticsearch-dsl
 fiona
-GDAL<=3.8.4
+GDAL<=3.11.3
 geoalchemy2
 geopandas
 netCDF4
@@ -23,5 +23,5 @@ pymysql
 scipy
 sodapy
 xarray
-zarr
+zarr<3
 s3fs<=2023.6.0

@@ -51,7 +51,7 @@ The following methods are options to connect a plugin to pygeoapi:
 **Option 1**: implement outside of pygeoapi and add to configuration (recommended)
 
 * Create a Python package with the plugin code (see `Cookiecutter`_ as an example)
-* Install this Python package onto your system (``python3 setup.py install``).  At this point your new package
+* Install this Python package onto your system (``pip3 install .``).  At this point your new package
   should be in the ``PYTHONPATH`` of your pygeoapi installation
 * Specify the main plugin class as the ``name`` of the relevant type in the
   pygeoapi configuration. For example, for a new vector data provider:
