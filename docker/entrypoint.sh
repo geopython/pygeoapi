@@ -37,8 +37,13 @@ echo "START /entrypoint.sh"
 set +e
 
 export PYGEOAPI_HOME=/pygeoapi
-export PYGEOAPI_CONFIG="${PYGEOAPI_HOME}/local.config.yml"
-export PYGEOAPI_OPENAPI="${PYGEOAPI_HOME}/local.openapi.yml"
+
+if [[ -z "$PYGEOAPI_CONFIG" ]]; then
+	export PYGEOAPI_CONFIG="${PYGEOAPI_HOME}/local.config.yml"
+fi
+if [[ -z "$PYGEOAPI_OPENAPI" ]]; then
+	export PYGEOAPI_OPENAPI="${PYGEOAPI_HOME}/local.openapi.yml"
+fi
 
 # gunicorn env settings with defaults
 SCRIPT_NAME=${SCRIPT_NAME:=/}
@@ -61,6 +66,8 @@ function error() {
 
 # Workdir
 cd ${PYGEOAPI_HOME}
+
+echo "Default config in ${PYGEOAPI_CONFIG}"
 
 echo "Trying to generate openapi.yml"
 pygeoapi openapi generate ${PYGEOAPI_CONFIG} --output-file ${PYGEOAPI_OPENAPI}
@@ -114,8 +121,12 @@ case ${entry_cmd} in
 
 	# Run pygeoapi server with hot reload
 	run-with-hot-reload)
-		# Lock all Python files (for gunicorn hot reload)
-		find . -type f -name "*.py" | xargs chmod 0444
+		# Lock all Python files (for gunicorn hot reload), if running with user root
+		if [[ $(id -u) -eq 0 ]]
+		then
+			echo "Running pygeoapi as root"
+			find . -type f -name "*.py" | xargs chmod 0444
+		fi
 
 		# Start with hot reload options
 		start_gunicorn --reload --reload-extra-file ${PYGEOAPI_CONFIG}
