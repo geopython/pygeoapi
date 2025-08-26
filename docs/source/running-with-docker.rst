@@ -80,7 +80,7 @@ A corresponding example can be found in https://github.com/geopython/demo.pygeoa
 Environment Variables for Configuration
 ---------------------------------------
 
-The base Docker image supports two additional environment variables for configuring the `pygeoapi` server behavior:
+In addition to **`PYGEOAPI_CONFIG`** and **`PYGEOAPI_OPENAPI`**, the base Docker image supports additional environment variables for configuring the `pygeoapi` server behavior:
 
 1. **`PYGEOAPI_SERVER_URL`**:  
    This variable sets the `pygeoapi` server URL in the configuration. It is useful for dynamically configuring the server URL during container deployment. For example:
