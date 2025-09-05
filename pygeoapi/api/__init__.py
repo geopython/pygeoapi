@@ -584,6 +584,8 @@ class API:
 
         :returns: tuple of headers, status, and message
         """
+        if status == HTTPStatus.NO_CONTENT:
+            return headers, status, ''
 
         exception_info = sys.exc_info()
         LOGGER.error(
