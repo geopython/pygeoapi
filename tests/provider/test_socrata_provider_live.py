@@ -108,7 +108,7 @@ def test_query_properties(config):
     assert len(results['features'][0]['properties']) == 12
 
     # Query by property
-    results = p.query(properties=[('region', 'Nevada') ])
+    results = p.query(properties=[('region', 'Nevada')])
     assert results['numberMatched'] == 19
 
     results = p.query(properties=[('region', 'Northern California'), ])
