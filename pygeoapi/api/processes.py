@@ -523,9 +523,9 @@ def execute_process(api: API, request: APIRequest,
     if execution_mode == RequestedProcessExecutionMode.respond_async:
         LOGGER.debug('Asynchronous mode detected, returning statusInfo')
         response2 = {
-            'id': result[0],
+            'id': job_id,
             'type': 'process',
-            'status': result[3].value
+            'status': status.value
         }
 
     return headers, http_status, response2
