@@ -50,13 +50,13 @@ import urllib.parse
 
 from pygeoapi import l10n
 from pygeoapi.api import evaluate_limit
-from pygeoapi.util import (
-    json_serial, render_j2_template, JobStatus, RequestedProcessExecutionMode,
-    to_json, DATETIME_FORMAT)
 from pygeoapi.process.base import (
     JobNotFoundError, JobResultNotFoundError, ProcessorExecuteError
 )
 from pygeoapi.process.manager.base import get_manager, Subscriber
+from pygeoapi.util import (
+    json_serial, render_j2_template, JobStatus, RequestedProcessExecutionMode,
+    to_json, DATETIME_FORMAT)
 
 from . import (
     APIRequest, API, SYSTEM_LOCALE, F_JSON, FORMAT_TYPES, F_HTML, F_JSONLD,
@@ -519,6 +519,14 @@ def execute_process(api: API, request: APIRequest,
         response2 = to_json(response, api.pretty_print)
     else:
         response2 = response
+
+    if execution_mode == RequestedProcessExecutionMode.respond_async:
+        LOGGER.debug('Asynchronous mode detected, returning statusInfo')
+        response2 = {
+            'id': job_id,
+            'type': 'process',
+            'status': status.value
+        }
 
     return headers, http_status, response2
 
