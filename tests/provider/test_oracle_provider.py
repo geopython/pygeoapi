@@ -621,8 +621,7 @@ def test_query_can_mandate_properties_which_are_not_returned(config):
     result = p.query(properties=[("name", "Aral Sea")])
 
     (feature,) = result['features']
-    # id is handled separately, so only wiki link and not name must be here
-    assert feature['properties'].keys() == {"wiki_link"}
+    assert feature['properties'].keys() == {"id", "wiki_link"}
 
 
 def test_query_mandatory_properties_must_be_specified(config):

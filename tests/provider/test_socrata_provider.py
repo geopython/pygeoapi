@@ -206,7 +206,7 @@ def test_query_properties(config, mock_socrata):
     p = SODAServiceProvider(config)
 
     results = p.query()
-    assert len(results['features'][0]['properties']) == 2
+    assert len(results['features'][0]['properties']) == 3
 
     # Query by property
     results = p.query(properties=[('region', 'Nevada'), ])
