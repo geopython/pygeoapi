@@ -93,10 +93,10 @@
           {% endfor %}
 
           {% if links_found.json == '' %}
-          <a href="{{ links_found.json }}">{% trans %}json{% endtrans %}</a>
+          <a href="?f=json">{% trans %}json{% endtrans %}</a>
           {% endif %}
           {% if links_found.jsonld == '' %}
-          <a href="{{ links_found.jsonld }}">{% trans %}jsonld{% endtrans %}</a>
+          <a href="?f=jsonld">{% trans %}jsonld{% endtrans %}</a>
           {% endif %}
 
         </span>
