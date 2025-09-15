@@ -849,6 +849,8 @@ def test_get_exception(config, api_):
 
     d = api_.get_exception(204, {}, 'html', 'NoApplicableCode', 'oops')
     assert len(d[2]) == 0
+    d = api_.get_exception(204, {}, 'json', 'NoApplicableCode', 'oops')
+    assert len(d[2]) == 0
 
 
 def test_evaluate_limit():
