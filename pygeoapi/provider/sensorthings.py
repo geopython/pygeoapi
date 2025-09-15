@@ -305,7 +305,7 @@ class SensorThingsProvider(BaseProvider):
 
         :returns: dict of GeoJSON Feature
         """
-        _ = feature.pop(self.id_field)
+        _ = feature[self.id_field]
         id = f"'{_}'" if isinstance(_, str) else str(_)
         f = {
             'type': 'Feature', 'id': id, 'properties': {}, 'geometry': None

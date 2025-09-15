@@ -79,6 +79,11 @@ The following aspects of the default HTML templates can be customized (within th
 - **icon**: shortcut icon (typically displays on a given web browser tab)
 - **logo**: logo/image banner (displays at the top of HTML pages)
 
+.. warning::
+
+   The pygeoapi web frontend is provided *only* as an example of an alternate ``HTML`` encoding. 
+   It should not be viewed as a replacement for a proper OGC API client, which can add much more capabilities than even the ones you can achieve with HTML templating.
+   On the `Dive into pygeoapi workshop <https://dive.pygeoapi.io/>`_ you can find examples of existing OGC API clients.
 
 .. _`Jinja`: https://palletsprojects.com/p/jinja/
 .. _`Jinja documentation`: https://jinja.palletsprojects.com

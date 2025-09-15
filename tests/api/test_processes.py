@@ -327,9 +327,13 @@ def test_execute_process(config, api_):
     rsp_headers, code, response = execute_process(api_, req, 'hello-world')
 
     assert 'Location' in rsp_headers
-    response = json.loads(response)
-    assert isinstance(response, dict)
     assert code == HTTPStatus.CREATED
+    assert isinstance(response, dict)
+    assert 'id' in response
+    assert 'type' in response
+    assert 'status' in response
+    assert response['type'] == 'process'
+    assert response['status'] == 'accepted'
 
     cleanup_jobs.add(tuple(['hello-world',
                             rsp_headers['Location'].split('/')[-1]]))
