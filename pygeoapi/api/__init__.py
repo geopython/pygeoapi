@@ -584,8 +584,6 @@ class API:
 
         :returns: tuple of headers, status, and message
         """
-        if status == HTTPStatus.NO_CONTENT:
-            return headers, status, ''
 
         exception_info = sys.exc_info()
         LOGGER.error(
@@ -605,6 +603,10 @@ class API:
                 'exception.html', exception, SYSTEM_LOCALE)
         else:
             content = to_json(exception, self.pretty_print)
+
+        if status == HTTPStatus.NO_CONTENT:
+            LOGGER.error('HTTP 204 detected, suppressing content')
+            content = ''
 
         return headers, status, content
 
