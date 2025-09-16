@@ -131,3 +131,4 @@ pygeoapi/db.sqlite3
 .pygeoapi/docker/examples/elastic/ES/data
 .pygeoapi/docker/examples/mvt-elastic/ES/data
 .pygeoapi/docker/examples/mvt-tippecanoe/ES/data
+.serena/

@@ -3,6 +3,7 @@ flask_cors
 
 # testing
 pytest
+pytest-asyncio
 pytest-cov
 pytest-env
 coverage

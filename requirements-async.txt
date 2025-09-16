@@ -1,0 +1,18 @@
+# Optional async database dependencies for enhanced performance with gunicorn
+# Install with: pip install -r requirements-async.txt
+
+# Async PostgreSQL support
+asyncpg>=0.28.0
+
+# Async MySQL support
+aiomysql>=0.2.0
+
+# Async MongoDB support
+motor>=3.3.0
+
+# Async Elasticsearch support
+elasticsearch[async]>=8.0.0
+
+# ASGI server and workers for gunicorn
+gunicorn>=21.0.0
+uvicorn[standard]>=0.24.0

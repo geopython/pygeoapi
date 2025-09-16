@@ -15,4 +15,6 @@ rasterio
 requests
 shapely
 SQLAlchemy
+starlette
 tinydb
+uvicorn
