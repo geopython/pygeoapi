@@ -1,0 +1,558 @@
+# Russian translations for PROJECT.
+# Copyright (C) 2025 ORGANIZATION
+# This file is distributed under the same license as the PROJECT project.
+# FIRST AUTHOR <EMAIL@ADDRESS>, 2025.
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: PROJECT VERSION\n"
+"Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
+"POT-Creation-Date: 2025-09-15 17:28+0300\n"
+"PO-Revision-Date: 2025-09-15 17:28+0300\n"
+"Last-Translator: Petr Tsymbarovich <petr@tsymbarovich.ru>\n"
+"Language: ru\n"
+"Language-Team: ru <LL@li.org>\n"
+"Plural-Forms: nplurals=3; plural=(n%10==1 && n%100!=11 ? 0 : n%10>=2 && "
+"n%10<=4 && (n%100<10 || n%100>=20) ? 1 : 2);\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=utf-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Generated-By: Babel 2.17.0\n"
+
+#: pygeoapi/templates/_base.html:2
+msgid "text_direction"
+msgstr "ltr"
+
+#: pygeoapi/templates/_base.html:60
+msgid "Contact"
+msgstr "Связаться"
+
+#: pygeoapi/templates/_base.html:64
+msgid "Admin"
+msgstr "Администрирование"
+
+#: pygeoapi/templates/_base.html:80 pygeoapi/templates/landing_page.html:2
+msgid "Home"
+msgstr "Главная"
+
+#: pygeoapi/templates/_base.html:88 pygeoapi/templates/_base.html:96
+msgid "json"
+msgstr "json"
+
+#: pygeoapi/templates/_base.html:91 pygeoapi/templates/_base.html:99
+msgid "jsonld"
+msgstr "jsonld"
+
+#: pygeoapi/templates/_base.html:120
+msgid "Powered by "
+msgstr "Работает на "
+
+#: pygeoapi/templates/conformance.html:2 pygeoapi/templates/conformance.html:4
+#: pygeoapi/templates/conformance.html:8
+#: pygeoapi/templates/landing_page.html:95
+msgid "Conformance"
+msgstr "Соответствие стандартам"
+
+#: pygeoapi/templates/exception.html:2 pygeoapi/templates/exception.html:5
+msgid "Exception"
+msgstr "Ошибка"
+
+#: pygeoapi/templates/landing_page.html:25
+msgid "Terms of service"
+msgstr "Условия использования"
+
+#: pygeoapi/templates/collections/collection.html:38
+#: pygeoapi/templates/landing_page.html:35
+msgid "License"
+msgstr "Лицензия"
+
+#: pygeoapi/templates/landing_page.html:45
+#: pygeoapi/templates/stac/collection_base.html:32
+#: pygeoapi/templates/stac/item.html:32
+msgid "URL"
+msgstr "URL"
+
+#: pygeoapi/templates/collections/collection.html:6
+#: pygeoapi/templates/collections/edr/instance.html:4
+#: pygeoapi/templates/collections/edr/instances.html:4
+#: pygeoapi/templates/collections/edr/query.html:4
+#: pygeoapi/templates/collections/index.html:2
+#: pygeoapi/templates/collections/index.html:4
+#: pygeoapi/templates/collections/items/index.html:4
+#: pygeoapi/templates/collections/items/item.html:27
+#: pygeoapi/templates/collections/queryables.html:4
+#: pygeoapi/templates/collections/schema.html:4
+#: pygeoapi/templates/collections/tiles/index.html:4
+#: pygeoapi/templates/collections/tiles/metadata.html:4
+#: pygeoapi/templates/landing_page.html:57
+#: pygeoapi/templates/stac/collection_base.html:19
+msgid "Collections"
+msgstr "Коллекции"
+
+#: pygeoapi/templates/landing_page.html:59
+msgid "View the collections in this service"
+msgstr "Просмотр коллекций сервиса"
+
+#: pygeoapi/templates/landing_page.html:65
+msgid "SpatioTemporal Assets"
+msgstr "Каталоги STAC"
+
+#: pygeoapi/templates/landing_page.html:67
+msgid "View the SpatioTemporal Assets in this service"
+msgstr "Просмотр каталогов STAC сервиса"
+
+#: pygeoapi/templates/landing_page.html:73
+#: pygeoapi/templates/processes/index.html:2
+#: pygeoapi/templates/processes/index.html:4
+#: pygeoapi/templates/processes/process.html:4
+msgid "Processes"
+msgstr "Процессы"
+
+#: pygeoapi/templates/landing_page.html:75
+msgid "View the processes in this service"
+msgstr "Просмотр процессов сервиса"
+
+#: pygeoapi/templates/jobs/index.html:2 pygeoapi/templates/jobs/index.html:4
+#: pygeoapi/templates/jobs/index.html:11 pygeoapi/templates/jobs/job.html:4
+#: pygeoapi/templates/jobs/results/index.html:4
+#: pygeoapi/templates/landing_page.html:79
+#: pygeoapi/templates/processes/process.html:76
+msgid "Jobs"
+msgstr "Задачи"
+
+#: pygeoapi/templates/landing_page.html:81
+#: pygeoapi/templates/processes/process.html:77
+msgid "Browse jobs"
+msgstr "Просмотр задач"
+
+#: pygeoapi/templates/landing_page.html:86
+msgid "API Definition"
+msgstr "Определение API"
+
+#: pygeoapi/templates/landing_page.html:88
+msgid "Documentation"
+msgstr "Документация"
+
+#: pygeoapi/templates/landing_page.html:88
+msgid "Swagger UI"
+msgstr "Swagger UI"
+
+#: pygeoapi/templates/landing_page.html:88
+msgid "ReDoc"
+msgstr "ReDoc"
+
+#: pygeoapi/templates/landing_page.html:91
+msgid "OpenAPI Document"
+msgstr "Файл спецификации OpenAPI"
+
+#: pygeoapi/templates/landing_page.html:97
+msgid "View the conformance classes of this service"
+msgstr "Просмотр классов соответствия сервиса"
+
+#: pygeoapi/templates/landing_page.html:102
+msgid "Tile Matrix Sets"
+msgstr "Наборы тайловых матриц"
+
+#: pygeoapi/templates/landing_page.html:104
+msgid "View the Tile Matrix Sets available on this service"
+msgstr "Просмотр доступных наборов тайловых матриц сервиса"
+
+#: pygeoapi/templates/landing_page.html:112
+msgid "Provider"
+msgstr "Поставщик"
+
+#: pygeoapi/templates/landing_page.html:121
+msgid "Contact point"
+msgstr "Контактное лицо"
+
+#: pygeoapi/templates/landing_page.html:124
+msgid "Address"
+msgstr "Адрес"
+
+#: pygeoapi/templates/landing_page.html:134
+msgid "Email"
+msgstr "Эл. почта"
+
+#: pygeoapi/templates/landing_page.html:137
+msgid "Telephone"
+msgstr "Телефон"
+
+#: pygeoapi/templates/landing_page.html:141
+msgid "Fax"
+msgstr "Факс"
+
+#: pygeoapi/templates/landing_page.html:145
+msgid "Contact URL"
+msgstr "Контактный URL"
+
+#: pygeoapi/templates/landing_page.html:149
+msgid "Hours"
+msgstr "Часы работы"
+
+#: pygeoapi/templates/landing_page.html:153
+msgid "Contact instructions"
+msgstr "Инструкции для связи"
+
+#: pygeoapi/templates/collections/collection.html:51
+msgid "Browse"
+msgstr "Просмотр"
+
+#: pygeoapi/templates/collections/collection.html:55
+msgid "Browse Items"
+msgstr "Просмотр элементов"
+
+#: pygeoapi/templates/collections/collection.html:56
+msgid "Browse through the items of"
+msgstr "Просмотр элементов коллекции"
+
+#: pygeoapi/templates/collections/collection.html:59
+#: pygeoapi/templates/collections/queryables.html:6
+#: pygeoapi/templates/collections/queryables.html:17
+msgid "Queryables"
+msgstr "Доступные для запроса свойства"
+
+#: pygeoapi/templates/collections/collection.html:63
+msgid "Display Queryables"
+msgstr "Показать доступные для запроса свойства"
+
+#: pygeoapi/templates/collections/collection.html:64
+msgid "Display Queryables of"
+msgstr "Показать доступные для запроса свойства коллекции"
+
+#: pygeoapi/templates/collections/collection.html:67
+#: pygeoapi/templates/collections/schema.html:6
+#: pygeoapi/templates/collections/schema.html:17
+msgid "Schema"
+msgstr "Схема"
+
+#: pygeoapi/templates/collections/collection.html:71
+msgid "Display Schema"
+msgstr "Показать схему"
+
+#: pygeoapi/templates/collections/collection.html:72
+msgid "Display Schema of"
+msgstr "Показать схему коллекции"
+
+#: pygeoapi/templates/collections/collection.html:77
+#: pygeoapi/templates/collections/tiles/index.html:6
+#: pygeoapi/templates/collections/tiles/metadata.html:6
+msgid "Tiles"
+msgstr "Тайлы"
+
+#: pygeoapi/templates/collections/collection.html:81
+msgid "Display Tiles"
+msgstr "Показать тайлы"
+
+#: pygeoapi/templates/collections/collection.html:81
+msgid "Display Tiles of"
+msgstr "Показать тайлы коллекции"
+
+#: pygeoapi/templates/collections/collection.html:107
+#: pygeoapi/templates/collections/edr/instance.html:25
+#: pygeoapi/templates/collections/items/item.html:101
+#: pygeoapi/templates/jobs/job.html:50
+#: pygeoapi/templates/processes/process.html:78
+msgid "Links"
+msgstr "Ссылки"
+
+#: pygeoapi/templates/collections/collection.html:117
+msgid "Reference Systems"
+msgstr "Системы координат"
+
+#: pygeoapi/templates/collections/collection.html:125
+msgid "Storage CRS"
+msgstr "Система координат источника"
+
+#: pygeoapi/templates/collections/collection.html:128
+msgid "CRS"
+msgstr "СК"
+
+#: pygeoapi/templates/collections/collection.html:131
+msgid "Epoch"
+msgstr "Эпоха"
+
+#: pygeoapi/templates/collections/index.html:8
+msgid "Data collections in this service"
+msgstr "Коллекции данных сервиса"
+
+#: pygeoapi/templates/collections/index.html:12
+#: pygeoapi/templates/collections/index.html:39
+#: pygeoapi/templates/processes/index.html:14
+#: pygeoapi/templates/stac/catalog.html:17
+#: pygeoapi/templates/stac/collection.html:17
+msgid "Name"
+msgstr "Название"
+
+#: pygeoapi/templates/collections/index.html:13
+#: pygeoapi/templates/collections/index.html:40
+#: pygeoapi/templates/processes/index.html:15
+#: pygeoapi/templates/processes/process.html:26
+#: pygeoapi/templates/processes/process.html:56
+#: pygeoapi/templates/stac/collection.html:18
+#: pygeoapi/templates/tilematrixsets/index.html:16
+msgid "Description"
+msgstr "Описание"
+
+#: pygeoapi/templates/collections/index.html:35
+msgid "Record collections in this service"
+msgstr "Коллекции записей сервиса"
+
+#: pygeoapi/templates/collections/edr/instance.html:11
+#: pygeoapi/templates/collections/edr/instances.html:11
+#: pygeoapi/templates/collections/edr/instances.html:22
+msgid "Instances"
+msgstr "Экземпляры"
+
+#: pygeoapi/templates/collections/edr/instance.html:23
+msgid "Instance"
+msgstr "Экземпляр"
+
+#: pygeoapi/templates/collections/edr/query.html:11
+#, python-format
+msgid "%(query_type)s"
+msgstr "%(query_type)s"
+
+#: pygeoapi/templates/collections/edr/query.html:37
+#: pygeoapi/templates/collections/items/index.html:147
+msgid "No items"
+msgstr "Элементы отсутствуют"
+
+#: pygeoapi/templates/collections/items/index.html:11
+#: pygeoapi/templates/collections/items/item.html:33
+msgid "Items"
+msgstr "Элементы"
+
+#: pygeoapi/templates/collections/items/index.html:38
+#: pygeoapi/templates/collections/items/index.html:142
+msgid "Items in this collection"
+msgstr "Элементы коллекции"
+
+#: pygeoapi/templates/collections/items/index.html:44
+#: pygeoapi/templates/jobs/index.html:53
+msgid "Limit"
+msgstr "Лимит"
+
+#: pygeoapi/templates/collections/items/index.html:46
+#: pygeoapi/templates/jobs/index.html:55
+msgid "default"
+msgstr "по умолчанию"
+
+#: pygeoapi/templates/collections/items/index.html:51
+msgid "Warning: Higher limits not recommended!"
+msgstr "Внимание: высокие лимиты не рекомендуются!"
+
+#: pygeoapi/templates/collections/items/index.html:68
+#: pygeoapi/templates/collections/items/item.html:62
+#: pygeoapi/templates/jobs/index.html:76
+msgid "Prev"
+msgstr "Назад"
+
+#: pygeoapi/templates/collections/items/index.html:70
+#: pygeoapi/templates/collections/items/item.html:64
+#: pygeoapi/templates/jobs/index.html:78
+msgid "Next"
+msgstr "Вперед"
+
+#: pygeoapi/templates/collections/items/item.html:77
+#: pygeoapi/templates/stac/collection_base.html:58
+#: pygeoapi/templates/stac/item.html:58
+msgid "Property"
+msgstr "Свойство"
+
+#: pygeoapi/templates/collections/items/item.html:78
+#: pygeoapi/templates/stac/collection_base.html:59
+#: pygeoapi/templates/stac/item.html:59
+msgid "Value"
+msgstr "Значение"
+
+#: pygeoapi/templates/collections/tiles/index.html:25
+msgid "Tile Matrix Set"
+msgstr "Набор тайловых матриц"
+
+#: pygeoapi/templates/collections/tiles/index.html:36
+msgid "Metadata"
+msgstr "Метаданные"
+
+#: pygeoapi/templates/collections/tiles/index.html:92
+msgid "Warning: Basemap may be in a different projection"
+msgstr "Внимание: базовая карта может быть в другой проекции"
+
+#: pygeoapi/templates/collections/tiles/metadata.html:15
+msgid "TileJSON"
+msgstr "TileJSON"
+
+#: pygeoapi/templates/collections/tiles/metadata.html:17
+msgid "JSON"
+msgstr "JSON"
+
+#: pygeoapi/templates/jobs/index.html:14
+msgid "Job ID"
+msgstr "ID задачи"
+
+#: pygeoapi/templates/jobs/index.html:15
+msgid "Process ID"
+msgstr "ID процесса"
+
+#: pygeoapi/templates/jobs/index.html:16
+msgid "Start"
+msgstr "Начало"
+
+#: pygeoapi/templates/jobs/index.html:17 pygeoapi/templates/jobs/job.html:37
+msgid "Duration"
+msgstr "Продолжительность"
+
+#: pygeoapi/templates/jobs/index.html:18 pygeoapi/templates/jobs/job.html:17
+#: pygeoapi/templates/jobs/job.html:35
+msgid "Progress"
+msgstr "Прогресс"
+
+#: pygeoapi/templates/jobs/index.html:19 pygeoapi/templates/jobs/job.html:16
+msgid "Status"
+msgstr "Статус"
+
+#: pygeoapi/templates/jobs/index.html:20 pygeoapi/templates/jobs/job.html:21
+msgid "Message"
+msgstr "Сообщение"
+
+#: pygeoapi/templates/jobs/job.html:2 pygeoapi/templates/jobs/job.html:10
+msgid "Job status"
+msgstr "Статус задачи"
+
+#: pygeoapi/templates/jobs/job.html:26
+msgid "Parameters"
+msgstr "Параметры"
+
+#: pygeoapi/templates/jobs/job.html:45
+msgid "Started processing"
+msgstr "Обработка начата"
+
+#: pygeoapi/templates/jobs/job.html:47
+msgid "Finished processing"
+msgstr "Обработка завершена"
+
+#: pygeoapi/templates/jobs/results/index.html:2
+msgid "Job result"
+msgstr "Результат задачи"
+
+#: pygeoapi/templates/jobs/results/index.html:6
+msgid "Results"
+msgstr "Результаты"
+
+#: pygeoapi/templates/jobs/results/index.html:10
+msgid "Results of job"
+msgstr "Результаты задачи"
+
+#: pygeoapi/templates/processes/index.html:8
+msgid "Processes in this service"
+msgstr "Процессы сервиса"
+
+#: pygeoapi/templates/processes/process.html:20
+msgid "Inputs"
+msgstr "Входные данные"
+
+#: pygeoapi/templates/processes/process.html:23
+#: pygeoapi/templates/processes/process.html:54
+msgid "Id"
+msgstr "ID"
+
+#: pygeoapi/templates/processes/process.html:24
+#: pygeoapi/templates/processes/process.html:55
+#: pygeoapi/templates/tilematrixsets/index.html:15
+msgid "Title"
+msgstr "Название"
+
+#: pygeoapi/templates/processes/process.html:25
+msgid "Data Type"
+msgstr "Тип данных"
+
+#: pygeoapi/templates/processes/process.html:51
+msgid "Outputs"
+msgstr "Выходные данные"
+
+#: pygeoapi/templates/processes/process.html:71
+msgid "Execution modes"
+msgstr "Режимы выполнения"
+
+#: pygeoapi/templates/processes/process.html:73
+msgid "Synchronous"
+msgstr "Синхронный"
+
+#: pygeoapi/templates/processes/process.html:74
+msgid "Asynchronous"
+msgstr "Асинхронный"
+
+#: pygeoapi/templates/stac/catalog.html:4
+#: pygeoapi/templates/stac/collection.html:2
+#: pygeoapi/templates/stac/collection.html:4
+#: pygeoapi/templates/stac/collection_base.html:4
+#: pygeoapi/templates/stac/item.html:4
+msgid "SpatioTemporal Asset Catalog"
+msgstr "Каталог STAC"
+
+#: pygeoapi/templates/stac/catalog.html:18
+msgid "Type"
+msgstr "Тип"
+
+#: pygeoapi/templates/stac/catalog.html:19
+msgid "Last modified"
+msgstr "Дата изменения"
+
+#: pygeoapi/templates/stac/catalog.html:20
+#: pygeoapi/templates/stac/collection_base.html:34
+#: pygeoapi/templates/stac/item.html:34
+msgid "Size"
+msgstr "Размер"
+
+#: pygeoapi/templates/stac/collection.html:9
+msgid "STAC Version"
+msgstr "Версия STAC"
+
+#: pygeoapi/templates/stac/collection_base.html:28
+#: pygeoapi/templates/stac/item.html:28
+msgid "Assets"
+msgstr "Ресурсы"
+
+#: pygeoapi/templates/stac/collection_base.html:33
+#: pygeoapi/templates/stac/item.html:33
+msgid "Last Modified"
+msgstr "Дата изменения"
+
+#: pygeoapi/templates/stac/collection_base.html:64
+#: pygeoapi/templates/stac/item.html:64
+msgid "id"
+msgstr "id"
+
+#: pygeoapi/templates/stac/collection_base.html:68
+msgid "description"
+msgstr "описание"
+
+#: pygeoapi/templates/stac/collection_base.html:72
+msgid "extent"
+msgstr "пространственный охват"
+
+#: pygeoapi/templates/stac/collection_base.html:77
+msgid "cube:dimensions"
+msgstr "cube:dimensions"
+
+#: pygeoapi/templates/stac/collection_base.html:83
+msgid "cube:variables"
+msgstr "cube:variables"
+
+#: pygeoapi/templates/stac/item.html:19
+msgid "Item"
+msgstr "Элемент"
+
+#: pygeoapi/templates/tilematrixsets/index.html:2
+#: pygeoapi/templates/tilematrixsets/index.html:4
+#: pygeoapi/templates/tilematrixsets/tilematrixset.html:4
+msgid "TileMatrixSets"
+msgstr "Наборы тайловых матриц"
+
+#: pygeoapi/templates/tilematrixsets/index.html:9
+msgid "Tile matrix sets available in this service"
+msgstr "Доступные наборы тайловых матриц сервиса"
+
+#: pygeoapi/templates/tilematrixsets/tilematrixset.html:2
+msgid "TileMatrixSet"
+msgstr "Набор тайловых матриц"
+
