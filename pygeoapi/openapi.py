@@ -52,6 +52,7 @@ from pygeoapi.util import (filter_dict_by_key_value, to_json, yaml_load,
 LOGGER = logging.getLogger(__name__)
 
 OPENAPI_YAML = {
+    'cql2': 'https://schemas.opengis.net/cql2/1.0/cql2.json',
     'oapif-1': 'https://schemas.opengis.net/ogcapi/features/part1/1.0/openapi/ogcapi-features-1.yaml',  # noqa
     'oapif-2': 'https://schemas.opengis.net/ogcapi/features/part2/1.0/openapi/ogcapi-features-2.yaml', # noqa
     'oapip': 'https://schemas.opengis.net/ogcapi/processes/part1/1.0/openapi',

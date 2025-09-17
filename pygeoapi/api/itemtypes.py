@@ -1204,28 +1204,48 @@ def get_oas_30(cfg: dict, locale: str) -> tuple[list[dict[str, str]], dict[str, 
                 }
             }
 
+            # TODO: update feature POSTs once updated in OGC API - Features
+            # https://github.com/opengeospatial/ogcapi-features/issues/771
+            paths[items_path]['post'] = {
+                'summary': f'Get {title} items with CQL2',
+                'description': description,
+                'tags': [k],
+                'operationId': f'getCQL2{k.capitalize()}Features',
+                'requestBody': {
+                    'description': 'Get items with CQL2',
+                    'content': {
+                        'application/json': {  # CQL2
+                            'schema': {
+                                '$ref': OPENAPI_YAML['cql2']
+                            }
+                        }
+                    },
+                    'required': True
+                },
+                'responses': {
+                    '200': {'$ref': f"{OPENAPI_YAML['oapif-1']}#/components/responses/Features"},  # noqa
+                    '400': {'$ref': f"{OPENAPI_YAML['oapif-1']}#/components/responses/InvalidParameter"},  # noqa
+                    '500': {'$ref': f"{OPENAPI_YAML['oapif-1']}#/components/responses/ServerError"}  # noqa
+                }
+            }
+
             if p.editable:
                 LOGGER.debug('Provider is editable; adding post')
 
-                paths[items_path]['post'] = {
-                    'summary': f'Add {title} items',
-                    'description': description,
-                    'tags': [k],
-                    'operationId': f'add{k.capitalize()}Features',
-                    'requestBody': {
-                        'description': 'Adds item to collection',
-                        'content': {
-                            'application/geo+json': {
-                                'schema': {}
-                            }
-                        },
-                        'required': True
-                    },
-                    'responses': {
-                        '201': {'description': 'Successful creation'},
-                        '400': {'$ref': f"{OPENAPI_YAML['oapif-1']}#/components/responses/InvalidParameter"},  # noqa
-                        '500': {'$ref': f"{OPENAPI_YAML['oapif-1']}#/components/responses/ServerError"}  # noqa
-                    }
+                paths[items_path]['post']['operationId'] = f'getCQL2OrAdd{k.capitalize()}Features'  # noqa
+
+                val = paths[items_path]['post']['summary']
+                paths[items_path]['post']['summary'] = f'{val} or add item (see media type)'  # noqa
+
+                val = paths[items_path]['post']['requestBody']['description']
+                paths[items_path]['post']['requestBody']['description'] = f'{val} or add item to collection'  # noqa
+
+                paths[items_path]['post']['requestBody']['content']['application/geo+json'] = {  # noqa
+                    'schema': {}
+                }
+
+                paths[items_path]['post']['responses']['201'] = {
+                    'description': 'Successful creation'
                 }
 
                 try:
