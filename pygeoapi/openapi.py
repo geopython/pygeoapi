@@ -286,7 +286,7 @@ def get_oas_30(cfg: dict, fail_on_invalid_collection: bool = True) -> dict:
         }
     }
 
-    paths['/openapi'] = {
+    paths['/api'] = {
         'get': {
             'summary': 'This document',
             'description': 'This document',

@@ -781,12 +781,12 @@ def landing_page(api: API,
         'rel': 'service-desc',
         'type': 'application/vnd.oai.openapi+json;version=3.0',
         'title': l10n.translate('The OpenAPI definition as JSON', request.locale),  # noqa
-        'href': f"{api.base_url}/openapi"
+        'href': f"{api.base_url}/api"
     }, {
         'rel': 'service-doc',
         'type': FORMAT_TYPES[F_HTML],
         'title': l10n.translate('The OpenAPI definition as HTML', request.locale),  # noqa
-        'href': f"{api.base_url}/openapi?f={F_HTML}",
+        'href': f"{api.base_url}/api?f={F_HTML}",
         'hreflang': api.default_locale
     }, {
         'rel': 'conformance',
@@ -865,7 +865,7 @@ def openapi_(api: API, request: APIRequest) -> Tuple[dict, int, str]:
         if request._args.get('ui') == 'redoc':
             template = 'openapi/redoc.html'
 
-        path = f'{api.base_url}/openapi'
+        path = f'{api.base_url}/api'
         data = {
             'openapi-document-path': path
         }

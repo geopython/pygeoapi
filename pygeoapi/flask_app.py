@@ -170,7 +170,7 @@ def landing_page():
     return execute_from_flask(core_api.landing_page, request)
 
 
-@BLUEPRINT.route('/openapi')
+@BLUEPRINT.route('/api')
 def openapi():
     """
     OpenAPI endpoint
