@@ -53,7 +53,7 @@ from pygeoapi.api import API
 from pygeoapi.api.itemtypes import (
     get_collection_items, get_collection_item, manage_collection_item
 )
-from pygeoapi.crs import DEFAULT_CRS, get_transform_from_crs, get_crs_from_uri
+from pygeoapi.crs import DEFAULT_CRS, get_transform_from_crs, get_crs
 from pygeoapi.provider.base import (
     ProviderConnectionError,
     ProviderItemNotFoundError,
@@ -767,7 +767,7 @@ def test_get_collection_items_postgresql_crs(pg_api_):
                 break
 
     transform_func = get_transform_from_crs(
-        get_crs_from_uri(DEFAULT_CRS),
+        get_crs(DEFAULT_CRS),
         pyproj.CRS.from_epsg(32735),
         always_xy=False,
     )
@@ -841,7 +841,7 @@ def test_get_collection_item_postgresql_crs(pg_api_):
         geom_32735 = geojson_to_geom(feat_32735['geometry'])
 
         transform_func = get_transform_from_crs(
-            get_crs_from_uri(DEFAULT_CRS),
+            get_crs(DEFAULT_CRS),
             pyproj.CRS.from_epsg(32735),
             always_xy=False,
         )

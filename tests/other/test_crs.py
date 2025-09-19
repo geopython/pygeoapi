@@ -40,10 +40,10 @@ from pygeoapi import crs
 
 
 def test_get_transform_from_crs():
-    crs_in = crs.get_crs_from_uri(
+    crs_in = crs.get_crs(
         'http://www.opengis.net/def/crs/EPSG/0/4258'
     )
-    crs_out = crs.get_crs_from_uri(
+    crs_out = crs.get_crs(
         'http://www.opengis.net/def/crs/EPSG/0/25833'
     )
     transform_func = crs.get_transform_from_crs(crs_in, crs_out)
@@ -100,9 +100,9 @@ def test_get_supported_crs_list():
     pytest.param('urn:ogc:def:crs:epsg:0:4326', does_not_raise(), "EPSG:4326"),
     pytest.param('urn:ogc:def:crs:epsg:0:28992', does_not_raise(), "EPSG:28992"),  # noqa
 ])
-def test_get_crs_from_uri(uri, expected_raise, expected):
+def test_get_crs(uri, expected_raise, expected):
     with expected_raise:
-        crs_ = crs.get_crs_from_uri(uri)
+        crs_ = crs.get_crs(uri)
         assert crs_.srs.upper() == expected
 
 
