@@ -40,7 +40,7 @@ from copy import deepcopy
 from datetime import datetime
 from http import HTTPStatus
 import logging
-from typing import Any, Tuple, Union, Optional
+from typing import Any, Tuple, Union
 import urllib.parse
 
 from pygeofilter.parsers.ecql import parse as parse_ecql_text
@@ -49,9 +49,10 @@ from pyproj.exceptions import CRSError
 
 from pygeoapi import l10n
 from pygeoapi.api import evaluate_limit
-from pygeoapi.crs import DEFAULT_CRS, DEFAULT_STORAGE_CRS, DEFAULT_CRS_LIST
+from pygeoapi.crs import DEFAULT_CRS, DEFAULT_STORAGE_CRS
 from pygeoapi.crs import (create_crs_transform_spec, transform_bbox,
-                          get_supported_crs_list, modify_pygeofilter)
+                          get_supported_crs_list, modify_pygeofilter,
+                          set_content_crs_header)
 from pygeoapi.formatter.base import FormatterSerializationError
 from pygeoapi.linked_data import geojson2jsonld
 from pygeoapi.plugin import load_plugin, PLUGINS
@@ -359,7 +360,7 @@ def get_collection_items(
         query_crs_uri = request.params.get('crs')
         try:
             crs_transform_spec = create_crs_transform_spec(
-                provider_def, query_crs_uri,
+                provider_def, query_crs_uri
             )
         except (ValueError, CRSError) as err:
             msg = str(err)
@@ -384,7 +385,7 @@ def get_collection_items(
                 HTTPStatus.BAD_REQUEST, headers, request.format,
                 'NoApplicableCode', msg)
 
-        supported_crs_list = get_supported_crs_list(provider_def, DEFAULT_CRS_LIST)  # noqa
+        supported_crs_list = get_supported_crs_list(provider_def)
         if bbox_crs not in supported_crs_list:
             msg = f'bbox-crs {bbox_crs} not supported for this collection'
             return api.get_exception(
@@ -866,7 +867,7 @@ def get_collection_item(api: API, request: APIRequest,
         query_crs_uri = request.params.get('crs')
         try:
             crs_transform_spec = create_crs_transform_spec(
-                provider_def, query_crs_uri,
+                provider_def, query_crs_uri
             )
         except (ValueError, CRSError) as err:
             msg = str(err)
@@ -980,37 +981,6 @@ def get_collection_item(api: API, request: APIRequest,
         return headers, HTTPStatus.OK, content
 
     return headers, HTTPStatus.OK, to_json(content, api.pretty_print)
-
-
-def set_content_crs_header(
-        headers: dict, config: dict, query_crs_uri: Optional[str] = None):
-    """
-    Set the *Content-Crs* header in responses from providers of Feature type.
-
-    :param headers: Response headers dictionary.
-    :type headers: dict
-    :param config: Provider config dictionary.
-    :type config: dict
-    :param query_crs_uri: Uniform resource identifier of the coordinate
-        reference system specified in query parameter (if specified).
-    :type query_crs_uri: str, optional
-
-    :returns: None
-    """
-
-    if query_crs_uri:
-        content_crs_uri = query_crs_uri
-    else:
-        # If empty use default CRS
-        storage_crs_uri = config.get('storage_crs', DEFAULT_STORAGE_CRS)
-        if storage_crs_uri in DEFAULT_CRS_LIST:
-            # Could be that storageCrs is one of the defaults like
-            # http://www.opengis.net/def/crs/OGC/1.3/CRS84h
-            content_crs_uri = storage_crs_uri
-        else:
-            content_crs_uri = DEFAULT_CRS
-
-    headers['Content-Crs'] = f'<{content_crs_uri}>'
 
 
 def get_oas_30(cfg: dict, locale: str) -> tuple[list[dict[str, str]], dict[str, dict]]:  # noqa

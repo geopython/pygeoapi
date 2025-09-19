@@ -41,7 +41,7 @@ from osgeo import gdal as osgeo_gdal
 from osgeo import ogr as osgeo_ogr
 from osgeo import osr as osgeo_osr
 
-from pygeoapi.crs import get_crs_from_uri
+from pygeoapi.crs import get_crs
 from pygeoapi.provider.base import (
     BaseProvider, ProviderGenericError,
     ProviderQueryError, ProviderConnectionError,
@@ -401,7 +401,7 @@ class OGRProvider(BaseProvider):
             epsg_code = 4326
             force_auth_comply = False
         else:
-            pyproj_crs = get_crs_from_uri(crs_uri)
+            pyproj_crs = get_crs(crs_uri)
             epsg_code = int(pyproj_crs.srs.split(':')[1])
             force_auth_comply = True
         return self._get_spatial_ref_from_epsg(

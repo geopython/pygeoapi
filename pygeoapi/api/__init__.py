@@ -49,15 +49,14 @@ from http import HTTPStatus
 import logging
 import re
 import sys
-from typing import Any, Tuple, Union, Optional, Self
+from typing import Any, Tuple, Union, Self
 
 from babel import Locale
 from dateutil.parser import parse as dateparse
 import pytz
 
 from pygeoapi import __version__, l10n
-from pygeoapi.crs import DEFAULT_CRS, DEFAULT_STORAGE_CRS, DEFAULT_CRS_LIST
-from pygeoapi.crs import get_supported_crs_list
+from pygeoapi.crs import DEFAULT_STORAGE_CRS, get_supported_crs_list
 from pygeoapi.linked_data import jsonldify, jsonldify_collection
 from pygeoapi.log import setup_logger
 from pygeoapi.plugin import load_plugin
@@ -632,37 +631,6 @@ class API:
 
         return templates or self.tpl_config['server']['templates']
 
-    @staticmethod
-    def _set_content_crs_header(
-        headers: dict,
-        config: dict,
-        query_crs_uri: Optional[str] = None,
-    ):
-        """Set the *Content-Crs* header in responses from providers of Feature
-        type.
-
-        :param headers: Response headers dictionary.
-        :type headers: dict
-        :param config: Provider config dictionary.
-        :type config: dict
-        :param query_crs_uri: Uniform resource identifier of the coordinate
-            reference system specified in query parameter (if specified).
-        :type query_crs_uri: str, optional
-        """
-        if query_crs_uri:
-            content_crs_uri = query_crs_uri
-        else:
-            # If empty use default CRS
-            storage_crs_uri = config.get('storage_crs', DEFAULT_STORAGE_CRS)
-            if storage_crs_uri in DEFAULT_CRS_LIST:
-                # Could be that storageCrs is one of the defaults like
-                # http://www.opengis.net/def/crs/OGC/1.3/CRS84h
-                content_crs_uri = storage_crs_uri
-            else:
-                content_crs_uri = DEFAULT_CRS
-
-        headers['Content-Crs'] = f'<{content_crs_uri}>'
-
 
 @jsonldify
 def landing_page(api: API,
@@ -1076,7 +1044,7 @@ def describe_collections(api: API, request: APIRequest,
 
         # OAPIF Part 2 - list supported CRSs and StorageCRS
         if collection_data_type in ['edr', 'feature']:
-            collection['crs'] = get_supported_crs_list(collection_data, DEFAULT_CRS_LIST)  # noqa
+            collection['crs'] = get_supported_crs_list(collection_data)
             collection['storageCrs'] = collection_data.get('storage_crs', DEFAULT_STORAGE_CRS)  # noqa
             if 'storage_crs_coordinate_epoch' in collection_data:
                 collection['storageCrsCoordinateEpoch'] = collection_data.get('storage_crs_coordinate_epoch')  # noqa

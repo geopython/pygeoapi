@@ -42,21 +42,12 @@ import pyproj
 import pygeofilter.ast
 import pygeofilter.values
 from pyproj.exceptions import CRSError
-from shapely import ops
+
+from shapely import ops, Geometry
 from shapely.geometry import (
-    box,
-    GeometryCollection,
-    LinearRing,
-    LineString,
-    MultiLineString,
-    MultiPoint,
-    MultiPolygon,
-    Polygon,
-    Point,
     shape as geojson_to_geom,
     mapping as geom_to_geojson,
 )
-
 
 LOGGER = logging.getLogger(__name__)
 
@@ -69,28 +60,36 @@ DEFAULT_CRS = 'http://www.opengis.net/def/crs/OGC/1.3/CRS84'
 DEFAULT_STORAGE_CRS = DEFAULT_CRS
 
 
-# Type for Shapely geometrical objects.
-GeomObject = Union[
-    GeometryCollection,
-    LinearRing,
-    LineString,
-    MultiLineString,
-    MultiPoint,
-    MultiPolygon,
-    Point,
-    Polygon,
-]
-
-
 @dataclass
 class CrsTransformSpec:
     source_crs_uri: str
     source_crs_wkt: str
     target_crs_uri: str
     target_crs_wkt: str
+    always_xy: bool = False
 
 
-def get_supported_crs_list(config: dict, default_crs_list: list) -> list:
+def get_srid(crs: pyproj.CRS) -> Union[int, None]:
+    """
+    Helper function to attempt to exctract an ESPG SRID from
+    a `pyproj.CRS` object.
+
+    :param crs: `pyproj.CRS` object
+
+    :returns: int
+    """
+    if crs.to_epsg():
+        return crs.to_epsg()
+
+    try:
+        return pyproj.CRS(crs.to_proj4()).to_epsg()
+    except KeyError:
+        LOGGER.debug('Unable to extract SRID from proj4 string')
+
+
+def get_supported_crs_list(
+    provider_def: dict, default_crs_list: list = DEFAULT_CRS_LIST
+) -> list:
     """
     Helper function to get a complete list of supported CRSs
     from a (Provider) config dict. Result should always include
@@ -100,11 +99,12 @@ def get_supported_crs_list(config: dict, default_crs_list: list) -> list:
 
     Author: @justb4
 
-    :param config: dictionary with or without a list of CRSs
+    :param provider_def: dictionary with or without a list of CRSs
     :param default_crs_list: default CRS alternatives, first is default
+
     :returns: list of supported CRSs
     """
-    supported_crs_list = config.get('crs', list())
+    supported_crs_list = provider_def.get('crs', list())
     contains_default = False
     for uri in supported_crs_list:
         if uri in default_crs_list:
@@ -114,18 +114,20 @@ def get_supported_crs_list(config: dict, default_crs_list: list) -> list:
     # A default CRS is missing: add the first which is the default
     if not contains_default:
         supported_crs_list.append(default_crs_list[0])
+
     return supported_crs_list
 
 
-def get_crs_from_uri(uri: str) -> pyproj.CRS:
+def get_crs(crs: Union[str, pyproj.CRS]) -> pyproj.CRS:
     """
-    Get a `pyproj.CRS` instance from a CRS URI.
+    Get a `pyproj.CRS` instance from a CRS.
     Author: @MTachon
 
-    :param uri: Uniform resource identifier of the coordinate
+    :param crs: Uniform resource identifier of the coordinate
                 reference system. In accordance with
-                https://docs.ogc.org/pol/09-048r5.html#_naming_rule URIs can
-                take either the form of a URL or a URN
+                https://docs.ogc.org/pol/09-048r5.html#_naming_rule
+                URIs can take either the form of a URL or a URN
+                or `pyproj.CRS` object
     :raises `CRSError`: Error raised if no CRS could be identified from the
         URI.
 
@@ -133,7 +135,11 @@ def get_crs_from_uri(uri: str) -> pyproj.CRS:
     :rtype: `pyproj.CRS`
     """
 
+    if isinstance(crs, pyproj.CRS):
+        return crs
+
     # normalize the input `uri` to a URL first
+    uri = str(crs)
     url = uri.replace(
         "urn:ogc:def:crs",
         "http://www.opengis.net/def/crs"
@@ -155,13 +161,13 @@ def get_crs_from_uri(uri: str) -> pyproj.CRS:
         msg = f"CRS could not be identified from URI {uri!r}"
         LOGGER.error(msg)
         raise CRSError(msg)
-    else:
-        return crs
+
+    return crs
 
 
 def get_transform_from_crs(
     crs_in: pyproj.CRS, crs_out: pyproj.CRS, always_xy: bool = False
-) -> Callable[[GeomObject], GeomObject]:
+) -> Callable[[Geometry], Geometry]:
     """ Get transformation function from two `pyproj.CRS` instances.
 
     Get function to transform the coordinates of a Shapely geometrical object
@@ -176,7 +182,7 @@ def get_transform_from_crs(
          declares y,x (lat,lon)
     :type always_xy: `bool`
 
-    :returns: Function to transform the coordinates of a `GeomObject`.
+    :returns: Function to transform the coordinates of a `Geometry`.
     :rtype: `callable`
     """
     crs_transform = pyproj.Transformer.from_crs(
@@ -227,6 +233,7 @@ def crs_transform(func):
         transform_func = get_transform_from_crs(
             pyproj.CRS.from_wkt(crs_transform_spec.source_crs_wkt),
             pyproj.CRS.from_wkt(crs_transform_spec.target_crs_wkt),
+            crs_transform_spec.always_xy
         )
 
         LOGGER.debug(f'crs_transform: transforming features CRS '
@@ -253,7 +260,7 @@ def crs_transform_feature(feature, transform_func):
     :param feature: Feature (GeoJSON-like `dict`) to transform.
     :type feature: `dict`
     :param transform_func: Function that transforms the coordinates of a
-        `GeomObject` instance.
+        `Geometry` instance.
     :type transform_func: `callable`
 
     :returns: None
@@ -272,16 +279,16 @@ def transform_bbox(bbox: list, from_crs: str, to_crs: str) -> list:
     Uses pyproj Transformer.
 
     :param bbox: list of coordinates in 'from_crs' projection
-    :param from_crs: CRS URI to transform from
-    :param to_crs: CRS URI to transform to
+    :param from_crs: CRS to transform from
+    :param to_crs: CRSto transform to
     :raises `CRSError`: Error raised if no CRS could be identified from an
         URI.
 
     :returns: list of 4 or 6 coordinates
     """
 
-    from_crs_obj = get_crs_from_uri(from_crs)
-    to_crs_obj = get_crs_from_uri(to_crs)
+    from_crs_obj = get_crs(from_crs)
+    to_crs_obj = get_crs(to_crs)
     transform_func = pyproj.Transformer.from_crs(
         from_crs_obj, to_crs_obj).transform
     n_dims = len(bbox) // 2
@@ -289,25 +296,12 @@ def transform_bbox(bbox: list, from_crs: str, to_crs: str) -> list:
         *bbox[n_dims:]))
 
 
-def bbox2geojsongeometry(bbox: list) -> dict:
-    """
-    Converts bbox values into GeoJSON geometry
-
-    :param bbox: `list` of minx, miny, maxx, maxy
-
-    :returns: `dict` of GeoJSON geometry
-    """
-
-    b = box(*bbox, ccw=False)
-    return geom_to_geojson(b)
-
-
 def modify_pygeofilter(
-        ast_tree: pygeofilter.ast.Node,
-        *,
-        filter_crs_uri: str,
-        storage_crs_uri: Optional[str] = None,
-        geometry_column_name: Optional[str] = None
+    ast_tree: pygeofilter.ast.Node,
+    *,
+    filter_crs_uri: str,
+    storage_crs_uri: Optional[str] = None,
+    geometry_column_name: Optional[str] = None
 ) -> pygeofilter.ast.Node:
     """
     Modifies the input pygeofilter with information from the provider.
@@ -338,9 +332,9 @@ def modify_pygeofilter(
     """
     new_tree = deepcopy(ast_tree)
     if storage_crs_uri:
-        storage_crs = get_crs_from_uri(storage_crs_uri)
-        filter_crs = get_crs_from_uri(filter_crs_uri)
-        _inplace_transform_filter_geometries(new_tree, filter_crs, storage_crs)
+        _inplace_transform_filter_geometries(
+            new_tree, get_crs(filter_crs_uri), get_crs(storage_crs_uri)
+        )
     if geometry_column_name:
         _inplace_replace_geometry_filter_name(new_tree, geometry_column_name)
     return new_tree
@@ -382,7 +376,7 @@ def _inplace_transform_filter_geometries(
                 crs_urn_provided_in_ewkt = sub_node.geometry.get(
                     'crs', {}).get('properties', {}).get('name')
                 if crs_urn_provided_in_ewkt is not None:
-                    crs = get_crs_from_uri(crs_urn_provided_in_ewkt)
+                    crs = get_crs(crs_urn_provided_in_ewkt)
                 else:
                     crs = filter_crs
                 if crs != storage_crs:
@@ -429,13 +423,14 @@ def _inplace_replace_geometry_filter_name(
 
 
 def create_crs_transform_spec(
-        config: dict, query_crs_uri: Optional[str] = None) -> Union[None, CrsTransformSpec]:  # noqa
+    provider_def: dict, query_crs_uri: Optional[str] = None
+) -> Union[None, CrsTransformSpec]:
     """
     Create a `CrsTransformSpec` instance based on provider config and
     *crs* query parameter.
 
-    :param config: Provider config dictionary.
-    :type config: dict
+    :param provider_def: Provider config dictionary.
+    :type provider_def: dict
     :param query_crs_uri: Uniform resource identifier of the coordinate
         reference system (CRS) specified in query parameter (if specified).
     :type query_crs_uri: str, optional
@@ -451,7 +446,9 @@ def create_crs_transform_spec(
     """
 
     # Get storage/default CRS for Collection.
-    storage_crs_uri = config.get('storage_crs', DEFAULT_STORAGE_CRS)
+    always_xy = provider_def.get('always_xy', False)
+    storage_crs_uri = provider_def.get('storage_crs', DEFAULT_STORAGE_CRS)
+    storage_crs = get_crs(storage_crs_uri)
 
     if not query_crs_uri:
         if storage_crs_uri in DEFAULT_CRS_LIST:
@@ -462,7 +459,7 @@ def create_crs_transform_spec(
             query_crs_uri = DEFAULT_CRS
         LOGGER.debug(f'no crs parameter, using default: {query_crs_uri}')
 
-    supported_crs_list = get_supported_crs_list(config, DEFAULT_CRS_LIST)
+    supported_crs_list = get_supported_crs_list(provider_def)
     # Check that the crs specified by the query parameter is supported.
     if query_crs_uri not in supported_crs_list:
         raise ValueError(
@@ -470,21 +467,42 @@ def create_crs_transform_spec(
             'collection. List of supported CRSs: '
             f'{", ".join(supported_crs_list)}.'
         )
-    crs_out = get_crs_from_uri(query_crs_uri)
+    crs_out = get_crs(query_crs_uri)
 
-    storage_crs = get_crs_from_uri(storage_crs_uri)
     # Check if the crs specified in query parameter differs from the
     # storage crs.
-    if str(storage_crs) != str(crs_out):
-        LOGGER.debug(
-            f'CRS transformation: {storage_crs} -> {crs_out}'
-        )
-        return CrsTransformSpec(
-            source_crs_uri=storage_crs_uri,
-            source_crs_wkt=storage_crs.to_wkt(),
-            target_crs_uri=query_crs_uri,
-            target_crs_wkt=crs_out.to_wkt(),
-        )
-    else:
+    if storage_crs == crs_out:
         LOGGER.debug('No CRS transformation')
         return None
+
+    LOGGER.debug(
+        f'CRS transformation: {storage_crs} -> {crs_out}'
+    )
+    return CrsTransformSpec(
+        source_crs_uri=storage_crs_uri,
+        source_crs_wkt=storage_crs.to_wkt(),
+        target_crs_uri=query_crs_uri,
+        target_crs_wkt=crs_out.to_wkt(),
+        always_xy=always_xy
+    )
+
+
+def set_content_crs_header(
+    headers: dict, config: dict, query_crs_uri: Optional[str] = None,
+):
+    """Set the *Content-Crs* header in responses from providers of Feature
+    type.
+
+    :param headers: Response headers dictionary.
+    :type headers: dict
+    :param config: Provider config dictionary.
+    :type config: dict
+    :param query_crs_uri: Uniform resource identifier of the coordinate
+        reference system specified in query parameter (if specified).
+    :type query_crs_uri: str, optional
+    """
+    content_crs_uri = (
+        query_crs_uri or
+        config.get('storage_crs', DEFAULT_STORAGE_CRS)
+    )
+    headers['Content-Crs'] = f'<{content_crs_uri}>'
