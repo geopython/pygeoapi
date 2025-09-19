@@ -69,15 +69,18 @@ class CrsTransformSpec:
     always_xy: bool = False
 
 
-def get_srid(crs: pyproj.CRS) -> Union[int, None]:
+def get_srid(crs: Union[str, pyproj.CRS]) -> Union[int, None]:
     """
     Helper function to attempt to exctract an ESPG SRID from
     a `pyproj.CRS` object.
 
     :param crs: `pyproj.CRS` object
 
-    :returns: int
+    :returns: int of EPSG SRID, if found
     """
+    if isinstance(crs, str):
+        crs = get_crs(crs)
+
     if crs.to_epsg():
         return crs.to_epsg()
 
@@ -132,7 +135,6 @@ def get_crs(crs: Union[str, pyproj.CRS]) -> pyproj.CRS:
         URI.
 
     :returns: `pyproj.CRS` instance matching the input URI.
-    :rtype: `pyproj.CRS`
     """
 
     if isinstance(crs, pyproj.CRS):
@@ -141,19 +143,18 @@ def get_crs(crs: Union[str, pyproj.CRS]) -> pyproj.CRS:
     # normalize the input `uri` to a URL first
     uri = str(crs)
     url = uri.replace(
-        "urn:ogc:def:crs",
-        "http://www.opengis.net/def/crs"
-    ).replace(":", "/")
+        'urn:ogc:def:crs', 'http://www.opengis.net/def/crs'
+    ).replace(':', '/')
     try:
-        authority, code = url.rsplit("/", maxsplit=3)[1::2]
+        authority, code = url.rsplit('/', maxsplit=3)[1::2]
         crs = pyproj.CRS.from_authority(authority, code)
     except ValueError:
         msg = (
-            f"CRS could not be identified from URI {uri!r}. CRS URIs must "
-            "follow one of two formats: "
-            "'http://www.opengis.net/def/crs/{authority}/{version}/{code}' or "
-            "'urn:ogc:def:crs:{authority}:{version}:{code}' "
-            "(see https://docs.opengeospatial.org/is/18-058r1/18-058r1.html#crs-overview)."  # noqa
+            f'CRS could not be identified from URI {uri!r}. CRS URIs must '
+            'follow one of two formats: '
+            '"http://www.opengis.net/def/crs/{authority}/{version}/{code}" or '
+            '"urn:ogc:def:crs:{authority}:{version}:{code}" '
+            '(see https://docs.opengeospatial.org/is/18-058r1/18-058r1.html#crs-overview).'  # noqa
         )
         LOGGER.error(msg)
         raise CRSError(msg)
@@ -173,17 +174,12 @@ def get_transform_from_crs(
     Get function to transform the coordinates of a Shapely geometrical object
     from one coordinate reference system to another.
 
-    :param crs_in: Coordinate Reference System of the input geometrical object.
-    :type crs_in: `pyproj.CRS`
-    :param crs_out: Coordinate Reference System of the output geometrical
-        object.
-    :type crs_out: `pyproj.CRS`
-    :param always_xy: should axis order be forced to x,y (lon, lat) even if CRS
-         declares y,x (lat,lon)
-    :type always_xy: `bool`
+    :param crs_in: `pyproj.CRS` Input Coordinate Reference System
+    :param crs_out: `pyproj.CRS` Output Coordinate Reference System
+    :param always_xy: 'bool' should axis order be forced to x,y (lon, lat)
+                       even if CRSdeclares y,x (lat,lon)
 
-    :returns: Function to transform the coordinates of a `Geometry`.
-    :rtype: `callable`
+    :returns: `callable` Function to transform the coordinates of a `Geometry`.
     """
     crs_transform = pyproj.Transformer.from_crs(
         crs_in, crs_out, always_xy=always_xy,
@@ -214,10 +210,8 @@ def crs_transform(func):
     type 'feature'.
 
     :param func: Function to decorate.
-    :type func: `callable`
 
     :returns: Decorated function.
-    :rtype: `callable`
     """
     @functools.wraps(func)
     def get_geojsonf(*args, **kwargs):
@@ -258,10 +252,8 @@ def crs_transform_feature(feature, transform_func):
     """Transform the coordinates of a Feature.
 
     :param feature: Feature (GeoJSON-like `dict`) to transform.
-    :type feature: `dict`
     :param transform_func: Function that transforms the coordinates of a
         `Geometry` instance.
-    :type transform_func: `callable`
 
     :returns: None
     """
@@ -341,10 +333,10 @@ def modify_pygeofilter(
 
 
 def _inplace_transform_filter_geometries(
-        node: pygeofilter.ast.Node,
-        filter_crs: pyproj.CRS,
-        storage_crs: pyproj.CRS
-):
+    node: pygeofilter.ast.Node,
+    filter_crs: pyproj.CRS,
+    storage_crs: pyproj.CRS
+) -> None:
     """
     Recursively traverse node tree and convert coordinates to the storage CRS.
 
@@ -400,9 +392,9 @@ def _inplace_transform_filter_geometries(
 
 
 def _inplace_replace_geometry_filter_name(
-        node: pygeofilter.ast.Node,
-        geometry_column_name: str
-):
+    node: pygeofilter.ast.Node,
+    geometry_column_name: str
+) -> None:
     """Recursively traverse node tree and rename nodes of type ``Attribute``.
 
     Nodes of type ``Attribute`` named ``geometry`` are renamed to the value of
@@ -430,10 +422,8 @@ def create_crs_transform_spec(
     *crs* query parameter.
 
     :param provider_def: Provider config dictionary.
-    :type provider_def: dict
     :param query_crs_uri: Uniform resource identifier of the coordinate
         reference system (CRS) specified in query parameter (if specified).
-    :type query_crs_uri: str, optional
 
     :raises ValueError: Error raised if the CRS specified in the query
         parameter is not in the list of supported CRSs of the provider.
@@ -442,7 +432,6 @@ def create_crs_transform_spec(
 
     :returns: `CrsTransformSpec` instance if the CRS specified in query
         parameter differs from the storage CRS, else `None`.
-    :rtype: Union[None, CrsTransformSpec]
     """
 
     # Get storage/default CRS for Collection.
@@ -489,20 +478,26 @@ def create_crs_transform_spec(
 
 def set_content_crs_header(
     headers: dict, config: dict, query_crs_uri: Optional[str] = None,
-):
+) -> None:
     """Set the *Content-Crs* header in responses from providers of Feature
     type.
 
     :param headers: Response headers dictionary.
-    :type headers: dict
     :param config: Provider config dictionary.
-    :type config: dict
     :param query_crs_uri: Uniform resource identifier of the coordinate
         reference system specified in query parameter (if specified).
-    :type query_crs_uri: str, optional
+
+    :returns: None
     """
-    content_crs_uri = (
-        query_crs_uri or
-        config.get('storage_crs', DEFAULT_STORAGE_CRS)
-    )
+
+    if query_crs_uri:
+        content_crs_uri = query_crs_uri
+    else:
+        # If empty use default CRS
+        storage_crs_uri = config.get('storage_crs', DEFAULT_STORAGE_CRS)
+        if storage_crs_uri in DEFAULT_CRS_LIST:
+            content_crs_uri = storage_crs_uri
+        else:
+            content_crs_uri = DEFAULT_CRS
+
     headers['Content-Crs'] = f'<{content_crs_uri}>'
