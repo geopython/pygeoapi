@@ -40,13 +40,13 @@ import numpy as np
 import pyproj
 from pyproj.exceptions import CRSError
 
-from pygeoapi.api import DEFAULT_STORAGE_CRS
+from pygeoapi.crs import DEFAULT_CRS, DEFAULT_STORAGE_CRS, get_crs_from_uri
 
 from pygeoapi.provider.base import (BaseProvider,
                                     ProviderConnectionError,
                                     ProviderNoDataError,
                                     ProviderQueryError)
-from pygeoapi.util import get_crs_from_uri, read_data
+from pygeoapi.util import read_data
 
 LOGGER = logging.getLogger(__name__)
 
@@ -449,7 +449,7 @@ class XarrayProvider(BaseProvider):
                 self._data.coords[self.x_field].values[-1],
                 self._data.coords[self.y_field].values[-1],
             ],
-            'bbox_crs': 'http://www.opengis.net/def/crs/OGC/1.3/CRS84',
+            'bbox_crs': DEFAULT_CRS,
             'crs_type': 'GeographicCRS',
             'x_axis_label': self.x_field,
             'y_axis_label': self.y_field,

@@ -34,10 +34,11 @@ import logging
 
 from shapely.geometry import box, Point
 
+from pygeoapi.crs import crs_transform
 from pygeoapi.provider.base import (BaseProvider, ProviderInvalidQueryError,
                                     ProviderItemNotFoundError,
                                     ProviderQueryError)
-from pygeoapi.util import get_typed_value, crs_transform
+from pygeoapi.util import get_typed_value
 
 LOGGER = logging.getLogger(__name__)
 

@@ -43,12 +43,13 @@ from http import HTTPStatus
 import logging
 from typing import Tuple
 
+from pygeoapi.crs import transform_bbox
 from pygeoapi.openapi import get_oas_30_parameters
 from pygeoapi.plugin import load_plugin
 from pygeoapi.provider.base import ProviderGenericError
 from pygeoapi.util import (
     get_provider_by_type, to_json, filter_providers_by_type,
-    filter_dict_by_key_value, transform_bbox
+    filter_dict_by_key_value
 )
 
 from . import APIRequest, API, validate_datetime

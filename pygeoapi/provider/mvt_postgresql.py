@@ -41,13 +41,14 @@ from geoalchemy2.functions import (ST_TileEnvelope, ST_Transform, ST_AsMVTGeom,
 from sqlalchemy.sql import select
 from sqlalchemy.orm import Session
 
+from pygeoapi.crs import get_crs_from_uri
 from pygeoapi.models.provider.base import (
     TileSetMetadata, TileMatrixSetEnum, LinkType)
 from pygeoapi.provider.base import ProviderConnectionError
 from pygeoapi.provider.base_mvt import BaseMVTProvider
 from pygeoapi.provider.sql import PostgreSQLProvider
 from pygeoapi.provider.tile import ProviderTileNotFoundError
-from pygeoapi.util import url_join, get_crs_from_uri
+from pygeoapi.util import url_join
 
 LOGGER = logging.getLogger(__name__)
 

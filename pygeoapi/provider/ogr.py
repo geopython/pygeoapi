@@ -41,12 +41,11 @@ from osgeo import gdal as osgeo_gdal
 from osgeo import ogr as osgeo_ogr
 from osgeo import osr as osgeo_osr
 
+from pygeoapi.crs import get_crs_from_uri
 from pygeoapi.provider.base import (
     BaseProvider, ProviderGenericError,
     ProviderQueryError, ProviderConnectionError,
     ProviderItemNotFoundError)
-
-from pygeoapi.util import get_crs_from_uri
 
 LOGGER = logging.getLogger(__name__)
 

@@ -45,7 +45,8 @@ from pygeoapi.api import (API, FORMAT_TYPES, F_GZIP, F_HTML, F_JSONLD,
 from pygeoapi.api.itemtypes import (
     get_collection_queryables, get_collection_item,
     get_collection_items, manage_collection_item)
-from pygeoapi.util import yaml_load, get_crs_from_uri
+from pygeoapi.crs import get_crs_from_uri
+from pygeoapi.util import yaml_load
 
 from tests.util import get_test_file_path, mock_api_request
 

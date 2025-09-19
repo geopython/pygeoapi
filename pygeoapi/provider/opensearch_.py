@@ -40,11 +40,10 @@ from opensearch_dsl import Search
 
 from pygeofilter.backends.opensearch import to_filter
 
+from pygeoapi.crs import crs_transform
 from pygeoapi.provider.base import (BaseProvider, ProviderConnectionError,
                                     ProviderQueryError,
                                     ProviderItemNotFoundError)
-from pygeoapi.util import crs_transform
-
 
 LOGGER = logging.getLogger(__name__)
 

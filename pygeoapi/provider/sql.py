@@ -84,6 +84,7 @@ from sqlalchemy.ext.automap import automap_base
 from sqlalchemy.orm import Session, load_only
 from sqlalchemy.sql.expression import and_
 
+from pygeoapi.crs import get_transform_from_crs, get_crs_from_uri
 from pygeoapi.provider.base import (
     BaseProvider,
     ProviderConnectionError,
@@ -91,8 +92,6 @@ from pygeoapi.provider.base import (
     ProviderQueryError,
     ProviderItemNotFoundError
 )
-from pygeoapi.util import get_transform_from_crs, get_crs_from_uri
-
 
 LOGGER = logging.getLogger(__name__)
 

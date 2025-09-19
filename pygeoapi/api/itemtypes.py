@@ -49,17 +49,18 @@ from pyproj.exceptions import CRSError
 
 from pygeoapi import l10n
 from pygeoapi.api import evaluate_limit
+from pygeoapi.crs import DEFAULT_CRS, DEFAULT_STORAGE_CRS, DEFAULT_CRS_LIST
+from pygeoapi.crs import (create_crs_transform_spec, transform_bbox,
+                          get_supported_crs_list, modify_pygeofilter)
 from pygeoapi.formatter.base import FormatterSerializationError
 from pygeoapi.linked_data import geojson2jsonld
 from pygeoapi.plugin import load_plugin, PLUGINS
 from pygeoapi.provider.base import (
     ProviderGenericError, ProviderTypeError, SchemaType)
 
-from pygeoapi.util import (CrsTransformSpec, filter_providers_by_type,
-                           filter_dict_by_key_value, get_crs_from_uri,
-                           get_provider_by_type, get_supported_crs_list,
-                           modify_pygeofilter, render_j2_template, str2bool,
-                           to_json, transform_bbox)
+from pygeoapi.util import (filter_providers_by_type, to_json,
+                           filter_dict_by_key_value, str2bool,
+                           get_provider_by_type, render_j2_template)
 
 from . import (
     APIRequest, API, SYSTEM_LOCALE, F_JSON, FORMAT_TYPES, F_HTML, F_JSONLD,
@@ -70,13 +71,6 @@ LOGGER = logging.getLogger(__name__)
 
 OGC_RELTYPES_BASE = 'http://www.opengis.net/def/rel/ogc/1.0'
 
-DEFAULT_CRS_LIST = [
-    'http://www.opengis.net/def/crs/OGC/1.3/CRS84',
-    'http://www.opengis.net/def/crs/OGC/1.3/CRS84h',
-]
-
-DEFAULT_CRS = 'http://www.opengis.net/def/crs/OGC/1.3/CRS84'
-DEFAULT_STORAGE_CRS = DEFAULT_CRS
 
 CONFORMANCE_CLASSES_FEATURES = [
     'http://www.opengis.net/spec/ogcapi-features-1/1.0/conf/core',
@@ -986,69 +980,6 @@ def get_collection_item(api: API, request: APIRequest,
         return headers, HTTPStatus.OK, content
 
     return headers, HTTPStatus.OK, to_json(content, api.pretty_print)
-
-
-def create_crs_transform_spec(
-        config: dict,
-        query_crs_uri: Optional[str] = None) -> Union[None, CrsTransformSpec]:  # noqa
-    """
-    Create a `CrsTransformSpec` instance based on provider config and
-    *crs* query parameter.
-
-    :param config: Provider config dictionary.
-    :type config: dict
-    :param query_crs_uri: Uniform resource identifier of the coordinate
-        reference system (CRS) specified in query parameter (if specified).
-    :type query_crs_uri: str, optional
-
-    :raises ValueError: Error raised if the CRS specified in the query
-        parameter is not in the list of supported CRSs of the provider.
-    :raises `CRSError`: Error raised if no CRS could be identified from the
-        query *crs* parameter (URI).
-
-    :returns: `CrsTransformSpec` instance if the CRS specified in query
-        parameter differs from the storage CRS, else `None`.
-    :rtype: Union[None, CrsTransformSpec]
-    """
-
-    # Get storage/default CRS for Collection.
-    storage_crs_uri = config.get('storage_crs', DEFAULT_STORAGE_CRS)
-
-    if not query_crs_uri:
-        if storage_crs_uri in DEFAULT_CRS_LIST:
-            # Could be that storageCrs is
-            # http://www.opengis.net/def/crs/OGC/1.3/CRS84h
-            query_crs_uri = storage_crs_uri
-        else:
-            query_crs_uri = DEFAULT_CRS
-        LOGGER.debug(f'no crs parameter, using default: {query_crs_uri}')
-
-    supported_crs_list = get_supported_crs_list(config, DEFAULT_CRS_LIST)
-    # Check that the crs specified by the query parameter is supported.
-    if query_crs_uri not in supported_crs_list:
-        raise ValueError(
-            f'CRS {query_crs_uri!r} not supported for this '
-            'collection. List of supported CRSs: '
-            f'{", ".join(supported_crs_list)}.'
-        )
-    crs_out = get_crs_from_uri(query_crs_uri)
-
-    storage_crs = get_crs_from_uri(storage_crs_uri)
-    # Check if the crs specified in query parameter differs from the
-    # storage crs.
-    if str(storage_crs) != str(crs_out):
-        LOGGER.debug(
-            f'CRS transformation: {storage_crs} -> {crs_out}'
-        )
-        return CrsTransformSpec(
-            source_crs_uri=storage_crs_uri,
-            source_crs_wkt=storage_crs.to_wkt(),
-            target_crs_uri=query_crs_uri,
-            target_crs_wkt=crs_out.to_wkt(),
-        )
-    else:
-        LOGGER.debug('No CRS transformation')
-        return None
 
 
 def set_content_crs_header(
