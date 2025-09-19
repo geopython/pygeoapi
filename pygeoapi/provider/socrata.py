@@ -35,9 +35,10 @@ from urllib.parse import urlparse
 from sodapy import Socrata
 import logging
 
+from pygeoapi.crs import crs_transform
 from pygeoapi.provider.base import (BaseProvider, ProviderQueryError,
                                     ProviderConnectionError)
-from pygeoapi.util import format_datetime, crs_transform
+from pygeoapi.util import format_datetime
 
 LOGGER = logging.getLogger(__name__)
 

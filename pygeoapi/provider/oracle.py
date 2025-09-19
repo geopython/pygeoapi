@@ -38,8 +38,8 @@ from typing import Optional
 import oracledb
 import pyproj
 
-from pygeoapi.api import DEFAULT_STORAGE_CRS
 
+from pygeoapi.crs import get_crs_from_uri, DEFAULT_STORAGE_CRS
 from pygeoapi.provider.base import (
     BaseProvider,
     ProviderConnectionError,
@@ -48,8 +48,6 @@ from pygeoapi.provider.base import (
     ProviderItemNotFoundError,
     ProviderQueryError,
 )
-
-from pygeoapi.util import get_crs_from_uri
 
 LOGGER = logging.getLogger(__name__)
 

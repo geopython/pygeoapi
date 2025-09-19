@@ -32,9 +32,10 @@ import json
 import logging
 from requests import Session, codes
 
+from pygeoapi.crs import crs_transform
 from pygeoapi.provider.base import (BaseProvider, ProviderConnectionError,
                                     ProviderTypeError, ProviderQueryError)
-from pygeoapi.util import format_datetime, crs_transform
+from pygeoapi.util import format_datetime
 
 LOGGER = logging.getLogger(__name__)
 

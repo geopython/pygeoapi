@@ -35,8 +35,8 @@ import uuid
 
 from shapely.geometry import box, shape
 
+from pygeoapi.crs import crs_transform
 from pygeoapi.provider.base import BaseProvider, ProviderItemNotFoundError
-from pygeoapi.util import crs_transform
 
 LOGGER = logging.getLogger(__name__)
 
