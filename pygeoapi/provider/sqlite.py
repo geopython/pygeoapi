@@ -41,7 +41,6 @@ from pygeoapi.plugin import InvalidPluginError
 from pygeoapi.provider.base import (BaseProvider, ProviderConnectionError,
                                     ProviderItemNotFoundError)
 
-
 LOGGER = logging.getLogger(__name__)
 
 

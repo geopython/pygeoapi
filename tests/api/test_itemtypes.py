@@ -460,7 +460,7 @@ def test_get_collection_items_crs(config, api_):
         assert code == HTTPStatus.OK
         assert rsp_headers['Content-Crs'] == f'<{crs}>'
 
-    # With CRS query parameter, using storageCrs
+    # With CRS query parameter, using storage_crs
     req = mock_api_request({'crs': storage_crs})
     rsp_headers, code, response = get_collection_items(
         api_, req, 'norway_pop')

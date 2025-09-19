@@ -248,7 +248,7 @@ def crs_transform(func):
     return get_geojsonf
 
 
-def crs_transform_feature(feature, transform_func):
+def crs_transform_feature(feature: dict, transform_func: Callable):
     """Transform the coordinates of a Feature.
 
     :param feature: Feature (GeoJSON-like `dict`) to transform.
@@ -441,7 +441,7 @@ def create_crs_transform_spec(
 
     if not query_crs_uri:
         if storage_crs_uri in DEFAULT_CRS_LIST:
-            # Could be that storageCrs is
+            # Could be that storage_crs is
             # http://www.opengis.net/def/crs/OGC/1.3/CRS84h
             query_crs_uri = storage_crs_uri
         else:

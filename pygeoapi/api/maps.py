@@ -77,9 +77,7 @@ def get_collection_map(api: API, request: APIRequest,
     :returns: tuple of headers, status code, content
     """
 
-    query_args = {
-        'crs': 'CRS84'
-    }
+    query_args = {}
 
     format_ = request.format or 'png'
     headers = request.get_response_headers(**api.api_headers)
