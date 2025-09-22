@@ -49,9 +49,10 @@ from pyproj.exceptions import CRSError
 
 from pygeoapi import l10n
 from pygeoapi.api import evaluate_limit
-from pygeoapi.crs import (DEFAULT_CRS, create_crs_transform_spec,
-                          get_supported_crs_list, modify_pygeofilter,
-                          transform_bbox, set_content_crs_header)
+from pygeoapi.crs import (DEFAULT_CRS, DEFAULT_STORAGE_CRS,
+                          create_crs_transform_spec, get_supported_crs_list,
+                          modify_pygeofilter, transform_bbox,
+                          set_content_crs_header)
 from pygeoapi.formatter.base import FormatterSerializationError
 from pygeoapi.linked_data import geojson2jsonld
 from pygeoapi.plugin import load_plugin, PLUGINS
@@ -392,19 +393,17 @@ def get_collection_items(
                 'NoApplicableCode', msg)
     elif len(bbox) > 0:
         # bbox but no bbox-crs param: assume bbox is in default CRS
-        bbox_crs = DEFAULT_CRS
+        bbox_crs = DEFAULT_STORAGE_CRS
 
     # Transform bbox to storage_crs
     # when bbox-crs different from storage_crs.
     if len(bbox) > 0:
         try:
-            # Create the CRS transform spec
-            crs_transform_spec = create_crs_transform_spec(
-                provider_def, bbox_crs
-            )
+            # Get a pyproj CRS instance for the Collection's Storage CRS
+            storage_crs = provider_def.get('storage_crs', DEFAULT_STORAGE_CRS)
 
             # Do the (optional) Transform to the Storage CRS
-            bbox = transform_bbox(bbox, crs_transform_spec)
+            bbox = transform_bbox(bbox, bbox_crs, storage_crs)
         except CRSError as e:
             return api.get_exception(
                 HTTPStatus.BAD_REQUEST, headers, request.format,

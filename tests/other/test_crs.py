@@ -186,27 +186,15 @@ def test_transform_bbox():
     result = [59742, 446645, 129005, 557074]
 
     bbox = [4, 52, 5, 53]
-    transform_def = {
-        'storage_crs': 'http://www.opengis.net/def/crs/EPSG/0/28992',
-        'crs': [
-            'http://www.opengis.net/def/crs/EPSG/0/28992',
-            'http://www.opengis.net/def/crs/EPSG/0/4326'
-        ]
-    }
     from_crs = 'http://www.opengis.net/def/crs/OGC/1.3/CRS84'
-    crs_transform_spec = crs.create_crs_transform_spec(
-        transform_def, from_crs
-    )
-    bbox_trans = crs.transform_bbox(bbox, crs_transform_spec)
+    to_crs = 'http://www.opengis.net/def/crs/EPSG/0/28992'
+    bbox_trans = crs.transform_bbox(bbox, from_crs, to_crs)
     for n in range(4):
         assert round(bbox_trans[n]) == result[n]
 
     bbox = [52, 4, 53, 5]
     from_crs = 'http://www.opengis.net/def/crs/EPSG/0/4326'
-    crs_transform_spec = crs.create_crs_transform_spec(
-        transform_def, from_crs
-    )
-    bbox_trans = crs.transform_bbox(bbox, crs_transform_spec)
+    bbox_trans = crs.transform_bbox(bbox, from_crs, to_crs)
     for n in range(4):
         assert round(bbox_trans[n]) == result[n]
 
