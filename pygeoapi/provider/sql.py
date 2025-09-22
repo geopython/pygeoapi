@@ -63,7 +63,6 @@ from geoalchemy2 import Geometry  # noqa - this isn't used explicitly but is nee
 from geoalchemy2.functions import ST_MakeEnvelope, ST_Intersects
 from geoalchemy2.shape import to_shape, from_shape
 from pygeofilter.backends.sqlalchemy.evaluate import to_filter
-import pyproj
 import shapely
 from sqlalchemy.sql import func
 from sqlalchemy import (
@@ -84,7 +83,7 @@ from sqlalchemy.ext.automap import automap_base
 from sqlalchemy.orm import Session, load_only
 from sqlalchemy.sql.expression import and_
 
-from pygeoapi.crs import get_transform_from_crs, get_srid
+from pygeoapi.crs import get_transform_from_spec, get_srid
 from pygeoapi.provider.base import (
     BaseProvider,
     ProviderConnectionError,
@@ -228,7 +227,7 @@ class GenericSQLProvider(BaseProvider):
             if resulttype == 'hits' or not results:
                 return response
 
-            crs_transform_out = self._get_crs_transform(crs_transform_spec)
+            crs_transform_out = get_transform_from_spec(crs_transform_spec)
 
             for item in (
                 results.order_by(*order_by_clauses).offset(offset).limit(limit)
@@ -327,7 +326,7 @@ class GenericSQLProvider(BaseProvider):
             if item is None:
                 msg = f'No such item: {self.id_field}={identifier}.'
                 raise ProviderItemNotFoundError(msg)
-            crs_transform_out = self._get_crs_transform(crs_transform_spec)
+            crs_transform_out = get_transform_from_spec(crs_transform_spec)
             feature = self._sqlalchemy_to_feature(item, crs_transform_out)
 
             # Drop non-defined properties
@@ -599,17 +598,6 @@ class GenericSQLProvider(BaseProvider):
         selected_properties_clause = load_only(*selected_columns)
 
         return selected_properties_clause
-
-    def _get_crs_transform(self, crs_transform_spec=None):
-        if crs_transform_spec is not None:
-            crs_transform = get_transform_from_crs(
-                pyproj.CRS.from_wkt(crs_transform_spec.source_crs_wkt),
-                pyproj.CRS.from_wkt(crs_transform_spec.target_crs_wkt),
-                crs_transform_spec.always_xy
-            )
-        else:
-            crs_transform = None
-        return crs_transform
 
 
 @functools.cache

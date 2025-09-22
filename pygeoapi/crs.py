@@ -166,6 +166,26 @@ def get_crs(crs: Union[str, pyproj.CRS]) -> pyproj.CRS:
     return crs
 
 
+def get_transform_from_spec(
+    crs_transform_spec: CrsTransformSpec
+) -> Callable[[Geometry], Geometry]:
+    """ Get transformation function from a `CrsTransformSpec` instance.
+
+    :param crs_transform_spec: `CrsTransformSpec`
+
+    :returns: `callable` Function to transform the coordinates of a `Geometry`.
+    """
+    if crs_transform_spec is None:
+        LOGGER.warning('No transform spec found')
+        return None
+
+    return get_transform_from_crs(
+        pyproj.CRS.from_wkt(crs_transform_spec.source_crs_wkt),
+        pyproj.CRS.from_wkt(crs_transform_spec.target_crs_wkt),
+        crs_transform_spec.always_xy
+    )
+
+
 def get_transform_from_crs(
     crs_in: pyproj.CRS, crs_out: pyproj.CRS, always_xy: bool = False
 ) -> Callable[[Geometry], Geometry]:
@@ -224,12 +244,7 @@ def crs_transform(func):
             return result
         # Create transformation function and transform the output feature(s)'
         # coordinates before returning them.
-        transform_func = get_transform_from_crs(
-            pyproj.CRS.from_wkt(crs_transform_spec.source_crs_wkt),
-            pyproj.CRS.from_wkt(crs_transform_spec.target_crs_wkt),
-            crs_transform_spec.always_xy
-        )
-
+        transform_func = get_transform_from_spec(crs_transform_spec)
         LOGGER.debug(f'crs_transform: transforming features CRS '
                      f'from {crs_transform_spec.source_crs_uri} '
                      f'to {crs_transform_spec.target_crs_uri}')
@@ -277,11 +292,7 @@ def transform_bbox(bbox: list, crs_transform_spec: CrsTransformSpec) -> list:
 
     :returns: list of 4 or 6 coordinates
     """
-    transform_func = pyproj.Transformer.from_crs(
-        pyproj.CRS.from_wkt(crs_transform_spec.target_crs_wkt),
-        pyproj.CRS.from_wkt(crs_transform_spec.source_crs_wkt),
-        crs_transform_spec.always_xy
-    ).transform
+    transform_func = get_transform_from_spec(crs_transform_spec)
     n_dims = len(bbox) // 2
     return list(transform_func(*bbox[:n_dims]) + transform_func(
         *bbox[n_dims:]))
