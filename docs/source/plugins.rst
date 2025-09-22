@@ -7,6 +7,9 @@ In this section we will explain how pygeoapi provides plugin architecture for da
 
 Plugin development requires knowledge of how to program in Python as well as Python's package/module system.
 
+.. seealso::
+   :ref:`data-publishing` for configuration of default plugins.
+
 Overview
 --------
 
