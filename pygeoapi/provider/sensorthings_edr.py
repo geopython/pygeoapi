@@ -29,7 +29,6 @@
 
 import logging
 
-from pygeoapi.crs import DEFAULT_CRS
 from pygeoapi.provider.base import ProviderNoDataError
 from pygeoapi.provider.base_edr import BaseEDRProvider
 from pygeoapi.provider.sensorthings import SensorThingsProvider
@@ -40,7 +39,7 @@ GEOGRAPHIC_CRS = {
     'coordinates': ['x', 'y'],
     'system': {
         'type': 'GeographicCRS',
-        'id': DEFAULT_CRS
+        'id': 'http://www.opengis.net/def/crs/OGC/1.3/CRS84'
     }
 }
 
