@@ -768,8 +768,7 @@ def test_get_collection_items_postgresql_crs(pg_api_):
 
     transform_func = get_transform_from_crs(
         get_crs(DEFAULT_CRS),
-        pyproj.CRS.from_epsg(32735),
-        always_xy=False,
+        pyproj.CRS.from_epsg(32735)
     )
     # Check that the coordinates of returned features were transformed
     for feat_orig in features_orig['features']:

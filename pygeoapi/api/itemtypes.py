@@ -49,10 +49,9 @@ from pyproj.exceptions import CRSError
 
 from pygeoapi import l10n
 from pygeoapi.api import evaluate_limit
-from pygeoapi.crs import DEFAULT_CRS, DEFAULT_STORAGE_CRS
-from pygeoapi.crs import (create_crs_transform_spec, transform_bbox,
+from pygeoapi.crs import (DEFAULT_CRS, create_crs_transform_spec,
                           get_supported_crs_list, modify_pygeofilter,
-                          set_content_crs_header)
+                          transform_bbox, set_content_crs_header)
 from pygeoapi.formatter.base import FormatterSerializationError
 from pygeoapi.linked_data import geojson2jsonld
 from pygeoapi.plugin import load_plugin, PLUGINS
