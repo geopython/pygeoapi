@@ -395,15 +395,17 @@ def get_collection_items(
         # bbox but no bbox-crs param: assume bbox is in default CRS
         bbox_crs = DEFAULT_CRS
 
-    # Transform bbox to storageCrs
-    # when bbox-crs different from storageCrs.
+    # Transform bbox to storage_crs
+    # when bbox-crs different from storage_crs.
     if len(bbox) > 0:
         try:
-            # Get a pyproj CRS instance for the Collection's Storage CRS
-            storage_crs = provider_def.get('storage_crs', DEFAULT_STORAGE_CRS)  # noqa
+            # Create the CRS transform spec
+            crs_transform_spec = create_crs_transform_spec(
+                provider_def, bbox_crs
+            )
 
             # Do the (optional) Transform to the Storage CRS
-            bbox = transform_bbox(bbox, bbox_crs, storage_crs)
+            bbox = transform_bbox(bbox, crs_transform_spec)
         except CRSError as e:
             return api.get_exception(
                 HTTPStatus.BAD_REQUEST, headers, request.format,

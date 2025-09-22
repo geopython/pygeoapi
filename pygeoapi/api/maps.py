@@ -43,7 +43,7 @@ from http import HTTPStatus
 import logging
 from typing import Tuple
 
-from pygeoapi.crs import transform_bbox
+from pygeoapi.crs import transform_bbox, create_crs_transform_spec
 from pygeoapi.openapi import get_oas_30_parameters
 from pygeoapi.plugin import load_plugin
 from pygeoapi.provider.base import ProviderGenericError
@@ -152,7 +152,14 @@ def get_collection_map(api: API, request: APIRequest,
 
     if query_args['bbox_crs'] != query_args['crs']:
         LOGGER.debug(f'Reprojecting bbox CRS: {query_args["crs"]}')
-        bbox = transform_bbox(bbox, query_args['bbox_crs'], query_args['crs'])
+        transform_def = {
+            'storage_crs': query_args["crs"],
+            'crs': [query_args["crs"],]
+        }
+        crs_transform_spec = create_crs_transform_spec(
+            transform_def, query_args['bbox_crs']
+        )
+        bbox = transform_bbox(bbox, crs_transform_spec)
 
     query_args['bbox'] = bbox
 
