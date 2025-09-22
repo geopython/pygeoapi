@@ -219,21 +219,25 @@ default.
                   end: 2007-10-30T08:57:29Z  # end datetime in RFC3339
                   trs: http://www.opengis.net/def/uom/ISO-8601/0/Gregorian  # TRS
           providers:  # list of 1..n required connections information
-              # provider name
-              # see pygeoapi.plugin for supported providers
-              # for custom built plugins, use the import path (e.g. mypackage.provider.MyProvider)
-              # see Plugins section for more information
-              - type: feature # underlying data geospatial type: (allowed values are: feature, coverage, record, tile, edr)
-                default: true  # optional: if not specified, the first provider definition is considered the default
-                name: CSV
+              - type: feature # underlying data geospatial type. Allowed values are: feature, coverage, record, tile, edr
+                name: CSV # required: plugin name or import path. See Plugins section for more information.
                 data: tests/data/obs.csv  # required: the data filesystem path or URL, depending on plugin setup
                 id_field: id  # required for vector data, the field corresponding to the ID
-                uri_field: uri # optional field corresponding to the Uniform Resource Identifier (see Linked Data section)
-                time_field: datetimestamp  # optional field corresponding to the temporal property of the dataset
-                title_field: foo # optional field of which property to display as title/label on HTML pages
-                properties:  # optional: only return the following properties, in order
+
+                # optional fields
+                uri_field: uri # field corresponding to the Uniform Resource Identifier (see Linked Data section)
+                time_field: datetimestamp  # field corresponding to the temporal property of the dataset
+                title_field: foo # field of which property to display as title/label on HTML pages
+                default: true  # if not specified, the first provider definition is considered the default
+                properties:  # if specified, return only the following properties, in order
                     - stn_id
                     - value
+                format: # default format
+                    name: GeoJSON  # required: format name
+                    mimetype: application/json  # required: format mimetype
+                options:  # optional options to pass to provider (i.e. GDAL creation)
+                    option_name: option_value
+                include_extra_query_parameters: false  # include extra query parameters that are not part of the collection properties (default: false)
                 # editable transactions: DO NOT ACTIVATE unless you have setup access control beyond pygeoapi
                 editable: true  # optional: if backend is writable, default is false
                 # coordinate reference systems (CRS) section is optional
@@ -245,12 +249,7 @@ default.
                     - http://www.opengis.net/def/crs/EPSG/0/4326
                 storage_crs: http://www.opengis.net/def/crs/OGC/1.3/CRS84 # optional CRS in which data is stored, default: as 'crs' field
                 storage_crs_coordinate_epoch: : 2017.23 # optional, if storage_crs is a dynamic coordinate reference system
-                format:  # optional default format
-                    name: GeoJSON  # required: format name
-                    mimetype: application/json  # required: format mimetype
-                options:  # optional options to pass to provider (i.e. GDAL creation)
-                    option_name: option_value
-                include_extra_query_parameters: false  # include extra query parameters that are not part of the collection properties (default: false)
+                always_xy: false # optional should CRS respect axis ordering
 
       hello-world:  # name of process
           type: process  # REQUIRED (collection, process, or stac-collection)
