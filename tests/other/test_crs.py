@@ -29,6 +29,7 @@
 
 from contextlib import nullcontext as does_not_raise
 
+import operator
 import pytest
 from pyproj.exceptions import CRSError
 import pygeofilter.ast
@@ -39,19 +40,17 @@ from shapely.geometry import Point
 from pygeoapi import crs
 
 
-@pytest.fixture
 def geojson_point():
     """Valid GeoJSON item for testing."""
     return {
-        "type": "Feature",
-        "id": "test_id",
-        "geometry": {
-            "type": "Point",
-            "coordinates": [77.037913, 38.928012]
+        'type': 'Feature',
+        'id': 'test_id',
+        'geometry': {
+            'type': 'Point',
+            'coordinates': [77.037913, 38.928012]
         },
-        "properties": {"name": "Test Feature"}
+        'properties': {'name': 'Test Feature'}
     }
-
 
 
 def test_get_transform_from_crs():
@@ -101,24 +100,85 @@ def test_get_supported_crs_list():
     pytest.param('http://www.opengis.net/not/a/valid/crs/uri', pytest.raises(CRSError), None),  # noqa
     pytest.param('http://www.opengis.net/def/crs/EPSG/0/0', pytest.raises(CRSError), None),  # noqa
     pytest.param('http://www.opengis.net/def/crs/OGC/1.3/CRS84', does_not_raise(), 'OGC:CRS84'),  # noqa
+    pytest.param('http://www.opengis.net/def/crs/OGC/1.3/CRS83', does_not_raise(), 'OGC:CRS83'),  # noqa
     pytest.param('http://www.opengis.net/def/crs/EPSG/0/4326', does_not_raise(), 'EPSG:4326'),  # noqa
+    pytest.param('http://www.opengis.net/def/crs/EPSG/0/4269', does_not_raise(), 'EPSG:4269'),  # noqa
     pytest.param('http://www.opengis.net/def/crs/EPSG/0/28992', does_not_raise(), 'EPSG:28992'),  # noqa
     pytest.param('urn:ogc:def:crs:not:a:valid:crs:urn', pytest.raises(CRSError), None),  # noqa
     pytest.param('urn:ogc:def:crs:epsg:0:0', pytest.raises(CRSError), None),
     pytest.param('urn:ogc:def:crs:epsg::0', pytest.raises(CRSError), None),
     pytest.param('urn:ogc:def:crs:OGC::0', pytest.raises(CRSError), None),
     pytest.param('urn:ogc:def:crs:OGC:0:0', pytest.raises(CRSError), None),
-    pytest.param('urn:ogc:def:crs:OGC:0:CRS84', does_not_raise(), "OGC:CRS84"),
-    pytest.param('urn:ogc:def:crs:OGC::CRS84', does_not_raise(), "OGC:CRS84"),
-    pytest.param('urn:ogc:def:crs:EPSG:0:4326', does_not_raise(), "EPSG:4326"),
-    pytest.param('urn:ogc:def:crs:EPSG::4326', does_not_raise(), "EPSG:4326"),
-    pytest.param('urn:ogc:def:crs:epsg:0:4326', does_not_raise(), "EPSG:4326"),
-    pytest.param('urn:ogc:def:crs:epsg:0:28992', does_not_raise(), "EPSG:28992"),  # noqa
+    pytest.param('urn:ogc:def:crs:OGC:0:CRS84', does_not_raise(), 'OGC:CRS84'),
+    pytest.param('urn:ogc:def:crs:OGC::CRS84', does_not_raise(), 'OGC:CRS84'),
+    pytest.param('urn:ogc:def:crs:EPSG:0:4326', does_not_raise(), 'EPSG:4326'),
+    pytest.param('urn:ogc:def:crs:EPSG::4326', does_not_raise(), 'EPSG:4326'),
+    pytest.param('urn:ogc:def:crs:epsg:0:4326', does_not_raise(), 'EPSG:4326'),
+    pytest.param('urn:ogc:def:crs:epsg:0:28992', does_not_raise(), 'EPSG:28992'),  # noqa
 ])
 def test_get_crs(uri, expected_raise, expected):
     with expected_raise:
         crs_ = crs.get_crs(uri)
         assert crs_.srs.upper() == expected
+
+
+@pytest.mark.parametrize('uri, expected_raise, expected', [
+    pytest.param('http://www.opengis.net/not/a/valid/crs/uri', pytest.raises(CRSError), None),  # noqa
+    pytest.param('http://www.opengis.net/def/crs/EPSG/0/0', pytest.raises(CRSError), None),  # noqa
+    pytest.param('http://www.opengis.net/def/crs/OGC/1.3/CRS84', does_not_raise(), 4326),  # noqa
+    pytest.param('http://www.opengis.net/def/crs/OGC/1.3/CRS83', does_not_raise(), 4269),  # noqa
+    pytest.param('http://www.opengis.net/def/crs/EPSG/0/4326', does_not_raise(), 4326),  # noqa
+    pytest.param('http://www.opengis.net/def/crs/EPSG/0/4269', does_not_raise(), 4269),  # noqa
+    pytest.param('http://www.opengis.net/def/crs/EPSG/0/28992', does_not_raise(), 28992),  # noqa
+    pytest.param('urn:ogc:def:crs:not:a:valid:crs:urn', pytest.raises(CRSError), None),  # noqa
+    pytest.param('urn:ogc:def:crs:epsg:0:0', pytest.raises(CRSError), None),
+    pytest.param('urn:ogc:def:crs:epsg::0', pytest.raises(CRSError), None),
+    pytest.param('urn:ogc:def:crs:OGC::0', pytest.raises(CRSError), None),
+    pytest.param('urn:ogc:def:crs:OGC:0:0', pytest.raises(CRSError), None),
+    pytest.param('urn:ogc:def:crs:OGC:0:CRS84', does_not_raise(), 4326),
+    pytest.param('urn:ogc:def:crs:OGC::CRS84', does_not_raise(), 4326),
+    pytest.param('urn:ogc:def:crs:EPSG:0:4326', does_not_raise(), 4326),
+    pytest.param('urn:ogc:def:crs:EPSG::4326', does_not_raise(), 4326),
+    pytest.param('urn:ogc:def:crs:epsg:0:4326', does_not_raise(), 4326),
+    pytest.param('urn:ogc:def:crs:epsg:0:28992', does_not_raise(), 28992),
+])
+def test_get_srid(uri, expected_raise, expected):
+    with expected_raise:
+        srid_ = crs.get_srid(uri)
+        assert srid_ == expected
+
+
+@pytest.mark.parametrize('uri, expected_axis_order', [
+    pytest.param('http://www.opengis.net/def/crs/OGC/1.3/CRS83', operator.eq),
+    pytest.param('http://www.opengis.net/def/crs/EPSG/0/4326', operator.ne),
+    pytest.param('http://www.opengis.net/def/crs/EPSG/0/4269', operator.ne),
+    pytest.param('http://www.opengis.net/def/crs/EPSG/0/28992', operator.eq),
+    pytest.param('http://www.opengis.net/def/crs/EPSG/0/4289', operator.ne)
+])
+def test_always_xy(uri, expected_axis_order):
+    # pyproj respect URI Authority on axis order
+    provider_def = {
+        'crs': [uri],
+        'always_xy': False
+    }
+    transform_func = crs.get_transform_from_spec(
+        crs.create_crs_transform_spec(provider_def, uri)
+    )
+
+    feature = geojson_point()
+    crs.crs_transform_feature(feature, transform_func)
+
+    # pyproj use always_xy, see:
+    # https://proj.org/en/stable/faq.html#why-is-the-axis-ordering-in-proj-not-consistent
+    provider_def['always_xy'] = True
+    feature_always_xy = geojson_point()
+
+    transform_func_always_xy = crs.get_transform_from_spec(
+        crs.create_crs_transform_spec(provider_def, uri)
+    )
+    crs.crs_transform_feature(feature_always_xy, transform_func_always_xy)
+
+    assert expected_axis_order(feature, feature_always_xy)
 
 
 def test_transform_bbox():
@@ -164,7 +224,7 @@ def test_transform_bbox():
         id='passthrough'
     ),
     pytest.param(
-        "INTERSECTS(geometry, POINT(1 1))",
+        'INTERSECTS(geometry, POINT(1 1))',
         'http://www.opengis.net/def/crs/OGC/1.3/CRS84',
         None,
         'custom_geom_name',
@@ -175,7 +235,7 @@ def test_transform_bbox():
         id='unnested-geometry-name'
     ),
     pytest.param(
-        "some_attribute = 10 AND INTERSECTS(geometry, POINT(1 1))",
+        'some_attribute = 10 AND INTERSECTS(geometry, POINT(1 1))',
         'http://www.opengis.net/def/crs/OGC/1.3/CRS84',
         None,
         'custom_geom_name',
@@ -190,8 +250,8 @@ def test_transform_bbox():
         id='nested-geometry-name'
     ),
     pytest.param(
-        "(some_attribute = 10 AND INTERSECTS(geometry, POINT(1 1))) OR "
-        "DWITHIN(geometry, POINT(2 2), 10, meters)",
+        '(some_attribute = 10 AND INTERSECTS(geometry, POINT(1 1))) OR '
+        'DWITHIN(geometry, POINT(2 2), 10, meters)',
         'http://www.opengis.net/def/crs/OGC/1.3/CRS84',
         None,
         'custom_geom_name',
@@ -214,7 +274,7 @@ def test_transform_bbox():
         id='complex-filter-name'
     ),
     pytest.param(
-        "INTERSECTS(geometry, POINT(12.512829 41.896698))",
+        'INTERSECTS(geometry, POINT(12.512829 41.896698))',
         'http://www.opengis.net/def/crs/OGC/1.3/CRS84',
         'http://www.opengis.net/def/crs/EPSG/0/3004',
         None,
@@ -225,7 +285,7 @@ def test_transform_bbox():
         id='unnested-geometry-transformed-coords'
     ),
     pytest.param(
-        "some_attribute = 10 AND INTERSECTS(geometry, POINT(12.512829 41.896698))",  # noqa
+        'some_attribute = 10 AND INTERSECTS(geometry, POINT(12.512829 41.896698))',  # noqa
         'http://www.opengis.net/def/crs/OGC/1.3/CRS84',
         'http://www.opengis.net/def/crs/EPSG/0/3004',
         None,
@@ -240,8 +300,8 @@ def test_transform_bbox():
         id='nested-geometry-transformed-coords'
     ),
     pytest.param(
-        "(some_attribute = 10 AND INTERSECTS(geometry, POINT(12.512829 41.896698))) OR "  # noqa
-        "DWITHIN(geometry, POINT(12 41), 10, meters)",
+        '(some_attribute = 10 AND INTERSECTS(geometry, POINT(12.512829 41.896698))) OR '  # noqa
+        'DWITHIN(geometry, POINT(12 41), 10, meters)',
         'http://www.opengis.net/def/crs/OGC/1.3/CRS84',
         'http://www.opengis.net/def/crs/EPSG/0/3004',
         None,
@@ -264,7 +324,7 @@ def test_transform_bbox():
         id='complex-filter-transformed-coords'
     ),
     pytest.param(
-        "INTERSECTS(geometry, SRID=3857;POINT(1392921 5145517))",
+        'INTERSECTS(geometry, SRID=3857;POINT(1392921 5145517))',
         'http://www.opengis.net/def/crs/OGC/1.3/CRS84',
         'http://www.opengis.net/def/crs/EPSG/0/3004',
         None,
@@ -275,7 +335,7 @@ def test_transform_bbox():
         id='unnested-geometry-transformed-coords-explicit-input-crs-ewkt'
     ),
     pytest.param(
-        "INTERSECTS(geometry, POINT(1392921 5145517))",
+        'INTERSECTS(geometry, POINT(1392921 5145517))',
         'http://www.opengis.net/def/crs/EPSG/0/3857',
         'http://www.opengis.net/def/crs/EPSG/0/3004',
         None,
@@ -286,7 +346,7 @@ def test_transform_bbox():
         id='unnested-geometry-transformed-coords-explicit-input-crs-filter-crs'
     ),
     pytest.param(
-        "INTERSECTS(geometry, SRID=3857;POINT(1392921 5145517))",
+        'INTERSECTS(geometry, SRID=3857;POINT(1392921 5145517))',
         'http://www.opengis.net/def/crs/OGC/1.3/CRS84',
         'http://www.opengis.net/def/crs/EPSG/0/3004',
         None,
@@ -297,7 +357,7 @@ def test_transform_bbox():
         id='unnested-geometry-transformed-coords-ewkt-crs-overrides-filter-crs'
     ),
     pytest.param(
-        "INTERSECTS(geometry, POINT(12.512829 41.896698))",
+        'INTERSECTS(geometry, POINT(12.512829 41.896698))',
         'http://www.opengis.net/def/crs/OGC/1.3/CRS84',
         'http://www.opengis.net/def/crs/EPSG/0/3004',
         'custom_geom_name',
