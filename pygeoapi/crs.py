@@ -279,20 +279,26 @@ def crs_transform_feature(feature: dict, transform_func: Callable):
         )
 
 
-def transform_bbox(bbox: list, crs_transform_spec: CrsTransformSpec) -> list:
+def transform_bbox(bbox: list, from_crs: str, to_crs: str) -> list:
     """
     helper function to transform a bounding box (bbox) from
     a source to a target CRS. CRSs in URI str format.
     Uses pyproj Transformer.
 
     :param bbox: list of coordinates in 'from_crs' projection
-    :param crs_transform_spec: CrsTransformSpec to transform
+    :param from_crs: CRS to transform from
+    :param to_crs: CRSto transform to
     :raises `CRSError`: Error raised if no CRS could be identified from an
         URI.
 
     :returns: list of 4 or 6 coordinates
     """
-    transform_func = get_transform_from_spec(crs_transform_spec)
+
+    from_crs_obj = get_crs(from_crs)
+    to_crs_obj = get_crs(to_crs)
+    transform_func = pyproj.Transformer.from_crs(
+        from_crs_obj, to_crs_obj).transform
+
     n_dims = len(bbox) // 2
     return list(transform_func(*bbox[:n_dims]) + transform_func(
         *bbox[n_dims:]))
