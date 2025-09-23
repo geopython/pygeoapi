@@ -24,45 +24,33 @@ Background
 pygeoapi implements the complete specification: 
 `OGC API - Features - Part 2: Coordinate Reference Systems by Reference corrigendum`_.
 Under the hood, pygeoapi uses the well-known `pyproj`_ Python wrapper to the `PROJ`_ library.
-All default data plugins support `bbox-crs` and `crs`.
 For information on implementing CRS on custom plugins, see `Implementation`_.
 
 CRS support exists for the following OGC APIs:
 
 .. csv-table::
-   :header: OGC API, bbox-crs, crs
+   :header: OGC API, bbox-crs, filter-crs, crs
    :align: left
 
-   :ref:`OGC API - Features<ogcapi-features>`,✅,✅
-   :ref:`OGC API - Maps<ogcapi-maps>`,✅,❌
-   :ref:`OGC API - Coverages<ogcapi-coverages>`,✅,❌
+   :ref:`OGC API - Features<ogcapi-features>`,✅,✅,✅
+   :ref:`OGC API - Maps<ogcapi-maps>`,✅,❌,❌
+   :ref:`OGC API - Coverages<ogcapi-coverages>`,✅,❌,❌
 
 Configuration
 -------------
 
 The CRS of a collection is defined in the provider block of your resource.
-The configuration controls how the `bbox-crs` and `crs` query parameters behave.
-All bbox queries are converted to the configured `storage_crs`.
-An error will be returned for any interaction with CRS not included in the configured `crs`.
-These are in URI formats like http://www.opengis.net/def/crs/OGC/1.3/CRS84 or
-the "OpenGIS" format like http://www.opengis.net/def/crs/EPSG/0/4258. 
-Both 'URI' and 'URN' CRS notation format are supported.
+The configuration controls how the `crs` related query parameters behave.
+
+
+* ``crs`` - list of CRSs supported
+* ``storage_crs`` - CRS in which the data is stored (must be in `crs` list)
+* ``storage_crs_coordinate_epoch`` - epoch of `storage_crs` for a dynamic coordinate reference system
+* ``always_xy`` - CRS should ignore authority on axis order, disobeying `ISO-19111`_ (default: false) 
 
 .. note::
-    That the "EPSG:" format like EPSG:4326 is outside the scope of the OGC standard.
-
-* `crs` - list of CRSs supported
-* `storage_crs` - CRS in which the data is stored (must be in `crs` list)
-* `storage_crs_coordinate_epoch` - epoch of `storage_crs` for a dynamic coordinate reference system
-* `always_xy` - CRS axis order should disobey `ISO19111`_
-
-.. note::
-    If the storage CRS of the spatial feature collection is a dynamic coordinate reference system,
-    `storage_crs_coordinate_epoch` configures the coordinate epoch of the coordinates.
-
-.. note::
-    There is also support for CRSs that support height like `http://www.opengis.net/def/crs/OGC/1.3/CRS84h`. In that case
-    bbox parameters (see below) may contain 6 coordinates.
+    bbox-crs and filter-crs are used to convert the request geometry to the configured ``storage_crs``.
+    An error will be returned for any interaction with CRS not included in the configured ``crs`` list.
 
 The per-Provider configuration fields are all optional,
 with the following as default configuration:
@@ -74,22 +62,36 @@ with the following as default configuration:
         - http://www.opengis.net/def/crs/OGC/1.3/CRS84h
     storage_crs: http://www.opengis.net/def/crs/OGC/1.3/CRS84
 
+.. note::
+    Configuration is done with URI formats like http://www.opengis.net/def/crs/OGC/1.3/CRS84. 
+    Both `URI` and `URN` CRS notation format are supported.
+    The `EPSG:` format like EPSG:4326 is outside the scope of the OGC standard.
+
 
 Metadata
 --------
 
-The conformance class `http://www.opengis.net/spec/ogcapi-features-2/1.0/conf/crs` is present as a `conformsTo` field
-in the root landing page response.
+The conformance class http://www.opengis.net/spec/ogcapi-features-2/1.0/conf/crs is
+present as a `conformsTo` field in the root landing page response.
 
 The configured CRSs, or their defaults, `crs` and `storageCrs` and optionally `storageCrsCoordinateEpoch` will be present in the "Describe Collection" response.
+
+.. note::
+    If the storage CRS of the spatial feature collection is a dynamic coordinate reference system,
+    `storage_crs_coordinate_epoch` configures the coordinate epoch of the coordinates.
+
+.. note::
+    There is also support for CRSs that support height like `http://www.opengis.net/def/crs/OGC/1.3/CRS84h`. In that case
+    bbox parameters (see below) may contain 6 coordinates.
 
 Parameters
 ----------
 
 The `items` query supports the following parameters:
 
-* `crs` - the CRS in which Features coordinates should be returned, also for the 'get single item' request
-* `bbox-crs` - the CRS of the `bbox` parameter (only for Providers that support the `bbox` parameter)
+* ``crs`` - the CRS in which Features coordinates should be returned, also for the 'get single item' request
+* ``bbox-crs`` - the CRS of the `bbox` parameter (for Providers that support the `bbox` parameter)
+* ``filter-crs`` - the CRS of the CQL filter expression (for Providers that support `CQL` filters)
 
 If any or both of these parameters are specified, their CRS-value should be from the advertised CRS-list in the Collection metadata (see above).
 
@@ -106,19 +108,26 @@ Implementation
 CRS and BBOX CRS support is implemented for all Feature Providers.
 Some details may help understanding (performance) implications.
 
-BBOX CRS Parameter
+bbox-crs Parameter
 ^^^^^^^^^^^^^^^^^^
 
-The `bbox-crs` parameter is handled at the common level of pygeoapi, thus transparent for Feature Providers.
-Obviously the Provider should support `bbox`.
-A transformation of the `bbox` parameter is performed
+The ``bbox-crs`` parameter is handled at the common level of pygeoapi.
+A transformation of the request `bbox` parameter is performed
 according to the `storage_crs` configuration. Then the (transformed) `bbox` is passed with the
 other query parameters to the Provider instance.
 
-CRS Parameter
+filter-crs Parameter
+^^^^^^^^^^^^^^^^^^^^
+
+The ``filter-crs`` parameter is handled at the common level of pygeoapi.
+A transformation of the request `CQL` filter is performed
+according to the `storage_crs` configuration. Then the (transformed) `filter` is passed with the
+other query parameters to the Provider instance.
+
+crs Parameter
 ^^^^^^^^^^^^^
 
-When the value of the `crs` parameter differs from the Provider data Storage CRS, the response Feature coordinates
+When the value of the ``crs`` parameter differs from the Provider data Storage CRS, the response Feature coordinates
 need to be transformed to that CRS. As some Feature Providers like PostgreSQL or OGR may support native
 coordinate transformation, pygeoapi delegates transformation to those Providers, passing the `crs` with the other query parameters.
 
@@ -297,7 +306,7 @@ Or you may specify both `crs` and `bbox-crs` and thus `bbox` in that CRS `http:/
     .
     .
 
-.. _`ISO19111`: http://docs.opengeospatial.org/as/18-005r5/18-005r5.html
+.. _`ISO-19111`: http://docs.opengeospatial.org/as/18-005r5/18-005r5.html
 .. _`OGC API - Features - Part 2: Coordinate Reference Systems by Reference corrigendum`: https://docs.opengeospatial.org/is/18-058r1/18-058r1.html
 .. _`PROJ`: https://proj.org/
 .. _`pyproj`: https://pyproj4.github.io/pyproj/stable
