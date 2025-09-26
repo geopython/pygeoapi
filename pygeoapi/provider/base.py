@@ -76,6 +76,7 @@ class BaseProvider:
         self.file_types = provider_def.get('file_types', [])
         self.include_extra_query_parameters = provider_def.get('include_extra_query_parameters', False)  # noqa
         self._fields = {}
+        self._dims = {}
         self.filename = None
 
         # for coverage providers
