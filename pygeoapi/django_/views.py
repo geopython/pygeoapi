@@ -39,6 +39,7 @@ from typing import Optional, Union
 
 from django.conf import settings
 from django.http import HttpRequest, HttpResponse
+from django.views.decorators.csrf import csrf_exempt
 
 from pygeoapi.api import API, APIRequest, apply_gzip
 import pygeoapi.api as core_api
@@ -343,6 +344,7 @@ def processes(request: HttpRequest,
                                process_id)
 
 
+@csrf_exempt
 def process_execution(request: HttpRequest, process_id: str) -> HttpResponse:
     """
     OGC API - Processes execution endpoint
