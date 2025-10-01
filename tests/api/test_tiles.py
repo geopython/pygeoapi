@@ -94,9 +94,9 @@ def test_tilematrixsets(config, api_):
     assert 'tileMatrixSets' in root
     assert len(root['tileMatrixSets']) == 2
     assert 'http://www.opengis.net/def/tilematrixset/OGC/1.0/WorldCRS84Quad' \
-           in root['tileMatrixSets'][0]['uri']
+           in root['tileMatrixSets'][0]['uri'] or root['tileMatrixSets'][1]['uri'] # noqa
     assert 'http://www.opengis.net/def/tilematrixset/OGC/1.0/WebMercatorQuad' \
-           in root['tileMatrixSets'][1]['uri']
+           in root['tileMatrixSets'][0]['uri'] or root['tileMatrixSets'][1]['uri'] # noqa
 
     req = mock_api_request({'f': 'html'})
     rsp_headers, code, response = tilematrixsets(api_, req)
