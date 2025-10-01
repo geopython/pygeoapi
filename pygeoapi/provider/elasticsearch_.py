@@ -40,10 +40,10 @@ from pygeofilter.backends.elasticsearch import to_filter
 
 from elasticsearch_dsl import Search
 
+from pygeoapi.crs import crs_transform
 from pygeoapi.provider.base import (BaseProvider, ProviderConnectionError,
                                     ProviderQueryError,
                                     ProviderItemNotFoundError)
-from pygeoapi.util import crs_transform
 
 
 LOGGER = logging.getLogger(__name__)

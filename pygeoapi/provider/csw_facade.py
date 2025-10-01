@@ -34,11 +34,12 @@ from owslib import fes
 from owslib.csw import CatalogueServiceWeb
 from owslib.ows import ExceptionReport
 
+from pygeoapi.crs import crs_transform
 from pygeoapi.provider.base import (BaseProvider, ProviderConnectionError,
                                     ProviderInvalidQueryError,
                                     ProviderItemNotFoundError,
                                     ProviderQueryError)
-from pygeoapi.util import bbox2geojsongeometry, crs_transform, get_typed_value
+from pygeoapi.util import bbox2geojsongeometry, get_typed_value
 
 LOGGER = logging.getLogger(__name__)
 

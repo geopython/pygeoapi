@@ -81,7 +81,7 @@ def test_geometry(config):
     results = p.query(skip_geometry=True)
     assert results['features'][0]['geometry'] is None
 
-    config['crs'] = 3857
+    config['storage_crs'] = 'http://www.opengis.net/def/crs/EPSG/0/3857'
     p = ESRIServiceProvider(config)
     results = p.query()
     geometry = results['features'][0]['geometry']

@@ -57,8 +57,6 @@ def config_MapServer_WFS_cities():
         'data': {
             'source_type': 'WFS',
             'source': 'WFS:https://demo.mapserver.org/cgi-bin/wfs',
-            # 'source_srs': 'EPSG:4326',
-            # 'target_srs': 'EPSG:4326',
             'source_capabilities': {
                 'paging': True
             },
@@ -88,8 +86,6 @@ def config_MapServer_WFS_continents():
         'data': {
             'source_type': 'WFS',
             'source': 'WFS:https://demo.mapserver.org/cgi-bin/wfs',
-            # 'source_srs': 'EPSG:4326',
-            # 'target_srs': 'EPSG:4326',
             'source_capabilities': {
                 'paging': True
             },
@@ -120,8 +116,6 @@ def config_geosol_gs_WFS():
             'source_type': 'WFS',
             'source':
                 'WFS:https://gs-stable.geosolutionsgroup.com/geoserver/wfs?',
-            # 'source_srs': 'EPSG:32632',
-            # 'target_srs': 'EPSG:4326',
             'source_capabilities': {
                 'paging': True
             },
@@ -140,7 +134,7 @@ def config_geosol_gs_WFS():
              'http://www.opengis.net/def/crs/OGC/1.3/CRS84',
              'http://www.opengis.net/def/crs/EPSG/0/32632'
          ],
-        'storageCrs': 'http://www.opengis.net/def/crs/EPSG/0/32632',
+        'storage_crs': 'http://www.opengis.net/def/crs/EPSG/0/32632',
         'id_field': 'gml_id',
         'layer': 'unesco:Unesco_point',
     }
@@ -155,8 +149,6 @@ def config_geonode_gs_WFS():
             'source_type': 'WFS',
             'source':
                 'WFS:https://geonode.wfp.org/geoserver/wfs',
-            # 'source_srs': 'EPSG:4326',
-            # 'target_srs': 'EPSG:4326',
             'source_capabilities': {
                 'paging': True
             },

@@ -33,10 +33,11 @@ import json
 import logging
 
 import pytest
+from shapely.geometry import shape as geojson_to_geom
 
 from pygeoapi.api import API
 from pygeoapi.api.itemtypes import get_collection_item, get_collection_items
-from pygeoapi.util import yaml_load, geojson_to_geom
+from pygeoapi.util import yaml_load
 
 from ..util import get_test_file_path, mock_api_request
 
