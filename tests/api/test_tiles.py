@@ -97,7 +97,7 @@ def test_tilematrixsets(config, api_):
            in root['tileMatrixSets'][0]['uri'] or root['tileMatrixSets'][1]['uri'] # noqa
     assert 'http://www.opengis.net/def/tilematrixset/OGC/1.0/WebMercatorQuad' \
            in root['tileMatrixSets'][0]['uri'] or root['tileMatrixSets'][1]['uri'] # noqa
-    
+
     req = mock_api_request({'f': 'html'})
     rsp_headers, code, response = tilematrixsets(api_, req)
     assert rsp_headers['Content-Type'] == FORMAT_TYPES[F_HTML]
