@@ -69,6 +69,9 @@ def test_geojson2jsonld_single_feature(api_, feature):
     result_dict = json.loads(result)
 
     assert '@context' in result_dict
+    assert len(result_dict['@context']) == 2
+    assert 'stn_id' in result_dict['@context'][1]
+
     assert result_dict['@id'] == 'http://example.org/feature/1'
     assert 'schema:geo' in result_dict
 

@@ -112,7 +112,7 @@ def test_query(config):
     assert len(results['features']) == 1
     assert results['features'][0]['id'] == '238'
 
-    assert len(results['features'][0]['properties']) == 3
+    assert len(results['features'][0]['properties']) == 4
 
     results = p.query(select_properties=['value'])
     assert len(results['features'][0]['properties']) == 1

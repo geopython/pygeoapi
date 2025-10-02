@@ -17,11 +17,11 @@ on:
 
 jobs:
   main:
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-24.04
     strategy:
       matrix:
         include:
-          - python-version: '3.10'
+          - python-version: '3.12'
     env:
       PYGEOAPI_CONFIG: "$(pwd)/pygeoapi-config.yml"
 
@@ -103,18 +103,22 @@ jobs:
         packages: libsqlite3-mod-spatialite
         version: 4.3.0a-6build1
     - name: Use ubuntuGIS unstable ppa
-      run: sudo add-apt-repository ppa:ubuntugis/ubuntugis-unstable && sudo apt update
+      run: |
+        sudo add-apt-repository ppa:ubuntugis/ubuntugis-unstable
+        sudo apt update
+        sudo apt-get install gdal-bin libgdal-dev -y
       shell: bash
-    - name: Install GDAL with Python bindings
-      uses: awalsh128/cache-apt-pkgs-action@v1.4.3
-      with:
-        packages: gdal-bin libgdal-dev
-        version: 3.8.4
+#    - name: Install GDAL with Python bindings
+#      uses: awalsh128/cache-apt-pkgs-action@v1.4.3
+#      with:
+#        packages: gdal-bin libgdal-dev
+#        version: 3.11.3
     - name: Install and run Oracle
       run: |
         docker run -d --name oracledb -e ORACLE_PWD=oracle -v ${{ github.workspace }}/tests/data/oracle/init-db:/opt/oracle/scripts/startup -p 1521:1521 container-registry.oracle.com/database/express:21.3.0-xe
     - name: Install requirements 📦
       run: |
+        pip3 install setuptools
         pip3 install -r requirements.txt
         pip3 install -r requirements-admin.txt
         pip3 install -r requirements-starlette.txt
@@ -122,7 +126,7 @@ jobs:
         pip3 install -r requirements-provider.txt
         pip3 install -r requirements-manager.txt
         pip3 install -r requirements-django.txt
-        python3 setup.py install
+        pip3 install .
         pip3 install --global-option=build_ext --global-option="-I/usr/include/gdal" GDAL==`gdal-config --version`
     - name: setup test data ⚙️
       run: |

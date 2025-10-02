@@ -28,7 +28,7 @@ development. To do so, run the following command:
 .. note::
    * Changes to the configuration files of pygeoapi or OpenAPI requires a server restart (configurations are loaded once at server startup for performance).
 
-   * Changes to the codebase require a rebuild (i.e., re-running the ``python3 setup.py install`` command). For instructions for running pygeoapi with hot-reloading, refer to the "Hot-reloading" section.
+   * Changes to the codebase require a rebuild (i.e., re-running the ``pip3 install .`` command). For instructions for running pygeoapi with hot-reloading, refer to the "Hot-reloading" section.
 
 Flask WSGI
 ^^^^^^^^^^
@@ -169,8 +169,8 @@ Hot-reloading
 ^^^^^^^^^^^^^
 
 The ``pygeoapi serve`` uses the current pygeoapi installation. If the installation was performed using the setup command 
-provided in the :ref:`install` section (``python3 setup.py install``), changes made to the codebase of pygeoapi are not going to be 
-reflected in the application until a rebuild (i.e., re-running ``python3 setup.py install``).
+provided in the :ref:`install` section (``pip3 install .``), changes made to the codebase of pygeoapi are not going to be 
+reflected in the application until a rebuild (i.e., re-running ``pip3 install .``).
 
 By hot-reloading we mean to be able to directly see changes reflected in the application without reinstalling the pygeoapi package or resetting the server. 
 This is useful for development, as the changes made by developers are easily and rapidly reflected and they can take advantage 

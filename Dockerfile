@@ -5,7 +5,7 @@
 #          Francesco Bartoli <xbartolone@gmail.com>
 #          Angelos Tzotsos <gcpp.kalxas@gmail.com>
 #
-# Copyright (c) 2020 Tom Kralidis
+# Copyright (c) 2025 Tom Kralidis
 # Copyright (c) 2019 Just van den Broecke
 # Copyright (c) 2025 Francesco Bartoli
 # Copyright (c) 2025 Angelos Tzotsos
@@ -34,7 +34,7 @@
 #
 # =================================================================
 
-FROM ubuntu:jammy-20250714
+FROM ubuntu:noble-20250910
 
 LABEL maintainer="Just van den Broecke <justb4@gmail.com>"
 
@@ -93,20 +93,20 @@ ENV TZ=${TZ} \
     DEB_PACKAGES="\
     locales \
     tzdata \
-    gunicorn \
     python3-dateutil \
     python3-gevent \
     python3-greenlet \
     python3-pip \
     python3-tz \
+    python3-venv \
     python3-yaml \
-    ${ADD_DEB_PACKAGES}"
+    ${ADD_DEB_PACKAGES}" \
+    PROJ_LIB=/usr/share/proj
 
 WORKDIR /pygeoapi
 
 # Install operating system dependencies
-RUN \
-    apt-get update -y \
+RUN apt-get update -y \
     && apt-get install -y ${DEB_BUILD_DEPS} \
     && add-apt-repository ppa:ubuntugis/ubuntugis-unstable \
     && apt-get --no-install-recommends install -y ${DEB_PACKAGES} \
@@ -126,24 +126,21 @@ RUN \
     && apt autoremove -y  \
     && rm -rf /var/lib/apt/lists/*
 
-ADD requirements-docker.txt requirements-admin.txt /pygeoapi/
-# Install remaining pygeoapi deps
-RUN python3 -m pip install --no-cache-dir -r requirements-docker.txt \
-    && python3 -m pip install --no-cache-dir -r requirements-admin.txt
-
-
 ADD . /pygeoapi
 
- # Install pygeoapi
-RUN python3 -m pip install --no-cache-dir -e .
+# Install remaining pygeoapi deps and pygeoapi itself
+RUN python3 -m venv --system-site-packages /venv \
+    && /venv/bin/python3 -m pip install --no-cache-dir -r requirements-docker.txt \
+    && /venv/bin/python3 -m pip install --no-cache-dir -r requirements-admin.txt \
+    && /venv/bin/python3 -m pip install --no-cache-dir gunicorn \
+    && /venv/bin/python3 -m pip install --no-cache-dir -e .
 
-RUN \
-    # Set default config and entrypoint for Docker Image
-    cp /pygeoapi/docker/default.config.yml /pygeoapi/local.config.yml \
+# Set default config and entrypoint for Docker Image
+# and compile language files
+RUN cp /pygeoapi/docker/default.config.yml /pygeoapi/local.config.yml \
     && cp /pygeoapi/docker/entrypoint.sh /entrypoint.sh \
-    # compile language files
     && cd /pygeoapi \
-    && for i in locale/*; do echo $i && pybabel compile -d locale -l `basename $i`; done
-
+    && for i in locale/*; do if [ "$i" != "locale/README.md" ]; then echo $i && pybabel compile -d locale -l `basename $i`; fi; done \
+    && chmod -R g=u /pygeoapi
 
 ENTRYPOINT ["/entrypoint.sh"]

@@ -105,18 +105,18 @@ def test_query_properties(config):
     p = SODAServiceProvider(config)
 
     results = p.query()
-    assert len(results['features'][0]['properties']) == 11
+    assert len(results['features'][0]['properties']) == 12
 
     # Query by property
-    results = p.query(properties=[('region', 'Nevada'), ])
+    results = p.query(properties=[('region', 'Nevada')])
     assert results['numberMatched'] == 19
 
     results = p.query(properties=[('region', 'Northern California'), ])
     assert results['numberMatched'] == 119
 
     # Query for property
-    results = p.query(select_properties=['magnitude', ])
-    assert len(results['features'][0]['properties']) == 1
+    results = p.query(select_properties=['magnitude'])
+    assert len(results['features'][0]['properties']) == 2
     assert 'magnitude' in results['features'][0]['properties']
 
     # Query with configured properties
@@ -126,13 +126,13 @@ def test_query_properties(config):
     results = p.query()
     props = results['features'][0]['properties']
     assert all(p in props for p in config['properties'])
-    assert len(props) == 3
+    assert len(props) == 4
 
     results = p.query(properties=[('region', 'Central California'), ])
     assert results['numberMatched'] == 92
 
     results = p.query(select_properties=['region', ])
-    assert len(results['features'][0]['properties']) == 1
+    assert len(results['features'][0]['properties']) == 2
 
 
 def test_query_sortby_datetime(config):

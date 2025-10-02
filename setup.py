@@ -2,7 +2,7 @@
 #
 # Authors: Tom Kralidis <tomkralidis@gmail.com>
 #
-# Copyright (c) 2022 Tom Kralidis
+# Copyright (c) 2025 Tom Kralidis
 #
 # Permission is hereby granted, free of charge, to any person
 # obtaining a copy of this software and associated documentation
@@ -155,7 +155,7 @@ setup(
     maintainer='Tom Kralidis',
     maintainer_email='tomkralidis@gmail.com',
     url='https://pygeoapi.io',
-    python_requires='>=3.10',
+    python_requires='>=3.12',
     install_requires=read('requirements.txt').splitlines(),
     packages=find_packages(exclude=['pygeoapi.tests']),
     include_package_data=True,

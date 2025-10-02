@@ -1070,7 +1070,7 @@ class OracleProvider(BaseProvider):
                 for (key, value) in row_data.items()
                 if key != "GEOMETRY"
             }
-            feature["id"] = feature["properties"].pop(self.id_field)
+            feature["id"] = feature["properties"][self.id_field]
 
             return feature
         else:

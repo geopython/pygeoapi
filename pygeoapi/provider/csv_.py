@@ -159,7 +159,7 @@ class CSVProvider(BaseProvider):
                     coordinates = None
 
                 feature = {'type': 'Feature'}
-                feature['id'] = row.pop(self.id_field)
+                feature['id'] = row[self.id_field]
                 if not skip_geometry:
                     feature['geometry'] = {
                         'type': 'Point',

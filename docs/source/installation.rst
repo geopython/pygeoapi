@@ -14,8 +14,8 @@ pygeoapi runs on Python 3.
 .. note::
 
    The exact Python version requirements are aligned with the version of Python on the pygeoapi supported Ubuntu
-   operating system version.  For example, as of 2024-07, the supported version of Python is bound to Ubuntu 22.04
-   (Jammy) which supports Python 3.10.  Ensure you have a Python version that is compatible with the current Ubuntu
+   operating system version.  For example, as of 2024-07, the supported version of Python is bound to Ubuntu 24.04
+   (Noble) which supports Python 3.12.  Ensure you have a Python version that is compatible with the current Ubuntu
    version that is specified in pygeoapi's `Dockerfile`_.
 
 Core dependencies are included as part of a given pygeoapi installation procedure.  More specific requirements
@@ -34,7 +34,7 @@ For developers and the truly impatient
    cd pygeoapi
    pip3 install --upgrade pip
    pip3 install -r requirements.txt
-   python3 setup.py install
+   pip3 install .
    cp pygeoapi-config.yml example-config.yml
    vi example-config.yml  # edit as required
    export PYGEOAPI_CONFIG=example-config.yml

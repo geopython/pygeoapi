@@ -604,6 +604,10 @@ class API:
         else:
             content = to_json(exception, self.pretty_print)
 
+        if status == HTTPStatus.NO_CONTENT:
+            LOGGER.error('HTTP 204 detected, suppressing content')
+            content = ''
+
         return headers, status, content
 
     def get_format_exception(self, request) -> Tuple[dict, int, str]:

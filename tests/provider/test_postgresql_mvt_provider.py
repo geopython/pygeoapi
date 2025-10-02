@@ -271,11 +271,11 @@ def test_get_tiles_WebMercatorQuad(config):
 
     # Tile does not exist in matrixset
     z, x, y = 1, 1000000, 1000000
-    result = p.get_tiles(
-        tileset=tileset,
-        z=z, x=x, y=y
-    )
-    assert result == ProviderTileNotFoundError
+    with pytest.raises(ProviderTileNotFoundError):
+        p.get_tiles(
+            tileset=tileset,
+            z=z, x=x, y=y
+        )
 
 
 def test_get_tiles_WorldCRS84Quad(config):
@@ -311,8 +311,8 @@ def test_get_tiles_WorldCRS84Quad(config):
 
     # Tile does not exist in matrixset
     z, x, y = 1, 1000000, 1000000
-    result = p.get_tiles(
-        tileset=tileset,
-        z=z, x=x, y=y
-    )
-    assert result == ProviderTileNotFoundError
+    with pytest.raises(ProviderTileNotFoundError):
+        p.get_tiles(
+            tileset=tileset,
+            z=z, x=x, y=y
+        )

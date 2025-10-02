@@ -138,7 +138,7 @@ class SODAServiceProvider(BaseProvider):
         params['limit'] = limit
 
         def make_feature(f):
-            f['id'] = f['properties'].pop(self.id_field)
+            f['id'] = f['properties'][self.id_field]
             if skip_geometry:
                 f['geometry'] = None
             return f
@@ -178,7 +178,7 @@ class SODAServiceProvider(BaseProvider):
         LOGGER.debug('Sending query')
         fc = self.client.get(self.resource_id, **params)
         f = fc.get('features').pop()
-        f['id'] = f['properties'].pop(self.id_field)
+        f['id'] = f['properties'][self.id_field]
         return f
 
     def _make_fields(self, select_properties=[]):

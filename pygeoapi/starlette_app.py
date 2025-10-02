@@ -33,6 +33,7 @@
 """ Starlette module providing the route paths to the api"""
 
 import asyncio
+from http import HTTPStatus
 import os
 from typing import Callable, Union
 from pathlib import Path
@@ -133,9 +134,10 @@ async def execute_from_starlette(api_function, request: Request, *args,
         headers, status, content = await loop.run_in_executor(
             None, call_api_threadsafe, loop, api_function,
             actual_api, api_request, *args)
-        # NOTE: that gzip currently doesn't work in starlette
-        #       https://github.com/geopython/pygeoapi/issues/1591
-        content = apply_gzip(headers, content)
+        # 204 responses must have an empty body, but gzip
+        # encoding would add gzip metadata, thus we skip
+        if status != HTTPStatus.NO_CONTENT:
+            content = apply_gzip(headers, content)
 
     response = _to_response(headers, status, content)
 

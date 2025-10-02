@@ -487,8 +487,6 @@ class GenericSQLProvider(BaseProvider):
             if key in item_dict:
                 feature['properties'][key] = item_dict[key]
 
-        feature['properties'].pop(self.id_field, None)
-
         return feature
 
     def _feature_to_sqlalchemy(self, json_data, identifier=None):
