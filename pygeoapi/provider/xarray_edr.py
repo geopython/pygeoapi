@@ -254,9 +254,13 @@ class XarrayEDRProvider(BaseEDRProvider, XarrayProvider):
         if '/' in datetime_:
             begin, end = datetime_.split('/')
             if begin == '..':
-                begin = self._data[self.time_field].min().values
+                begin = _to_datetime_string(
+                    self._data[self.time_field].min().values
+                ).rstrip('Z')
             if end == '..':
-                end = self._data[self.time_field].max().values
+                end = _to_datetime_string(
+                    self._data[self.time_field].max().values
+                ).rstrip('Z')
             if np.datetime64(begin) < np.datetime64(end):
                 return slice(begin, end)
             else:
