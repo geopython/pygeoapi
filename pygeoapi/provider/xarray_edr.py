@@ -107,6 +107,24 @@ class XarrayEDRProvider(BaseEDRProvider, XarrayProvider):
         z = kwargs.get('z')
         if z is not None:
             if self.z_field is not None:
+                coord = self._data[self.z_field]
+                coord_dtype = getattr(coord, 'dtype', None)
+
+                coord_is_numeric = (
+                    coord_dtype is not None and
+                    coord_dtype.kind in {'i', 'u', 'f'}
+                )
+
+                if coord_is_numeric:
+                    if isinstance(z, str):
+                        try:
+                            z = coord_dtype.type(z)
+                        except ValueError:
+                            LOGGER.debug(
+                                'Unable to cast value %s to %s',
+                                z,
+                                coord_dtype,
+                            )
                 query_params[self.z_field] = z
             else:
                 LOGGER.debug('No vertical level found')
@@ -254,9 +272,13 @@ class XarrayEDRProvider(BaseEDRProvider, XarrayProvider):
         if '/' in datetime_:
             begin, end = datetime_.split('/')
             if begin == '..':
-                begin = self._data[self.time_field].min().values
+                begin = _to_datetime_string(
+                    self._data[self.time_field].min().values
+                ).rstrip('Z')
             if end == '..':
-                end = self._data[self.time_field].max().values
+                end = _to_datetime_string(
+                    self._data[self.time_field].max().values
+                ).rstrip('Z')
             if np.datetime64(begin) < np.datetime64(end):
                 return slice(begin, end)
             else:
