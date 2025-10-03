@@ -110,7 +110,12 @@ class XarrayEDRProvider(BaseEDRProvider, XarrayProvider):
                 coord = self._data[self.z_field]
                 coord_dtype = getattr(coord, 'dtype', None)
 
-                if coord_dtype is not None and coord_dtype.kind in {'i', 'u', 'f'}:
+                coord_is_numeric = (
+                    coord_dtype is not None and
+                    coord_dtype.kind in {'i', 'u', 'f'}
+                )
+
+                if coord_is_numeric:
                     if isinstance(z, str):
                         try:
                             z = coord_dtype.type(z)
