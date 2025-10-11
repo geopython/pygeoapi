@@ -1,7 +1,7 @@
 .. _data-publishing:
 
-Data publishing
-===============
+Resource publishing
+===================
 
 Let's start working on integrating your data into pygeoapi.  pygeoapi provides the capability to
 publish vector/coverage data, processes, catalogues, and exposing filesystems of geospatial data.
@@ -22,10 +22,23 @@ return back data to the pygeoapi API framework in a plug and play fashion.
    ogcapi-coverages
    ogcapi-maps
    ogcapi-tiles
-   ogcapi-processes
    ogcapi-records
    ogcapi-edr
    stac
+
+
+Processes overview
+------------------
+
+In addition to data publishing, pygeoapi also provides the capability to publish
+processes that can be executed via the OGC API - Processes standard.
+
+.. toctree::
+   :maxdepth: 3
+   :caption: Process publishing
+   :name: Process publishing
+
+   ogcapi-processes
 
 
 .. seealso::

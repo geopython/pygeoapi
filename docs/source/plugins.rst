@@ -337,6 +337,77 @@ The below template provides a minimal example (let's call the file ``mycoolsqrtp
 
 The example above handles a dictionary of the JSON payload passed from the client, calculates the square root of a float or integer, and returns the result in an output JSON payload.  The plugin is responsible for defining the expected inputs and outputs in ``PROCESS_METADATA`` and to return the output in any format along with the corresponding media type.
 
+
+Documenting process metadata
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+When defining a process, various metadata must be supplied in order to enable discovery and description
+of inputs and outputs.  The metadata is realized by a Python dictionary in a given process that is
+supplied to process initialization at runtime.
+
+Below is a sample process definition as a Python dictionary:
+
+.. code-block:: python
+
+   PROCESS_METADATA = {
+       'version': '0.2.0',  # the version of the process
+       'id': 'hello-world', # process identifier
+       'title': 'Hello World',  # process title, can also be multilingual
+       'description': 'An example process that takes a name as input, and echoes '  # process description, can also be multilingual
+                      'it back as output. Intended to demonstrate a simple '
+                      'process with a single literal input.',
+       'jobControlOptions': ['sync-execute', 'async-execute'],  # whether the process can be executed in sync or async mode
+       'keywords': ['hello world', 'example', 'echo'],  # keywords associated with the process
+       'links': [{  # a list of 1..n  # link objects relevant to the process
+           'type': 'text/html',
+           'rel': 'about',
+           'title': 'information',
+           'href': 'https://example.org/process',
+           'hreflang': 'en-US'
+       }],
+       'inputs': {  # process inputs (one key per input), structured as JSON Schema
+           'name': {
+               'title': 'Name',
+               'description': 'The name of the person or entity that you wish to'
+                              'be echoed back as an output',
+               'schema': {
+                   'type': 'string'
+               },
+               'minOccurs': 1,
+               'maxOccurs': 1,
+               'keywords': ['full name', 'personal']
+           },
+           'message': {
+               'title': 'Message',
+               'description': 'An optional message to echo as well',
+               'schema': {
+                   'type': 'string'
+               },
+               'minOccurs': 0,
+               'maxOccurs': 1,
+               'keywords': ['message']
+           }
+       },
+       'outputs': {  # outputs
+           'echo': {  # an identifier for the output
+               'title': 'Hello, world',
+               'description': 'A "hello world" echo with the name and (optional)'
+                              ' message submitted for processing',
+               'schema': {  # output definition, structured as JSON Schema
+                   'type': 'object',
+                   'contentMediaType': 'application/json'
+               }
+           }
+       },
+       'example': {  # example request payload
+           'inputs': {
+               'name': 'World',
+               'message': 'An optional message.',
+           }
+       }
+   }
+
+
 .. note::
 
    Additional processing plugins can also be found in ``pygeoapi/process``.
