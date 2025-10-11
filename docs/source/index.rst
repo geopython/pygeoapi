@@ -37,7 +37,7 @@ reference documentation on all aspects of the project.
    running-with-docker
    tour
    openapi
-   data-publishing/index
+   publishing/index
    transactions
    admin-api
    security
