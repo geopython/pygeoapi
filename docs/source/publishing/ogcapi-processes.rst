@@ -79,11 +79,10 @@ The below configuration is an example of a process defined as part of a custom P
     my-process:
         type: process
         processor:
-            name: HelloWorld
-               # refer to a process in the standard PYTHONPATH
-               # e.g. my_package/my_module/my_file.py (class MyProcess)
-               # the MyProcess class must subclass from pygeoapi.process.base.BaseProcessor
-               name: my_package.my_module.my_file.MyProcess
+            # refer to a process in the standard PYTHONPATH
+            # e.g. my_package/my_module/my_file.py (class MyProcess)
+            # the MyProcess class must subclass from pygeoapi.process.base.BaseProcessor
+            name: my_package.my_module.my_file.MyProcess
 
 
 See :ref:`example-custom-pygeoapi-processing-plugin` for full processing plugin examples.
