@@ -40,10 +40,9 @@ from pygeoapi.util import str2bool
 LOGGER = logging.getLogger(__name__)
 
 IMAGE_FORMATS = {
-    'png': 'GD/PNG',
-    'png24': 'GD/PNG24',
-    'gif': 'GD/GIF',
-    'jpeg': 'GD/JPEG'
+    'png': 'AGG/PNG',  # 24-bit by default
+    'png8': 'AGG/PNG8',
+    'jpeg': 'AGG/JPEG'
 }
 
 
