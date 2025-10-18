@@ -153,7 +153,7 @@ So, the following rules must be respected:
 File examples
 *************
 
-**Structure of the catalog.json file**
+Structure of the ``catalog.json`` file:
 
 .. code-block:: json
 
@@ -215,7 +215,7 @@ The code above shows the root catalog. The sub-catalogs have an additional ``rel
 
 -------------------------------------
 
-**Structure of the ``collection.json`` file**
+Structure of the ``collection.json`` file:
 
 Collections are similar to Catalogs with extra fields.
 
@@ -272,7 +272,7 @@ Collections are similar to Catalogs with extra fields.
   }
 
 
-**Structure of the Item ``<id>.json`` file**
+Structure of the Item ``<id>.json`` file:
 
 The example below shows the content of a file named ``arcticdem-frontiere-0.json``:
 
