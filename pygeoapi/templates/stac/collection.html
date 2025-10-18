@@ -19,17 +19,19 @@
               </tr>
               </thead>
               <tbody>
-                {% for k, v in filter_dict_by_key_value(config['resources'], 'type', 'stac-collection').items() %}
+                {% for link in data['links'] %}
+                {% if link['rel'] == 'child' and link['type'] == 'application/json' %}
                 <tr>
                   <td data-label="name">
-                    <a  title="{{ v['title'] | striptags | truncate }}"
-                      href="{{ config['server']['url'] }}/stac/{{ k }}">
-                      <span>{{ v['title'] | striptags | truncate }}</span></a>
+                    <a  title="{{ link['title'] | striptags | truncate }}"
+                      href="{{ config['server']['url'] }}/stac/{{ link['title'] }}">
+                      <span>{{ link['title'] | striptags | truncate }}</span></a>
                   </td>
                   <td data-label="description">
-                    {{ v['description'] | striptags | truncate }}
+                    {{ link['description'] | striptags | truncate }}
                   </td>
                 </tr>
+                {% endif %}
                 {% endfor %}
               </tbody>
             </table>

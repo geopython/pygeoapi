@@ -1667,7 +1667,11 @@ def evaluate_limit(requested: Union[None, int], server_limits: dict,
         LOGGER.debug('no limit requested; returning default')
         return default
 
-    requested2 = get_typed_value(requested)
+    if isinstance(requested, int):
+        requested2 = requested
+    else:
+        requested2 = get_typed_value(requested)
+
     if not isinstance(requested2, int):
         raise ValueError('limit value should be an integer')
 

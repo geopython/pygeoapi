@@ -344,6 +344,7 @@ class XarrayProvider(BaseProvider):
             cj['domain']['domainType'] = 'PointSeries'
 
         if self.time_field is not None:
+            LOGGER.debug('Adding time axis')
             cj['domain']['axes']['t'] = {
                 'values': [str(v) for v in (
                     data[self.time_field].values
@@ -360,6 +361,7 @@ class XarrayProvider(BaseProvider):
                 }
             })
 
+        LOGGER.debug('Adding parameters')
         for key, value in selected_fields.items():
             parameter = {
                 'type': 'Parameter',
@@ -383,6 +385,7 @@ class XarrayProvider(BaseProvider):
 
         try:
             for key, value in selected_fields.items():
+                LOGGER.debug(f'Adding range {key}')
                 cj['ranges'][key] = {
                     'type': 'NdArray',
                     'dataType': value['type'],
@@ -404,6 +407,7 @@ class XarrayProvider(BaseProvider):
             LOGGER.warning(err)
             raise ProviderQueryError('Invalid query parameter')
 
+        LOGGER.debug('Returning data')
         return cj
 
     def _get_coverage_properties(self):

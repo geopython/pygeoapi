@@ -262,6 +262,16 @@ urlpatterns = [
         apply_slash_rule('stac/'),
         views.stac_catalog_root,
         name='stac-catalog-root'
+    ),
+    path(
+        apply_slash_rule('stac-api/'),
+        views.stac_landing_page,
+        name='stac-landing-page'
+    ),
+    path(
+        apply_slash_rule('stac-api/search'),
+        views.stac_search,
+        name='stac-search'
     )
 ]
 
