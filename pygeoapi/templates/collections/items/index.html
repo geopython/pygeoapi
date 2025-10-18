@@ -258,7 +258,7 @@
     map.fitBounds(items.getBounds());
 
     {% if data['itemtype'] == 'record' %}
-    function getBbox(rect){
+    function getBbox(rect) {
         bounds = rect.getBounds();
 
         return [bounds.getWest(),
@@ -279,8 +279,8 @@
         map.addLayer(rectangle);
     }
 
-    function checkSpatialFilter(){
-        if (map.hasLayer(rectangle)){
+    function checkSpatialFilter() {
+        if (map.hasLayer(rectangle)) {
             rectangle.remove();
         } else {
             setRectangle(map.getBounds().pad(-0.95));
