@@ -641,6 +641,7 @@ def get_collection_items(
         tpl_config = api.get_dataset_templates(dataset)
         # For constructing proper URIs to items
 
+        content['itemtype'] = p.type
         content['items_path'] = uri
         content['dataset_path'] = '/'.join(uri.split('/')[:-1])
         content['collections_path'] = api.get_collections_url()
