@@ -386,6 +386,11 @@ STAC API
 
 `STAC API`_ support is provided as a wrapper on top of resources that have feature or record providers configured.
 
+pygeoapi implements the following conformance classes:
+
+* `STAC API - Core`_
+* `STAC API - Item Search`_
+
 To enable STAC API support, configure a resource with a feature or record provider, and set the resource ``type`` to ``stac-collection``:
 
 .. code-block:: yaml
@@ -484,3 +489,5 @@ Data access examples
 .. _`SpatioTemporal Asset Catalog (STAC)`: https://stacspec.org
 .. _`pygeometa`: https://geopython.github.io/pygeometa
 .. _`STAC API`: https://github.com/radiantearth/stac-api-spec
+.. _`STAC API - Core`: https://github.com/radiantearth/stac-api-spec/blob/v1.0.0/core
+.. _`STAC API - Item Search`: https://github.com/radiantearth/stac-api-spec/blob/v1.0.0/item-search
