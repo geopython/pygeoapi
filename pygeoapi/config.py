@@ -41,7 +41,7 @@ from pygeoapi.util import SCHEMASDIR, to_json, yaml_load
 LOGGER = logging.getLogger(__name__)
 
 
-def get_config(raw: bool = False) -> dict:
+def get_config(config_location: str = None, raw: bool = False) -> dict:
     """
     Get pygeoapi configurations
 
@@ -50,10 +50,13 @@ def get_config(raw: bool = False) -> dict:
     :returns: `dict` of pygeoapi configuration
     """
 
-    if not os.environ.get('PYGEOAPI_CONFIG'):
+    if config_location is None:
+        config_location = os.environ.get('PYGEOAPI_CONFIG')
+
+    if config_location is None:
         raise RuntimeError('PYGEOAPI_CONFIG environment variable not set')
 
-    with open(os.environ.get('PYGEOAPI_CONFIG'), encoding='utf8') as fh:
+    with open(config_location, encoding='utf8') as fh:
         if raw:
             CONFIG = yaml.safe_load(fh)
         else:
