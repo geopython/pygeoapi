@@ -65,7 +65,7 @@ def make_wsgi_app(config_location: str, openapi_location: str) -> Flask:
         Flask WSGI application
     """
     CONFIG = get_config(config_location=config_location)
-    OPENAPI = load_openapi_document(openapi_location=openapi_location)
+    OPENAPI = load_openapi_document(pygeoapi_openapi=openapi_location)
 
     API_RULES = get_api_rules(CONFIG)
 
