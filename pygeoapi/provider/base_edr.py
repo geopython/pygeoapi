@@ -121,12 +121,12 @@ class BaseEDRProvider(BaseProvider):
         query_type: Optional[str] = kwargs.get('query_type')
         if query_type is None:
             raise ProviderQueryError(
-                'query_type parameter is required'
+                'Query type is required'
             )
         try:
             query_function = getattr(self, query_type)
         except AttributeError:
-            raise NotImplementedError(
+            raise ProviderQueryError(
                 'Query type not implemented'
             )
 
