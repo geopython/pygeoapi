@@ -82,6 +82,7 @@ CHARSET = ['utf-8']
 F_JSON = 'json'
 F_COVERAGEJSON = 'json'
 F_HTML = 'html'
+F_JSONFG = 'jsonfg'
 F_JSONLD = 'jsonld'
 F_GZIP = 'gzip'
 F_PNG = 'png'
@@ -94,7 +95,7 @@ FORMAT_TYPES = OrderedDict((
     (F_HTML, 'text/html'),
     (F_JSONLD, 'application/ld+json'),
     (F_JSON, 'application/json'),
-    (F_PNG, 'image/png'),
+    (F_JSONFG, 'application/vnd.geo+json'),
     (F_JPEG, 'image/jpeg'),
     (F_MVT, 'application/vnd.mapbox-vector-tile'),
     (F_NETCDF, 'application/x-netcdf'),
@@ -108,7 +109,7 @@ CONFORMANCE_CLASSES = [
     'http://www.opengis.net/spec/ogcapi-common-2/1.0/conf/collections',
     'http://www.opengis.net/spec/ogcapi-common-1/1.0/conf/landing-page',
     'http://www.opengis.net/spec/ogcapi-common-1/1.0/conf/json',
-    'http://www.opengis.net/spec/ogcapi-common-1/1.0/conf/html',
+    'http://www.opengis.net/spec/json-fg-1/0.2/conf/core',
     'http://www.opengis.net/spec/ogcapi-common-1/1.0/conf/oas30'
 ]
 

@@ -50,6 +50,7 @@ from pyproj.exceptions import CRSError
 from pygeoapi import l10n
 from pygeoapi.api import evaluate_limit
 from pygeoapi.formatter.base import FormatterSerializationError
+from pygeoapi.formatter.jsonfg import geojson2jsonfg
 from pygeoapi.linked_data import geojson2jsonld
 from pygeoapi.plugin import load_plugin, PLUGINS
 from pygeoapi.provider.base import (
@@ -62,7 +63,7 @@ from pygeoapi.util import (CrsTransformSpec, filter_providers_by_type,
                            to_json, transform_bbox)
 
 from . import (
-    APIRequest, API, SYSTEM_LOCALE, F_JSON, FORMAT_TYPES, F_HTML, F_JSONLD,
+    APIRequest, API, SYSTEM_LOCALE, F_JSON, FORMAT_TYPES, F_HTML, F_JSONFG, F_JSONLD,
     validate_bbox, validate_datetime
 )
 
@@ -698,6 +699,27 @@ def get_collection_items(
 
         return headers, HTTPStatus.OK, content
 
+    elif request.format == F_JSONFG:
+        formatter = load_plugin('formatter',
+                                {'name': F_JSONFG, 'geom': True})
+
+        try:
+            content = formatter.write(
+                data=content,
+                options={
+                    'provider_def': get_provider_by_type(
+                        collections[dataset]['providers'],
+                        'feature')
+                }
+            )
+        except FormatterSerializationError:
+            msg = 'Error serializing output'
+            return api.get_exception(
+                HTTPStatus.INTERNAL_SERVER_ERROR, headers, request.format,
+                'NoApplicableCode', msg)
+
+        return headers, HTTPStatus.OK, content
+
     return headers, HTTPStatus.OK, to_json(content, api.pretty_print)
 
 
@@ -979,6 +1001,30 @@ def get_collection_item(api: API, request: APIRequest,
         content = geojson2jsonld(
             api, content, dataset, uri, (p.uri_field or 'id')
         )
+
+        return headers, HTTPStatus.OK, content
+
+    elif request.format == F_JSONFG:
+        # content = geojson2jsonfg(
+        #     api, content, dataset, id_field=(p.uri_field or 'id')
+        # )
+        formatter = load_plugin('formatter',
+                                {'name': F_JSONFG, 'geom': True})
+
+        try:
+            content = formatter.write(
+                data=content,
+                options={
+                    'provider_def': get_provider_by_type(
+                        collections[dataset]['providers'],
+                        'feature')
+                }
+            )
+        except FormatterSerializationError:
+            msg = 'Error serializing output'
+            return api.get_exception(
+                HTTPStatus.INTERNAL_SERVER_ERROR, headers, request.format,
+                'NoApplicableCode', msg)
 
         return headers, HTTPStatus.OK, content
 

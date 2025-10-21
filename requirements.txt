@@ -2,6 +2,7 @@ Babel
 click
 filelock
 Flask
+GDAL<=3.11.3
 jinja2
 jsonschema
 pydantic
