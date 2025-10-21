@@ -119,7 +119,7 @@ class BaseEDRProvider(BaseProvider):
         :returns: coverage data as `dict` of CoverageJSON or native format
         """
         query_type: Optional[str] = kwargs.get('query_type')
-        if not query_type:
+        if query_type is None:
             raise ProviderQueryError(
                 'query_type parameter is required'
             )
@@ -127,7 +127,7 @@ class BaseEDRProvider(BaseProvider):
             query_function = getattr(self, query_type)
         except AttributeError:
             raise NotImplementedError(
-                f'Query "{query_type}" not implemented in registered query types: {self.query_types}' # noqa
+                'Query type not implemented'
             )
 
         return query_function(**kwargs)
