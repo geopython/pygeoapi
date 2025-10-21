@@ -72,7 +72,10 @@ class JSONFGFormatter(BaseFormatter):
         """
 
         try:
-            fields = list(data["features"][0]["properties"].keys())
+            if data.get("features"):
+                fields = list(data["features"][0]["properties"].keys())
+            else:
+                fields = data["properties"].keys()
         except IndexError:
             LOGGER.error("no features")
             return str()
