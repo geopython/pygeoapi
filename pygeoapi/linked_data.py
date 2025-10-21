@@ -133,7 +133,7 @@ def jsonldify_collection(cls, collection: dict, locale_: str) -> dict:
 
     spatial_extent = collection.get('extent', {}).get('spatial', {})
     bbox = spatial_extent.get('bbox')
-    crs = spatial_extent.get('crs')
+    crs = spatial_extent.get('crs', '')
     hascrs84 = crs.endswith('CRS84')
 
     dataset = {
