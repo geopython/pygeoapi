@@ -653,8 +653,7 @@ if os.environ.get('PYGEOAPI_CONFIG_VIA_ENV', 'true') == 'true':
         config_location=None,
         openapi_location=None
     )
-
-
+    CONFIG = get_config()
 
     @click.command()
     @click.pass_context
@@ -671,8 +670,8 @@ if os.environ.get('PYGEOAPI_CONFIG_VIA_ENV', 'true') == 'true':
         """
 
         # setup_logger(CONFIG['logging'])
-        APP.run(debug=True, host=api_.config['server']['bind']['host'],
-                port=api_.config['server']['bind']['port'])
+        APP.run(debug=True, host=CONFIG['server']['bind']['host'],
+                port=CONFIG['server']['bind']['port'])
 
 if __name__ == '__main__':  # run locally, for testing
     serve()
