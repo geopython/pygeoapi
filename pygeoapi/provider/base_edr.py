@@ -118,7 +118,7 @@ class BaseEDRProvider(BaseProvider):
 
         :returns: coverage data as `dict` of CoverageJSON or native format
         """
-        query_type: Optional[str] = kwargs.get('query_type')
+        query_type = kwargs.get('query_type')
         if query_type is None:
             raise ProviderQueryError('Query type is required')
         try:
