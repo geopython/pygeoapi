@@ -51,7 +51,8 @@ from pygeoapi.config import get_config
 from pygeoapi.util import get_mimetype, get_api_rules
 
 
-# NOTE: made a function to return a WSGI application, passing the locations for the config and
+# Function to return a WSGI application,
+# passing the locations for the config and
 # openapi files as variables, instead as environment variables
 def make_wsgi_app(config_location: str, openapi_location: str) -> Flask:
     """
@@ -59,7 +60,7 @@ def make_wsgi_app(config_location: str, openapi_location: str) -> Flask:
     Args:
         config_location (str): location of the pygeoapi config file
         openapi_location (str): location of the OpenAPI document file
-    
+
     Returns:
         Flask WSGI application
     """
@@ -76,7 +77,12 @@ def make_wsgi_app(config_location: str, openapi_location: str) -> Flask:
     if 'templates' in CONFIG['server']:
         STATIC_FOLDER = CONFIG['server']['templates'].get('static', 'static')
 
-    APP = Flask(__name__, static_folder=STATIC_FOLDER, static_url_path='/static')
+    APP = Flask(
+        __name__,
+        static_folder=STATIC_FOLDER,
+        static_url_path='/static'
+    )
+
     APP.url_map.strict_slashes = API_RULES.strict_slashes
 
     BLUEPRINT = Blueprint(
@@ -128,19 +134,24 @@ def make_wsgi_app(config_location: str, openapi_location: str) -> Flask:
             dirname_ = os.path.dirname(full_filepath)
             basename_ = os.path.basename(full_filepath)
 
-            path_ = dirname_.replace('..', '').replace('//', '').replace('./', '')
+            path_ = dirname_.replace('..', '').replace('//', '').replace('./', '')  # noqa: E501
 
             if '..' in path_:
                 return 'Invalid path', 400
 
-            return send_from_directory(path_, basename_,
-                                    mimetype=get_mimetype(basename_))
+            return send_from_directory(
+                path_,
+                basename_,
+                mimetype=get_mimetype(basename_)
+            )
 
-
-    def execute_from_flask(api_function, request: Request, *args,
-                        skip_valid_check=False,
-                        alternative_api=None
-                        ) -> Response:
+    def execute_from_flask(
+            api_function,
+            request: Request,
+            *args,
+            skip_valid_check=False,
+            alternative_api=None,
+            ) -> Response:
         """
         Executes API function from Flask
 
@@ -160,9 +171,9 @@ def make_wsgi_app(config_location: str, openapi_location: str) -> Flask:
         content: Union[str, bytes]
 
         if not skip_valid_check and not api_request.is_valid():
-            headers, status, content = actual_api.get_format_exception(api_request)
+            headers, status, content = actual_api.get_format_exception(api_request)  # noqa: E501
         else:
-            headers, status, content = api_function(actual_api, api_request, *args)
+            headers, status, content = api_function(actual_api, api_request, *args)  # noqa: E501
             content = apply_gzip(headers, content)
 
         response = make_response(content, status)
@@ -170,7 +181,6 @@ def make_wsgi_app(config_location: str, openapi_location: str) -> Flask:
         if headers:
             response.headers = headers
         return response
-
 
     @BLUEPRINT.route('/')
     def landing_page():
@@ -180,7 +190,6 @@ def make_wsgi_app(config_location: str, openapi_location: str) -> Flask:
         :returns: HTTP response
         """
         return execute_from_flask(core_api.landing_page, request)
-
 
     @BLUEPRINT.route('/openapi')
     def openapi():
@@ -192,7 +201,6 @@ def make_wsgi_app(config_location: str, openapi_location: str) -> Flask:
 
         return execute_from_flask(core_api.openapi_, request)
 
-
     @BLUEPRINT.route('/conformance')
     def conformance():
         """
@@ -202,7 +210,6 @@ def make_wsgi_app(config_location: str, openapi_location: str) -> Flask:
         """
 
         return execute_from_flask(core_api.conformance, request)
-
 
     @BLUEPRINT.route('/TileMatrixSets/<tileMatrixSetId>')
     def get_tilematrix_set(tileMatrixSetId=None):
@@ -214,9 +221,9 @@ def make_wsgi_app(config_location: str, openapi_location: str) -> Flask:
         :returns: HTTP response
         """
 
-        return execute_from_flask(tiles_api.tilematrixset, request,
-                                tileMatrixSetId)
-
+        return execute_from_flask(
+            tiles_api.tilematrixset, request, tileMatrixSetId
+            )
 
     @BLUEPRINT.route('/TileMatrixSets')
     def get_tilematrix_sets():
@@ -227,7 +234,6 @@ def make_wsgi_app(config_location: str, openapi_location: str) -> Flask:
         """
 
         return execute_from_flask(tiles_api.tilematrixsets, request)
-
 
     @BLUEPRINT.route('/collections')
     @BLUEPRINT.route('/collections/<path:collection_id>')
@@ -240,9 +246,9 @@ def make_wsgi_app(config_location: str, openapi_location: str) -> Flask:
         :returns: HTTP response
         """
 
-        return execute_from_flask(core_api.describe_collections, request,
-                                collection_id)
-
+        return execute_from_flask(
+            core_api.describe_collections, request, collection_id
+            )
 
     @BLUEPRINT.route('/collections/<path:collection_id>/schema')
     def collection_schema(collection_id):
@@ -254,9 +260,9 @@ def make_wsgi_app(config_location: str, openapi_location: str) -> Flask:
         :returns: HTTP response
         """
 
-        return execute_from_flask(core_api.get_collection_schema, request,
-                                collection_id)
-
+        return execute_from_flask(
+            core_api.get_collection_schema, request, collection_id
+            )
 
     @BLUEPRINT.route('/collections/<path:collection_id>/queryables')
     def collection_queryables(collection_id=None):
@@ -268,16 +274,20 @@ def make_wsgi_app(config_location: str, openapi_location: str) -> Flask:
         :returns: HTTP response
         """
 
-        return execute_from_flask(itemtypes_api.get_collection_queryables, request,
-                                collection_id)
+        return execute_from_flask(
+            itemtypes_api.get_collection_queryables, request, collection_id
+            )
 
-
-    @BLUEPRINT.route('/collections/<path:collection_id>/items',
-                    methods=['GET', 'POST', 'OPTIONS'],
-                    provide_automatic_options=False)
-    @BLUEPRINT.route('/collections/<path:collection_id>/items/<path:item_id>',
-                    methods=['GET', 'PUT', 'DELETE', 'OPTIONS'],
-                    provide_automatic_options=False)
+    @BLUEPRINT.route(
+        '/collections/<path:collection_id>/items',
+        methods=['GET', 'POST', 'OPTIONS'],
+        provide_automatic_options=False
+    )
+    @BLUEPRINT.route(
+        '/collections/<path:collection_id>/items/<path:item_id>',
+        methods=['GET', 'PUT', 'DELETE', 'OPTIONS'],
+        provide_automatic_options=False
+    )
     def collection_items(collection_id, item_id=None):
         """
         OGC API collections items endpoint
@@ -293,38 +303,42 @@ def make_wsgi_app(config_location: str, openapi_location: str) -> Flask:
                 if request.content_type is not None:
                     if request.content_type == 'application/geo+json':
                         return execute_from_flask(
-                                itemtypes_api.manage_collection_item,
-                                request, 'create', collection_id,
-                                skip_valid_check=True)
+                            itemtypes_api.manage_collection_item,
+                            request, 'create', collection_id,
+                            skip_valid_check=True)
                     else:
                         return execute_from_flask(
-                                itemtypes_api.get_collection_items, request,
-                                collection_id, skip_valid_check=True)
+                            itemtypes_api.get_collection_items, request,
+                            collection_id, skip_valid_check=True)
             elif request.method == 'OPTIONS':
                 return execute_from_flask(
-                        itemtypes_api.manage_collection_item, request, 'options',
-                        collection_id, skip_valid_check=True)
+                    itemtypes_api.manage_collection_item, request, 'options',
+                    collection_id, skip_valid_check=True)
             else:  # GET: list items
-                return execute_from_flask(itemtypes_api.get_collection_items,
-                                        request, collection_id,
-                                        skip_valid_check=True)
+                return execute_from_flask(
+                    itemtypes_api.get_collection_items,
+                    request, collection_id,
+                    skip_valid_check=True)
 
         elif request.method == 'DELETE':
-            return execute_from_flask(itemtypes_api.manage_collection_item,
-                                    request, 'delete', collection_id, item_id,
-                                    skip_valid_check=True)
+            return execute_from_flask(
+                itemtypes_api.manage_collection_item,
+                request, 'delete', collection_id, item_id,
+                skip_valid_check=True)
         elif request.method == 'PUT':
-            return execute_from_flask(itemtypes_api.manage_collection_item,
-                                    request, 'update', collection_id, item_id,
-                                    skip_valid_check=True)
+            return execute_from_flask(
+                itemtypes_api.manage_collection_item,
+                request, 'update', collection_id, item_id,
+                skip_valid_check=True)
         elif request.method == 'OPTIONS':
-            return execute_from_flask(itemtypes_api.manage_collection_item,
-                                    request, 'options', collection_id, item_id,
-                                    skip_valid_check=True)
+            return execute_from_flask(
+                itemtypes_api.manage_collection_item,
+                request, 'options', collection_id, item_id,
+                skip_valid_check=True)
         else:
-            return execute_from_flask(itemtypes_api.get_collection_item, request,
-                                    collection_id, item_id)
-
+            return execute_from_flask(
+                itemtypes_api.get_collection_item, request,
+                collection_id, item_id)
 
     @BLUEPRINT.route('/collections/<path:collection_id>/coverage')
     def collection_coverage(collection_id):
@@ -336,9 +350,10 @@ def make_wsgi_app(config_location: str, openapi_location: str) -> Flask:
         :returns: HTTP response
         """
 
-        return execute_from_flask(coverages_api.get_collection_coverage, request,
-                                collection_id, skip_valid_check=True)
-
+        return execute_from_flask(
+            coverages_api.get_collection_coverage, request,
+            collection_id, skip_valid_check=True
+            )
 
     @BLUEPRINT.route('/collections/<path:collection_id>/tiles')
     def get_collection_tiles(collection_id=None):
@@ -350,13 +365,13 @@ def make_wsgi_app(config_location: str, openapi_location: str) -> Flask:
         :returns: HTTP response
         """
 
-        return execute_from_flask(tiles_api.get_collection_tiles, request,
-                                collection_id)
+        return execute_from_flask(
+            tiles_api.get_collection_tiles, request, collection_id)
 
-
-    @BLUEPRINT.route('/collections/<path:collection_id>/tiles/<tileMatrixSetId>')
-    @BLUEPRINT.route('/collections/<path:collection_id>/tiles/<tileMatrixSetId>/metadata')  # noqa
-    def get_collection_tiles_metadata(collection_id=None, tileMatrixSetId=None):
+    @BLUEPRINT.route('/collections/<path:collection_id>/tiles/<tileMatrixSetId>')  # noqa E501
+    @BLUEPRINT.route('/collections/<path:collection_id>/tiles/<tileMatrixSetId>/metadata')  # noqa E501
+    def get_collection_tiles_metadata(
+            collection_id=None, tileMatrixSetId=None):
         """
         OGC open api collection tiles service metadata
 
@@ -366,15 +381,16 @@ def make_wsgi_app(config_location: str, openapi_location: str) -> Flask:
         :returns: HTTP response
         """
 
-        return execute_from_flask(tiles_api.get_collection_tiles_metadata,
-                                request, collection_id, tileMatrixSetId,
-                                skip_valid_check=True)
-
+        return execute_from_flask(
+            tiles_api.get_collection_tiles_metadata,
+            request, collection_id, tileMatrixSetId,
+            skip_valid_check=True)
 
     @BLUEPRINT.route('/collections/<path:collection_id>/tiles/\
     <tileMatrixSetId>/<tileMatrix>/<tileRow>/<tileCol>')
-    def get_collection_tiles_data(collection_id=None, tileMatrixSetId=None,
-                                tileMatrix=None, tileRow=None, tileCol=None):
+    def get_collection_tiles_data(
+            collection_id=None, tileMatrixSetId=None,
+            tileMatrix=None, tileRow=None, tileCol=None):
         """
         OGC open api collection tiles service data
 
@@ -389,10 +405,9 @@ def make_wsgi_app(config_location: str, openapi_location: str) -> Flask:
 
         return execute_from_flask(
             tiles_api.get_collection_tiles_data,
-            request, collection_id, tileMatrixSetId, tileMatrix, tileRow, tileCol,
-            skip_valid_check=True,
+            request, collection_id, tileMatrixSetId, tileMatrix,
+            tileRow, tileCol, skip_valid_check=True
         )
-
 
     @BLUEPRINT.route('/collections/<collection_id>/map')
     @BLUEPRINT.route('/collections/<collection_id>/styles/<style_id>/map')
@@ -410,7 +425,6 @@ def make_wsgi_app(config_location: str, openapi_location: str) -> Flask:
             maps_api.get_collection_map, request, collection_id, style_id
         )
 
-
     @BLUEPRINT.route('/processes')
     @BLUEPRINT.route('/processes/<process_id>')
     def get_processes(process_id=None):
@@ -422,13 +436,13 @@ def make_wsgi_app(config_location: str, openapi_location: str) -> Flask:
         :returns: HTTP response
         """
 
-        return execute_from_flask(processes_api.describe_processes, request,
-                                process_id)
-
+        return execute_from_flask(
+            processes_api.describe_processes, request, process_id)
 
     @BLUEPRINT.route('/jobs')
-    @BLUEPRINT.route('/jobs/<job_id>',
-                    methods=['GET', 'DELETE'])
+    @BLUEPRINT.route(
+        '/jobs/<job_id>', methods=['GET', 'DELETE']
+        )
     def get_jobs(job_id=None):
         """
         OGC API - Processes jobs endpoint
@@ -442,11 +456,13 @@ def make_wsgi_app(config_location: str, openapi_location: str) -> Flask:
             return execute_from_flask(processes_api.get_jobs, request)
         else:
             if request.method == 'DELETE':  # dismiss job
-                return execute_from_flask(processes_api.delete_job, request,
-                                        job_id)
+                return execute_from_flask(
+                    processes_api.delete_job, request, job_id
+                )
             else:  # Return status of a specific job
-                return execute_from_flask(processes_api.get_jobs, request, job_id)
-
+                return execute_from_flask(
+                    processes_api.get_jobs, request, job_id
+                )
 
     @BLUEPRINT.route('/processes/<process_id>/execution', methods=['POST'])
     def execute_process_jobs(process_id):
@@ -458,12 +474,14 @@ def make_wsgi_app(config_location: str, openapi_location: str) -> Flask:
         :returns: HTTP response
         """
 
-        return execute_from_flask(processes_api.execute_process, request,
-                                process_id)
+        return execute_from_flask(
+            processes_api.execute_process, request, process_id
+        )
 
-
-    @BLUEPRINT.route('/jobs/<job_id>/results',
-                    methods=['GET'])
+    @BLUEPRINT.route(
+        '/jobs/<job_id>/results',
+        methods=['GET']
+    )
     def get_job_result(job_id=None):
         """
         OGC API - Processes job result endpoint
@@ -473,8 +491,9 @@ def make_wsgi_app(config_location: str, openapi_location: str) -> Flask:
         :returns: HTTP response
         """
 
-        return execute_from_flask(processes_api.get_job_result, request, job_id)
-
+        return execute_from_flask(
+            processes_api.get_job_result, request, job_id
+        )
 
     @BLUEPRINT.route('/collections/<path:collection_id>/position')
     @BLUEPRINT.route('/collections/<path:collection_id>/area')
@@ -482,20 +501,21 @@ def make_wsgi_app(config_location: str, openapi_location: str) -> Flask:
     @BLUEPRINT.route('/collections/<path:collection_id>/radius')
     @BLUEPRINT.route('/collections/<path:collection_id>/trajectory')
     @BLUEPRINT.route('/collections/<path:collection_id>/corridor')
-    @BLUEPRINT.route('/collections/<path:collection_id>/locations/<location_id>')
+    @BLUEPRINT.route('/collections/<path:collection_id>/locations/<location_id>')  # noqa E501
     @BLUEPRINT.route('/collections/<path:collection_id>/locations')
-    @BLUEPRINT.route('/collections/<path:collection_id>/instances/<instance_id>/position')  # noqa
-    @BLUEPRINT.route('/collections/<path:collection_id>/instances/<instance_id>/area')  # noqa
-    @BLUEPRINT.route('/collections/<path:collection_id>/instances/<instance_id>/cube')  # noqa
-    @BLUEPRINT.route('/collections/<path:collection_id>/instances/<instance_id>/radius')  # noqa
-    @BLUEPRINT.route('/collections/<path:collection_id>/instances/<instance_id>/trajectory')  # noqa
-    @BLUEPRINT.route('/collections/<path:collection_id>/instances/<instance_id>/corridor')  # noqa
-    @BLUEPRINT.route('/collections/<path:collection_id>/instances/<instance_id>/locations/<location_id>')  # noqa
-    @BLUEPRINT.route('/collections/<path:collection_id>/instances/<instance_id>/locations')  # noqa
-    @BLUEPRINT.route('/collections/<path:collection_id>/instances/<instance_id>')
+    @BLUEPRINT.route('/collections/<path:collection_id>/instances/<instance_id>/position')  # noqa E501
+    @BLUEPRINT.route('/collections/<path:collection_id>/instances/<instance_id>/area')  # noqa E501
+    @BLUEPRINT.route('/collections/<path:collection_id>/instances/<instance_id>/cube')  # noqa E501
+    @BLUEPRINT.route('/collections/<path:collection_id>/instances/<instance_id>/radius')  # noqa E501
+    @BLUEPRINT.route('/collections/<path:collection_id>/instances/<instance_id>/trajectory')  # noqa E501
+    @BLUEPRINT.route('/collections/<path:collection_id>/instances/<instance_id>/corridor')  # noqa E501
+    @BLUEPRINT.route('/collections/<path:collection_id>/instances/<instance_id>/locations/<location_id>')  # noqa E501
+    @BLUEPRINT.route('/collections/<path:collection_id>/instances/<instance_id>/locations')  # noqa E501
+    @BLUEPRINT.route('/collections/<path:collection_id>/instances/<instance_id>')  # noqa E501
     @BLUEPRINT.route('/collections/<path:collection_id>/instances')
-    def get_collection_edr_query(collection_id, instance_id=None,
-                                location_id=None):
+    def get_collection_edr_query(
+            collection_id, instance_id=None, location_id=None
+            ):
         """
         OGC EDR API endpoints
 
@@ -506,9 +526,10 @@ def make_wsgi_app(config_location: str, openapi_location: str) -> Flask:
         :returns: HTTP response
         """
 
-        if (request.path.endswith('instances') or
-                (instance_id is not None and
-                request.path.endswith(instance_id))):
+        if (
+            request.path.endswith('instances') or
+            (instance_id is not None and request.path.endswith(instance_id))
+        ):
             return execute_from_flask(
                 edr_api.get_collection_edr_instances, request, collection_id,
                 instance_id
@@ -520,10 +541,9 @@ def make_wsgi_app(config_location: str, openapi_location: str) -> Flask:
             query_type = request.path.split('/')[-1]
 
         return execute_from_flask(
-            edr_api.get_collection_edr_query, request, collection_id, instance_id,
-            query_type, location_id, skip_valid_check=True
+            edr_api.get_collection_edr_query, request, collection_id,
+            instance_id, query_type, location_id, skip_valid_check=True
         )
-
 
     @BLUEPRINT.route('/stac-api')
     def stac_landing_page():
@@ -535,7 +555,6 @@ def make_wsgi_app(config_location: str, openapi_location: str) -> Flask:
 
         return execute_from_flask(stac_api.landing_page, request)
 
-
     @BLUEPRINT.route('/stac-api/search', methods=['GET', 'POST'])
     def stac_search():
         """
@@ -546,7 +565,6 @@ def make_wsgi_app(config_location: str, openapi_location: str) -> Flask:
 
         return execute_from_flask(stac_api.search, request)
 
-
     @BLUEPRINT.route('/stac')
     def stac_catalog_root():
         """
@@ -556,7 +574,6 @@ def make_wsgi_app(config_location: str, openapi_location: str) -> Flask:
         """
 
         return execute_from_flask(stac_api.get_stac_root, request)
-
 
     @BLUEPRINT.route('/stac/<path:path>')
     def stac_catalog_path(path):
@@ -570,7 +587,6 @@ def make_wsgi_app(config_location: str, openapi_location: str) -> Flask:
 
         return execute_from_flask(stac_api.get_stac_path, request, path)
 
-
     @ADMIN_BLUEPRINT.route('/admin/config', methods=['GET', 'PUT', 'PATCH'])
     def admin_config():
         """
@@ -580,17 +596,19 @@ def make_wsgi_app(config_location: str, openapi_location: str) -> Flask:
         """
 
         if request.method == 'GET':
-            return execute_from_flask(admin_api.get_config_, request,
-                                    alternative_api=admin_)
+            return execute_from_flask(
+                admin_api.get_config_, request, alternative_api=admin_
+            )
 
         elif request.method == 'PUT':
-            return execute_from_flask(admin_api.put_config, request,
-                                    alternative_api=admin_)
+            return execute_from_flask(
+                admin_api.put_config, request, alternative_api=admin_
+            )
 
         elif request.method == 'PATCH':
-            return execute_from_flask(admin_api.patch_config, request,
-                                    alternative_api=admin_)
-
+            return execute_from_flask(
+                admin_api.patch_config, request, alternative_api=admin_
+            )
 
     @ADMIN_BLUEPRINT.route('/admin/config/resources', methods=['GET', 'POST'])
     def admin_config_resources():
@@ -601,13 +619,14 @@ def make_wsgi_app(config_location: str, openapi_location: str) -> Flask:
         """
 
         if request.method == 'GET':
-            return execute_from_flask(admin_api.get_resources, request,
-                                    alternative_api=admin_)
+            return execute_from_flask(
+                admin_api.get_resources, request, alternative_api=admin_
+            )
 
         elif request.method == 'POST':
-            return execute_from_flask(admin_api.post_resource, request,
-                                    alternative_api=admin_)
-
+            return execute_from_flask(
+                admin_api.post_resource, request, alternative_api=admin_
+            )
 
     @ADMIN_BLUEPRINT.route(
         '/admin/config/resources/<resource_id>',
@@ -620,25 +639,28 @@ def make_wsgi_app(config_location: str, openapi_location: str) -> Flask:
         """
 
         if request.method == 'GET':
-            return execute_from_flask(admin_api.get_resource, request,
-                                    resource_id,
-                                    alternative_api=admin_)
+            return execute_from_flask(
+                admin_api.get_resource, request,
+                resource_id, alternative_api=admin_
+            )
 
         elif request.method == 'DELETE':
-            return execute_from_flask(admin_api.delete_resource, request,
-                                    resource_id,
-                                    alternative_api=admin_)
+            return execute_from_flask(
+                admin_api.delete_resource, request,
+                resource_id, alternative_api=admin_
+            )
 
         elif request.method == 'PUT':
-            return execute_from_flask(admin_api.put_resource, request,
-                                    resource_id,
-                                    alternative_api=admin_)
+            return execute_from_flask(
+                admin_api.put_resource, request,
+                resource_id, alternative_api=admin_
+            )
 
         elif request.method == 'PATCH':
-            return execute_from_flask(admin_api.patch_resource, request,
-                                    resource_id,
-                                    alternative_api=admin_)
-
+            return execute_from_flask(
+                admin_api.patch_resource, request,
+                resource_id, alternative_api=admin_
+            )
 
     APP.register_blueprint(BLUEPRINT)
 
@@ -647,6 +669,7 @@ def make_wsgi_app(config_location: str, openapi_location: str) -> Flask:
         APP.register_blueprint(ADMIN_BLUEPRINT)
 
     return APP
+
 
 if os.environ.get('PYGEOAPI_CONFIG_VIA_ENV', 'true') == 'true':
     APP = make_wsgi_app(
