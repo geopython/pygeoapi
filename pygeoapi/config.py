@@ -45,7 +45,11 @@ def get_config(config_location: str = None, raw: bool = False) -> dict:
     """
     Get pygeoapi configurations
 
-    :param raw: `bool` over interpolation during config loading
+    Args:
+        config_location: `str` of configuration file location, if `None`
+                         will attempt to read from `PYGEOAPI_CONFIG`
+                         environment variable
+        raw: `bool` over interpolation during config loading
 
     :returns: `dict` of pygeoapi configuration
     """
