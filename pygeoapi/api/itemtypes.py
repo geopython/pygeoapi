@@ -575,6 +575,11 @@ def get_collection_items(
         'title': l10n.translate('This document as GeoJSON', request.locale),
         'href': f'{uri}?f={F_JSON}{serialized_query_params}'
     }, {
+        'rel': request.get_linkrel(F_JSONFG),
+        'type': FORMAT_TYPES[F_JSONFG],
+        'title': l10n.translate('This document as JSON-FG', request.locale),  # noqa
+        'href': f'{uri}?f={F_JSONFG}{serialized_query_params}'
+    }, {
         'rel': request.get_linkrel(F_JSONLD),
         'type': FORMAT_TYPES[F_JSONLD],
         'title': l10n.translate('This document as RDF (JSON-LD)', request.locale),  # noqa

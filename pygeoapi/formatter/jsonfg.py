@@ -59,7 +59,7 @@ class JSONFGFormatter(BaseFormatter):
             geom = formatter_def["geom"]
 
         super().__init__({"name": "jsonfg", "geom": geom})
-        self.mimetype = "application/vnd.ogc.fg+json"
+        self.mimetype = "application/geo+json"
 
     def write(self, data: dict, options: dict = {}) -> str:
         """

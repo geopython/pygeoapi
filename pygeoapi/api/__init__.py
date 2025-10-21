@@ -95,7 +95,7 @@ FORMAT_TYPES = OrderedDict((
     (F_HTML, 'text/html'),
     (F_JSONLD, 'application/ld+json'),
     (F_JSON, 'application/json'),
-    (F_JSONFG, 'application/vnd.geo+json'),
+    (F_JSONFG, 'application/geo+json'),
     (F_JPEG, 'image/jpeg'),
     (F_MVT, 'application/vnd.mapbox-vector-tile'),
     (F_NETCDF, 'application/x-netcdf'),
@@ -1129,6 +1129,12 @@ def describe_collections(api: API, request: APIRequest,
                 'href': f'{api.get_collections_url()}/{k}/items?f={F_JSON}'  # noqa
             })
             collection['links'].append({
+                'type': FORMAT_TYPES[F_JSONFG],
+                'rel': 'items',
+                'title': l10n.translate('Items as JSON-FG', request.locale),  # noqa
+                'href': f'{api.get_collections_url()}/{k}/items?f={F_JSONFG}'  # noqa
+            })
+            collection['links'].append({
                 'type': FORMAT_TYPES[F_JSONLD],
                 'rel': 'items',
                 'title': l10n.translate('Items as RDF (GeoJSON-LD)', request.locale),  # noqa
@@ -1333,6 +1339,12 @@ def describe_collections(api: API, request: APIRequest,
             'rel': request.get_linkrel(F_JSON),
             'title': l10n.translate('This document as JSON', request.locale),  # noqa
             'href': f'{api.get_collections_url()}?f={F_JSON}'
+        })
+        fcm['links'].append({
+            'type': FORMAT_TYPES[F_JSONFG],
+            'rel': request.get_linkrel(F_JSONFG),
+            'title': l10n.translate('This document as JSON-FG', request.locale),  # noqa
+            'href': f'{api.get_collections_url()}?f={F_JSONFG}'
         })
         fcm['links'].append({
             'type': FORMAT_TYPES[F_JSONLD],
