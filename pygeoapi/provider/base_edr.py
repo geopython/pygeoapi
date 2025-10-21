@@ -28,7 +28,6 @@
 # =================================================================
 
 import logging
-from typing import Optional
 
 from pygeoapi.provider.base import (BaseProvider, ProviderInvalidDataError,
                                     ProviderQueryError)
