@@ -710,7 +710,6 @@ def get_collection_items(
 
         try:
             content = formatter.write(
-                api=api,
                 data=content,
                 dataset=dataset,
                 id_field=(p.uri_field or 'id'),
@@ -1025,7 +1024,6 @@ def get_collection_item(api: API, request: APIRequest,
 
         try:
             content = formatter.write(
-                api=api,
                 data=content,
                 dataset=dataset,
                 id_field=(p.uri_field or 'id'),

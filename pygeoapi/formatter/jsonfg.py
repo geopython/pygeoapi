@@ -63,8 +63,7 @@ class JSONFGFormatter(BaseFormatter):
         self.mimetype = "application/geo+json"
 
     def write(
-        self, api: APIRequest, data: dict,
-        dataset: str, id_field: str, options: dict = {}
+        self, data: dict, dataset: str, id_field: str, options: dict = {}
     ) -> dict:
         """
         Generate data in JSON-FG format
@@ -108,8 +107,10 @@ def geojson2jsonfg(
     """
     Return JSON-FG from a GeoJSON content.
 
-    :param cls: API object
-    :param data: dict of data:
+    :param data: dict of data
+    :param dataset: dataset name
+    :param identifier: identifier field name
+    :param id_field: id field name
 
     :returns: dict of converted GeoJSON (JSON-FG)
     """

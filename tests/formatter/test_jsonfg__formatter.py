@@ -30,3 +30,52 @@
 import pytest
 
 from pygeoapi.formatter.jsonfg import JSONFGFormatter
+
+
+@pytest.fixture()
+def fixture():
+    data = {
+        'type': 'FeatureCollection',
+        'features': [{
+            'type': 'Feature',
+            'id': '123-456',
+            'geometry': {
+                'type': 'Point',
+                'coordinates': [125.6, 10.1]},
+            'properties': {
+                'name': 'Dinagat Islands',
+                'foo': 'bar'
+            }}
+        ],
+        'links': [{
+            'rel': 'self',
+            'type': 'application/geo+json',
+            'title': 'GeoJSON',
+            'href': 'http://example.com'
+        }]
+    }
+
+    return data
+
+
+def test_jsonfg__formatter(fixture):
+    f = JSONFGFormatter({'geom': True})
+    f_jsonfg = f.write(data=fixture, dataset='test', id_field='id', options={})
+
+    assert f.mimetype == "application/geo+json"
+
+    assert f_jsonfg['type'] == 'FeatureCollection'
+    assert f_jsonfg['features'][0]['type'] == 'Feature'
+    assert f_jsonfg['features'][0]['geometry']['type'] == 'Point'
+    assert f_jsonfg['features'][0]['geometry']['coordinates'] == [125.6, 10.1]
+    assert f_jsonfg['features'][0]['properties']['id'] == '123-456'
+    assert f_jsonfg['features'][0]['properties']['name'] == 'Dinagat Islands'
+    assert f_jsonfg['features'][0]['properties']['foo'] == 'bar'
+
+    assert f_jsonfg['featureType'] == 'OGRGeoJSON'
+    assert f_jsonfg['conformsTo']
+    assert f_jsonfg['coordRefSys'] == '[EPSG:4326]'
+    assert f_jsonfg['features'][0]['place'] is None
+    assert f_jsonfg['features'][0]['time'] is None
+
+    assert len(f_jsonfg['links']) == 1
