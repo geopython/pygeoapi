@@ -38,7 +38,7 @@ from typing import Union
 from osgeo import gdal
 
 from pygeoapi.formatter.base import BaseFormatter, FormatterSerializationError
-from pygeoapi.api import APIRequest
+
 
 LOGGER = logging.getLogger(__name__)
 

@@ -50,7 +50,6 @@ from pyproj.exceptions import CRSError
 from pygeoapi import l10n
 from pygeoapi.api import evaluate_limit
 from pygeoapi.formatter.base import FormatterSerializationError
-from pygeoapi.formatter.jsonfg import geojson2jsonfg
 from pygeoapi.linked_data import geojson2jsonld
 from pygeoapi.plugin import load_plugin, PLUGINS
 from pygeoapi.provider.base import (
@@ -63,7 +62,8 @@ from pygeoapi.util import (CrsTransformSpec, filter_providers_by_type,
                            to_json, transform_bbox)
 
 from . import (
-    APIRequest, API, SYSTEM_LOCALE, F_JSON, FORMAT_TYPES, F_HTML, F_JSONFG, F_JSONLD,
+    APIRequest, API, SYSTEM_LOCALE, F_JSON,
+    FORMAT_TYPES, F_HTML, F_JSONFG, F_JSONLD,
     validate_bbox, validate_datetime
 )
 
