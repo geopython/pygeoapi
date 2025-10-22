@@ -436,6 +436,7 @@ The below template provides a minimal example (let's call the file ``mycooljsonf
 
            super().__init__({'name': 'cooljson', 'geom': None})
            self.mimetype = 'application/json; subtype:mycooljson'
+           self.attachment = False
 
        def write(self, options={}, data=None):
            """custom writer"""

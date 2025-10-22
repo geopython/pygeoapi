@@ -37,7 +37,7 @@
 
 from collections import ChainMap
 from copy import deepcopy
-from datetime import datetime
+import datetime
 from http import HTTPStatus
 import logging
 from typing import Any, Tuple, Union
@@ -241,9 +241,6 @@ def get_collection_items(
     :returns: tuple of headers, status code, content
     """
 
-    if not request.is_valid(PLUGINS['formatter'].keys()):
-        return api.get_format_exception(request)
-
     # Set Content-Language to system locale until provider locale
     # has been determined
     headers = request.get_response_headers(SYSTEM_LOCALE,
@@ -351,6 +348,18 @@ def get_collection_items(
         return api.get_exception(
             err.http_status_code, headers, request.format,
             err.ogc_exception_code, err.message)
+
+    LOGGER.debug('Validating requested format')
+    dataset_formatters = {}
+    for key, value in PLUGINS['formatter'].items():
+        df2 = load_plugin('formatter', {'name': key})
+        dataset_formatters[df2.name] = df2
+    for df in collections[dataset].get('formatters', []):
+        df2 = load_plugin('formatter', df)
+        dataset_formatters[df2.name] = df2
+
+    if not request.is_valid(dataset_formatters.keys()):
+        return api.get_format_exception(request)
 
     crs_transform_spec = None
     if provider_type == 'feature':
@@ -581,6 +590,14 @@ def get_collection_items(
         'href': f'{uri}?f={F_HTML}{serialized_query_params}'
     }])
 
+    for key, value in dataset_formatters.items():
+        content['links'].append({
+            'type': value.mimetype,
+            'rel': 'alternate',
+            'title': f'This document as {key}',
+            'href': f'{uri}?f={value.name}{serialized_query_params}'
+        })
+
     next_link = False
     prev_link = False
 
@@ -625,7 +642,7 @@ def get_collection_items(
             'href': '/'.join(uri.split('/')[:-1])
         })
 
-    content['timeStamp'] = datetime.utcnow().strftime(
+    content['timeStamp'] = datetime.datetime.now(datetime.UTC).strftime(
         '%Y-%m-%dT%H:%M:%S.%fZ')
 
     # Set response language to requested provider locale
@@ -656,9 +673,8 @@ def get_collection_items(
                                      'collections/items/index.html',
                                      content, request.locale)
         return headers, HTTPStatus.OK, content
-    elif request.format == 'csv':  # render
-        formatter = load_plugin('formatter',
-                                {'name': 'CSV', 'geom': True})
+    elif request.format in dataset_formatters:  # render
+        formatter = dataset_formatters[request.format]
 
         try:
             content = formatter.write(
@@ -677,13 +693,14 @@ def get_collection_items(
 
         headers['Content-Type'] = formatter.mimetype
 
-        if p.filename is None:
-            filename = f'{dataset}.csv'
-        else:
-            filename = f'{p.filename}'
+        if formatter.attachment:
+            if p.filename is None:
+                filename = f'{dataset}.{formatter.extension}'
+            else:
+                filename = f'{p.filename}'
 
-        cd = f'attachment; filename="{filename}"'
-        headers['Content-Disposition'] = cd
+            cd = f'attachment; filename="{filename}"'
+            headers['Content-Disposition'] = cd
 
         return headers, HTTPStatus.OK, content
 
