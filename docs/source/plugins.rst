@@ -435,7 +435,10 @@ The below template provides a minimal example (let's call the file ``mycooljsonf
            """Inherit from parent class"""
 
            super().__init__({'name': 'cooljson', 'geom': None})
-           self.mimetype = 'application/json; subtype:mycooljson'
+           self.f = 'cooljson'  # f= value
+           self.mimetype = 'application/json; subtype:mycooljson'  # response media type
+           self.attachment = False  # whether to provide as an attachment (default False)
+           self.extension = 'cooljson'  # filename extension if providing as an attachment
 
        def write(self, options={}, data=None):
            """custom writer"""

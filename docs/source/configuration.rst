@@ -257,6 +257,10 @@ default.
                 storage_crs: http://www.opengis.net/def/crs/OGC/1.3/CRS84  # optional CRS in which data is stored, default: as 'crs' field
                 storage_crs_coordinate_epoch: 2017.23  # optional, if storage_crs is a dynamic coordinate reference system
                 always_xy: false  # optional should CRS respect axis ordering
+          formatters:  # list of 1..n formatter definitions
+              - name: path.to.formatter  # Python path of formatter definition
+                attachment: true  # whether or not to provide as an attachment or normal response
+                geom: false  # whether or not to include geometry
 
       hello-world:  # name of process
           type: process  # REQUIRED (collection, process, or stac-collection)

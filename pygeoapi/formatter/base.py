@@ -2,7 +2,7 @@
 #
 # Authors: Tom Kralidis <tomkralidis@gmail.com>
 #
-# Copyright (c) 2022 Tom Kralidis
+# Copyright (c) 2026 Tom Kralidis
 #
 # Permission is hereby granted, free of charge, to any person
 # obtaining a copy of this software and associated documentation
@@ -39,23 +39,28 @@ class BaseFormatter:
         """
         Initialize object
 
-        :param formatter_def: formatter definition
+        param formatter_def: formatter definition
 
         :returns: pygeoapi.formatter.base.BaseFormatter
         """
 
+        self.extension = None
+        self.f = None
         self.mimetype = None
-        self.geom = False
 
-        self.name = formatter_def['name']
-        if 'geom' in formatter_def:
-            self.geom = formatter_def['geom']
+        try:
+            self.name = formatter_def['name']
+        except KeyError:
+            raise RuntimeError('name is required')
+
+        self.geom = formatter_def.get('geom', False)
+        self.attachment = formatter_def.get('attachment', False)
 
     def write(self, options: dict = {}, data: dict | None = None) -> str:
         """
         Generate data in specified format
 
-        :param options: CSV formatting options
+        :param options: formatting options
         :param data: dict representation of GeoJSON object
 
         :returns: string representation of format

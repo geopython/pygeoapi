@@ -583,6 +583,25 @@ properties:
                                       - type
                                       - name
                                       - data
+                          formatters:
+                              type: array
+                              description: custom formatters to apply to output
+                              items:
+                                  type: object
+                                  properties:
+                                      name:
+                                          type: string
+                                          description: name of formatter
+                                      geom:
+                                          type: boolean
+                                          default: true
+                                          description: whether to include geometry
+                                      attachment:
+                                          type: boolean
+                                          default: false
+                                          description: whether to provide as an attachment
+                                  required:
+                                      - name
                       required:
                           - type
                           - title

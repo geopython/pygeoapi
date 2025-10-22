@@ -48,12 +48,12 @@ class CSVFormatter(BaseFormatter):
         :returns: `pygeoapi.formatter.csv_.CSVFormatter`
         """
 
-        geom = False
-        if 'geom' in formatter_def:
-            geom = formatter_def['geom']
+        geom = formatter_def.get('geom', False)
 
         super().__init__({'name': 'csv', 'geom': geom})
         self.mimetype = 'text/csv; charset=utf-8'
+        self.f = 'csv'
+        self.extension = 'csv'
 
     def write(self, options: dict = {}, data: dict = None) -> str:
         """

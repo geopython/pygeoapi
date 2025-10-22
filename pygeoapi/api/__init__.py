@@ -68,7 +68,8 @@ from pygeoapi.util import (
     TEMPLATESDIR, UrlPrefetcher, dategetter,
     filter_dict_by_key_value, filter_providers_by_type, get_api_rules,
     get_base_url, get_provider_by_type, get_provider_default, get_typed_value,
-    render_j2_template, to_json, get_choice_from_headers, get_from_headers
+    render_j2_template, to_json, get_choice_from_headers, get_from_headers,
+    get_dataset_formatters
 )
 
 LOGGER = logging.getLogger(__name__)
@@ -319,11 +320,14 @@ class APIRequest:
 
         return raw, default_locale
 
-    def _get_format(self, headers: dict) -> Union[str, None]:
+    def _get_format(self, headers: dict,
+                    extra_formats: dict = {}) -> Union[str, None]:
         """
         Get `Request` format type from query parameters or headers.
 
         :param headers: Dict of Request headers
+        :param extra_formats: Dict of extra dataset specific formats
+
         :returns: format value or None if not found/specified
         """
 
@@ -339,10 +343,14 @@ class APIRequest:
         if types_ is None:
             return
 
-        (fmts, mimes) = zip(*FORMAT_TYPES.items())
+        merged_format_types = FORMAT_TYPES | extra_formats
+
+        (fmts, mimes) = zip(*merged_format_types.items())
+        mimes2 = [m.split(';')[0] for m in mimes]
+
         for type_ in types_:
-            if type_ in mimes:
-                idx_ = mimes.index(type_)
+            if type_ in mimes2:
+                idx_ = mimes2.index(type_)
                 return fmts[idx_]
 
     @property
@@ -1041,6 +1049,14 @@ def describe_collections(api: API, request: APIRequest,
                 'title': l10n.translate('Items as HTML', request.locale),  # noqa
                 'href': f'{api.get_collections_url()}/{k}/items?f={F_HTML}'  # noqa
             })
+
+            for key, value in get_dataset_formatters(v).items():
+                collection['links'].append({
+                    'type': value.mimetype,
+                    'rel': 'items',
+                    'title': l10n.translate(f'Items as {key}', request.locale),  # noqa
+                    'href': f'{api.get_collections_url()}/{k}/items?f={value.f}'  # noqa
+                })
 
         # OAPIF Part 2 - list supported CRSs and StorageCRS
         if collection_data_type in ['edr', 'feature']:
