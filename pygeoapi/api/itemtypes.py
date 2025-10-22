@@ -710,7 +710,10 @@ def get_collection_items(
 
         try:
             content = formatter.write(
+                api=api,
                 data=content,
+                dataset=dataset,
+                id_field=(p.uri_field or 'id'),
                 options={
                     'provider_def': get_provider_by_type(
                         collections[dataset]['providers'],
@@ -723,7 +726,9 @@ def get_collection_items(
                 HTTPStatus.INTERNAL_SERVER_ERROR, headers, request.format,
                 'NoApplicableCode', msg)
 
-        return headers, HTTPStatus.OK, content
+        headers['Content-Type'] = formatter.mimetype
+
+        return headers, HTTPStatus.OK, to_json(content, api.pretty_print)
 
     return headers, HTTPStatus.OK, to_json(content, api.pretty_print)
 
@@ -947,6 +952,11 @@ def get_collection_item(api: API, request: APIRequest,
         'title': l10n.translate('This document as JSON', request.locale),
         'href': f'{uri}?f={F_JSON}'
         }, {
+        'rel': request.get_linkrel(F_JSONFG),
+        'type': FORMAT_TYPES[F_JSONFG],
+        'title': l10n.translate('This document as JSON-FG (JSON-FG)', request.locale),  # noqa
+        'href': f'{uri}?f={F_JSONFG}'
+        }, {
         'rel': request.get_linkrel(F_JSONLD),
         'type': FORMAT_TYPES[F_JSONLD],
         'title': l10n.translate('This document as RDF (JSON-LD)', request.locale),  # noqa
@@ -1010,15 +1020,15 @@ def get_collection_item(api: API, request: APIRequest,
         return headers, HTTPStatus.OK, content
 
     elif request.format == F_JSONFG:
-        # content = geojson2jsonfg(
-        #     api, content, dataset, id_field=(p.uri_field or 'id')
-        # )
         formatter = load_plugin('formatter',
                                 {'name': F_JSONFG, 'geom': True})
 
         try:
             content = formatter.write(
+                api=api,
                 data=content,
+                dataset=dataset,
+                id_field=(p.uri_field or 'id'),
                 options={
                     'provider_def': get_provider_by_type(
                         collections[dataset]['providers'],
@@ -1031,7 +1041,7 @@ def get_collection_item(api: API, request: APIRequest,
                 HTTPStatus.INTERNAL_SERVER_ERROR, headers, request.format,
                 'NoApplicableCode', msg)
 
-        return headers, HTTPStatus.OK, content
+        return headers, HTTPStatus.OK, to_json(content, api.pretty_print)
 
     return headers, HTTPStatus.OK, to_json(content, api.pretty_print)
 

@@ -38,6 +38,7 @@ from typing import Union
 from osgeo import gdal
 
 from pygeoapi.formatter.base import BaseFormatter, FormatterSerializationError
+from pygeoapi.api import APIRequest
 
 LOGGER = logging.getLogger(__name__)
 
@@ -61,7 +62,10 @@ class JSONFGFormatter(BaseFormatter):
         super().__init__({"name": "jsonfg", "geom": geom})
         self.mimetype = "application/geo+json"
 
-    def write(self, data: dict, options: dict = {}) -> str:
+    def write(
+        self, api: APIRequest, data: dict,
+        dataset: str, id_field: str, options: dict = {}
+    ) -> dict:
         """
         Generate data in JSON-FG format
 
@@ -78,12 +82,14 @@ class JSONFGFormatter(BaseFormatter):
                 fields = data["properties"].keys()
         except IndexError:
             LOGGER.error("no features")
-            return str()
+            return dict()
 
         LOGGER.debug(f"JSONFG fields: {fields}")
 
         try:
-            output = geojson2jsonfg(data=data, dataset="items")
+            links = data.get("links")
+            output = geojson2jsonfg(data=data, dataset=dataset)
+            output["links"] = links
             return output
         except ValueError as err:
             LOGGER.error(err)
@@ -98,18 +104,17 @@ def geojson2jsonfg(
     dataset: str,
     identifier: Union[str, None] = None,
     id_field: str = "id",
-) -> str:
+) -> dict:
     """
     Return JSON-FG from a GeoJSON content.
 
     :param cls: API object
     :param data: dict of data:
 
-    :returns: string of rendered JSON (JSON-FG)
+    :returns: dict of converted GeoJSON (JSON-FG)
     """
     gdal.UseExceptions()
     LOGGER.debug("Dump GeoJSON content into a data source")
-    # breakpoint()
     try:
         with gdal.OpenEx(json.dumps(data)) as srcDS:
             tmpfile = f"/vsimem/{uuid.uuid1()}.json"

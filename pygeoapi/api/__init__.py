@@ -109,7 +109,7 @@ CONFORMANCE_CLASSES = [
     'http://www.opengis.net/spec/ogcapi-common-2/1.0/conf/collections',
     'http://www.opengis.net/spec/ogcapi-common-1/1.0/conf/landing-page',
     'http://www.opengis.net/spec/ogcapi-common-1/1.0/conf/json',
-    'http://www.opengis.net/spec/json-fg-1/0.2/conf/core',
+    'http://www.opengis.net/spec/json-fg-1/0.3/conf/core',
     'http://www.opengis.net/spec/ogcapi-common-1/1.0/conf/oas30'
 ]
 
