@@ -1002,9 +1002,8 @@ def load_openapi_document(pygeoapi_openapi: str = None) -> dict:
     """
     Open OpenAPI document from `PYGEOAPI_OPENAPI` environment variable
 
-    Args:
-        pygeoapi_openapi: `str` of OpenAPI document filepath, if `None` will
-                          attempt to read from `PYGEOAPI_OPENAPI` environment
+    :param pygeoapi_openapi: `str` of OpenAPI document filepath, if `None` will
+                            attempt to read from `PYGEOAPI_OPENAPI` environment
 
     :returns: `dict` of OpenAPI document
     """
