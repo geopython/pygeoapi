@@ -671,7 +671,7 @@ def make_wsgi_app(config_location: str, openapi_location: str) -> Flask:
     return APP
 
 
-if os.environ.get('PYGEOAPI_CONFIG_VIA_ENV', 'true') == 'true':
+if os.environ.get('PYGEOAPI_DISABLE_ENV_CONFIGS', 'false') == 'false':
     APP = make_wsgi_app(
         config_location=None,
         openapi_location=None
