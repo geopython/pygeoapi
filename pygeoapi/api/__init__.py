@@ -884,7 +884,7 @@ def openapi_(api: API, request: APIRequest) -> Tuple[dict, int, str]:
         return headers, HTTPStatus.OK, api.openapi
 
 
-def conformance(api, request: APIRequest) -> Tuple[dict, int, str]:
+def conformance(api: API, request: APIRequest) -> Tuple[dict, int, str]:
     """
     Provide conformance definition
 
