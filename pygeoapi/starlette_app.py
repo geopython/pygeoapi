@@ -698,7 +698,7 @@ class ApiRulesMiddleware:
 
 api_routes = [
     Route('/', landing_page),
-    Route('/openapi', openapi),
+    Route('/api', openapi),
     Route('/conformance', conformance),
     Route('/TileMatrixSets/{tileMatrixSetId}', get_tilematrix_set),
     Route('/TileMatrixSets', get_tilematrix_sets),
