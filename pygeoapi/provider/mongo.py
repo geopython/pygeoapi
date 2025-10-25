@@ -35,8 +35,9 @@ from pymongo import MongoClient
 from pymongo import GEOSPHERE
 from pymongo import ASCENDING, DESCENDING
 from pymongo.collection import ObjectId
+
+from pygeoapi.crs import crs_transform
 from pygeoapi.provider.base import BaseProvider, ProviderItemNotFoundError
-from pygeoapi.util import crs_transform
 
 LOGGER = logging.getLogger(__name__)
 

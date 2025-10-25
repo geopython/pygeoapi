@@ -38,6 +38,7 @@ import pyarrow.compute as pc
 import pyarrow.dataset
 import s3fs
 
+from pygeoapi.crs import crs_transform
 from pygeoapi.provider.base import (
     BaseProvider,
     ProviderConnectionError,
@@ -45,7 +46,6 @@ from pygeoapi.provider.base import (
     ProviderItemNotFoundError,
     ProviderQueryError,
 )
-from pygeoapi.util import crs_transform
 
 LOGGER = logging.getLogger(__name__)
 

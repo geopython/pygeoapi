@@ -32,6 +32,7 @@ import logging
 from enum import Enum
 from http import HTTPStatus
 
+from pygeoapi.crs import DEFAULT_STORAGE_CRS, get_crs
 from pygeoapi.error import GenericError
 
 LOGGER = logging.getLogger(__name__)
@@ -77,6 +78,10 @@ class BaseProvider:
         self.include_extra_query_parameters = provider_def.get('include_extra_query_parameters', False)  # noqa
         self._fields = {}
         self.filename = None
+
+        # CRS properties
+        storage_crs_uri = provider_def.get('storage_crs', DEFAULT_STORAGE_CRS)
+        self.storage_crs = get_crs(storage_crs_uri)
 
         # for coverage providers
         self.axes = []

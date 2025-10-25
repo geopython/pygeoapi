@@ -53,8 +53,6 @@ def config_MapServer_WFS_cities():
         'data': {
             'source_type': 'WFS',
             'source': 'WFS:https://www.example.com/wfs',
-            # 'source_srs': 'EPSG:4326',
-            # 'target_srs': 'EPSG:4326',
             'source_capabilities': {
                 'paging': True
             },

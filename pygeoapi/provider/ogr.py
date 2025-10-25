@@ -41,12 +41,11 @@ from osgeo import gdal as osgeo_gdal
 from osgeo import ogr as osgeo_ogr
 from osgeo import osr as osgeo_osr
 
+from pygeoapi.crs import get_crs
 from pygeoapi.provider.base import (
     BaseProvider, ProviderGenericError,
     ProviderQueryError, ProviderConnectionError,
     ProviderItemNotFoundError)
-
-from pygeoapi.util import get_crs_from_uri
 
 LOGGER = logging.getLogger(__name__)
 
@@ -86,8 +85,6 @@ class OGRProvider(BaseProvider):
             data:
                 source_type: WFS
                 source: WFS:https://service.pdok.nl/kadaster/rdinfo/wfs/v1_0?
-                source_srs: EPSG:28992
-                target_srs: EPSG:4326
                 source_capabilities:
                     paging: True
                 source_options:
@@ -143,28 +140,9 @@ class OGRProvider(BaseProvider):
         self.source_capabilities = self.data_def.get('source_capabilities',
                                                      {'paging': False})
 
-        # self.source_srs = int(self.data_def.get('source_srs',
-        #                                         'EPSG:4326').split(':')[1])
-        # self.target_srs = int(self.data_def.get('target_srs',
-        #                                         'EPSG:4326').split(':')[1])
-        if self.data_def.get('source_srs') is not None \
-                or self.data_def.get('target_srs') is not None:
+        if self.data_def.get('source_srs') or self.data_def.get('target_srs'):
             LOGGER.warning('source/target_srs no longer supported in OGRProvider') # noqa
             LOGGER.warning('Use crs and storage_crs in config, see docs')
-
-        # Optional coordinate transformation inward (requests) and
-        # outward (responses) when the source layers and
-        # OGC API - Features collections differ in EPSG-codes.
-        self.transform_in = None
-        self.transform_out = None
-        # if self.source_srs != self.target_srs:
-        #     source = self._get_spatial_ref_from_epsg(self.source_srs)
-        #     target = self._get_spatial_ref_from_epsg(self.target_srs)
-        #
-        #     self.transform_in = \
-        #         osgeo_osr.CoordinateTransformation(target, source)
-        #     self.transform_out = \
-        #         osgeo_osr.CoordinateTransformation(source, target)
 
         self._load_source_helper(self.data_def['source_type'])
 
@@ -335,9 +313,6 @@ class OGRProvider(BaseProvider):
                       f"{maxx} {miny},{minx} {miny}))"
 
                 polygon = self.ogr.CreateGeometryFromWkt(wkt)
-                # if self.transform_in:
-                #     polygon.Transform(self.transform_in)
-
                 layer.SetSpatialFilter(polygon)
 
                 # layer.SetSpatialFilterRect(
@@ -402,7 +377,7 @@ class OGRProvider(BaseProvider):
             epsg_code = 4326
             force_auth_comply = False
         else:
-            pyproj_crs = get_crs_from_uri(crs_uri)
+            pyproj_crs = get_crs(crs_uri)
             epsg_code = int(pyproj_crs.srs.split(':')[1])
             force_auth_comply = True
         return self._get_spatial_ref_from_epsg(
@@ -431,9 +406,6 @@ class OGRProvider(BaseProvider):
         result = None
         crs_transform_out = self._get_crs_transform(crs_transform_spec)
 
-        # Keep support for source_srs/target_srs
-        # if crs_transform_out is None:
-        #     crs_transform_out = self.transform_out
         try:
             LOGGER.debug(f'Fetching identifier {identifier}')
             layer = self._get_layer()
@@ -566,9 +538,6 @@ class OGRProvider(BaseProvider):
         layer.ResetReading()
         crs_transform_out = self._get_crs_transform(crs_transform_spec)
 
-        # Keep support for source_srs/target_srs
-        # if crs_transform_out is None:
-        #     crs_transform_out = self.transform_out
         try:
             # Ignore gdal error
             ogr_feature = _ignore_gdal_error(layer, 'GetNextFeature')
