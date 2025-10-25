@@ -251,6 +251,10 @@ default.
                 options:  # optional options to pass to provider (i.e. GDAL creation)
                     option_name: option_value
                 include_extra_query_parameters: false  # include extra query parameters that are not part of the collection properties (default: false)
+          formatters:  # list of 1..n formatter definitions
+              - name: formatter
+                attachment: true  # whether or not to provide as an attachment or normal response
+                geom: False  # whether or not to include geometry
 
       hello-world:  # name of process
           type: process  # REQUIRED (collection, process, or stac-collection)
