@@ -101,7 +101,8 @@ CONFORMANCE_CLASSES_RECORDS = [
 
 
 def get_collection_queryables(api: API, request: Union[APIRequest, Any],
-                              dataset=None) -> Tuple[dict, int, str]:
+                              dataset: str | None = None
+                              ) -> Tuple[dict, int, str]:
     """
     Provide collection queryables
 
@@ -235,7 +236,7 @@ def get_collection_queryables(api: API, request: Union[APIRequest, Any],
 
 def get_collection_items(
         api: API, request: Union[APIRequest, Any],
-        dataset) -> Tuple[dict, int, str]:
+        dataset: str | None = None) -> Tuple[dict, int, str]:
     """
     Queries collection
 
@@ -703,7 +704,8 @@ def get_collection_items(
 
 def manage_collection_item(
         api: API, request: APIRequest,
-        action, dataset, identifier=None) -> Tuple[dict, int, str]:
+        action: str, dataset: str,
+        identifier: str | None = None) -> Tuple[dict, int, str]:
     """
     Adds an item to a collection
 
@@ -813,7 +815,8 @@ def manage_collection_item(
 
 
 def get_collection_item(api: API, request: APIRequest,
-                        dataset, identifier) -> Tuple[dict, int, str]:
+                        dataset: str, identifier: str
+                        ) -> Tuple[dict, int, str]:
     """
     Get a single collection item
 
@@ -986,7 +989,8 @@ def get_collection_item(api: API, request: APIRequest,
 
 
 def create_crs_transform_spec(
-        config: dict, query_crs_uri: Optional[str] = None) -> Union[None, CrsTransformSpec]:  # noqa
+        config: dict,
+        query_crs_uri: Optional[str] = None) -> Union[None, CrsTransformSpec]:  # noqa
     """
     Create a `CrsTransformSpec` instance based on provider config and
     *crs* query parameter.

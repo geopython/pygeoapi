@@ -64,7 +64,8 @@ DEFAULT_CRS = 'http://www.opengis.net/def/crs/EPSG/0/4326'
 
 
 def get_collection_map(api: API, request: APIRequest,
-                       dataset, style=None) -> Tuple[dict, int, str]:
+                       dataset: str, style: str | None = None
+                       ) -> Tuple[dict, int, str]:
     """
     Returns a subset of a collection map
 
@@ -194,7 +195,8 @@ def get_collection_map(api: API, request: APIRequest,
 
 
 def get_collection_map_legend(api: API, request: APIRequest,
-                              dataset, style=None) -> Tuple[dict, int, str]:
+                              dataset: str, style: str | None = None
+                              ) -> Tuple[dict, int, str]:
     """
     Returns a subset of a collection map legend
 

@@ -37,7 +37,7 @@ import sys
 LOGGER = logging.getLogger(__name__)
 
 
-def setup_logger(logging_config):
+def setup_logger(logging_config: dict):
     """
     Setup configuration
 

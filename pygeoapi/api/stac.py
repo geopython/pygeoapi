@@ -134,7 +134,7 @@ def get_stac_root(api: API, request: APIRequest) -> Tuple[dict, int, str]:
 
 # TODO: no tests for this?
 def get_stac_path(api: API, request: APIRequest,
-                  path) -> Tuple[dict, int, str]:
+                  path: str) -> Tuple[dict, int, str]:
     """
     Provide STAC resource path
 
