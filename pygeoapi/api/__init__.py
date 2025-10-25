@@ -1347,6 +1347,7 @@ def describe_collections(api: API, request: APIRequest,
         })
 
     if request.format == F_HTML:  # render
+        fcm['base_url'] = api.base_url
         fcm['collections_path'] = api.get_collections_url()
         if dataset is not None:
             tpl_config = api.get_dataset_templates(dataset)
