@@ -38,7 +38,7 @@ import uuid
 import pytest
 from pyproj.exceptions import CRSError
 import pygeofilter.ast
-from pygeofilter.parsers.ecql import parse
+from pygeofilter.parsers.cql2_text import parse
 from pygeofilter.values import Geometry
 from shapely.geometry import Point
 
