@@ -66,8 +66,10 @@ CONFORMANCE_CLASSES = [
 ]
 
 
-def get_collection_edr_instances(api: API, request: APIRequest, dataset,
-                                 instance_id=None) -> Tuple[dict, int, str]:
+def get_collection_edr_instances(api: API, request: APIRequest,
+                                 dataset: str,
+                                 instance_id: str | None = None
+                                 ) -> Tuple[dict, int, str]:
     """
     Queries collection EDR instances
 
@@ -233,8 +235,10 @@ def get_collection_edr_instances(api: API, request: APIRequest, dataset,
 
 
 def get_collection_edr_query(api: API, request: APIRequest,
-                             dataset, instance, query_type,
-                             location_id=None) -> Tuple[dict, int, str]:
+                             dataset: str, instance: str,
+                             query_type: str,
+                             location_id: str | None = None
+                             ) -> Tuple[dict, int, str]:
     """
     Queries collection EDR
 

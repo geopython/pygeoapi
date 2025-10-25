@@ -51,7 +51,7 @@ class BaseFormatter:
         if 'geom' in formatter_def:
             self.geom = formatter_def['geom']
 
-    def write(self, options: dict = {}, data: dict = None) -> str:
+    def write(self, options: dict = {}, data: dict | None = None) -> str:
         """
         Generate data in specified format
 

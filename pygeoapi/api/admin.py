@@ -54,7 +54,7 @@ class Admin(API):
     PYGEOAPI_CONFIG = os.environ.get('PYGEOAPI_CONFIG')
     PYGEOAPI_OPENAPI = os.environ.get('PYGEOAPI_OPENAPI')
 
-    def __init__(self, config, openapi):
+    def __init__(self, config: dict, openapi: dict):
         """
         constructor
 
@@ -66,7 +66,7 @@ class Admin(API):
 
         super().__init__(config, openapi)
 
-    def merge(self, obj1, obj2):
+    def merge(self, obj1: dict, obj2: dict):
         """
         Merge two dictionaries
 
@@ -89,7 +89,7 @@ class Admin(API):
         else:
             return obj2
 
-    def validate(self, config):
+    def validate(self, config: dict):
         """
         Validate pygeoapi configuration and OpenAPI to file
 
@@ -105,7 +105,7 @@ class Admin(API):
         # validate_openapi_document(oas)
         return True
 
-    def write(self, config):
+    def write(self, config: dict):
         """
         Write pygeoapi configuration and OpenAPI to file
 
@@ -115,7 +115,7 @@ class Admin(API):
         self.write_config(config)
         self.write_oas(config)
 
-    def write_config(self, config):
+    def write_config(self, config: dict):
         """
         Write pygeoapi configuration file
 
@@ -140,7 +140,7 @@ class Admin(API):
         yaml_dump(config, self.PYGEOAPI_CONFIG)
         LOGGER.debug('Finished writing pygeoapi configuration')
 
-    def write_oas(self, config):
+    def write_oas(self, config: dict):
         """
         Write pygeoapi OpenAPI document
 

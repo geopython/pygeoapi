@@ -40,18 +40,20 @@
 # =================================================================
 
 
+import json
+import logging
+import urllib.parse
 from copy import deepcopy
 from datetime import datetime, timezone
 from http import HTTPStatus
-import json
-import logging
 from typing import Tuple
-import urllib.parse
 
 from pygeoapi import l10n
 from pygeoapi.api import evaluate_limit
 from pygeoapi.process.base import (
-    JobNotFoundError, JobResultNotFoundError, ProcessorExecuteError
+    JobNotFoundError,
+    JobResultNotFoundError,
+    ProcessorExecuteError,
 )
 from pygeoapi.process.manager.base import get_manager, Subscriber
 from pygeoapi.util import (
@@ -74,7 +76,8 @@ CONFORMANCE_CLASSES = [
 
 
 def describe_processes(api: API, request: APIRequest,
-                       process=None) -> Tuple[dict, int, str]:
+                       process: str | None = None
+                       ) -> Tuple[dict, int, str]:
     """
     Provide processes metadata
 
@@ -227,7 +230,7 @@ def describe_processes(api: API, request: APIRequest,
 
 # TODO: get_jobs doesn't have tests
 def get_jobs(api: API, request: APIRequest,
-             job_id=None) -> Tuple[dict, int, str]:
+             job_id: str | None = None) -> Tuple[dict, int, str]:
     """
     Get process jobs
 
@@ -405,7 +408,7 @@ def get_jobs(api: API, request: APIRequest,
 
 
 def execute_process(api: API, request: APIRequest,
-                    process_id) -> Tuple[dict, int, str]:
+                    process_id: str) -> Tuple[dict, int, str]:
     """
     Execute process
 
@@ -532,7 +535,7 @@ def execute_process(api: API, request: APIRequest,
 
 
 def get_job_result(api: API, request: APIRequest,
-                   job_id) -> Tuple[dict, int, str]:
+                   job_id: str) -> Tuple[dict, int, str]:
     """
     Get result of job (instance of a process)
 
@@ -602,7 +605,8 @@ def get_job_result(api: API, request: APIRequest,
     return headers, HTTPStatus.OK, content
 
 
-def delete_job(api: API, request: APIRequest, job_id) -> Tuple[dict, int, str]:
+def delete_job(api: API, request: APIRequest,
+               job_id: str) -> Tuple[dict, int, str]:
     """
     Delete a process job
 
@@ -647,7 +651,8 @@ def delete_job(api: API, request: APIRequest, job_id) -> Tuple[dict, int, str]:
     return {}, http_status, to_json(response, api.pretty_print)
 
 
-def get_oas_30(cfg: dict, locale: str) -> tuple[list[dict[str, str]], dict[str, dict]]:  # noqa
+def get_oas_30(cfg: dict, locale: str
+               ) -> tuple[list[dict[str, str]], dict[str, dict]]:  # noqa
     """
     Get OpenAPI fragments
 

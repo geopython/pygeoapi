@@ -31,7 +31,7 @@
 """Flask module providing the route paths to the api"""
 
 import os
-from typing import Union
+from typing import Callable, Union
 
 import click
 from flask import (Flask, Blueprint, make_response, request,
@@ -103,7 +103,7 @@ if (OGC_SCHEMAS_LOCATION is not None and
         raise RuntimeError('OGC schemas misconfigured')
 
     @BLUEPRINT.route('/schemas/<path:path>', methods=['GET'])
-    def schemas(path):
+    def schemas(path: str):
         """
         Serve OGC schemas locally
 
@@ -125,9 +125,9 @@ if (OGC_SCHEMAS_LOCATION is not None and
                                    mimetype=get_mimetype(basename_))
 
 
-def execute_from_flask(api_function, request: Request, *args,
-                       skip_valid_check=False,
-                       alternative_api=None
+def execute_from_flask(api_function: Callable, request: Request, *args,
+                       skip_valid_check: bool = False,
+                       alternative_api: API | None = None
                        ) -> Response:
     """
     Executes API function from Flask
@@ -193,7 +193,7 @@ def conformance():
 
 
 @BLUEPRINT.route('/TileMatrixSets/<tileMatrixSetId>')
-def get_tilematrix_set(tileMatrixSetId=None):
+def get_tilematrix_set(tileMatrixSetId: str | None = None):
     """
     OGC API TileMatrixSet endpoint
 
@@ -219,7 +219,7 @@ def get_tilematrix_sets():
 
 @BLUEPRINT.route('/collections')
 @BLUEPRINT.route('/collections/<path:collection_id>')
-def collections(collection_id=None):
+def collections(collection_id: str | None = None):
     """
     OGC API collections endpoint
 
@@ -233,7 +233,7 @@ def collections(collection_id=None):
 
 
 @BLUEPRINT.route('/collections/<path:collection_id>/schema')
-def collection_schema(collection_id):
+def collection_schema(collection_id: str | None = None):
     """
     OGC API - collections schema endpoint
 
@@ -247,7 +247,7 @@ def collection_schema(collection_id):
 
 
 @BLUEPRINT.route('/collections/<path:collection_id>/queryables')
-def collection_queryables(collection_id=None):
+def collection_queryables(collection_id: str | None = None):
     """
     OGC API collections queryables endpoint
 
@@ -266,7 +266,7 @@ def collection_queryables(collection_id=None):
 @BLUEPRINT.route('/collections/<path:collection_id>/items/<path:item_id>',
                  methods=['GET', 'PUT', 'DELETE', 'OPTIONS'],
                  provide_automatic_options=False)
-def collection_items(collection_id, item_id=None):
+def collection_items(collection_id: str, item_id: str | None = None):
     """
     OGC API collections items endpoint
 
@@ -315,7 +315,7 @@ def collection_items(collection_id, item_id=None):
 
 
 @BLUEPRINT.route('/collections/<path:collection_id>/coverage')
-def collection_coverage(collection_id):
+def collection_coverage(collection_id: str):
     """
     OGC API - Coverages coverage endpoint
 
@@ -329,7 +329,7 @@ def collection_coverage(collection_id):
 
 
 @BLUEPRINT.route('/collections/<path:collection_id>/tiles')
-def get_collection_tiles(collection_id=None):
+def get_collection_tiles(collection_id: str | None = None):
     """
     OGC open api collections tiles access point
 
@@ -344,7 +344,8 @@ def get_collection_tiles(collection_id=None):
 
 @BLUEPRINT.route('/collections/<path:collection_id>/tiles/<tileMatrixSetId>')
 @BLUEPRINT.route('/collections/<path:collection_id>/tiles/<tileMatrixSetId>/metadata')  # noqa
-def get_collection_tiles_metadata(collection_id=None, tileMatrixSetId=None):
+def get_collection_tiles_metadata(collection_id: str | None = None,
+                                  tileMatrixSetId: str | None = None):
     """
     OGC open api collection tiles service metadata
 
@@ -361,8 +362,11 @@ def get_collection_tiles_metadata(collection_id=None, tileMatrixSetId=None):
 
 @BLUEPRINT.route('/collections/<path:collection_id>/tiles/\
 <tileMatrixSetId>/<tileMatrix>/<tileRow>/<tileCol>')
-def get_collection_tiles_data(collection_id=None, tileMatrixSetId=None,
-                              tileMatrix=None, tileRow=None, tileCol=None):
+def get_collection_tiles_data(collection_id: str | None = None,
+                              tileMatrixSetId: str | None = None,
+                              tileMatrix: str | None = None,
+                              tileRow: str | None = None,
+                              tileCol: str | None = None):
     """
     OGC open api collection tiles service data
 
@@ -384,7 +388,7 @@ def get_collection_tiles_data(collection_id=None, tileMatrixSetId=None,
 
 @BLUEPRINT.route('/collections/<collection_id>/map')
 @BLUEPRINT.route('/collections/<collection_id>/styles/<style_id>/map')
-def collection_map(collection_id, style_id=None):
+def collection_map(collection_id: str, style_id: str | None = None):
     """
     OGC API - Maps map render endpoint
 
@@ -401,7 +405,7 @@ def collection_map(collection_id, style_id=None):
 
 @BLUEPRINT.route('/processes')
 @BLUEPRINT.route('/processes/<process_id>')
-def get_processes(process_id=None):
+def get_processes(process_id: str | None = None):
     """
     OGC API - Processes description endpoint
 
@@ -417,7 +421,7 @@ def get_processes(process_id=None):
 @BLUEPRINT.route('/jobs')
 @BLUEPRINT.route('/jobs/<job_id>',
                  methods=['GET', 'DELETE'])
-def get_jobs(job_id=None):
+def get_jobs(job_id: str | None = None):
     """
     OGC API - Processes jobs endpoint
 
@@ -437,7 +441,7 @@ def get_jobs(job_id=None):
 
 
 @BLUEPRINT.route('/processes/<process_id>/execution', methods=['POST'])
-def execute_process_jobs(process_id):
+def execute_process_jobs(process_id: str):
     """
     OGC API - Processes execution endpoint
 
@@ -452,7 +456,7 @@ def execute_process_jobs(process_id):
 
 @BLUEPRINT.route('/jobs/<job_id>/results',
                  methods=['GET'])
-def get_job_result(job_id=None):
+def get_job_result(job_id: str | None = None):
     """
     OGC API - Processes job result endpoint
 
@@ -482,8 +486,9 @@ def get_job_result(job_id=None):
 @BLUEPRINT.route('/collections/<path:collection_id>/instances/<instance_id>/locations')  # noqa
 @BLUEPRINT.route('/collections/<path:collection_id>/instances/<instance_id>')
 @BLUEPRINT.route('/collections/<path:collection_id>/instances')
-def get_collection_edr_query(collection_id, instance_id=None,
-                             location_id=None):
+def get_collection_edr_query(collection_id: str,
+                             instance_id: str | None = None,
+                             location_id: str | None = None):
     """
     OGC EDR API endpoints
 
@@ -547,7 +552,7 @@ def stac_catalog_root():
 
 
 @BLUEPRINT.route('/stac/<path:path>')
-def stac_catalog_path(path):
+def stac_catalog_path(path: str):
     """
     STAC path endpoint
 
@@ -600,7 +605,7 @@ def admin_config_resources():
 @ADMIN_BLUEPRINT.route(
     '/admin/config/resources/<resource_id>',
     methods=['GET', 'PUT', 'PATCH', 'DELETE'])
-def admin_config_resource(resource_id):
+def admin_config_resource(resource_id: str):
     """
     Resource endpoint
 
@@ -638,7 +643,7 @@ if CONFIG['server'].get('admin'):
 @click.command()
 @click.pass_context
 @click.option('--debug', '-d', default=False, is_flag=True, help='debug')
-def serve(ctx, server=None, debug=False):
+def serve(ctx, server: str | None = None, debug: bool = False):
     """
     Serve pygeoapi via Flask. Runs pygeoapi
     as a flask server. Not recommend for production.

@@ -49,8 +49,9 @@ from http import HTTPStatus
 import logging
 import re
 import sys
-from typing import Any, Tuple, Union, Optional
+from typing import Any, Tuple, Union, Optional, Self
 
+from babel import Locale
 from dateutil.parser import parse as dateparse
 import pytz
 
@@ -286,7 +287,8 @@ class APIRequest:
         LOGGER.debug('No query parameters found')
         return {}
 
-    def _get_locale(self, headers, supported_locales):
+    def _get_locale(self, headers: dict,
+                    supported_locales: Union[list, Locale]) -> tuple:
         """
         Detects locale from "lang=<language>" param or `Accept-Language`
         header. Returns a tuple of (raw, locale) if found in params or headers.
@@ -325,7 +327,7 @@ class APIRequest:
 
         return raw, default_locale
 
-    def _get_format(self, headers) -> Union[str, None]:
+    def _get_format(self, headers: dict) -> Union[str, None]:
         """
         Get `Request` format type from query parameters or headers.
 
@@ -464,9 +466,9 @@ class APIRequest:
             return True
         return False
 
-    def get_response_headers(self, force_lang: l10n.Locale = None,
-                             force_type: str = None,
-                             force_encoding: str = None,
+    def get_response_headers(self, force_lang: l10n.Locale | None = None,
+                             force_type: str | None = None,
+                             force_encoding: str | None = None,
                              **custom_headers) -> dict:
         """
         Prepares and returns a dictionary with Response object headers.
@@ -512,7 +514,7 @@ class APIRequest:
 
         return headers
 
-    def get_request_headers(self, headers) -> dict:
+    def get_request_headers(self, headers: dict) -> dict:
         """
         Obtains and returns a dictionary with Request object headers.
 
@@ -529,7 +531,7 @@ class APIRequest:
 class API:
     """API object"""
 
-    def __init__(self, config, openapi):
+    def __init__(self, config: dict, openapi: dict) -> Self | None:
         """
         constructor
 
@@ -571,8 +573,8 @@ class API:
         self.manager = get_manager(self.config)
         LOGGER.info('Process manager plugin loaded')
 
-    def get_exception(self, status, headers, format_, code,
-                      description) -> Tuple[dict, int, str]:
+    def get_exception(self, status: int, headers: dict, format_: str | None,
+                      code: str, description: str) -> Tuple[dict, int, str]:
         """
         Exception handler
 
@@ -610,7 +612,8 @@ class API:
 
         return headers, status, content
 
-    def get_format_exception(self, request) -> Tuple[dict, int, str]:
+    def get_format_exception(self,
+                             request: APIRequest) -> Tuple[dict, int, str]:
         """
         Returns a format exception.
 
@@ -631,7 +634,7 @@ class API:
     def get_collections_url(self) -> str:
         return f"{self.base_url}/collections"
 
-    def get_dataset_templates(self, dataset) -> dict:
+    def get_dataset_templates(self, dataset: str) -> dict:
         templates = self.config['resources'][dataset].get('templates')
 
         return templates or self.tpl_config['server']['templates']
@@ -884,7 +887,7 @@ def openapi_(api: API, request: APIRequest) -> Tuple[dict, int, str]:
         return headers, HTTPStatus.OK, api.openapi
 
 
-def conformance(api, request: APIRequest) -> Tuple[dict, int, str]:
+def conformance(api: API, request: APIRequest) -> Tuple[dict, int, str]:
     """
     Provide conformance definition
 
@@ -930,7 +933,7 @@ def conformance(api, request: APIRequest) -> Tuple[dict, int, str]:
 
 @jsonldify
 def describe_collections(api: API, request: APIRequest,
-                         dataset=None) -> Tuple[dict, int, str]:
+                         dataset: str | None = None) -> Tuple[dict, int, str]:
     """
     Provide collection metadata
 
@@ -1377,7 +1380,7 @@ def describe_collections(api: API, request: APIRequest,
 
 
 def get_collection_schema(api: API, request: Union[APIRequest, Any],
-                          dataset) -> Tuple[dict, int, str]:
+                          dataset: str) -> Tuple[dict, int, str]:
     """
     Returns a collection schema
 
@@ -1462,7 +1465,7 @@ def get_collection_schema(api: API, request: Union[APIRequest, Any],
     return headers, HTTPStatus.OK, to_json(schema, api.pretty_print)
 
 
-def validate_bbox(value=None) -> list:
+def validate_bbox(value: list | None = None) -> list:
     """
     Helper function to validate bbox parameter
 
@@ -1510,7 +1513,8 @@ def validate_bbox(value=None) -> list:
     return bbox
 
 
-def validate_datetime(resource_def, datetime_=None) -> str:
+def validate_datetime(resource_def: dict,
+                      datetime_: str | None = None) -> str:
     """
     Helper function to validate temporal parameter
 
