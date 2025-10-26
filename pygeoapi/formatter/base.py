@@ -39,7 +39,7 @@ class BaseFormatter:
         """
         Initialize object
 
-        :param formatter_def: formatter definition
+        param formatter_def: formatter definition
 
         :returns: pygeoapi.formatter.base.BaseFormatter
         """

@@ -55,13 +55,15 @@ from pygeoapi.crs import (DEFAULT_CRS, DEFAULT_STORAGE_CRS,
                           set_content_crs_header)
 from pygeoapi.formatter.base import FormatterSerializationError
 from pygeoapi.linked_data import geojson2jsonld
+from pygeoapi.openapi import get_oas_30_parameters
 from pygeoapi.plugin import load_plugin, PLUGINS
 from pygeoapi.provider.base import (
     ProviderGenericError, ProviderTypeError, SchemaType)
 
 from pygeoapi.util import (filter_providers_by_type, to_json,
                            filter_dict_by_key_value, str2bool,
-                           get_provider_by_type, render_j2_template)
+                           get_provider_by_type, render_j2_template,
+                           get_dataset_formatters)
 
 from . import (
     APIRequest, API, SYSTEM_LOCALE, F_JSON, FORMAT_TYPES, F_HTML, F_JSONLD,
@@ -350,13 +352,7 @@ def get_collection_items(
             err.ogc_exception_code, err.message)
 
     LOGGER.debug('Validating requested format')
-    dataset_formatters = {}
-    for key, value in PLUGINS['formatter'].items():
-        df2 = load_plugin('formatter', {'name': key})
-        dataset_formatters[df2.name] = df2
-    for df in collections[dataset].get('formatters', []):
-        df2 = load_plugin('formatter', df)
-        dataset_formatters[df2.name] = df2
+    dataset_formatters = get_dataset_formatters(collections[dataset])
 
     if not request.is_valid(dataset_formatters.keys()):
         return api.get_format_exception(request)
@@ -1090,6 +1086,11 @@ def get_oas_30(cfg: dict, locale: str) -> tuple[list[dict[str, str]], dict[str, 
                 v.get('limits', {})
             )
 
+            dataset_formatters = get_dataset_formatters(v)
+            coll_f_parameter = deepcopy(get_oas_30_parameters(cfg, locale))['f']  # noqa
+            for key, value in dataset_formatters.items():
+                coll_f_parameter['schema']['enum'].append(key)
+
             paths[items_path] = {
                 'get': {
                     'summary': f'Get {title} items',
@@ -1097,7 +1098,7 @@ def get_oas_30(cfg: dict, locale: str) -> tuple[list[dict[str, str]], dict[str, 
                     'tags': [k],
                     'operationId': f'get{k.capitalize()}Features',
                     'parameters': [
-                        {'$ref': '#/components/parameters/f'},
+                        coll_f_parameter,
                         {'$ref': '#/components/parameters/lang'},
                         {'$ref': '#/components/parameters/bbox'},
                         coll_limit,
