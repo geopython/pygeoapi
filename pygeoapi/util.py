@@ -765,13 +765,10 @@ def get_dataset_formatters(dataset: dict) -> dict:
 
     dataset_formatters = {}
 
-    print(dataset)
     for key, value in PLUGINS['formatter'].items():
-        print("PLUGINS")
         df2 = load_plugin('formatter', {'name': key})
         dataset_formatters[df2.name] = df2
     for df in dataset.get('formatters', []):
-        print("CUSTOM")
         df2 = load_plugin('formatter', df)
         dataset_formatters[df2.name] = df2
 
