@@ -42,11 +42,10 @@ import pyproj
 import pygeofilter.ast
 import pygeofilter.values
 from pyproj.exceptions import CRSError
-
 from shapely import ops, Geometry
 from shapely.geometry import (
     shape as geojson_to_geom,
-    mapping as geom_to_geojson,
+    mapping as geom_to_geojson
 )
 
 LOGGER = logging.getLogger(__name__)

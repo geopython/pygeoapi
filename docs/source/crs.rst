@@ -21,10 +21,13 @@ Although GeoJSON mandates WGS84 in longitude, latitude order, the client and ser
 Background
 ----------
 
-pygeoapi implements the complete specification: 
-`OGC API - Features - Part 2: Coordinate Reference Systems by Reference corrigendum`_.
-Under the hood, pygeoapi uses the well-known `pyproj`_ Python wrapper to the `PROJ`_ library.
-For information on implementing CRS on custom plugins, see `Implementation`_.
+pygeoapi implements the `OGC API - Features - Part 2: Coordinate Reference Systems by Reference`_ specification.
+
+Under the hood, pygeoapi uses the `pyproj`_ Python package.
+
+.. note::
+
+   For more information on implementing CRS on custom plugins, see `Implementation`_.
 
 CRS support exists for the following OGC APIs:
 
@@ -306,7 +309,6 @@ Or you may specify both `crs` and `bbox-crs` and thus `bbox` in that CRS `http:/
     .
     .
 
-.. _`ISO-19111`: http://docs.opengeospatial.org/as/18-005r5/18-005r5.html
-.. _`OGC API - Features - Part 2: Coordinate Reference Systems by Reference corrigendum`: https://docs.opengeospatial.org/is/18-058r1/18-058r1.html
-.. _`PROJ`: https://proj.org/
-.. _`pyproj`: https://pyproj4.github.io/pyproj/stable
+.. _`ISO-19111`: https://docs.ogc.org/as/18-005r5/18-005r5.html
+.. _`OGC API - Features - Part 2: Coordinate Reference Systems by Reference`: https://docs.ogc.org/is/18-058r1/18-058r1.html
+.. _`pyproj`: https://pyproj4.github.io/pyproj
