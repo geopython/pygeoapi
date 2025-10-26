@@ -767,7 +767,7 @@ def get_dataset_formatters(dataset: dict) -> dict:
 
     for key, value in PLUGINS['formatter'].items():
         df2 = load_plugin('formatter', {'name': key})
-        dataset_formatters[df2.name] = df2
+        dataset_formatters[key] = df2
     for df in dataset.get('formatters', []):
         df2 = load_plugin('formatter', df)
         dataset_formatters[df2.name] = df2

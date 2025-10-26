@@ -669,8 +669,9 @@ def get_collection_items(
                                      'collections/items/index.html',
                                      content, request.locale)
         return headers, HTTPStatus.OK, content
-    elif request.format in dataset_formatters:  # render
-        formatter = dataset_formatters[request.format]
+    elif request.format in [df.f for df in dataset_formatters.values()]:
+        formatter = [v for k, v in dataset_formatters.items() if
+                     v.f == request.format][0]
 
         try:
             content = formatter.write(
@@ -1089,7 +1090,7 @@ def get_oas_30(cfg: dict, locale: str) -> tuple[list[dict[str, str]], dict[str, 
             dataset_formatters = get_dataset_formatters(v)
             coll_f_parameter = deepcopy(get_oas_30_parameters(cfg, locale))['f']  # noqa
             for key, value in dataset_formatters.items():
-                coll_f_parameter['schema']['enum'].append(key)
+                coll_f_parameter['schema']['enum'].append(value.f)
 
             paths[items_path] = {
                 'get': {

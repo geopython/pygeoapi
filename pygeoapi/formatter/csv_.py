@@ -52,6 +52,7 @@ class CSVFormatter(BaseFormatter):
 
         super().__init__({'name': 'csv', 'geom': geom})
         self.mimetype = 'text/csv; charset=utf-8'
+        self.f = 'csv'
         self.extension = 'csv'
 
     def write(self, options: dict = {}, data: dict = None) -> str:
