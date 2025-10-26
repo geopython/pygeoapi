@@ -65,9 +65,10 @@ For more information related to API design rules (the ``api_rules`` property in 
         on_exceed: throttle  # throttle or error (default=throttle)
 
     # configuration to specify directory tree for HTML page templates
+    # omit this to use the default pygeoapi templates
     # overridable when redefined in resource level configuration
-    templates:  # omit this to use the default pygeoapi templates
-      # recommend using absolute paths
+    templates:
+      # recommended to use absolute paths
       path: /path/to/jinja2/templates/folder # path to templates folder containing the Jinja2 template HTML files
       static: /path/to/static/folder # path to static folder containing css, js, images and other static files referenced by the template
 
