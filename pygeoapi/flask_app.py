@@ -401,13 +401,20 @@ def make_wsgi_app(config_location: str, openapi_location: str) -> Flask:
         return execute_from_flask(
             tiles_api.get_collection_tiles_metadata,
             request, collection_id, tileMatrixSetId,
-            skip_valid_check=True)
+            skip_valid_check=True
+        )
 
-    @blueprint.route('/collections/<path:collection_id>/tiles/\
-    <tileMatrixSetId>/<tileMatrix>/<tileRow>/<tileCol>')
+    @blueprint.route(
+        '/collections/<path:collection_id>/tiles/'
+        '<tileMatrixSetId>/<tileMatrix>/<tileRow>/<tileCol>'
+    )
     def get_collection_tiles_data(
-            collection_id: str, tileMatrixSetId: str,
-            tileMatrix: str, tileRow: str, tileCol: str) -> Response:
+            collection_id: str,
+            tileMatrixSetId: str,
+            tileMatrix: str,
+            tileRow: str,
+            tileCol: str
+            ) -> Response:
         """
         OGC open api collection tiles service data
 
@@ -637,15 +644,14 @@ def make_wsgi_app(config_location: str, openapi_location: str) -> Flask:
         :returns: HTTP response
         """
 
-        if request.method == 'GET':
-            return execute_from_flask(
-                admin_api.get_resources, request, alternative_api=admin_
-            )
-
-        elif request.method == 'POST':
+        if request.method == 'POST':
             return execute_from_flask(
                 admin_api.post_resource, request, alternative_api=admin_
             )
+
+        return execute_from_flask(
+            admin_api.get_resources, request, alternative_api=admin_
+        )
 
     @admin_blueprint.route(
         '/admin/config/resources/<resource_id>',
@@ -657,13 +663,7 @@ def make_wsgi_app(config_location: str, openapi_location: str) -> Flask:
         :returns: HTTP response
         """
 
-        if request.method == 'GET':
-            return execute_from_flask(
-                admin_api.get_resource, request,
-                resource_id, alternative_api=admin_
-            )
-
-        elif request.method == 'DELETE':
+        if request.method == 'DELETE':
             return execute_from_flask(
                 admin_api.delete_resource, request,
                 resource_id, alternative_api=admin_
@@ -678,6 +678,12 @@ def make_wsgi_app(config_location: str, openapi_location: str) -> Flask:
         elif request.method == 'PATCH':
             return execute_from_flask(
                 admin_api.patch_resource, request,
+                resource_id, alternative_api=admin_
+            )
+
+        # GET
+        return execute_from_flask(
+                admin_api.get_resource, request,
                 resource_id, alternative_api=admin_
             )
 
