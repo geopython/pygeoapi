@@ -27,7 +27,7 @@
 #
 # =================================================================
 
-from datetime import datetime
+import datetime
 from pathlib import Path
 import sys
 from typing import Union
@@ -226,7 +226,7 @@ for xml_file in xml_dir.glob('*.xml'):
         'geometry': geometry,
         'properties': {
             'created': issued,
-            'updated': datetime.utcnow().strftime('%Y-%m-%dT%H:%M:%SZ'),
+            'updated': datetime.datetime.now(datetime.UTC).strftime('%Y-%m-%dT%H:%M:%SZ'),  # noqa
             'type': type_,
             'title': title,
             'description': description,
