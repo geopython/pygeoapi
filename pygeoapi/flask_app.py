@@ -365,7 +365,8 @@ def make_wsgi_app(config_location: str, openapi_location: str) -> Flask:
         """
 
         return execute_from_flask(
-            tiles_api.get_collection_tiles, request, collection_id)
+            tiles_api.get_collection_tiles, request, collection_id
+        )
 
     @blueprint.route('/collections/<path:collection_id>/tiles/<tileMatrixSetId>')  # noqa E501
     @blueprint.route('/collections/<path:collection_id>/tiles/<tileMatrixSetId>/metadata')  # noqa E501
@@ -436,7 +437,8 @@ def make_wsgi_app(config_location: str, openapi_location: str) -> Flask:
         """
 
         return execute_from_flask(
-            processes_api.describe_processes, request, process_id)
+            processes_api.describe_processes, request, process_id
+        )
 
     @blueprint.route('/jobs')
     @blueprint.route(
