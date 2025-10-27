@@ -64,64 +64,64 @@ def make_wsgi_app(config_location: str, openapi_location: str) -> Flask:
     Returns:
         Flask WSGI application
     """
-    CONFIG = get_config(config_location=config_location)
-    OPENAPI = load_openapi_document(pygeoapi_openapi=openapi_location)
+    config = get_config(config_path=config_location)
+    openapi = load_openapi_document(pygeoapi_openapi=openapi_location)
 
-    API_RULES = get_api_rules(CONFIG)
+    api_rules = get_api_rules(config)
 
-    if CONFIG['server'].get('admin'):
+    if config['server'].get('admin'):
         import pygeoapi.api.admin as admin_api
         from pygeoapi.api.admin import Admin
 
-    STATIC_FOLDER = 'static'
-    if 'templates' in CONFIG['server']:
-        STATIC_FOLDER = CONFIG['server']['templates'].get('static', 'static')
+    static_folder = 'static'
+    if 'templates' in config['server']:
+        static_folder = config['server']['templates'].get('static', 'static')
 
-    APP = Flask(
+    app = Flask(
         __name__,
-        static_folder=STATIC_FOLDER,
+        static_folder=static_folder,
         static_url_path='/static'
     )
 
-    APP.url_map.strict_slashes = API_RULES.strict_slashes
+    app.url_map.strict_slashes = api_rules.strict_slashes
 
-    BLUEPRINT = Blueprint(
+    blueprint = Blueprint(
         'pygeoapi',
         __name__,
-        static_folder=STATIC_FOLDER,
-        url_prefix=API_RULES.get_url_prefix('flask')
+        static_folder=static_folder,
+        url_prefix=api_rules.get_url_prefix('flask')
     )
-    ADMIN_BLUEPRINT = Blueprint(
+    admin_blueprint = Blueprint(
         'admin',
         __name__,
-        static_folder=STATIC_FOLDER,
-        url_prefix=API_RULES.get_url_prefix('flask')
+        static_folder=static_folder,
+        url_prefix=api_rules.get_url_prefix('flask')
     )
 
     # CORS: optionally enable from config.
-    if CONFIG['server'].get('cors', False):
+    if config['server'].get('cors', False):
         try:
             from flask_cors import CORS
-            CORS(APP, CORS_EXPOSE_HEADERS=['*'])
+            CORS(app, CORS_EXPOSE_HEADERS=['*'])
         except ModuleNotFoundError:
             print('Python package flask-cors required for CORS support')
 
-    APP.config['JSONIFY_PRETTYPRINT_REGULAR'] = CONFIG['server'].get(
+    app.config['JSONIFY_PRETTYPRINT_REGULAR'] = config['server'].get(
         'pretty_print', True)
 
-    api_ = API(CONFIG, OPENAPI)
+    api_ = API(config, openapi)
 
-    OGC_SCHEMAS_LOCATION = CONFIG['server'].get('ogc_schemas_location')
+    ogc_schemas_location = config['server'].get('ogc_schemas_location')
 
-    if (OGC_SCHEMAS_LOCATION is not None and
-            not OGC_SCHEMAS_LOCATION.startswith('http')):
+    if (ogc_schemas_location is not None and
+            not ogc_schemas_location.startswith('http')):
         # serve the OGC schemas locally
 
-        if not os.path.exists(OGC_SCHEMAS_LOCATION):
+        if not os.path.exists(ogc_schemas_location):
             raise RuntimeError('OGC schemas misconfigured')
 
-        @BLUEPRINT.route('/schemas/<path:path>', methods=['GET'])
-        def schemas(path):
+        @blueprint.route('/schemas/<path:path>', methods=['GET'])
+        def schemas(path: str) -> Response:
             """
             Serve OGC schemas locally
 
@@ -130,7 +130,7 @@ def make_wsgi_app(config_location: str, openapi_location: str) -> Flask:
             :returns: HTTP response
             """
 
-            full_filepath = os.path.join(OGC_SCHEMAS_LOCATION, path)
+            full_filepath = os.path.join(ogc_schemas_location, path)
             dirname_ = os.path.dirname(full_filepath)
             basename_ = os.path.basename(full_filepath)
 
@@ -146,11 +146,11 @@ def make_wsgi_app(config_location: str, openapi_location: str) -> Flask:
             )
 
     def execute_from_flask(
-            api_function,
+            api_function: callable,
             request: Request,
             *args,
-            skip_valid_check=False,
-            alternative_api=None,
+            skip_valid_check: bool = False,
+            alternative_api: Response = None,
             ) -> Response:
         """
         Executes API function from Flask
@@ -182,8 +182,8 @@ def make_wsgi_app(config_location: str, openapi_location: str) -> Flask:
             response.headers = headers
         return response
 
-    @BLUEPRINT.route('/')
-    def landing_page():
+    @blueprint.route('/')
+    def landing_page() -> Response:
         """
         OGC API landing page endpoint
 
@@ -191,8 +191,8 @@ def make_wsgi_app(config_location: str, openapi_location: str) -> Flask:
         """
         return execute_from_flask(core_api.landing_page, request)
 
-    @BLUEPRINT.route('/openapi')
-    def openapi():
+    @blueprint.route('/openapi')
+    def openapi() -> Response:
         """
         OpenAPI endpoint
 
@@ -201,8 +201,8 @@ def make_wsgi_app(config_location: str, openapi_location: str) -> Flask:
 
         return execute_from_flask(core_api.openapi_, request)
 
-    @BLUEPRINT.route('/conformance')
-    def conformance():
+    @blueprint.route('/conformance')
+    def conformance() -> Response:
         """
         OGC API conformance endpoint
 
@@ -211,8 +211,8 @@ def make_wsgi_app(config_location: str, openapi_location: str) -> Flask:
 
         return execute_from_flask(core_api.conformance, request)
 
-    @BLUEPRINT.route('/TileMatrixSets/<tileMatrixSetId>')
-    def get_tilematrix_set(tileMatrixSetId=None):
+    @blueprint.route('/TileMatrixSets/<tileMatrixSetId>')
+    def get_tilematrix_set(tileMatrixSetId: str) -> Response:
         """
         OGC API TileMatrixSet endpoint
 
@@ -220,24 +220,22 @@ def make_wsgi_app(config_location: str, openapi_location: str) -> Flask:
 
         :returns: HTTP response
         """
-
         return execute_from_flask(
             tiles_api.tilematrixset, request, tileMatrixSetId
-            )
+        )
 
-    @BLUEPRINT.route('/TileMatrixSets')
-    def get_tilematrix_sets():
+    @blueprint.route('/TileMatrixSets')
+    def get_tilematrix_sets() -> Response:
         """
         OGC API TileMatrixSets endpoint
 
         :returns: HTTP response
         """
-
         return execute_from_flask(tiles_api.tilematrixsets, request)
 
-    @BLUEPRINT.route('/collections')
-    @BLUEPRINT.route('/collections/<path:collection_id>')
-    def collections(collection_id=None):
+    @blueprint.route('/collections')
+    @blueprint.route('/collections/<path:collection_id>')
+    def collections(collection_id: str = None) -> Response:
         """
         OGC API collections endpoint
 
@@ -245,13 +243,12 @@ def make_wsgi_app(config_location: str, openapi_location: str) -> Flask:
 
         :returns: HTTP response
         """
-
         return execute_from_flask(
             core_api.describe_collections, request, collection_id
             )
 
-    @BLUEPRINT.route('/collections/<path:collection_id>/schema')
-    def collection_schema(collection_id):
+    @blueprint.route('/collections/<path:collection_id>/schema')
+    def collection_schema(collection_id: str) -> Response:
         """
         OGC API - collections schema endpoint
 
@@ -264,8 +261,8 @@ def make_wsgi_app(config_location: str, openapi_location: str) -> Flask:
             core_api.get_collection_schema, request, collection_id
             )
 
-    @BLUEPRINT.route('/collections/<path:collection_id>/queryables')
-    def collection_queryables(collection_id=None):
+    @blueprint.route('/collections/<path:collection_id>/queryables')
+    def collection_queryables(collection_id: str) -> Response:
         """
         OGC API collections queryables endpoint
 
@@ -278,17 +275,17 @@ def make_wsgi_app(config_location: str, openapi_location: str) -> Flask:
             itemtypes_api.get_collection_queryables, request, collection_id
             )
 
-    @BLUEPRINT.route(
+    @blueprint.route(
         '/collections/<path:collection_id>/items',
         methods=['GET', 'POST', 'OPTIONS'],
         provide_automatic_options=False
     )
-    @BLUEPRINT.route(
+    @blueprint.route(
         '/collections/<path:collection_id>/items/<path:item_id>',
         methods=['GET', 'PUT', 'DELETE', 'OPTIONS'],
         provide_automatic_options=False
     )
-    def collection_items(collection_id, item_id=None):
+    def collection_items(collection_id: str, item_id: str = None) -> Response:
         """
         OGC API collections items endpoint
 
@@ -340,8 +337,8 @@ def make_wsgi_app(config_location: str, openapi_location: str) -> Flask:
                 itemtypes_api.get_collection_item, request,
                 collection_id, item_id)
 
-    @BLUEPRINT.route('/collections/<path:collection_id>/coverage')
-    def collection_coverage(collection_id):
+    @blueprint.route('/collections/<path:collection_id>/coverage')
+    def collection_coverage(collection_id: str) -> Response:
         """
         OGC API - Coverages coverage endpoint
 
@@ -355,8 +352,8 @@ def make_wsgi_app(config_location: str, openapi_location: str) -> Flask:
             collection_id, skip_valid_check=True
             )
 
-    @BLUEPRINT.route('/collections/<path:collection_id>/tiles')
-    def get_collection_tiles(collection_id=None):
+    @blueprint.route('/collections/<path:collection_id>/tiles')
+    def get_collection_tiles(collection_id: str) -> Response:
         """
         OGC open api collections tiles access point
 
@@ -368,10 +365,10 @@ def make_wsgi_app(config_location: str, openapi_location: str) -> Flask:
         return execute_from_flask(
             tiles_api.get_collection_tiles, request, collection_id)
 
-    @BLUEPRINT.route('/collections/<path:collection_id>/tiles/<tileMatrixSetId>')  # noqa E501
-    @BLUEPRINT.route('/collections/<path:collection_id>/tiles/<tileMatrixSetId>/metadata')  # noqa E501
+    @blueprint.route('/collections/<path:collection_id>/tiles/<tileMatrixSetId>')  # noqa E501
+    @blueprint.route('/collections/<path:collection_id>/tiles/<tileMatrixSetId>/metadata')  # noqa E501
     def get_collection_tiles_metadata(
-            collection_id=None, tileMatrixSetId=None):
+            collection_id: str, tileMatrixSetId: str) -> Response:
         """
         OGC open api collection tiles service metadata
 
@@ -386,11 +383,11 @@ def make_wsgi_app(config_location: str, openapi_location: str) -> Flask:
             request, collection_id, tileMatrixSetId,
             skip_valid_check=True)
 
-    @BLUEPRINT.route('/collections/<path:collection_id>/tiles/\
+    @blueprint.route('/collections/<path:collection_id>/tiles/\
     <tileMatrixSetId>/<tileMatrix>/<tileRow>/<tileCol>')
     def get_collection_tiles_data(
-            collection_id=None, tileMatrixSetId=None,
-            tileMatrix=None, tileRow=None, tileCol=None):
+            collection_id: str, tileMatrixSetId: str,
+            tileMatrix: str, tileRow: str, tileCol: str) -> Response:
         """
         OGC open api collection tiles service data
 
@@ -409,9 +406,9 @@ def make_wsgi_app(config_location: str, openapi_location: str) -> Flask:
             tileRow, tileCol, skip_valid_check=True
         )
 
-    @BLUEPRINT.route('/collections/<collection_id>/map')
-    @BLUEPRINT.route('/collections/<collection_id>/styles/<style_id>/map')
-    def collection_map(collection_id, style_id=None):
+    @blueprint.route('/collections/<collection_id>/map')
+    @blueprint.route('/collections/<collection_id>/styles/<style_id>/map')
+    def collection_map(collection_id: str, style_id: str = None) -> Response:
         """
         OGC API - Maps map render endpoint
 
@@ -425,9 +422,9 @@ def make_wsgi_app(config_location: str, openapi_location: str) -> Flask:
             maps_api.get_collection_map, request, collection_id, style_id
         )
 
-    @BLUEPRINT.route('/processes')
-    @BLUEPRINT.route('/processes/<process_id>')
-    def get_processes(process_id=None):
+    @blueprint.route('/processes')
+    @blueprint.route('/processes/<process_id>')
+    def get_processes(process_id: str = None) -> Response:
         """
         OGC API - Processes description endpoint
 
@@ -439,11 +436,11 @@ def make_wsgi_app(config_location: str, openapi_location: str) -> Flask:
         return execute_from_flask(
             processes_api.describe_processes, request, process_id)
 
-    @BLUEPRINT.route('/jobs')
-    @BLUEPRINT.route(
+    @blueprint.route('/jobs')
+    @blueprint.route(
         '/jobs/<job_id>', methods=['GET', 'DELETE']
         )
-    def get_jobs(job_id=None):
+    def get_jobs(job_id: str = None) -> Response:
         """
         OGC API - Processes jobs endpoint
 
@@ -464,8 +461,8 @@ def make_wsgi_app(config_location: str, openapi_location: str) -> Flask:
                     processes_api.get_jobs, request, job_id
                 )
 
-    @BLUEPRINT.route('/processes/<process_id>/execution', methods=['POST'])
-    def execute_process_jobs(process_id):
+    @blueprint.route('/processes/<process_id>/execution', methods=['POST'])
+    def execute_process_jobs(process_id: str) -> Response:
         """
         OGC API - Processes execution endpoint
 
@@ -478,11 +475,11 @@ def make_wsgi_app(config_location: str, openapi_location: str) -> Flask:
             processes_api.execute_process, request, process_id
         )
 
-    @BLUEPRINT.route(
+    @blueprint.route(
         '/jobs/<job_id>/results',
         methods=['GET']
     )
-    def get_job_result(job_id=None):
+    def get_job_result(job_id: str = None) -> Response:
         """
         OGC API - Processes job result endpoint
 
@@ -495,27 +492,28 @@ def make_wsgi_app(config_location: str, openapi_location: str) -> Flask:
             processes_api.get_job_result, request, job_id
         )
 
-    @BLUEPRINT.route('/collections/<path:collection_id>/position')
-    @BLUEPRINT.route('/collections/<path:collection_id>/area')
-    @BLUEPRINT.route('/collections/<path:collection_id>/cube')
-    @BLUEPRINT.route('/collections/<path:collection_id>/radius')
-    @BLUEPRINT.route('/collections/<path:collection_id>/trajectory')
-    @BLUEPRINT.route('/collections/<path:collection_id>/corridor')
-    @BLUEPRINT.route('/collections/<path:collection_id>/locations/<location_id>')  # noqa E501
-    @BLUEPRINT.route('/collections/<path:collection_id>/locations')
-    @BLUEPRINT.route('/collections/<path:collection_id>/instances/<instance_id>/position')  # noqa E501
-    @BLUEPRINT.route('/collections/<path:collection_id>/instances/<instance_id>/area')  # noqa E501
-    @BLUEPRINT.route('/collections/<path:collection_id>/instances/<instance_id>/cube')  # noqa E501
-    @BLUEPRINT.route('/collections/<path:collection_id>/instances/<instance_id>/radius')  # noqa E501
-    @BLUEPRINT.route('/collections/<path:collection_id>/instances/<instance_id>/trajectory')  # noqa E501
-    @BLUEPRINT.route('/collections/<path:collection_id>/instances/<instance_id>/corridor')  # noqa E501
-    @BLUEPRINT.route('/collections/<path:collection_id>/instances/<instance_id>/locations/<location_id>')  # noqa E501
-    @BLUEPRINT.route('/collections/<path:collection_id>/instances/<instance_id>/locations')  # noqa E501
-    @BLUEPRINT.route('/collections/<path:collection_id>/instances/<instance_id>')  # noqa E501
-    @BLUEPRINT.route('/collections/<path:collection_id>/instances')
+    @blueprint.route('/collections/<path:collection_id>/position')
+    @blueprint.route('/collections/<path:collection_id>/area')
+    @blueprint.route('/collections/<path:collection_id>/cube')
+    @blueprint.route('/collections/<path:collection_id>/radius')
+    @blueprint.route('/collections/<path:collection_id>/trajectory')
+    @blueprint.route('/collections/<path:collection_id>/corridor')
+    @blueprint.route('/collections/<path:collection_id>/locations/<location_id>')  # noqa E501
+    @blueprint.route('/collections/<path:collection_id>/locations')
+    @blueprint.route('/collections/<path:collection_id>/instances/<instance_id>/position')  # noqa E501
+    @blueprint.route('/collections/<path:collection_id>/instances/<instance_id>/area')  # noqa E501
+    @blueprint.route('/collections/<path:collection_id>/instances/<instance_id>/cube')  # noqa E501
+    @blueprint.route('/collections/<path:collection_id>/instances/<instance_id>/radius')  # noqa E501
+    @blueprint.route('/collections/<path:collection_id>/instances/<instance_id>/trajectory')  # noqa E501
+    @blueprint.route('/collections/<path:collection_id>/instances/<instance_id>/corridor')  # noqa E501
+    @blueprint.route('/collections/<path:collection_id>/instances/<instance_id>/locations/<location_id>')  # noqa E501
+    @blueprint.route('/collections/<path:collection_id>/instances/<instance_id>/locations')  # noqa E501
+    @blueprint.route('/collections/<path:collection_id>/instances/<instance_id>')  # noqa E501
+    @blueprint.route('/collections/<path:collection_id>/instances')
     def get_collection_edr_query(
-            collection_id, instance_id=None, location_id=None
-            ):
+            collection_id: str, instance_id: str = None,
+            location_id: str = None
+            ) -> Response:
         """
         OGC EDR API endpoints
 
@@ -545,8 +543,8 @@ def make_wsgi_app(config_location: str, openapi_location: str) -> Flask:
             instance_id, query_type, location_id, skip_valid_check=True
         )
 
-    @BLUEPRINT.route('/stac-api')
-    def stac_landing_page():
+    @blueprint.route('/stac-api')
+    def stac_landing_page() -> Response:
         """
         STAC API landing page endpoint
 
@@ -555,8 +553,8 @@ def make_wsgi_app(config_location: str, openapi_location: str) -> Flask:
 
         return execute_from_flask(stac_api.landing_page, request)
 
-    @BLUEPRINT.route('/stac-api/search', methods=['GET', 'POST'])
-    def stac_search():
+    @blueprint.route('/stac-api/search', methods=['GET', 'POST'])
+    def stac_search() -> Response:
         """
         STAC API search endpoint
 
@@ -565,8 +563,8 @@ def make_wsgi_app(config_location: str, openapi_location: str) -> Flask:
 
         return execute_from_flask(stac_api.search, request)
 
-    @BLUEPRINT.route('/stac')
-    def stac_catalog_root():
+    @blueprint.route('/stac')
+    def stac_catalog_root() -> Response:
         """
         STAC root endpoint
 
@@ -575,8 +573,8 @@ def make_wsgi_app(config_location: str, openapi_location: str) -> Flask:
 
         return execute_from_flask(stac_api.get_stac_root, request)
 
-    @BLUEPRINT.route('/stac/<path:path>')
-    def stac_catalog_path(path):
+    @blueprint.route('/stac/<path:path>')
+    def stac_catalog_path(path: str) -> Response:
         """
         STAC path endpoint
 
@@ -587,8 +585,8 @@ def make_wsgi_app(config_location: str, openapi_location: str) -> Flask:
 
         return execute_from_flask(stac_api.get_stac_path, request, path)
 
-    @ADMIN_BLUEPRINT.route('/admin/config', methods=['GET', 'PUT', 'PATCH'])
-    def admin_config():
+    @admin_blueprint.route('/admin/config', methods=['GET', 'PUT', 'PATCH'])
+    def admin_config() -> Response:
         """
         Admin endpoint
 
@@ -610,8 +608,8 @@ def make_wsgi_app(config_location: str, openapi_location: str) -> Flask:
                 admin_api.patch_config, request, alternative_api=admin_
             )
 
-    @ADMIN_BLUEPRINT.route('/admin/config/resources', methods=['GET', 'POST'])
-    def admin_config_resources():
+    @admin_blueprint.route('/admin/config/resources', methods=['GET', 'POST'])
+    def admin_config_resources() -> Response:
         """
         Resources endpoint
 
@@ -628,10 +626,10 @@ def make_wsgi_app(config_location: str, openapi_location: str) -> Flask:
                 admin_api.post_resource, request, alternative_api=admin_
             )
 
-    @ADMIN_BLUEPRINT.route(
+    @admin_blueprint.route(
         '/admin/config/resources/<resource_id>',
         methods=['GET', 'PUT', 'PATCH', 'DELETE'])
-    def admin_config_resource(resource_id):
+    def admin_config_resource(resource_id: str) -> Response:
         """
         Resource endpoint
 
@@ -662,13 +660,13 @@ def make_wsgi_app(config_location: str, openapi_location: str) -> Flask:
                 resource_id, alternative_api=admin_
             )
 
-    APP.register_blueprint(BLUEPRINT)
+    app.register_blueprint(blueprint)
 
-    if CONFIG['server'].get('admin'):
-        admin_ = Admin(CONFIG, OPENAPI)
-        APP.register_blueprint(ADMIN_BLUEPRINT)
+    if config['server'].get('admin'):
+        admin_ = Admin(config, openapi)
+        app.register_blueprint(admin_blueprint)
 
-    return APP
+    return app
 
 
 if os.environ.get('PYGEOAPI_DISABLE_ENV_CONFIGS', 'false') == 'false':
@@ -676,12 +674,14 @@ if os.environ.get('PYGEOAPI_DISABLE_ENV_CONFIGS', 'false') == 'false':
         config_location=None,
         openapi_location=None
     )
-    CONFIG = get_config()
+    config = get_config()
 
     @click.command()
     @click.pass_context
     @click.option('--debug', '-d', default=False, is_flag=True, help='debug')
-    def serve(ctx, server=None, debug=False):
+    def serve(
+            ctx: click.Context, server: str = None, debug: bool = False
+            ) -> None:
         """
         Serve pygeoapi via Flask. Runs pygeoapi
         as a flask server. Not recommend for production.
@@ -693,8 +693,8 @@ if os.environ.get('PYGEOAPI_DISABLE_ENV_CONFIGS', 'false') == 'false':
         """
 
         # setup_logger(CONFIG['logging'])
-        APP.run(debug=True, host=CONFIG['server']['bind']['host'],
-                port=CONFIG['server']['bind']['port'])
+        APP.run(debug=True, host=config['server']['bind']['host'],
+                port=config['server']['bind']['port'])
 
 if __name__ == '__main__':  # run locally, for testing
     serve()
