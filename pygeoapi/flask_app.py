@@ -171,9 +171,11 @@ def make_wsgi_app(config_location: str, openapi_location: str) -> Flask:
         content: Union[str, bytes]
 
         if not skip_valid_check and not api_request.is_valid():
-            headers, status, content = actual_api.get_format_exception(api_request)  # noqa: E501
+            headers, status, content = \
+                actual_api.get_format_exception(api_request)
         else:
-            headers, status, content = api_function(actual_api, api_request, *args)  # noqa: E501
+            headers, status, content = \
+                api_function(actual_api, api_request, *args)
             content = apply_gzip(headers, content)
 
         response = make_response(content, status)
@@ -693,7 +695,7 @@ if os.environ.get('PYGEOAPI_DISABLE_ENV_CONFIGS', 'false') == 'false':
         """
 
         # setup_logger(CONFIG['logging'])
-        APP.run(debug=True, host=config['server']['bind']['host'],
+        APP.run(debug=debug, host=config['server']['bind']['host'],
                 port=config['server']['bind']['port'])
 
 if __name__ == '__main__':  # run locally, for testing
