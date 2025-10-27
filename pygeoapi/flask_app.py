@@ -282,14 +282,49 @@ def make_wsgi_app(config_location: str, openapi_location: str) -> Flask:
         methods=['GET', 'POST', 'OPTIONS'],
         provide_automatic_options=False
     )
+    def collection_items(collection_id: str) -> Response:
+        """
+        OGC API collections items endpoint
+
+        :param collection_id: collection identifier
+
+        :returns: HTTP response
+        """
+
+        if request.method == 'POST':  # filter or manage items
+            if request.content_type == 'application/geo+json':
+                return execute_from_flask(
+                    itemtypes_api.manage_collection_item,
+                    request, 'create', collection_id,
+                    skip_valid_check=True
+                )
+            else:
+                return execute_from_flask(
+                    itemtypes_api.get_collection_items, request,
+                    collection_id, skip_valid_check=True
+                )
+
+        elif request.method == 'OPTIONS':
+            return execute_from_flask(
+                itemtypes_api.manage_collection_item, request, 'options',
+                collection_id, skip_valid_check=True
+            )
+
+        # GET: list items
+        return execute_from_flask(
+            itemtypes_api.get_collection_items,
+            request, collection_id,
+            skip_valid_check=True
+        )
+
     @blueprint.route(
         '/collections/<path:collection_id>/items/<path:item_id>',
         methods=['GET', 'PUT', 'DELETE', 'OPTIONS'],
         provide_automatic_options=False
     )
-    def collection_items(collection_id: str, item_id: str = None) -> Response:
+    def collection_item(collection_id: str, item_id: str) -> Response:
         """
-        OGC API collections items endpoint
+        OGC API collections item endpoint
 
         :param collection_id: collection identifier
         :param item_id: item identifier
@@ -297,47 +332,29 @@ def make_wsgi_app(config_location: str, openapi_location: str) -> Flask:
         :returns: HTTP response
         """
 
-        if item_id is None:
-            if request.method == 'POST':  # filter or manage items
-                if request.content_type is not None:
-                    if request.content_type == 'application/geo+json':
-                        return execute_from_flask(
-                            itemtypes_api.manage_collection_item,
-                            request, 'create', collection_id,
-                            skip_valid_check=True)
-                    else:
-                        return execute_from_flask(
-                            itemtypes_api.get_collection_items, request,
-                            collection_id, skip_valid_check=True)
-            elif request.method == 'OPTIONS':
-                return execute_from_flask(
-                    itemtypes_api.manage_collection_item, request, 'options',
-                    collection_id, skip_valid_check=True)
-            else:  # GET: list items
-                return execute_from_flask(
-                    itemtypes_api.get_collection_items,
-                    request, collection_id,
-                    skip_valid_check=True)
-
-        elif request.method == 'DELETE':
+        if request.method == 'DELETE':
             return execute_from_flask(
                 itemtypes_api.manage_collection_item,
                 request, 'delete', collection_id, item_id,
-                skip_valid_check=True)
+                skip_valid_check=True
+            )
         elif request.method == 'PUT':
             return execute_from_flask(
                 itemtypes_api.manage_collection_item,
                 request, 'update', collection_id, item_id,
-                skip_valid_check=True)
+                skip_valid_check=True
+            )
         elif request.method == 'OPTIONS':
             return execute_from_flask(
                 itemtypes_api.manage_collection_item,
                 request, 'options', collection_id, item_id,
-                skip_valid_check=True)
+                skip_valid_check=True
+            )
         else:
             return execute_from_flask(
                 itemtypes_api.get_collection_item, request,
-                collection_id, item_id)
+                collection_id, item_id
+            )
 
     @blueprint.route('/collections/<path:collection_id>/coverage')
     def collection_coverage(collection_id: str) -> Response:
