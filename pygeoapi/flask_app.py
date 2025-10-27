@@ -247,7 +247,7 @@ def make_wsgi_app(config_location: str, openapi_location: str) -> Flask:
         """
         return execute_from_flask(
             core_api.describe_collections, request, collection_id
-            )
+        )
 
     @blueprint.route('/collections/<path:collection_id>/schema')
     def collection_schema(collection_id: str) -> Response:
@@ -261,7 +261,7 @@ def make_wsgi_app(config_location: str, openapi_location: str) -> Flask:
 
         return execute_from_flask(
             core_api.get_collection_schema, request, collection_id
-            )
+        )
 
     @blueprint.route('/collections/<path:collection_id>/queryables')
     def collection_queryables(collection_id: str) -> Response:
@@ -275,7 +275,7 @@ def make_wsgi_app(config_location: str, openapi_location: str) -> Flask:
 
         return execute_from_flask(
             itemtypes_api.get_collection_queryables, request, collection_id
-            )
+        )
 
     @blueprint.route(
         '/collections/<path:collection_id>/items',
@@ -352,7 +352,7 @@ def make_wsgi_app(config_location: str, openapi_location: str) -> Flask:
         return execute_from_flask(
             coverages_api.get_collection_coverage, request,
             collection_id, skip_valid_check=True
-            )
+        )
 
     @blueprint.route('/collections/<path:collection_id>/tiles')
     def get_collection_tiles(collection_id: str) -> Response:
