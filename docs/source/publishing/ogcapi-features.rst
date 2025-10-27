@@ -37,19 +37,13 @@ parameters.
    `TinyDB`_,✅/✅,results/hits,✅,✅,✅,✅,✅,❌,✅,✅
 
 .. note::
-
-   * All Providers that support `bbox` also support the `bbox-crs` parameter. `bbox-crs` is handled within pygeoapi core.
-   * All Providers support the `crs` parameter to reproject (transform) response data. Some, like PostgreSQL and OGR, perform this natively.
+   For more information on CRS transformations, see :ref:`crs`.
 
 
 Connection examples
 -------------------
 
 Below are specific connection examples based on supported providers.
-To support `crs` on queries, one needs to configure both a list of supported CRSs, and a 'Storage CRS'.
-See also :ref:`crs` and :ref:`configuration`. When no CRS information is configured the
-default CRS/'Storage CRS' value http://www.opengis.net/def/crs/OGC/1.3/CRS84 is assumed.
-That is: WGS84 with lon,lat axis-ordering as in standard GeoJSON.
 
 CSV
 ^^^

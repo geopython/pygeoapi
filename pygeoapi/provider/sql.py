@@ -63,7 +63,6 @@ from geoalchemy2 import Geometry  # noqa - this isn't used explicitly but is nee
 from geoalchemy2.functions import ST_MakeEnvelope, ST_Intersects
 from geoalchemy2.shape import to_shape, from_shape
 from pygeofilter.backends.sqlalchemy.evaluate import to_filter
-import pyproj
 import shapely
 from sqlalchemy.sql import func
 from sqlalchemy import (
@@ -84,6 +83,7 @@ from sqlalchemy.ext.automap import automap_base
 from sqlalchemy.orm import Session, load_only
 from sqlalchemy.sql.expression import and_
 
+from pygeoapi.crs import get_transform_from_spec, get_srid
 from pygeoapi.provider.base import (
     BaseProvider,
     ProviderConnectionError,
@@ -91,8 +91,6 @@ from pygeoapi.provider.base import (
     ProviderQueryError,
     ProviderItemNotFoundError
 )
-from pygeoapi.util import get_transform_from_crs, get_crs_from_uri
-
 
 LOGGER = logging.getLogger(__name__)
 
@@ -134,12 +132,6 @@ class GenericSQLProvider(BaseProvider):
         LOGGER.debug(f'Table: {self.table}')
         LOGGER.debug(f'ID field: {self.id_field}')
         LOGGER.debug(f'Geometry field: {self.geom}')
-
-        # conforming to the docs:
-        # https://docs.pygeoapi.io/en/latest/data-publishing/ogcapi-features.html#connection-examples # noqa
-        self.storage_crs = provider_def.get(
-            'storage_crs', 'https://www.opengis.net/def/crs/OGC/0/CRS84'
-        )
         LOGGER.debug(f'Configured Storage CRS: {self.storage_crs}')
 
         # Read table information from database
@@ -235,7 +227,7 @@ class GenericSQLProvider(BaseProvider):
             if resulttype == 'hits' or not results:
                 return response
 
-            crs_transform_out = self._get_crs_transform(crs_transform_spec)
+            crs_transform_out = get_transform_from_spec(crs_transform_spec)
 
             for item in (
                 results.order_by(*order_by_clauses).offset(offset).limit(limit)
@@ -334,7 +326,7 @@ class GenericSQLProvider(BaseProvider):
             if item is None:
                 msg = f'No such item: {self.id_field}={identifier}.'
                 raise ProviderItemNotFoundError(msg)
-            crs_transform_out = self._get_crs_transform(crs_transform_spec)
+            crs_transform_out = get_transform_from_spec(crs_transform_spec)
             feature = self._sqlalchemy_to_feature(item, crs_transform_out)
 
             # Drop non-defined properties
@@ -496,10 +488,7 @@ class GenericSQLProvider(BaseProvider):
         attributes.pop('identifier', None)
         attributes[self.geom] = from_shape(
             shapely.geometry.shape(json_data['geometry']),
-            # NOTE: for some reason, postgis in the github action requires
-            # explicit crs information. i think it's valid to assume 4326:
-            # https://portal.ogc.org/files/108198#feature-crs
-            srid=pyproj.CRS.from_user_input(self.storage_crs).to_epsg()
+            srid=get_srid(self.storage_crs)
         )
         attributes[self.id_field] = identifier
 
@@ -609,16 +598,6 @@ class GenericSQLProvider(BaseProvider):
         selected_properties_clause = load_only(*selected_columns)
 
         return selected_properties_clause
-
-    def _get_crs_transform(self, crs_transform_spec=None):
-        if crs_transform_spec is not None:
-            crs_transform = get_transform_from_crs(
-                pyproj.CRS.from_wkt(crs_transform_spec.source_crs_wkt),
-                pyproj.CRS.from_wkt(crs_transform_spec.target_crs_wkt)
-            )
-        else:
-            crs_transform = None
-        return crs_transform
 
 
 @functools.cache
@@ -751,9 +730,8 @@ class PostgreSQLProvider(GenericSQLProvider):
         if not bbox:
             return True  # Let everything through if no bbox
 
-        # Since this provider uses postgis, we can use ST_MakeEnvelope
-        storage_srid = get_crs_from_uri(self.storage_crs).to_epsg()
-        envelope = ST_MakeEnvelope(*bbox, storage_srid or 4326)
+        storage_srid = get_srid(self.storage_crs)
+        envelope = ST_MakeEnvelope(*bbox, storage_srid)
 
         geom_column = getattr(self.table_model, self.geom)
         bbox_filter = ST_Intersects(envelope, geom_column)

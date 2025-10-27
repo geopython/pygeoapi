@@ -77,7 +77,7 @@ The `Xarray`_ provider plugin reads and extracts `NetCDF`_ and `Zarr`_ data.
          time_field: time
          # optionally specify the coordinate reference system of your dataset
          # else pygeoapi assumes it is WGS84 (EPSG:4326).
-         storage_crs: 4326
+         storage_crs: http://www.opengis.net/def/crs/OGC/1.3/CRS84
          format:
             name: netcdf
             mimetype: application/x-netcdf

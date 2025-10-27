@@ -49,9 +49,9 @@ import logging
 
 import requests
 
+from pygeoapi.crs import crs_transform
 from pygeoapi.provider.base import (
     BaseProvider, ProviderNotFoundError, ProviderQueryError)
-from pygeoapi.util import crs_transform
 
 LOGGER = logging.getLogger(__name__)
 

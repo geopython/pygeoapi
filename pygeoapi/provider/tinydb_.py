@@ -36,10 +36,11 @@ from dateutil.parser import parse as parse_date
 from shapely.geometry import shape
 from tinydb import TinyDB, Query, where
 
+from pygeoapi.crs import crs_transform
 from pygeoapi.provider.base import (BaseProvider, ProviderConnectionError,
                                     ProviderInvalidQueryError,
                                     ProviderItemNotFoundError)
-from pygeoapi.util import crs_transform, get_typed_value
+from pygeoapi.util import get_typed_value
 
 LOGGER = logging.getLogger(__name__)
 

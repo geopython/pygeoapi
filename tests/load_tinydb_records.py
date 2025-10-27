@@ -190,8 +190,6 @@ for xml_file in xml_dir.glob('*.xml'):
             if isinstance(contact, CI_ResponsibleParty):
                 providers.append(contact2party(contact))
 
-    bbox_crs = 'http://www.opengis.net/def/crs/OGC/1.3/CRS84'
-
     try:
         minx = float(m.identification[0].bbox.minx)
         miny = float(m.identification[0].bbox.miny)
