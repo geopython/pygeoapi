@@ -34,7 +34,7 @@ jobs:
         scan-ref: .
     - name: Build locally the image from Dockerfile
       run: |
-        docker buildx build -t pygeoapi:${{ github.sha }} --platform linux/amd64 --no-cache -f Dockerfile .
+        docker buildx build -t ${{ github.repository }}:${{ github.sha }} --platform linux/amd64 --no-cache -f Dockerfile .
     - name: Scan locally built Docker image for vulnerabilities with trivy
       uses: aquasecurity/trivy-action@master
       env:
@@ -46,4 +46,4 @@ jobs:
         ignore-unfixed: true
         severity: CRITICAL,HIGH
         vuln-type: os,library
-        image-ref: 'pygeoapi:${{ github.sha }}'
+        image-ref: '${{ github.repository }}:${{ github.sha }}'
