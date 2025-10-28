@@ -467,7 +467,7 @@ def make_wsgi_app(config_location: str, openapi_location: str) -> Flask:
     @blueprint.route('/jobs')
     @blueprint.route(
         '/jobs/<job_id>', methods=['GET', 'DELETE']
-        )
+    )
     def get_jobs(job_id: str = None) -> Response:
         """
         OGC API - Processes jobs endpoint
