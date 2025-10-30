@@ -105,7 +105,8 @@ def call_api_threadsafe(
     return api_call(*args)
 
 
-def _to_response(headers, status, content):
+def _to_response(headers: dict, status: int,
+                 content: str | bytes) -> Response:
     if headers['Content-Type'] == 'text/html':
         response = HTMLResponse(content=content, status_code=status)
     else:
@@ -120,8 +121,8 @@ def _to_response(headers, status, content):
 
 
 async def execute_from_starlette(api_function, request: Request, *args,
-                                 skip_valid_check=False,
-                                 alternative_api=None
+                                 skip_valid_check: bool = False,
+                                 alternative_api: API | None = None
                                  ) -> Response:
     actual_api = api_ if alternative_api is None else alternative_api
     api_request = await APIRequest.from_starlette(request, actual_api.locales)
@@ -144,7 +145,7 @@ async def execute_from_starlette(api_function, request: Request, *args,
     return response
 
 
-async def landing_page(request: Request):
+async def landing_page(request: Request) -> Response:
     """
     OGC API landing page endpoint
 
@@ -155,7 +156,7 @@ async def landing_page(request: Request):
     return await execute_from_starlette(core_api.landing_page, request)
 
 
-async def openapi(request: Request):
+async def openapi(request: Request) -> Response:
     """
     OpenAPI endpoint
 
@@ -166,7 +167,7 @@ async def openapi(request: Request):
     return await execute_from_starlette(core_api.openapi_, request)
 
 
-async def conformance(request: Request):
+async def conformance(request: Request) -> Response:
     """
     OGC API conformance endpoint
 
@@ -177,7 +178,8 @@ async def conformance(request: Request):
     return await execute_from_starlette(core_api.conformance, request)
 
 
-async def get_tilematrix_set(request: Request, tileMatrixSetId=None):
+async def get_tilematrix_set(request: Request,
+                             tileMatrixSetId: str | None = None) -> Response:
     """
     OGC API TileMatrixSet endpoint
 
@@ -192,7 +194,7 @@ async def get_tilematrix_set(request: Request, tileMatrixSetId=None):
     )
 
 
-async def get_tilematrix_sets(request: Request):
+async def get_tilematrix_sets(request: Request) -> Response:
     """
     OGC API TileMatrixSets endpoint
 
@@ -201,7 +203,8 @@ async def get_tilematrix_sets(request: Request):
     return await execute_from_starlette(tiles_api.tilematrixsets, request)
 
 
-async def collection_schema(request: Request, collection_id=None):
+async def collection_schema(request: Request,
+                            collection_id: str | None = None) -> Response:
     """
     OGC API collections schema endpoint
 
@@ -217,7 +220,8 @@ async def collection_schema(request: Request, collection_id=None):
                                         request, collection_id)
 
 
-async def collection_queryables(request: Request, collection_id=None):
+async def collection_queryables(request: Request,
+                                collection_id: str | None = None) -> Response:
     """
     OGC API collections queryables endpoint
 
@@ -234,7 +238,8 @@ async def collection_queryables(request: Request, collection_id=None):
     )
 
 
-async def get_collection_tiles(request: Request, collection_id=None):
+async def get_collection_tiles(request: Request,
+                               collection_id: str | None = None) -> Response:
     """
     OGC open api collections tiles access point
 
@@ -250,8 +255,9 @@ async def get_collection_tiles(request: Request, collection_id=None):
         tiles_api.get_collection_tiles, request, collection_id)
 
 
-async def get_collection_tiles_metadata(request: Request, collection_id=None,
-                                        tileMatrixSetId=None):
+async def get_collection_tiles_metadata(request: Request,
+                                        collection_id: str | None = None,
+                                        tileMatrixSetId: str | None = None):
     """
     OGC open api collection tiles service metadata
 
@@ -271,9 +277,12 @@ async def get_collection_tiles_metadata(request: Request, collection_id=None,
     )
 
 
-async def get_collection_items_tiles(request: Request, collection_id=None,
-                                     tileMatrixSetId=None, tile_matrix=None,
-                                     tileRow=None, tileCol=None):
+async def get_collection_items_tiles(request: Request,
+                                     collection_id: str | None = None,
+                                     tileMatrixSetId: str | None = None,
+                                     tile_matrix: str | None = None,
+                                     tileRow: str | None = None,
+                                     tileCol: str | None = None) -> Response:
     """
     OGC open api collection tiles service
 
@@ -303,7 +312,9 @@ async def get_collection_items_tiles(request: Request, collection_id=None,
     )
 
 
-async def collection_items(request: Request, collection_id=None, item_id=None):
+async def collection_items(request: Request,
+                           collection_id: str | None = None,
+                           item_id: str | None = None) -> Response:
     """
     OGC API collections items endpoint
 
@@ -363,7 +374,8 @@ async def collection_items(request: Request, collection_id=None, item_id=None):
             itemtypes_api.get_collection_item, request, collection_id, item_id)
 
 
-async def collection_coverage(request: Request, collection_id=None):
+async def collection_coverage(request: Request,
+                              collection_id: str | None = None) -> Response:
     """
     OGC API - Coverages coverage endpoint
 
@@ -380,7 +392,9 @@ async def collection_coverage(request: Request, collection_id=None):
         skip_valid_check=True)
 
 
-async def collection_map(request: Request, collection_id=None, style_id=None):
+async def collection_map(request: Request,
+                         collection_id: str | None = None,
+                         style_id: str | None = None) -> Response:
     """
     OGC API - Maps map render endpoint
 
@@ -400,7 +414,8 @@ async def collection_map(request: Request, collection_id=None, style_id=None):
     )
 
 
-async def get_processes(request: Request, process_id=None):
+async def get_processes(request: Request,
+                        process_id: str | None = None) -> Response:
     """
     OGC API - Processes description endpoint
 
@@ -416,7 +431,8 @@ async def get_processes(request: Request, process_id=None):
                                         request, process_id)
 
 
-async def get_jobs(request: Request, job_id=None):
+async def get_jobs(request: Request,
+                   job_id: str | None = None) -> Response:
     """
     OGC API - Processes jobs endpoint
 
@@ -440,7 +456,8 @@ async def get_jobs(request: Request, job_id=None):
                                                 request, job_id)
 
 
-async def execute_process_jobs(request: Request, process_id=None):
+async def execute_process_jobs(request: Request,
+                               process_id: str | None = None) -> Response:
     """
     OGC API - Processes jobs endpoint
 
@@ -457,7 +474,8 @@ async def execute_process_jobs(request: Request, process_id=None):
                                         request, process_id)
 
 
-async def get_job_result(request: Request, job_id=None):
+async def get_job_result(request: Request,
+                         job_id: str | None = None) -> Response:
     """
     OGC API - Processes job result endpoint
 
@@ -474,7 +492,11 @@ async def get_job_result(request: Request, job_id=None):
                                         request, job_id)
 
 
-async def get_collection_edr_query(request: Request, collection_id=None, instance_id=None, location_id=None):  # noqa
+async def get_collection_edr_query(request: Request,
+                                   collection_id: str | None = None,
+                                   instance_id: str | None = None,
+                                   location_id: str | None = None
+                                   ) -> Response:
     """
     OGC EDR API endpoints
 
@@ -512,7 +534,8 @@ async def get_collection_edr_query(request: Request, collection_id=None, instanc
     )
 
 
-async def collections(request: Request, collection_id=None):
+async def collections(request: Request,
+                      collection_id: str | None = None) -> Response:
     """
     OGC API collections endpoint
 
@@ -528,7 +551,7 @@ async def collections(request: Request, collection_id=None):
                                         collection_id)
 
 
-async def stac_catalog_root(request: Request):
+async def stac_catalog_root(request: Request) -> Response:
     """
     STAC root endpoint
 
@@ -539,7 +562,7 @@ async def stac_catalog_root(request: Request):
     return await execute_from_starlette(stac_api.get_stac_root, request)
 
 
-async def stac_catalog_path(request: Request):
+async def stac_catalog_path(request: Request) -> Response:
     """
     STAC endpoint
 
@@ -551,7 +574,7 @@ async def stac_catalog_path(request: Request):
     return await execute_from_starlette(stac_api.get_stac_path, request, path)
 
 
-async def stac_landing_page(request: Request):
+async def stac_landing_page(request: Request) -> Response:
     """
     STAC API landing page endpoint
 
@@ -563,7 +586,7 @@ async def stac_landing_page(request: Request):
     return execute_from_starlette(stac_api.landing_page, request)
 
 
-async def stac_search(request: Request):
+async def stac_search(request: Request) -> Response:
     """
     STAC API search endpoint
 
@@ -575,7 +598,7 @@ async def stac_search(request: Request):
     return execute_from_starlette(stac_api.search, request)
 
 
-async def admin_config(request: Request):
+async def admin_config(request: Request) -> Response:
     """
     Admin endpoint
 
@@ -593,7 +616,7 @@ async def admin_config(request: Request):
                                             alternative_api=ADMIN)
 
 
-async def admin_config_resources(request: Request):
+async def admin_config_resources(request: Request) -> Response:
     """
     Resources endpoint
 
@@ -608,7 +631,8 @@ async def admin_config_resources(request: Request):
                                             alternative_api=ADMIN)
 
 
-async def admin_config_resource(request: Request, resource_id: str):
+async def admin_config_resource(request: Request,
+                                resource_id: str) -> Response:
     """
     Resource endpoint
 

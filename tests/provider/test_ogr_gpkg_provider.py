@@ -50,8 +50,6 @@ def config_poi_portugal():
         'data': {
             'source_type': 'GPKG',
             'source': './tests/data/poi_portugal.gpkg',
-            # 'source_srs': 'EPSG:4326',
-            # 'target_srs': 'EPSG:4326',
             'source_capabilities': {
                 'paging': True
             },
@@ -105,8 +103,6 @@ def config_gpkg_4326():
             'source_type': 'GPKG',
             'source':
                 './tests/data/dutch_addresses_4326.gpkg',
-            # 'source_srs': 'EPSG:4326',
-            # 'target_srs': 'EPSG:4326',
             'source_capabilities': {
                 'paging': True
             },
@@ -126,8 +122,6 @@ def config_gpkg_28992():
             'source_type': 'GPKG',
             'source':
                 './tests/data/dutch_addresses_28992.gpkg',
-            # 'source_srs': 'EPSG:28992',
-            # 'target_srs': 'EPSG:4326',
             'source_capabilities': {
                 'paging': True
             },
@@ -136,7 +130,7 @@ def config_gpkg_28992():
              'http://www.opengis.net/def/crs/OGC/1.3/CRS84',
              'http://www.opengis.net/def/crs/EPSG/0/28992'
          ],
-        'storageCrs': 'http://www.opengis.net/def/crs/EPSG/0/28992',
+        'storage_crs': 'http://www.opengis.net/def/crs/EPSG/0/28992',
         'id_field': 'id',
         'layer': 'OGRGeoJSON'
     }

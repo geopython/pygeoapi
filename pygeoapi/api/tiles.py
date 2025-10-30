@@ -73,7 +73,7 @@ CONFORMANCE_CLASSES = [
 
 
 def get_collection_tiles(api: API, request: APIRequest,
-                         dataset=None) -> Tuple[dict, int, str]:
+                         dataset: str | None = None) -> Tuple[dict, int, str]:
     """
     Provide collection tiles
 
@@ -201,8 +201,11 @@ def get_collection_tiles(api: API, request: APIRequest,
 
 def get_collection_tiles_data(
         api: API, request: APIRequest,
-        dataset=None, matrix_id=None,
-        z_idx=None, y_idx=None, x_idx=None) -> Tuple[dict, int, str]:
+        dataset: str | None = None,
+        matrix_id: str | None = None,
+        z_idx: int | None = None,
+        y_idx: int | None = None,
+        x_idx: int | None = None) -> Tuple[dict, int, str]:
     """
     Get collection items tiles
 
@@ -266,9 +269,10 @@ def get_collection_tiles_data(
             err.ogc_exception_code, err.message)
 
 
-def get_collection_tiles_metadata(
-    api: API, request: APIRequest,
-        dataset=None, matrix_id=None) -> Tuple[dict, int, str]:
+def get_collection_tiles_metadata(api: API, request: APIRequest,
+                                  dataset: str | None = None,
+                                  matrix_id: str | None = None
+                                  ) -> Tuple[dict, int, str]:
     """
     Get collection items tiles
 
@@ -398,8 +402,7 @@ def tilematrixsets(api: API,
 
 def tilematrixset(api: API,
                   request: APIRequest,
-                  tileMatrixSetId) -> Tuple[dict,
-                                            int, str]:
+                  tileMatrixSetId: str) -> Tuple[dict, int, str]:
     """
     Provide tile matrix definition
 

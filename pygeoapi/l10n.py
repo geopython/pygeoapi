@@ -28,7 +28,7 @@
 # =================================================================
 
 import logging
-from typing import Union
+from typing import List, Union
 from collections import OrderedDict
 from copy import deepcopy
 
@@ -53,7 +53,7 @@ class LocaleError(Exception):
     pass
 
 
-def str2locale(value, silent: bool = False) -> Union[Locale, None]:
+def str2locale(value: str, silent: bool = False) -> Union[Locale, None]:
     """
     Converts a web locale or language tag into a Babel Locale instance.
 
@@ -202,7 +202,7 @@ def best_match(accept_languages, available_locales) -> Locale:
         return match
 
 
-def translate(value, language: Union[Locale, str]):
+def translate(value: str, language: Union[Locale, str]):
     """
     If `value` is a language struct (where its keys are language codes
     and its values are translations for each language), this function tries to
@@ -252,7 +252,8 @@ def translate(value, language: Union[Locale, str]):
     return value[loc_items[out_locale]]
 
 
-def translate_struct(struct, locale_: Locale, is_config: bool = False):
+def translate_struct(struct: dict | List[dict],
+                     locale_: Locale, is_config: bool = False):
     """
     Returns a copy of a given dict or list, where all language structs
     are filtered on the given locale, i.e. all language structs are replaced
@@ -343,7 +344,7 @@ def set_response_language(headers: dict, *locale_: Locale):
     headers['Content-Language'] = loc_str
 
 
-def add_locale(url, locale_) -> str:
+def add_locale(url: str, locale_: str) -> str:
     """
     Adds a locale query parameter (e.g. 'lang=en-US') to a URL.
     If `locale_` is None or an empty string, the URL will be returned as-is.

@@ -38,8 +38,7 @@ from typing import Optional
 import oracledb
 import pyproj
 
-from pygeoapi.api import DEFAULT_STORAGE_CRS
-
+from pygeoapi.crs import get_srid
 from pygeoapi.provider.base import (
     BaseProvider,
     ProviderConnectionError,
@@ -48,8 +47,6 @@ from pygeoapi.provider.base import (
     ProviderItemNotFoundError,
     ProviderQueryError,
 )
-
-from pygeoapi.util import get_crs_from_uri
 
 LOGGER = logging.getLogger(__name__)
 
@@ -403,7 +400,6 @@ class OracleProvider(BaseProvider):
 
         # Table properties
         self.table = provider_def["table"]
-        self.id_field = provider_def["id_field"]
         self.conn_dic = provider_def["data"]
         self.geom = provider_def["geom_field"]
         self.properties = [item.lower() for item in self.properties]
@@ -415,14 +411,6 @@ class OracleProvider(BaseProvider):
         self.sql_manipulator_options = provider_def.get(
             "sql_manipulator_options"
         )
-
-        # CRS properties
-        storage_crs_uri = provider_def.get("storage_crs", DEFAULT_STORAGE_CRS)
-        self.storage_crs = get_crs_from_uri(storage_crs_uri)
-
-        # TODO See Issue #1393
-        # default_crs_uri = provider_def.get("default_crs", DEFAULT_CRS)
-        # self.default_crs = get_crs_from_uri(default_crs_uri)
 
         # SDO properties
         self.sdo_param = provider_def.get("sdo_param")
@@ -491,7 +479,7 @@ class OracleProvider(BaseProvider):
                     sdo_param = "mask=anyinteract"
 
                 bbox_dict["properties"] = {
-                    "srid": self._get_srid_from_crs(bbox_crs),
+                    "srid": get_srid(bbox_crs),
                     "minx": bbox[0],
                     "miny": bbox[1],
                     "maxx": bbox[2],
@@ -522,7 +510,7 @@ class OracleProvider(BaseProvider):
 
             else:
                 bbox_dict["properties"] = {
-                    "srid": self._get_srid_from_crs(bbox_crs),
+                    "srid": get_srid(bbox_crs),
                     "minx": bbox[0],
                     "miny": bbox[1],
                     "maxx": bbox[2],
@@ -598,20 +586,6 @@ class OracleProvider(BaseProvider):
             return cursor.var(
                 oracledb.DB_TYPE_LONG_RAW, arraysize=cursor.arraysize
             )
-
-    def _get_srid_from_crs(self, crs):
-        """
-        Works only for EPSG codes!
-        Anything else is hard coded!
-        """
-        if crs == "OGC:CRS84":
-            srid = 4326
-        elif crs == "OGC:CRS84h":
-            srid = 4326
-        else:
-            srid = crs.to_epsg()
-
-        return srid
 
     def _process_query_with_sql_manipulator_sup(
         self, db, sql_query, bind_variables, extra_params, **query_args
@@ -795,20 +769,15 @@ class OracleProvider(BaseProvider):
                 source_crs = pyproj.CRS.from_wkt(
                     crs_transform_spec.source_crs_wkt
                 )
-                source_srid = self._get_srid_from_crs(source_crs)
+                source_srid = get_srid(source_crs)
 
                 target_crs = pyproj.CRS.from_wkt(
                     crs_transform_spec.target_crs_wkt
                 )
-                target_srid = self._get_srid_from_crs(target_crs)
+                target_srid = get_srid(target_crs)
             else:
-                source_srid = self._get_srid_from_crs(self.storage_crs)
+                source_srid = get_srid(self.storage_crs)
                 target_srid = source_srid
-
-                # TODO See Issue #1393
-                # target_srid = self._get_srid_from_crs(self.default_crs)
-                # If issue is not accepted, this block can be merged with
-                # the following block.
 
             LOGGER.debug(f"source_srid: {source_srid}")
             LOGGER.debug(f"target_srid: {target_srid}")
@@ -961,21 +930,16 @@ class OracleProvider(BaseProvider):
                 source_crs = pyproj.CRS.from_wkt(
                     crs_transform_spec.source_crs_wkt
                 )
-                source_srid = self._get_srid_from_crs(source_crs)
+                source_srid = get_srid(source_crs)
 
                 target_crs = pyproj.CRS.from_wkt(
                     crs_transform_spec.target_crs_wkt
                 )
-                target_srid = self._get_srid_from_crs(target_crs)
+                target_srid = get_srid(target_crs)
 
             else:
-                source_srid = self._get_srid_from_crs(self.storage_crs)
+                source_srid = get_srid(self.storage_crs)
                 target_srid = source_srid
-
-                # TODO See Issue #1393
-                # target_srid = self._get_srid_from_crs(self.default_crs)
-                # If issue is not accepted, this block can be merged with
-                # the following block.
 
             LOGGER.debug(f"source_srid: {source_srid}")
             LOGGER.debug(f"target_srid: {target_srid}")
@@ -1150,7 +1114,7 @@ class OracleProvider(BaseProvider):
                 **bind_variables,
                 "out_id": out_id,
                 "in_geometry": json.dumps(in_geometry),
-                "srid": self._get_srid_from_crs(self.storage_crs),
+                "srid": get_srid(self.storage_crs),
             }
 
             # SQL manipulation plugin
@@ -1245,7 +1209,7 @@ class OracleProvider(BaseProvider):
                 **bind_variables,
                 "in_id": identifier,
                 "in_geometry": in_geometry,
-                "srid": self._get_srid_from_crs(self.storage_crs),
+                "srid": get_srid(self.storage_crs),
             }
 
             # SQL manipulation plugin

@@ -36,6 +36,7 @@ from typing import Callable
 
 from pygeoapi.util import is_url, render_j2_template, url_join
 from pygeoapi import l10n
+from shapely import GeometryType
 from shapely.geometry import shape
 from shapely.ops import unary_union
 
@@ -133,7 +134,7 @@ def jsonldify_collection(cls, collection: dict, locale_: str) -> dict:
 
     spatial_extent = collection.get('extent', {}).get('spatial', {})
     bbox = spatial_extent.get('bbox')
-    crs = spatial_extent.get('crs')
+    crs = spatial_extent.get('crs', '')
     hascrs84 = crs.endswith('CRS84')
 
     dataset = {
@@ -173,7 +174,8 @@ def jsonldify_collection(cls, collection: dict, locale_: str) -> dict:
 
 
 def geojson2jsonld(cls, data: dict, dataset: str,
-                   identifier: str = None, id_field: str = 'id') -> str:
+                   identifier: str | None = None,
+                   id_field: str = 'id') -> str:
     """
     Render GeoJSON-LD from a GeoJSON base. Inserts a @context that can be
     read from, and extended by, the pygeoapi configuration for a particular
@@ -299,7 +301,7 @@ def jsonldify_geometry(feature: dict) -> None:
         LOGGER.warning(msg)
 
 
-def geom2schemageo(geom: shape) -> dict:
+def geom2schemageo(geom: GeometryType) -> dict:
     """
     Render Schema Geometry from a GeoJSON base.
 

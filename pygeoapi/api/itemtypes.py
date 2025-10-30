@@ -40,7 +40,7 @@ from copy import deepcopy
 from datetime import datetime
 from http import HTTPStatus
 import logging
-from typing import Any, Tuple, Union, Optional
+from typing import Any, Tuple, Union
 import urllib.parse
 
 from pygeofilter.parsers.ecql import parse as parse_ecql_text
@@ -49,17 +49,19 @@ from pyproj.exceptions import CRSError
 
 from pygeoapi import l10n
 from pygeoapi.api import evaluate_limit
+from pygeoapi.crs import (DEFAULT_CRS, DEFAULT_STORAGE_CRS,
+                          create_crs_transform_spec, get_supported_crs_list,
+                          modify_pygeofilter, transform_bbox,
+                          set_content_crs_header)
 from pygeoapi.formatter.base import FormatterSerializationError
 from pygeoapi.linked_data import geojson2jsonld
 from pygeoapi.plugin import load_plugin, PLUGINS
 from pygeoapi.provider.base import (
     ProviderGenericError, ProviderTypeError, SchemaType)
 
-from pygeoapi.util import (CrsTransformSpec, filter_providers_by_type,
-                           filter_dict_by_key_value, get_crs_from_uri,
-                           get_provider_by_type, get_supported_crs_list,
-                           modify_pygeofilter, render_j2_template, str2bool,
-                           to_json, transform_bbox)
+from pygeoapi.util import (filter_providers_by_type, to_json,
+                           filter_dict_by_key_value, str2bool,
+                           get_provider_by_type, render_j2_template)
 
 from . import (
     APIRequest, API, SYSTEM_LOCALE, F_JSON, FORMAT_TYPES, F_HTML, F_JSONLD,
@@ -70,13 +72,6 @@ LOGGER = logging.getLogger(__name__)
 
 OGC_RELTYPES_BASE = 'http://www.opengis.net/def/rel/ogc/1.0'
 
-DEFAULT_CRS_LIST = [
-    'http://www.opengis.net/def/crs/OGC/1.3/CRS84',
-    'http://www.opengis.net/def/crs/OGC/1.3/CRS84h',
-]
-
-DEFAULT_CRS = 'http://www.opengis.net/def/crs/OGC/1.3/CRS84'
-DEFAULT_STORAGE_CRS = DEFAULT_CRS
 
 CONFORMANCE_CLASSES_FEATURES = [
     'http://www.opengis.net/spec/ogcapi-features-1/1.0/conf/core',
@@ -101,7 +96,8 @@ CONFORMANCE_CLASSES_RECORDS = [
 
 
 def get_collection_queryables(api: API, request: Union[APIRequest, Any],
-                              dataset=None) -> Tuple[dict, int, str]:
+                              dataset: str | None = None
+                              ) -> Tuple[dict, int, str]:
     """
     Provide collection queryables
 
@@ -235,7 +231,7 @@ def get_collection_queryables(api: API, request: Union[APIRequest, Any],
 
 def get_collection_items(
         api: API, request: Union[APIRequest, Any],
-        dataset) -> Tuple[dict, int, str]:
+        dataset: str | None = None) -> Tuple[dict, int, str]:
     """
     Queries collection
 
@@ -364,7 +360,7 @@ def get_collection_items(
         query_crs_uri = request.params.get('crs')
         try:
             crs_transform_spec = create_crs_transform_spec(
-                provider_def, query_crs_uri,
+                provider_def, query_crs_uri
             )
         except (ValueError, CRSError) as err:
             msg = str(err)
@@ -389,7 +385,7 @@ def get_collection_items(
                 HTTPStatus.BAD_REQUEST, headers, request.format,
                 'NoApplicableCode', msg)
 
-        supported_crs_list = get_supported_crs_list(provider_def, DEFAULT_CRS_LIST)  # noqa
+        supported_crs_list = get_supported_crs_list(provider_def)
         if bbox_crs not in supported_crs_list:
             msg = f'bbox-crs {bbox_crs} not supported for this collection'
             return api.get_exception(
@@ -397,14 +393,14 @@ def get_collection_items(
                 'NoApplicableCode', msg)
     elif len(bbox) > 0:
         # bbox but no bbox-crs param: assume bbox is in default CRS
-        bbox_crs = DEFAULT_CRS
+        bbox_crs = DEFAULT_STORAGE_CRS
 
-    # Transform bbox to storageCrs
-    # when bbox-crs different from storageCrs.
+    # Transform bbox to storage_crs
+    # when bbox-crs different from storage_crs.
     if len(bbox) > 0:
         try:
             # Get a pyproj CRS instance for the Collection's Storage CRS
-            storage_crs = provider_def.get('storage_crs', DEFAULT_STORAGE_CRS)  # noqa
+            storage_crs = provider_def.get('storage_crs', DEFAULT_STORAGE_CRS)
 
             # Do the (optional) Transform to the Storage CRS
             bbox = transform_bbox(bbox, bbox_crs, storage_crs)
@@ -703,7 +699,8 @@ def get_collection_items(
 
 def manage_collection_item(
         api: API, request: APIRequest,
-        action, dataset, identifier=None) -> Tuple[dict, int, str]:
+        action: str, dataset: str,
+        identifier: str | None = None) -> Tuple[dict, int, str]:
     """
     Adds an item to a collection
 
@@ -813,7 +810,8 @@ def manage_collection_item(
 
 
 def get_collection_item(api: API, request: APIRequest,
-                        dataset, identifier) -> Tuple[dict, int, str]:
+                        dataset: str, identifier: str
+                        ) -> Tuple[dict, int, str]:
     """
     Get a single collection item
 
@@ -869,7 +867,7 @@ def get_collection_item(api: API, request: APIRequest,
         query_crs_uri = request.params.get('crs')
         try:
             crs_transform_spec = create_crs_transform_spec(
-                provider_def, query_crs_uri,
+                provider_def, query_crs_uri
             )
         except (ValueError, CRSError) as err:
             msg = str(err)
@@ -983,99 +981,6 @@ def get_collection_item(api: API, request: APIRequest,
         return headers, HTTPStatus.OK, content
 
     return headers, HTTPStatus.OK, to_json(content, api.pretty_print)
-
-
-def create_crs_transform_spec(
-        config: dict, query_crs_uri: Optional[str] = None) -> Union[None, CrsTransformSpec]:  # noqa
-    """
-    Create a `CrsTransformSpec` instance based on provider config and
-    *crs* query parameter.
-
-    :param config: Provider config dictionary.
-    :type config: dict
-    :param query_crs_uri: Uniform resource identifier of the coordinate
-        reference system (CRS) specified in query parameter (if specified).
-    :type query_crs_uri: str, optional
-
-    :raises ValueError: Error raised if the CRS specified in the query
-        parameter is not in the list of supported CRSs of the provider.
-    :raises `CRSError`: Error raised if no CRS could be identified from the
-        query *crs* parameter (URI).
-
-    :returns: `CrsTransformSpec` instance if the CRS specified in query
-        parameter differs from the storage CRS, else `None`.
-    :rtype: Union[None, CrsTransformSpec]
-    """
-
-    # Get storage/default CRS for Collection.
-    storage_crs_uri = config.get('storage_crs', DEFAULT_STORAGE_CRS)
-
-    if not query_crs_uri:
-        if storage_crs_uri in DEFAULT_CRS_LIST:
-            # Could be that storageCrs is
-            # http://www.opengis.net/def/crs/OGC/1.3/CRS84h
-            query_crs_uri = storage_crs_uri
-        else:
-            query_crs_uri = DEFAULT_CRS
-        LOGGER.debug(f'no crs parameter, using default: {query_crs_uri}')
-
-    supported_crs_list = get_supported_crs_list(config, DEFAULT_CRS_LIST)
-    # Check that the crs specified by the query parameter is supported.
-    if query_crs_uri not in supported_crs_list:
-        raise ValueError(
-            f'CRS {query_crs_uri!r} not supported for this '
-            'collection. List of supported CRSs: '
-            f'{", ".join(supported_crs_list)}.'
-        )
-    crs_out = get_crs_from_uri(query_crs_uri)
-
-    storage_crs = get_crs_from_uri(storage_crs_uri)
-    # Check if the crs specified in query parameter differs from the
-    # storage crs.
-    if str(storage_crs) != str(crs_out):
-        LOGGER.debug(
-            f'CRS transformation: {storage_crs} -> {crs_out}'
-        )
-        return CrsTransformSpec(
-            source_crs_uri=storage_crs_uri,
-            source_crs_wkt=storage_crs.to_wkt(),
-            target_crs_uri=query_crs_uri,
-            target_crs_wkt=crs_out.to_wkt(),
-        )
-    else:
-        LOGGER.debug('No CRS transformation')
-        return None
-
-
-def set_content_crs_header(
-        headers: dict, config: dict, query_crs_uri: Optional[str] = None):
-    """
-    Set the *Content-Crs* header in responses from providers of Feature type.
-
-    :param headers: Response headers dictionary.
-    :type headers: dict
-    :param config: Provider config dictionary.
-    :type config: dict
-    :param query_crs_uri: Uniform resource identifier of the coordinate
-        reference system specified in query parameter (if specified).
-    :type query_crs_uri: str, optional
-
-    :returns: None
-    """
-
-    if query_crs_uri:
-        content_crs_uri = query_crs_uri
-    else:
-        # If empty use default CRS
-        storage_crs_uri = config.get('storage_crs', DEFAULT_STORAGE_CRS)
-        if storage_crs_uri in DEFAULT_CRS_LIST:
-            # Could be that storageCrs is one of the defaults like
-            # http://www.opengis.net/def/crs/OGC/1.3/CRS84h
-            content_crs_uri = storage_crs_uri
-        else:
-            content_crs_uri = DEFAULT_CRS
-
-    headers['Content-Crs'] = f'<{content_crs_uri}>'
 
 
 def get_oas_30(cfg: dict, locale: str) -> tuple[list[dict[str, str]], dict[str, dict]]:  # noqa

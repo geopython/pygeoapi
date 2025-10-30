@@ -45,7 +45,8 @@ from pygeoapi.api import (API, FORMAT_TYPES, F_GZIP, F_HTML, F_JSONLD,
 from pygeoapi.api.itemtypes import (
     get_collection_queryables, get_collection_item,
     get_collection_items, manage_collection_item)
-from pygeoapi.util import yaml_load, get_crs_from_uri
+from pygeoapi.crs import get_crs
+from pygeoapi.util import yaml_load
 
 from tests.util import get_test_file_path, mock_api_request
 
@@ -459,7 +460,7 @@ def test_get_collection_items_crs(config, api_):
         assert code == HTTPStatus.OK
         assert rsp_headers['Content-Crs'] == f'<{crs}>'
 
-    # With CRS query parameter, using storageCrs
+    # With CRS query parameter, using storage_crs
     req = mock_api_request({'crs': storage_crs})
     rsp_headers, code, response = get_collection_items(
         api_, req, 'norway_pop')
@@ -507,7 +508,7 @@ def test_get_collection_items_crs(config, api_):
     # With CRS query parameter resulting in coordinates transformation
     transform_func = pyproj.Transformer.from_crs(
         pyproj.CRS.from_epsg(4258),
-        get_crs_from_uri(default_crs),
+        get_crs(default_crs),
         always_xy=False,
     ).transform
     for feat_orig in features_4258['features']:

@@ -66,8 +66,10 @@ CONFORMANCE_CLASSES = [
 ]
 
 
-def get_collection_edr_instances(api: API, request: APIRequest, dataset,
-                                 instance_id=None) -> Tuple[dict, int, str]:
+def get_collection_edr_instances(api: API, request: APIRequest,
+                                 dataset: str,
+                                 instance_id: str | None = None
+                                 ) -> Tuple[dict, int, str]:
     """
     Queries collection EDR instances
 
@@ -233,8 +235,10 @@ def get_collection_edr_instances(api: API, request: APIRequest, dataset,
 
 
 def get_collection_edr_query(api: API, request: APIRequest,
-                             dataset, instance, query_type,
-                             location_id=None) -> Tuple[dict, int, str]:
+                             dataset: str, instance: str,
+                             query_type: str,
+                             location_id: str | None = None
+                             ) -> Tuple[dict, int, str]:
     """
     Queries collection EDR
 
@@ -448,6 +452,8 @@ def get_oas_30(cfg: dict, locale: str) -> tuple[list[dict[str, str]], dict[str, 
         edr_extension = filter_providers_by_type(
             collections[k]['providers'], 'edr')
 
+        description = l10n.translate(v['description'], locale)
+
         if edr_extension:
             collection_name_path = f'/collections/{k}'
 
@@ -492,8 +498,8 @@ def get_oas_30(cfg: dict, locale: str) -> tuple[list[dict[str, str]], dict[str, 
                     }
                 paths[eqe['path']] = {
                     'get': {
-                        'summary': f"query {v['description']} by {eqe['qt']}",
-                        'description': v['description'],
+                        'summary': f"query {description} by {eqe['qt']}",
+                        'description': description,
                         'tags': [k],
                         'operationId': eqe['op_id'],
                         'parameters': [
@@ -525,8 +531,8 @@ def get_oas_30(cfg: dict, locale: str) -> tuple[list[dict[str, str]], dict[str, 
             if 'instances' in ep.get_query_types():
                 paths[f'{collection_name_path}/instances'] = {
                     'get': {
-                        'summary': f"Get pre-defined instances of {v['description']}",  # noqa
-                        'description': v['description'],
+                        'summary': f"Get pre-defined instances of {description}",  # noqa
+                        'description': description,
                         'tags': [k],
                         'operationId': f'getInstances{k.capitalize()}',
                         'parameters': [
@@ -541,8 +547,8 @@ def get_oas_30(cfg: dict, locale: str) -> tuple[list[dict[str, str]], dict[str, 
                 }
                 paths[f'{collection_name_path}/instances/{{instanceId}}'] = {
                     'get': {
-                        'summary': f"Get {v['description']} instance",
-                        'description': v['description'],
+                        'summary': f"Get {description} instance",
+                        'description': description,
                         'tags': [k],
                         'operationId': f'getInstance{k.capitalize()}',
                         'parameters': [
@@ -558,8 +564,8 @@ def get_oas_30(cfg: dict, locale: str) -> tuple[list[dict[str, str]], dict[str, 
             if 'locations' in ep.get_query_types():
                 paths[f'{collection_name_path}/locations'] = {
                     'get': {
-                        'summary': f"Get pre-defined locations of {v['description']}",  # noqa
-                        'description': v['description'],
+                        'summary': f"Get pre-defined locations of {description}",  # noqa
+                        'description': description,
                         'tags': [k],
                         'operationId': f'getLocations{k.capitalize()}',
                         'parameters': [
@@ -576,8 +582,8 @@ def get_oas_30(cfg: dict, locale: str) -> tuple[list[dict[str, str]], dict[str, 
                 }
                 paths[f'{collection_name_path}/locations/{{locId}}'] = {
                     'get': {
-                        'summary': f"query {v['description']} by location",
-                        'description': v['description'],
+                        'summary': f"query {description} by location",
+                        'description': description,
                         'tags': [k],
                         'operationId': f'getLocation{k.capitalize()}',
                         'parameters': [

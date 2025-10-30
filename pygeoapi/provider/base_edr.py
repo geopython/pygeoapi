@@ -29,7 +29,8 @@
 
 import logging
 
-from pygeoapi.provider.base import BaseProvider, ProviderInvalidDataError
+from pygeoapi.provider.base import (BaseProvider, ProviderInvalidDataError,
+                                    ProviderQueryError)
 
 LOGGER = logging.getLogger(__name__)
 
@@ -116,8 +117,12 @@ class BaseEDRProvider(BaseProvider):
 
         :returns: coverage data as `dict` of CoverageJSON or native format
         """
-
+        query_type = kwargs.get('query_type')
+        if query_type is None:
+            raise ProviderQueryError('Query type is required')
         try:
-            return getattr(self, kwargs.get('query_type'))(**kwargs)
+            query_function = getattr(self, query_type)
         except AttributeError:
-            raise NotImplementedError('Query not implemented!')
+            raise ProviderQueryError('Query type not implemented')
+
+        return query_function(**kwargs)

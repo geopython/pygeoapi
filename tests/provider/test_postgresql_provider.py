@@ -40,11 +40,12 @@
 # See pygeoapi/provider/postgresql.py for instructions on setting up
 # test database in Docker
 
+from http import HTTPStatus
 import os
 import json
 import pytest
 import pyproj
-from http import HTTPStatus
+from shapely.geometry import shape as geojson_to_geom
 
 from pygeofilter.parsers.ecql import parse
 
@@ -52,6 +53,7 @@ from pygeoapi.api import API
 from pygeoapi.api.itemtypes import (
     get_collection_items, get_collection_item, manage_collection_item
 )
+from pygeoapi.crs import DEFAULT_CRS, get_transform_from_crs, get_crs
 from pygeoapi.provider.base import (
     ProviderConnectionError,
     ProviderItemNotFoundError,
@@ -60,13 +62,11 @@ from pygeoapi.provider.base import (
 from pygeoapi.provider.sql import PostgreSQLProvider
 import pygeoapi.provider.sql as postgresql_provider_module
 
-from pygeoapi.util import (yaml_load, geojson_to_geom,
-                           get_transform_from_crs, get_crs_from_uri)
+from pygeoapi.util import yaml_load
 
 from ..util import get_test_file_path, mock_api_request
 
 PASSWORD = os.environ.get('POSTGRESQL_PASSWORD', 'postgres')
-DEFAULT_CRS = 'http://www.opengis.net/def/crs/OGC/1.3/CRS84'
 
 
 @pytest.fixture()
@@ -767,9 +767,8 @@ def test_get_collection_items_postgresql_crs(pg_api_):
                 break
 
     transform_func = get_transform_from_crs(
-        get_crs_from_uri(DEFAULT_CRS),
-        pyproj.CRS.from_epsg(32735),
-        always_xy=False,
+        get_crs(DEFAULT_CRS),
+        pyproj.CRS.from_epsg(32735)
     )
     # Check that the coordinates of returned features were transformed
     for feat_orig in features_orig['features']:
@@ -841,7 +840,7 @@ def test_get_collection_item_postgresql_crs(pg_api_):
         geom_32735 = geojson_to_geom(feat_32735['geometry'])
 
         transform_func = get_transform_from_crs(
-            get_crs_from_uri(DEFAULT_CRS),
+            get_crs(DEFAULT_CRS),
             pyproj.CRS.from_epsg(32735),
             always_xy=False,
         )

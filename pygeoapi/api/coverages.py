@@ -69,7 +69,8 @@ CONFORMANCE_CLASSES = [
 
 
 def get_collection_coverage(
-        api: API, request: APIRequest, dataset) -> Tuple[dict, int, str]:
+        api: API, request: APIRequest,
+        dataset: str) -> Tuple[dict, int, str]:
     """
     Returns a subset of a collection coverage
 

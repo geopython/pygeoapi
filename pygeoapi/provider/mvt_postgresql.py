@@ -41,13 +41,14 @@ from geoalchemy2.functions import (ST_TileEnvelope, ST_Transform, ST_AsMVTGeom,
 from sqlalchemy.sql import select
 from sqlalchemy.orm import Session
 
+from pygeoapi.crs import get_crs
 from pygeoapi.models.provider.base import (
     TileSetMetadata, TileMatrixSetEnum, LinkType)
 from pygeoapi.provider.base import ProviderConnectionError
 from pygeoapi.provider.base_mvt import BaseMVTProvider
 from pygeoapi.provider.sql import PostgreSQLProvider
 from pygeoapi.provider.tile import ProviderTileNotFoundError
-from pygeoapi.util import url_join, get_crs_from_uri
+from pygeoapi.util import url_join
 
 LOGGER = logging.getLogger(__name__)
 
@@ -153,15 +154,13 @@ class MVTPostgreSQLProvider(BaseMVTProvider, PostgreSQLProvider):
             LOGGER.warning(f'Tile {z}/{x}/{y} not found')
             raise ProviderTileNotFoundError
 
-        storage_srid = get_crs_from_uri(self.storage_crs).to_string()
-        out_srid = get_crs_from_uri(tileset_schema.crs).to_string()
         envelope = self.get_envelope(z, y, x, tileset)
-
         geom_column = getattr(self.table_model, self.geom)
         geom_filter = geom_column.intersects(
-            ST_Transform(envelope, storage_srid)
+            ST_Transform(envelope, self.storage_crs.to_string())
         )
 
+        out_srid = get_crs(tileset_schema.crs).to_string()
         mvtgeom = (
             ST_AsMVTGeom(
                 ST_Transform(ST_CurveToLine(geom_column), out_srid),

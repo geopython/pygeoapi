@@ -49,12 +49,14 @@ from http import HTTPStatus
 import logging
 import re
 import sys
-from typing import Any, Tuple, Union, Optional
+from typing import Any, Tuple, Union, Self
 
+from babel import Locale
 from dateutil.parser import parse as dateparse
 import pytz
 
 from pygeoapi import __version__, l10n
+from pygeoapi.crs import DEFAULT_STORAGE_CRS, get_supported_crs_list
 from pygeoapi.linked_data import jsonldify, jsonldify_collection
 from pygeoapi.log import setup_logger
 from pygeoapi.plugin import load_plugin
@@ -63,11 +65,10 @@ from pygeoapi.provider.base import (
     ProviderConnectionError, ProviderGenericError, ProviderTypeError)
 
 from pygeoapi.util import (
-    CrsTransformSpec, TEMPLATESDIR, UrlPrefetcher, dategetter,
+    TEMPLATESDIR, UrlPrefetcher, dategetter,
     filter_dict_by_key_value, filter_providers_by_type, get_api_rules,
     get_base_url, get_provider_by_type, get_provider_default, get_typed_value,
-    get_crs_from_uri, get_supported_crs_list, render_j2_template, to_json,
-    get_choice_from_headers, get_from_headers
+    render_j2_template, to_json, get_choice_from_headers, get_from_headers
 )
 
 LOGGER = logging.getLogger(__name__)
@@ -113,14 +114,6 @@ CONFORMANCE_CLASSES = [
 ]
 
 OGC_RELTYPES_BASE = 'http://www.opengis.net/def/rel/ogc/1.0'
-
-DEFAULT_CRS_LIST = [
-    'http://www.opengis.net/def/crs/OGC/1.3/CRS84',
-    'http://www.opengis.net/def/crs/OGC/1.3/CRS84h',
-]
-
-DEFAULT_CRS = 'http://www.opengis.net/def/crs/OGC/1.3/CRS84'
-DEFAULT_STORAGE_CRS = DEFAULT_CRS
 
 
 def all_apis() -> dict:
@@ -286,7 +279,8 @@ class APIRequest:
         LOGGER.debug('No query parameters found')
         return {}
 
-    def _get_locale(self, headers, supported_locales):
+    def _get_locale(self, headers: dict,
+                    supported_locales: Union[list, Locale]) -> tuple:
         """
         Detects locale from "lang=<language>" param or `Accept-Language`
         header. Returns a tuple of (raw, locale) if found in params or headers.
@@ -325,7 +319,7 @@ class APIRequest:
 
         return raw, default_locale
 
-    def _get_format(self, headers) -> Union[str, None]:
+    def _get_format(self, headers: dict) -> Union[str, None]:
         """
         Get `Request` format type from query parameters or headers.
 
@@ -464,9 +458,9 @@ class APIRequest:
             return True
         return False
 
-    def get_response_headers(self, force_lang: l10n.Locale = None,
-                             force_type: str = None,
-                             force_encoding: str = None,
+    def get_response_headers(self, force_lang: l10n.Locale | None = None,
+                             force_type: str | None = None,
+                             force_encoding: str | None = None,
                              **custom_headers) -> dict:
         """
         Prepares and returns a dictionary with Response object headers.
@@ -512,7 +506,7 @@ class APIRequest:
 
         return headers
 
-    def get_request_headers(self, headers) -> dict:
+    def get_request_headers(self, headers: dict) -> dict:
         """
         Obtains and returns a dictionary with Request object headers.
 
@@ -529,7 +523,7 @@ class APIRequest:
 class API:
     """API object"""
 
-    def __init__(self, config, openapi):
+    def __init__(self, config: dict, openapi: dict) -> Self | None:
         """
         constructor
 
@@ -571,8 +565,8 @@ class API:
         self.manager = get_manager(self.config)
         LOGGER.info('Process manager plugin loaded')
 
-    def get_exception(self, status, headers, format_, code,
-                      description) -> Tuple[dict, int, str]:
+    def get_exception(self, status: int, headers: dict, format_: str | None,
+                      code: str, description: str) -> Tuple[dict, int, str]:
         """
         Exception handler
 
@@ -610,7 +604,8 @@ class API:
 
         return headers, status, content
 
-    def get_format_exception(self, request) -> Tuple[dict, int, str]:
+    def get_format_exception(self,
+                             request: APIRequest) -> Tuple[dict, int, str]:
         """
         Returns a format exception.
 
@@ -631,103 +626,10 @@ class API:
     def get_collections_url(self) -> str:
         return f"{self.base_url}/collections"
 
-    def get_dataset_templates(self, dataset) -> dict:
+    def get_dataset_templates(self, dataset: str) -> dict:
         templates = self.config['resources'][dataset].get('templates')
 
         return templates or self.tpl_config['server']['templates']
-
-    @staticmethod
-    def _create_crs_transform_spec(
-        config: dict,
-        query_crs_uri: Optional[str] = None,
-    ) -> Union[None, CrsTransformSpec]:
-        """Create a `CrsTransformSpec` instance based on provider config and
-        *crs* query parameter.
-
-        :param config: Provider config dictionary.
-        :type config: dict
-        :param query_crs_uri: Uniform resource identifier of the coordinate
-            reference system (CRS) specified in query parameter (if specified).
-        :type query_crs_uri: str, optional
-
-        :raises ValueError: Error raised if the CRS specified in the query
-            parameter is not in the list of supported CRSs of the provider.
-        :raises `CRSError`: Error raised if no CRS could be identified from the
-            query *crs* parameter (URI).
-
-        :returns: `CrsTransformSpec` instance if the CRS specified in query
-            parameter differs from the storage CRS, else `None`.
-        :rtype: Union[None, CrsTransformSpec]
-        """
-        # Get storage/default CRS for Collection.
-        storage_crs_uri = config.get('storage_crs', DEFAULT_STORAGE_CRS)
-
-        if not query_crs_uri:
-            if storage_crs_uri in DEFAULT_CRS_LIST:
-                # Could be that storageCrs is
-                # http://www.opengis.net/def/crs/OGC/1.3/CRS84h
-                query_crs_uri = storage_crs_uri
-            else:
-                query_crs_uri = DEFAULT_CRS
-            LOGGER.debug(f'no crs parameter, using default: {query_crs_uri}')
-
-        supported_crs_list = get_supported_crs_list(config, DEFAULT_CRS_LIST)
-        # Check that the crs specified by the query parameter is supported.
-        if query_crs_uri not in supported_crs_list:
-            raise ValueError(
-                f'CRS {query_crs_uri!r} not supported for this '
-                'collection. List of supported CRSs: '
-                f'{", ".join(supported_crs_list)}.'
-            )
-        crs_out = get_crs_from_uri(query_crs_uri)
-
-        storage_crs = get_crs_from_uri(storage_crs_uri)
-        # Check if the crs specified in query parameter differs from the
-        # storage crs.
-        if str(storage_crs) != str(crs_out):
-            LOGGER.debug(
-                f'CRS transformation: {storage_crs} -> {crs_out}'
-            )
-            return CrsTransformSpec(
-                source_crs_uri=storage_crs_uri,
-                source_crs_wkt=storage_crs.to_wkt(),
-                target_crs_uri=query_crs_uri,
-                target_crs_wkt=crs_out.to_wkt(),
-            )
-        else:
-            LOGGER.debug('No CRS transformation')
-            return None
-
-    @staticmethod
-    def _set_content_crs_header(
-        headers: dict,
-        config: dict,
-        query_crs_uri: Optional[str] = None,
-    ):
-        """Set the *Content-Crs* header in responses from providers of Feature
-        type.
-
-        :param headers: Response headers dictionary.
-        :type headers: dict
-        :param config: Provider config dictionary.
-        :type config: dict
-        :param query_crs_uri: Uniform resource identifier of the coordinate
-            reference system specified in query parameter (if specified).
-        :type query_crs_uri: str, optional
-        """
-        if query_crs_uri:
-            content_crs_uri = query_crs_uri
-        else:
-            # If empty use default CRS
-            storage_crs_uri = config.get('storage_crs', DEFAULT_STORAGE_CRS)
-            if storage_crs_uri in DEFAULT_CRS_LIST:
-                # Could be that storageCrs is one of the defaults like
-                # http://www.opengis.net/def/crs/OGC/1.3/CRS84h
-                content_crs_uri = storage_crs_uri
-            else:
-                content_crs_uri = DEFAULT_CRS
-
-        headers['Content-Crs'] = f'<{content_crs_uri}>'
 
 
 @jsonldify
@@ -884,7 +786,7 @@ def openapi_(api: API, request: APIRequest) -> Tuple[dict, int, str]:
         return headers, HTTPStatus.OK, api.openapi
 
 
-def conformance(api, request: APIRequest) -> Tuple[dict, int, str]:
+def conformance(api: API, request: APIRequest) -> Tuple[dict, int, str]:
     """
     Provide conformance definition
 
@@ -930,7 +832,7 @@ def conformance(api, request: APIRequest) -> Tuple[dict, int, str]:
 
 @jsonldify
 def describe_collections(api: API, request: APIRequest,
-                         dataset=None) -> Tuple[dict, int, str]:
+                         dataset: str | None = None) -> Tuple[dict, int, str]:
     """
     Provide collection metadata
 
@@ -1142,7 +1044,7 @@ def describe_collections(api: API, request: APIRequest,
 
         # OAPIF Part 2 - list supported CRSs and StorageCRS
         if collection_data_type in ['edr', 'feature']:
-            collection['crs'] = get_supported_crs_list(collection_data, DEFAULT_CRS_LIST)  # noqa
+            collection['crs'] = get_supported_crs_list(collection_data)
             collection['storageCrs'] = collection_data.get('storage_crs', DEFAULT_STORAGE_CRS)  # noqa
             if 'storage_crs_coordinate_epoch' in collection_data:
                 collection['storageCrsCoordinateEpoch'] = collection_data.get('storage_crs_coordinate_epoch')  # noqa
@@ -1347,6 +1249,7 @@ def describe_collections(api: API, request: APIRequest,
         })
 
     if request.format == F_HTML:  # render
+        fcm['base_url'] = api.base_url
         fcm['collections_path'] = api.get_collections_url()
         if dataset is not None:
             tpl_config = api.get_dataset_templates(dataset)
@@ -1376,7 +1279,7 @@ def describe_collections(api: API, request: APIRequest,
 
 
 def get_collection_schema(api: API, request: Union[APIRequest, Any],
-                          dataset) -> Tuple[dict, int, str]:
+                          dataset: str) -> Tuple[dict, int, str]:
     """
     Returns a collection schema
 
@@ -1461,7 +1364,7 @@ def get_collection_schema(api: API, request: Union[APIRequest, Any],
     return headers, HTTPStatus.OK, to_json(schema, api.pretty_print)
 
 
-def validate_bbox(value=None) -> list:
+def validate_bbox(value: list | None = None) -> list:
     """
     Helper function to validate bbox parameter
 
@@ -1509,7 +1412,8 @@ def validate_bbox(value=None) -> list:
     return bbox
 
 
-def validate_datetime(resource_def, datetime_=None) -> str:
+def validate_datetime(resource_def: dict,
+                      datetime_: str | None = None) -> str:
     """
     Helper function to validate temporal parameter
 

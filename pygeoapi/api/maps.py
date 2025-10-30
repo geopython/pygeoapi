@@ -43,12 +43,13 @@ from http import HTTPStatus
 import logging
 from typing import Tuple
 
+from pygeoapi.crs import transform_bbox
 from pygeoapi.openapi import get_oas_30_parameters
 from pygeoapi.plugin import load_plugin
 from pygeoapi.provider.base import ProviderGenericError
 from pygeoapi.util import (
     get_provider_by_type, to_json, filter_providers_by_type,
-    filter_dict_by_key_value, transform_bbox
+    filter_dict_by_key_value
 )
 
 from . import APIRequest, API, validate_datetime
@@ -64,7 +65,8 @@ DEFAULT_CRS = 'http://www.opengis.net/def/crs/EPSG/0/4326'
 
 
 def get_collection_map(api: API, request: APIRequest,
-                       dataset, style=None) -> Tuple[dict, int, str]:
+                       dataset: str, style: str | None = None
+                       ) -> Tuple[dict, int, str]:
     """
     Returns a subset of a collection map
 
@@ -75,9 +77,7 @@ def get_collection_map(api: API, request: APIRequest,
     :returns: tuple of headers, status code, content
     """
 
-    query_args = {
-        'crs': 'CRS84'
-    }
+    query_args = {}
 
     format_ = request.format or 'png'
     headers = request.get_response_headers(**api.api_headers)
@@ -194,7 +194,8 @@ def get_collection_map(api: API, request: APIRequest,
 
 
 def get_collection_map_legend(api: API, request: APIRequest,
-                              dataset, style=None) -> Tuple[dict, int, str]:
+                              dataset: str, style: str | None = None
+                              ) -> Tuple[dict, int, str]:
     """
     Returns a subset of a collection map legend
 

@@ -32,9 +32,10 @@ import json
 import logging
 from requests import Session, codes
 
+from pygeoapi.crs import crs_transform, get_srid
 from pygeoapi.provider.base import (BaseProvider, ProviderConnectionError,
                                     ProviderTypeError, ProviderQueryError)
-from pygeoapi.util import format_datetime, crs_transform
+from pygeoapi.util import format_datetime
 
 LOGGER = logging.getLogger(__name__)
 
@@ -59,7 +60,7 @@ class ESRIServiceProvider(BaseProvider):
         super().__init__(provider_def)
 
         self.url = f'{self.data}/query'
-        self.crs = provider_def.get('crs', '4326')
+        self.crs = get_srid(self.storage_crs)
         self.username = provider_def.get('username')
         self.password = provider_def.get('password')
         self.token_url = provider_def.get('token_service', ARCGIS_URL)
