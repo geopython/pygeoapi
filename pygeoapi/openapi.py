@@ -81,7 +81,7 @@ def get_ogc_schemas_location(server_config: dict) -> str:
         if osl.startswith('http'):
             value = osl
         elif osl.startswith('/'):
-            base_url = get_base_url({'server': server_config})
+            base_url = get_base_url({'server': server_config}).rstrip('/')
             value = f'{base_url}/schemas'
 
     return value
