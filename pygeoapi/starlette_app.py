@@ -583,7 +583,7 @@ async def stac_landing_page(request: Request) -> Response:
     :returns: Starlette HTTP response
     """
 
-    return execute_from_starlette(stac_api.landing_page, request)
+    return await execute_from_starlette(stac_api.landing_page, request)
 
 
 async def stac_search(request: Request) -> Response:
@@ -595,7 +595,7 @@ async def stac_search(request: Request) -> Response:
     :returns: Starlette HTTP response
     """
 
-    return execute_from_starlette(stac_api.search, request)
+    return await execute_from_starlette(stac_api.search, request)
 
 
 async def admin_config(request: Request) -> Response:
