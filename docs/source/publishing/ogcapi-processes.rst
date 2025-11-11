@@ -117,6 +117,10 @@ The connection to a `MongoDB`_ instance must be provided in the configuration.
 `MongoDB`_ uses ``localhost`` and port ``27017`` by default. Jobs are stored in a collection named
 ``job_manager_pygeoapi``.
 
+.. note::
+
+    The ``job_manager_pygeoapi`` collection must exist in the MongoDB instance.
+
 .. code-block:: yaml
 
    server:
@@ -131,6 +135,10 @@ PostgreSQL
 As another alternative to the default, a manager employing `PostgreSQL`_ can be used.
 The connection to a `PostgreSQL`_ database must be provided in the configuration.
 `PostgreSQL`_ uses ``localhost`` and port ``5432`` by default. Jobs are stored in a table named ``jobs``.
+
+.. note::
+
+    The ``jobs`` table must exist in the PostgreSQL instance.
 
 .. code-block:: yaml
 
