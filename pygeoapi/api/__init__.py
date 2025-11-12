@@ -632,17 +632,8 @@ class API:
         return templates or self.tpl_config['server']['templates']
 
 
-@jsonldify
-def landing_page(api: API,
-                 request: APIRequest) -> Tuple[dict, int, str]:
-    """
-    Provide API landing page
-
-    :param request: A request object
-
-    :returns: tuple of headers, status code, content
-    """
-
+def landing_page_prerender(api: API,
+                           request: APIRequest) -> Tuple[dict, dict]:
     fcm = {
         'links': [],
         'title': l10n.translate(
@@ -723,6 +714,22 @@ def landing_page(api: API,
     }]
 
     headers = request.get_response_headers(**api.api_headers)
+    return headers, fcm
+
+
+@jsonldify
+def landing_page(api: API,
+                 request: APIRequest) -> Tuple[dict, int, str]:
+    """
+    Provide API landing page
+
+    :param request: A request object
+
+    :returns: tuple of headers, status code, content
+    """
+
+    headers, fcm = landing_page_prerender(api, request)
+
     if request.format == F_HTML:  # render
 
         for resource_type in ['collection', 'process', 'stac-collection']:
