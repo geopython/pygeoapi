@@ -1,4 +1,4 @@
--- A test database for the mysql provider; a simple geospatial app 
+-- A test database for the mysql provider; a simple geospatial app
 
 -- Create the database
 DROP DATABASE IF EXISTS test_geo_app;

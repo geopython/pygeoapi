@@ -126,7 +126,7 @@ def mock_flask(config_file: str = 'pygeoapi-test-config.yml',
         reload(flask_app)
 
         # Set server root path
-        url_parts = urlsplit(flask_app.CONFIG['server']['url'])
+        url_parts = urlsplit(flask_app.config['server']['url'])
         app_root = url_parts.path.rstrip('/') or '/'
         flask_app.APP.config['SERVER_NAME'] = url_parts.netloc
         flask_app.APP.config['APPLICATION_ROOT'] = app_root
