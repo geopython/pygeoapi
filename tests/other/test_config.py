@@ -115,6 +115,7 @@ def test_validate_config_process_manager(config):
     assert validate_config(cfg_copy)
 
     with pytest.raises(ValidationError):
+        # make sure an int is validated as invalid
         cfg_copy['server']['manager'] = {
             'name': 'TinyDB',
             'connection': 12345,
