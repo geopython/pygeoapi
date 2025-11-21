@@ -958,6 +958,8 @@ def get_collection_item(api: API, request: APIRequest,
 
     config_dataset = api.config['resources'][dataset]
     linked_data = config_dataset.get('linked-data')
+    if linked_data:
+        content['linked_data'] = linked_data
 
     if request.format == F_HTML:  # render
         tpl_config = api.get_dataset_templates(dataset)
