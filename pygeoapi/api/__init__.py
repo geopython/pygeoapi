@@ -68,7 +68,8 @@ from pygeoapi.util import (
     TEMPLATESDIR, UrlPrefetcher, dategetter,
     filter_dict_by_key_value, filter_providers_by_type, get_api_rules,
     get_base_url, get_provider_by_type, get_provider_default, get_typed_value,
-    render_j2_template, to_json, get_choice_from_headers, get_from_headers
+    render_j2_template, to_json, get_choice_from_headers, get_from_headers,
+    get_dataset_formatters
 )
 
 LOGGER = logging.getLogger(__name__)
@@ -1041,6 +1042,14 @@ def describe_collections(api: API, request: APIRequest,
                 'title': l10n.translate('Items as HTML', request.locale),  # noqa
                 'href': f'{api.get_collections_url()}/{k}/items?f={F_HTML}'  # noqa
             })
+
+            for key, value in get_dataset_formatters(v).items():
+                collection['links'].append({
+                    'type': value.mimetype,
+                    'rel': 'items',
+                    'title': l10n.translate(f'Items as {key}', request.locale),  # noqa
+                    'href': f'{api.get_collections_url()}/{k}/items?f={value.f}'  # noqa
+                })
 
         # OAPIF Part 2 - list supported CRSs and StorageCRS
         if collection_data_type in ['edr', 'feature']:
