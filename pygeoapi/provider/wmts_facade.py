@@ -161,7 +161,7 @@ class WMTSFacadeProvider(BaseTileProvider):
                 'tileMatrix': z,
                 'tileRow': y,
                 'tileCol': x,
-                'style': ''
+                'style': self.options.get('wmts_style', '')
             }
 
             if '?' in self.data:
