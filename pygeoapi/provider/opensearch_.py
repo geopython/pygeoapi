@@ -390,7 +390,7 @@ class OpenSearchProvider(BaseProvider):
 
             LOGGER.debug(f'Query: {query}')
             try:
-                result = self.os_.search(index=self.index_name, **query)
+                result = self.os_.search(index=self.index_name, body=query)
                 if len(result['hits']['hits']) == 0:
                     LOGGER.error(err)
                     raise ProviderItemNotFoundError(err)
