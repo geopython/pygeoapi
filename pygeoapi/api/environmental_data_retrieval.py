@@ -43,11 +43,13 @@ import logging
 from typing import Tuple
 import urllib
 
+from pyproj.exceptions import CRSError
 from shapely.errors import ShapelyError
 from shapely.wkt import loads as shapely_loads
 
 from pygeoapi import l10n
 from pygeoapi.api import evaluate_limit
+from pygeoapi.crs import (create_crs_transform_spec, set_content_crs_header)
 from pygeoapi.plugin import load_plugin, PLUGINS
 from pygeoapi.provider.base import (
     ProviderGenericError, ProviderItemNotFoundError)
@@ -265,8 +267,9 @@ def get_collection_edr_query(api: API, request: APIRequest,
 
     LOGGER.debug('Loading provider')
     try:
-        p = load_plugin('provider', get_provider_by_type(
-            collections[dataset]['providers'], 'edr'))
+        provider_def = get_provider_by_type(
+            collections[dataset]['providers'], 'edr')
+        p = load_plugin('provider', provider_def)
     except ProviderGenericError as err:
         return api.get_exception(
             err.http_status_code, headers, request.format,
@@ -283,6 +286,21 @@ def get_collection_edr_query(api: API, request: APIRequest,
         return api.get_exception(
             HTTPStatus.BAD_REQUEST, headers, request.format,
             'InvalidParameterValue', msg)
+
+    crs_transform_spec = None
+    query_crs_uri = request.params.get('crs')
+    if query_crs_uri is not None:
+        LOGGER.debug('Processing crs parameter')
+        try:
+            crs_transform_spec = create_crs_transform_spec(
+                provider_def, query_crs_uri
+            )
+        except (ValueError, CRSError) as err:
+            msg = str(err)
+            return api.get_exception(
+                HTTPStatus.BAD_REQUEST, headers, request.format,
+                'InvalidParameterValue', msg)
+        set_content_crs_header(headers, provider_def, query_crs_uri)
 
     LOGGER.debug('Processing query parameters')
 
@@ -377,7 +395,8 @@ def get_collection_edr_query(api: API, request: APIRequest,
         within=within,
         within_units=within_units,
         limit=limit,
-        location_id=location_id
+        location_id=location_id,
+        crs_transform_spec=crs_transform_spec
     )
 
     try:
@@ -507,6 +526,7 @@ def get_oas_30(cfg: dict, locale: str) -> tuple[list[dict[str, str]], dict[str, 
                             {'$ref': f"{OPENAPI_YAML['oapif-1']}#/components/parameters/datetime"},  # noqa
                             {'$ref': f"{OPENAPI_YAML['oaedr']}/parameters/parameter-name.yaml"},  # noqa
                             {'$ref': f"{OPENAPI_YAML['oaedr']}/parameters/z.yaml"},  # noqa
+                            {'$ref': '#/components/parameters/crs'},
                             {'$ref': '#/components/parameters/f'}
                         ],
                         'responses': {
@@ -590,6 +610,7 @@ def get_oas_30(cfg: dict, locale: str) -> tuple[list[dict[str, str]], dict[str, 
                             {'$ref': f"{OPENAPI_YAML['oaedr']}/parameters/locationId.yaml"},  # noqa
                             {'$ref': f"{OPENAPI_YAML['oapif-1']}#/components/parameters/datetime"},  # noqa
                             {'$ref': f"{OPENAPI_YAML['oaedr']}/parameters/parameter-name.yaml"},  # noqa
+                            {'$ref': '#/components/parameters/crs'},
                             {'$ref': '#/components/parameters/f'}
                         ],
                         'responses': {

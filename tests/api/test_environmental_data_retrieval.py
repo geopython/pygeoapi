@@ -252,3 +252,23 @@ def test_get_collection_edr_query(config, api_):
     rsp_headers, code, response = get_collection_edr_query(
         api_, req, 'usgs-prism', None, 'cube')
     assert code == HTTPStatus.OK
+
+
+def test_get_collection_edr_query_crs(config, api_):
+    # Invalid CRS query parameter (not a URI)
+    req = mock_api_request({'coords': 'POINT(11 11)', 'crs': '4326'})
+    rsp_headers, code, response = get_collection_edr_query(
+        api_, req, 'icoads-sst', None, 'position')
+    assert code == HTTPStatus.BAD_REQUEST
+
+    # Valid CRS parameter (default CRS)
+    req = mock_api_request({
+        'coords': 'POINT(11 11)',
+        'crs': 'http://www.opengis.net/def/crs/OGC/1.3/CRS84'
+    })
+    rsp_headers, code, response = get_collection_edr_query(
+        api_, req, 'icoads-sst', None, 'position')
+    assert code == HTTPStatus.OK
+    assert 'Content-Crs' in rsp_headers
+    expected_crs = '<http://www.opengis.net/def/crs/OGC/1.3/CRS84>'
+    assert rsp_headers['Content-Crs'] == expected_crs
