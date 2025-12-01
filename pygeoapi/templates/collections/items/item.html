@@ -80,6 +80,13 @@
           </div>
         </div>
         <div class="col-md-6 col-sm-12">
+            {% if linked_data and linked_data.get('context') | length %}
+              <div class="text-end mb-2">
+                <a href="#" class="btn btn-primary" id="semantic-lookup-btn" data-target="#item-properties-table">
+                  {% trans %}Semantic lookup{% endtrans %}
+                </a>
+              </div>
+            {% endif %}
             <table class="table table-striped table-bordered object-table" id="item-properties-table">
               <thead>
               <tr>
@@ -148,19 +155,22 @@
       <script src="https://cdn.jsdelivr.net/npm/rdflib@2.3.0/dist/rdflib.min.js"></script>
       <script src="https://github.com/avillar/jsonld-ui-utils/releases/latest/download/jsonld-ui-utils.min.js"></script>
       <script>
-        const rootElem = document.getElementById('item-properties-table');
-        if (rootElem) {
-          const linkedDataConfig = {{ linked_data | tojson }}
-          const options = {};
-          if (linkedDataConfig.fallback_sparql_endpoint) {
-            options.fallbackSparqlEndpoint = linkedDataConfig.fallback_sparql_endpoint;
-          }
-          const context = { '@context': linkedDataConfig['context'] };
-          jsonldUIUtils.loadContext(context)
-            .then(loadedContext => {
-                jsonldUIUtils.augment(rootElem, loadedContext, options);
-            });
-        }
+          document.getElementById('semantic-lookup-btn').addEventListener('click', function(e) {
+            e.target.style.display = 'none';
+            var rootElem = document.getElementById('item-properties-table');
+            if (rootElem) {
+              var linkedDataConfig = {{ linked_data | tojson }}
+              var options = {};
+              if (linkedDataConfig.fallback_sparql_endpoint) {
+                options.fallbackSparqlEndpoint = linkedDataConfig.fallback_sparql_endpoint;
+              }
+              var context = {'@context': linkedDataConfig['context']};
+              jsonldUIUtils.loadContext(context)
+                      .then(loadedContext => {
+                        jsonldUIUtils.augment(rootElem, loadedContext, options);
+                      });
+            }
+          });
       </script>
     {% endif %}
 {% endblock %}
