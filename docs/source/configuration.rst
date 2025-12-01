@@ -667,6 +667,45 @@ templates using dataset level templating. To learn more about Jinja2 templates, 
       context:
         - datetime: https://schema.org/DateTime
 
+Injecting verbatim JSON-LD contexts
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Sometimes it is desirable to override pygeoapi's default handling of JSON and JSON-LD resources
+so that the provided ``context`` entries inside ``linked-data`` are injected into the objects
+exactly as provided.
+
+This behavior can be enabled by setting ``inject_verbatim_context`` to ``true`` inside
+the Linked Data configuration for the resource:
+
+.. code-block:: yaml
+
+    linked-data:
+      context:
+        - https://example.com/my-context.jsonld
+      inject_verbatim_context: true
+
+With ``inject_verbatim_context`` enabled, both JSON and JSON-LD item resources will have
+a ``@context`` property with the provided linked data context entries, and no JSON-LD
+manipulation will be performed by pygeoapi.
+
+Additionally, some semantically enabled resources may provide their own ``@id`` (i.e., URI) value,
+which may be different from the one used by pygeoapi. The ``replace_id_field`` setting
+inside ``linked-data`` can be used to instruct pygeoapi to override a given property
+in the object with its own item URL:
+
+.. code-block:: yaml
+
+    linked-data:
+      context:
+        - https://example.com/my-context.jsonld
+      inject_verbatim_context: true
+      replace_id_field: id
+
+In the example above, the ``id`` field will be overwritten with the item URL on
+the pygeoapi service.
+
+.. Important::
+    ``inject_verbatim_context`` must be enabled for ``replace_id_field`` to work.
 
 Validating the configuration
 ----------------------------
