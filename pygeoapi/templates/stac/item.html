@@ -6,9 +6,38 @@
 / <a class="crumbs-path" href="{{config['server']['url'] }}/stac/{{ link['href'] }}">{{ link['title'] }}</a>
 {% endfor %}
 {% endblock %}
+{% set linked_data = data.get('linked_data') %}
+
+{% macro render_item_value(v, width, additional_classes='') -%}
+    {% set val = v | string | trim %}
+    {% if val|length and val.lower().endswith(('.jpg', '.jpeg', '.png', '.gif', '.bmp')) %}
+        {# Ends with image extension: render img element with link to image #}
+      <span class="literal-value">
+        <a href="{{ val }}"><img src="{{ val }}" alt="{{ val.split('/') | last }}" width="{{ width }}"/></a>
+      </span>
+    {% elif v is string or v is number %}
+      <span class="literal-value">{{ val | urlize() }}</span>
+    {% elif v is mapping %}
+      <table class="table table-striped table-border object-table {{ additional_classes }}">
+        {% for i,j in v.items() %}
+          <tr>
+            <td class="object-property" data-property="{{ i }}">{{ i }}</td>
+            <td class="object-value">{{ render_item_value(j, 60) }}</td>
+          </tr>
+        {% endfor %}
+      </table>
+    {% elif v is iterable %}
+      {% for i in v %}
+        {{ render_item_value(i, 60, 'array-entry') }}
+      {% endfor %}
+    {% else %}
+      <span class="literal-value">{{ val | urlize() }}</span>
+    {% endif %}
+{%- endmacro %}
 
 {% block extrahead %}
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.3.1/dist/leaflet.css"/>
+    <link rel="stylesheet" href="{{ config['server']['url'] }}/static/css/linked-data.css">
     <script src="https://unpkg.com/leaflet@1.3.1/dist/leaflet.js"></script>
 {% endblock %}
 
@@ -52,7 +81,7 @@
           </div>
         </div>
         <div class="col-md-6 col-sm-12">
-            <table class="table table-striped table-bordered">
+            <table class="table table-striped table-bordered object-table" id="item-properties-table">
               <thead>
               <tr>
                 <th>{% trans %}Property{% endtrans %}</th>
@@ -61,12 +90,12 @@
             </thead>
             <tbody>
               <tr>
-                <td>{% trans %}id{% endtrans %}</td>
-                <td>{{ data.id }}</td>
+                <td class="object-property" data-property="id">{% trans %}id{% endtrans %}</td>
+                <td class="object-value">{{ data.id }}</td>
               </tr>
               {% for k, v in data['properties'].items() %}
               <tr>
-                <td>{{ k }}</td>
+                <td class="object-property" data-property="{{ k | striptags }}">{{ k }}</td>
                 {% if k == 'links' %}
                 <td>
                     <ul>
@@ -76,7 +105,7 @@
                     </ul>
                 </td>
                 {% else %}
-                  <td>{{ v }}</td>
+                  <td class="object-value">{{ render_item_value(v, 80) }}</td>
                 {% endif %}
               </tr>
               {% endfor %}
@@ -106,4 +135,23 @@
     map.addLayer(bbox_layer);
     map.fitBounds(bbox_layer.getBounds(), {maxZoom: 10});
     </script>
+    {% if linked_data and linked_data.get('context') | length %}
+      <script src="https://cdn.jsdelivr.net/npm/rdflib@2.3.0/dist/rdflib.min.js"></script>
+      <script src="https://github.com/avillar/jsonld-ui-utils/releases/latest/download/jsonld-ui-utils.min.js"></script>
+      <script>
+        const rootElem = document.getElementById('item-properties-table');
+        if (rootElem) {
+          const linkedDataConfig = {{ linked_data | tojson }}
+          const options = {};
+          if (linkedDataConfig.fallback_sparql_endpoint) {
+            options.fallbackSparqlEndpoint = linkedDataConfig.fallback_sparql_endpoint;
+          }
+          const context = { '@context': linkedDataConfig['context'] };
+          jsonldUIUtils.loadContext(context)
+            .then(loadedContext => {
+                jsonldUIUtils.augment(rootElem, loadedContext, options);
+            });
+        }
+      </script>
+    {% endif %}
 {% endblock %}

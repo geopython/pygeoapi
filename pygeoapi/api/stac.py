@@ -201,6 +201,7 @@ def get_stac_path(api: API, request: APIRequest,
             stac_collections[dataset].get('links', []))
 
         linked_data = api.config['resources'][dataset].get('linked-data')
+        content['linked_data'] = linked_data
 
         if request.format == F_HTML:  # render
             content['path'] = path
