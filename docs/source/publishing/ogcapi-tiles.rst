@@ -196,6 +196,7 @@ This code block shows how to configure pygeoapi to read map tiles from a WMTS.
          options:
              wmts_layer: camb:hex350_grid_mental_1920 # the layer name of the wmts
              wmts_tile_matrix_set: WebMercatorQuad  # the name of the tile matrix set of the wmts.
+             wmts_style: camb:hex350_grid_mental_1920  # the style identifier of the wmts. If empty or this key is missing, it falls back to the default style.
              scheme: WebMercatorQuad  # the aligning scheme in pygeoapi.
              zoom:
                  min: 0
