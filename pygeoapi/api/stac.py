@@ -284,7 +284,7 @@ def landing_page(api: API,
         'rel': 'search',
         'type': FORMAT_TYPES[F_JSON],
         'title': l10n.translate('STAC API search', request.locale),
-        'href': f"{api.base_url}/stac-api//search?f={F_JSON}"
+        'href': f"{api.base_url}/stac-api/search?f={F_JSON}"
     }]
 
     return headers, status, to_json(content, api.pretty_print)
