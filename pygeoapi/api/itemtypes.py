@@ -37,7 +37,7 @@
 
 from collections import ChainMap
 from copy import deepcopy
-from datetime import datetime
+from datetime import datetime, UTC
 from http import HTTPStatus
 import logging
 from typing import Any, Tuple, Union
@@ -625,7 +625,7 @@ def get_collection_items(
             'href': '/'.join(uri.split('/')[:-1])
         })
 
-    content['timeStamp'] = datetime.utcnow().strftime(
+    content['timeStamp'] = datetime.now(UTC).strftime(
         '%Y-%m-%dT%H:%M:%S.%fZ')
 
     # Set response language to requested provider locale
