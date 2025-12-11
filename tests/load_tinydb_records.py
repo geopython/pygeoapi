@@ -1,8 +1,10 @@
 # =================================================================
 #
 # Authors: Tom Kralidis <tomkralidis@gmail.com>
+#          Francesco Bartoli <xbartolone@gmail.com>
 #
 # Copyright (c) 2025 Tom Kralidis
+# Copyright (c) 2025 Francesco Bartoli
 #
 # Permission is hereby granted, free of charge, to any person
 # obtaining a copy of this software and associated documentation
@@ -27,7 +29,7 @@
 #
 # =================================================================
 
-from datetime import datetime
+from datetime import datetime, UTC
 from pathlib import Path
 import sys
 from typing import Union
@@ -226,7 +228,7 @@ for xml_file in xml_dir.glob('*.xml'):
         'geometry': geometry,
         'properties': {
             'created': issued,
-            'updated': datetime.utcnow().strftime('%Y-%m-%dT%H:%M:%SZ'),
+            'updated': datetime.now(UTC).strftime('%Y-%m-%dT%H:%M:%SZ'),
             'type': type_,
             'title': title,
             'description': description,
