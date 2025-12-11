@@ -39,23 +39,23 @@ class BaseFormatter:
         """
         Initialize object
 
-        :param formatter_def: formatter definition
+        param formatter_def: formatter definition
 
         :returns: pygeoapi.formatter.base.BaseFormatter
         """
 
+        self.extension = None
         self.mimetype = None
-        self.geom = False
 
         self.name = formatter_def['name']
-        if 'geom' in formatter_def:
-            self.geom = formatter_def['geom']
+        self.geom = formatter_def.get('geom', False)
+        self.attachment = formatter_def.get('attachment', False)
 
     def write(self, options: dict = {}, data: dict | None = None) -> str:
         """
         Generate data in specified format
 
-        :param options: CSV formatting options
+        :param options: formatting options
         :param data: dict representation of GeoJSON object
 
         :returns: string representation of format
