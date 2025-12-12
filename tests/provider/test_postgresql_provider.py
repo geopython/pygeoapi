@@ -41,6 +41,7 @@
 # test database in Docker
 
 from http import HTTPStatus
+import logging
 import os
 import json
 import pytest
@@ -67,6 +68,9 @@ from pygeoapi.util import yaml_load
 from ..util import get_test_file_path, mock_api_request
 
 PASSWORD = os.environ.get('POSTGRESQL_PASSWORD', 'postgres')
+HITS_FILTER_MESSAGE = "Full count executed (hits or filters)"
+PSEUDO_COUNT_MESSAGE = "Pseudo count executed"
+TOO_FEW_MESSAGE = "Full count executed (too few features)"
 
 
 @pytest.fixture()
@@ -140,6 +144,30 @@ def pg_api_(openapi):
     with open(get_test_file_path('pygeoapi-test-config-postgresql.yml')) as fh:
         config = yaml_load(fh)
         return API(config, openapi)
+
+
+@pytest.fixture()
+def config_dummy():
+    return {
+        'name': 'PostgreSQL',
+        'type': 'feature',
+        'data': {'host': '127.0.0.1',
+                 'dbname': 'test',
+                 'user': 'postgres',
+                 'password': PASSWORD,
+                 'search_path': ['dummy', 'public']
+                 },
+        'options': {
+            'connect_timeout': 10
+        },
+        'id_field': 'gid',
+        'table': 'buildings',
+        'geom_field': 'centroid',
+        'time_field': 'datetime',
+        'postgresql_pseudo_count_enabled': True,
+        'postgresql_pseudo_count_start': 1000,
+        'storage_crs': 'http://www.opengis.net/def/crs/EPSG/0/25833'
+    }
 
 
 def test_valid_connection_options(config):
@@ -901,3 +929,76 @@ def test_transaction_create_handles_invalid_input_data(pg_api_, data):
     headers, code, content = manage_collection_item(
         pg_api_, req, action='create', dataset='hot_osm_waterways')
     assert 'generic error' in content
+
+
+@pytest.mark.parametrize("result_type, cql_filters, bbox_filter, time_filter, expected_count", [ # noqa
+    ("hits", None, [], None, 12),
+    ("", "building_type LIKE 'residential'", [], None, 1),
+    ("", None, [-2450512.62, 3680451.78, 2665647.82, 9493779.8], None, 10),
+    ("", None, [], '2021-11-23T09:00:00Z', 1)
+])
+def test_resulttype_equals_hits_and_filters_force_full_count(
+    caplog: pytest.LogCaptureFixture,
+    config_dummy: dict,
+    result_type: str,
+    cql_filters: str,
+    bbox_filter: list[int],
+    time_filter: str,
+    expected_count: int
+):
+
+    # Arrange
+    provider = PostgreSQLProvider(config_dummy)
+    if cql_filters:
+        cql_filters = parse(cql_filters)
+
+    with caplog.at_level(logging.DEBUG):
+
+        # Act
+        results = provider.query(
+            resulttype=result_type,
+            filterq=cql_filters,
+            bbox=bbox_filter,
+            datetime_=time_filter
+        )
+
+        # Assert
+        assert HITS_FILTER_MESSAGE in caplog.text
+        assert results['numberMatched'] == expected_count
+
+
+def test_pseudo_count(
+    caplog: pytest.LogCaptureFixture,
+    config_dummy: dict
+):
+
+    # Arrange
+    config_dummy['postgresql_pseudo_count_start'] = 1
+    provider = PostgreSQLProvider(config_dummy)
+
+    with caplog.at_level(logging.DEBUG):
+
+        # Act
+        _ = provider.query()
+
+        # Assert
+        assert PSEUDO_COUNT_MESSAGE in caplog.text
+
+
+def test_postgresql_pseudo_count_start_forces_full_count(
+    caplog: pytest.LogCaptureFixture,
+    config_dummy: dict
+):
+
+    # Arrange
+    config_dummy['postgresql_pseudo_count_start'] = 1000000
+    provider = PostgreSQLProvider(config_dummy)
+
+    with caplog.at_level(logging.DEBUG):
+
+        # Act
+        results = provider.query()
+
+        # Assert
+        assert TOO_FEW_MESSAGE in caplog.text
+        assert results['numberMatched'] == 12
