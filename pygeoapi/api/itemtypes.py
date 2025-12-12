@@ -64,7 +64,8 @@ from pygeoapi.util import (filter_providers_by_type, to_json,
                            get_provider_by_type, render_j2_template)
 
 from . import (
-    APIRequest, API, SYSTEM_LOCALE, F_JSON, FORMAT_TYPES, F_HTML, F_JSONLD,
+    APIRequest, API, SYSTEM_LOCALE, F_JSON,
+    FORMAT_TYPES, F_HTML, F_JSONFG, F_JSONLD,
     validate_bbox, validate_datetime
 )
 
@@ -570,6 +571,11 @@ def get_collection_items(
         'title': l10n.translate('This document as GeoJSON', request.locale),
         'href': f'{uri}?f={F_JSON}{serialized_query_params}'
     }, {
+        'rel': request.get_linkrel(F_JSONFG),
+        'type': FORMAT_TYPES[F_JSONFG],
+        'title': l10n.translate('This document as JSON-FG', request.locale),  # noqa
+        'href': f'{uri}?f={F_JSONFG}{serialized_query_params}'
+    }, {
         'rel': request.get_linkrel(F_JSONLD),
         'type': FORMAT_TYPES[F_JSONLD],
         'title': l10n.translate('This document as RDF (JSON-LD)', request.locale),  # noqa
@@ -693,6 +699,31 @@ def get_collection_items(
         )
 
         return headers, HTTPStatus.OK, content
+
+    elif request.format == F_JSONFG:
+        formatter = load_plugin('formatter',
+                                {'name': F_JSONFG, 'geom': True})
+
+        try:
+            content = formatter.write(
+                data=content,
+                dataset=dataset,
+                id_field=(p.uri_field or 'id'),
+                options={
+                    'provider_def': get_provider_by_type(
+                        collections[dataset]['providers'],
+                        'feature')
+                }
+            )
+        except FormatterSerializationError:
+            msg = 'Error serializing output'
+            return api.get_exception(
+                HTTPStatus.INTERNAL_SERVER_ERROR, headers, request.format,
+                'NoApplicableCode', msg)
+
+        headers['Content-Type'] = formatter.mimetype
+
+        return headers, HTTPStatus.OK, to_json(content, api.pretty_print)
 
     return headers, HTTPStatus.OK, to_json(content, api.pretty_print)
 
@@ -918,6 +949,11 @@ def get_collection_item(api: API, request: APIRequest,
         'title': l10n.translate('This document as JSON', request.locale),
         'href': f'{uri}?f={F_JSON}'
         }, {
+        'rel': request.get_linkrel(F_JSONFG),
+        'type': FORMAT_TYPES[F_JSONFG],
+        'title': l10n.translate('This document as JSON-FG (JSON-FG)', request.locale),  # noqa
+        'href': f'{uri}?f={F_JSONFG}'
+        }, {
         'rel': request.get_linkrel(F_JSONLD),
         'type': FORMAT_TYPES[F_JSONLD],
         'title': l10n.translate('This document as RDF (JSON-LD)', request.locale),  # noqa
@@ -979,6 +1015,29 @@ def get_collection_item(api: API, request: APIRequest,
         )
 
         return headers, HTTPStatus.OK, content
+
+    elif request.format == F_JSONFG:
+        formatter = load_plugin('formatter',
+                                {'name': F_JSONFG, 'geom': True})
+
+        try:
+            content = formatter.write(
+                data=content,
+                dataset=dataset,
+                id_field=(p.uri_field or 'id'),
+                options={
+                    'provider_def': get_provider_by_type(
+                        collections[dataset]['providers'],
+                        'feature')
+                }
+            )
+        except FormatterSerializationError:
+            msg = 'Error serializing output'
+            return api.get_exception(
+                HTTPStatus.INTERNAL_SERVER_ERROR, headers, request.format,
+                'NoApplicableCode', msg)
+
+        return headers, HTTPStatus.OK, to_json(content, api.pretty_print)
 
     return headers, HTTPStatus.OK, to_json(content, api.pretty_print)
 
