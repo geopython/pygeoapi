@@ -108,6 +108,8 @@ class XarrayProvider(BaseProvider):
         if not self._fields:
             for key, value in self._data.variables.items():
                 if key not in self._data.coords:
+                    if not {self.time_field, self.x_field, self.y_field}.issubset(value.dims):
+                        continue
                     LOGGER.debug('Adding variable')
                     dtype = value.dtype
                     if dtype.name.startswith('float'):
