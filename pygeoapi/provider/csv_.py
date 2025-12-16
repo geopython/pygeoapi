@@ -1,8 +1,10 @@
 # =================================================================
 #
 # Authors: Tom Kralidis <tomkralidis@gmail.com>
+#          Francesco Bartoli <xbartolone@gmail.com>
 #
 # Copyright (c) 2025 Tom Kralidis
+# Copyright (c) 2025 Francesco Bartoli
 #
 # Permission is hereby granted, free of charge, to any person
 # obtaining a copy of this software and associated documentation
@@ -138,6 +140,9 @@ class CSVProvider(BaseProvider):
 
             if bbox:
                 LOGGER.debug('processing bbox parameter')
+                if len(bbox) > 4:
+                    LOGGER.debug("bbox reduced to 4 elements")
+                    bbox = bbox[:4]
                 data_ = filter(
                     lambda f: all(
                         [self._intersects(f, bbox)]), data_)
