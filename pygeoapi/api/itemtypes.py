@@ -431,12 +431,12 @@ def get_collection_items(
         for s in sorts:
             prop = s
             order = '+'
-            if s[0] in ['+', '-']:
+            if s and s[0] in ['+', '-']:
                 order = s[0]
                 prop = s[1:]
 
             if prop not in p.fields.keys():
-                msg = 'bad sort property'
+                msg = 'bad sortby property'
                 return api.get_exception(
                     HTTPStatus.BAD_REQUEST, headers, request.format,
                     'InvalidParameterValue', msg)

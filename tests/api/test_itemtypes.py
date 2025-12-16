@@ -3,9 +3,11 @@
 # Authors: Tom Kralidis <tomkralidis@gmail.com>
 #          John A Stevenson <jostev@bgs.ac.uk>
 #          Colin Blackburn <colb@bgs.ac.uk>
+#          Francesco Bartoli <xbartolone@gmail.com>
 #
 # Copyright (c) 2025 Tom Kralidis
 # Copyright (c) 2022 John A Stevenson and Colin Blackburn
+# Copyright (c) 2025 Francesco Bartoli
 #
 # Permission is hereby granted, free of charge, to any person
 # obtaining a copy of this software and associated documentation
@@ -284,6 +286,13 @@ def test_get_collection_items(config, api_):
     assert links[3]['rel'] == 'prev'
     assert links[4]['rel'] == 'next'
     assert links[5]['rel'] == 'collection'
+
+    req = mock_api_request({
+        'sortby': ''
+    })
+    rsp_headers, code, response = get_collection_items(api_, req, 'obs')
+
+    assert code == HTTPStatus.BAD_REQUEST
 
     req = mock_api_request({
         'sortby': 'bad-property',
