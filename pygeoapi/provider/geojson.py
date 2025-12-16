@@ -127,6 +127,9 @@ class GeoJSONProvider(BaseProvider):
         # filter by bbox if set
         if bbox:
             LOGGER.debug('processing bbox parameter')
+            if len(bbox) > 4:
+                LOGGER.debug("bbox reduced to 4 elements")
+                bbox = bbox[:4]
             data['features'] = [f for f in data['features'] if \
                 self._intersects(f['geometry'], bbox)]  # noqa
 
