@@ -1,8 +1,10 @@
 # =================================================================
 #
 # Authors: Tom Kralidis <tomkralidis@gmail.com>
+#          Francesco Bartoli <xbartolone@gmail.com>
 #
 # Copyright (c) 2025 Tom Kralidis
+# Copyright (c) 2025 Francesco Bartoli
 #
 # Permission is hereby granted, free of charge, to any person
 # obtaining a copy of this software and associated documentation
@@ -107,6 +109,9 @@ def test_query(config):
     assert results['numberMatched'] == 12
 
     results = p.query(bbox=[-10, 40, 0, 60])
+    assert len(results['features']) == 2
+
+    results = p.query(bbox=[-10, 40, 0, 60, 0, 0])
     assert len(results['features']) == 2
 
     results = p.query(properties=[('title', 'Maecenas enim')])

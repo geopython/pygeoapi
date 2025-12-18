@@ -104,6 +104,11 @@ def test_query(fixture, config):
     assert results['numberMatched'] == 1
     assert results['numberReturned'] == 1
 
+    results = p.query(bbox=[120, 10, 126, 11, 0, 0])
+    assert len(results['features']) == 1
+    assert results['numberMatched'] == 1
+    assert results['numberReturned'] == 1
+
 
 def test_get(fixture, config):
     p = GeoJSONProvider(config)
