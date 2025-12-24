@@ -1,11 +1,9 @@
-.. _running-with-docker:
+.. _docker:
 
 Docker
 ======
 
-pygeoapi provides an official `Docker`_ image which is made available on both the `geopython Docker Hub`_ and our `GitHub Container Registry`_.  Additional
-Docker examples can be found in the `pygeoapi GitHub repository`_, each with sample configurations, test data,
-deployment scenarios and provider backends.
+pygeoapi provides an official Docker image which is made available on the `geopython Docker Hub`_ as well as the `GitHub Container Registry`_.  Additional Docker examples can be found in the `pygeoapi-examples GitHub repository`_, each with sample configurations, test data, deployment scenarios and provider backends.
 
 The `pygeoapi demo server`_ runs various services from Docker images which also serve as `useful examples`_.
 
@@ -15,7 +13,7 @@ The `pygeoapi demo server`_ runs various services from Docker images which also 
 The basics
 ----------
 
-The official pygeoapi Docker image will start a pygeoapi Docker container using `Gunicorn <https://docs.gunicorn.org/en/latest/>`_ on internal port 80.
+The official pygeoapi Docker image will start a pygeoapi Docker container using `Gunicorn <https://gunicorn.org>`_ on internal port 80.
 
 Either ``IMAGE`` can be called with the ``docker`` command, ``geopython/pygeoapi`` from DockerHub or ``ghcr.io/geopython/pygeoapi`` from the GitHub Container Registry. Examples below use ``geopython/pygeoapi``. 
 
@@ -80,10 +78,9 @@ A corresponding example can be found in https://github.com/geopython/demo.pygeoa
 Environment Variables for Configuration
 ---------------------------------------
 
-In addition to **`PYGEOAPI_CONFIG`** and **`PYGEOAPI_OPENAPI`**, the base Docker image supports additional environment variables for configuring the `pygeoapi` server behavior:
+In addition to ``PYGEOAPI_CONFIG`` and ``PYGEOAPI_OPENAPI``, the base Docker image supports additional environment variables for configuring server behavior:
 
-1. **`PYGEOAPI_SERVER_URL`**:  
-   This variable sets the `pygeoapi` server URL in the configuration. It is useful for dynamically configuring the server URL during container deployment. For example:
+* ``PYGEOAPI_SERVER_URL``: sets the `pygeoapi` server URL in the configuration. It is useful for dynamically configuring the server URL during container deployment
 
    .. code-block:: bash
 
@@ -91,8 +88,13 @@ In addition to **`PYGEOAPI_CONFIG`** and **`PYGEOAPI_OPENAPI`**, the base Docker
 
    This ensures the service URLs in the configuration file are automatically updated to reflect the specified URL.
 
-2. **`PYGEOAPI_SERVER_ADMIN`**:  
-   This boolean environment variable enables or disables the `pygeoapi` Admin API. By default, the Admin API is disabled. To enable it:
+* ``PYGEOAPI_OPENAPI_GENERATE_FAIL_ON_INVALID_COLLECTION``: enables or disables generation of the OpenAPI document if one or more collections are invalid (default is ``true``)
+
+   .. code-block:: bash
+
+      docker run -p 5000:80 -e PYGEOAPI_OPENAPI_GENERATE_FAIL_ON_INVALID_COLLECTION=false -it geopython/pygeoapi
+
+* ``PYGEOAPI_SERVER_ADMIN``: enables or disables the `pygeoapi` Admin API (default is ``false``)
 
    .. code-block:: bash
 
@@ -102,44 +104,40 @@ In addition to **`PYGEOAPI_CONFIG`** and **`PYGEOAPI_OPENAPI`**, the base Docker
 
    To learn more about the Admin API see :ref:`admin-api`.
 
-3. **`CONTAINER_HOST`**: 
-   This variable sets the listening address for incoming connections. Normally the server is listening on ``localhost`` (the default), but other values are also possible. 
+* ``CONTAINER_HOST``: sets the listening address for incoming connections (default is ``localhost``)
 
    .. code-block:: bash
 
       docker run -p 5000:80 -e CONTAINER_HOST=192.168.0.7 -it geopython/pygeoapi
 
-4. **`CONTAINER_PORT`**: 
-   This variable sets the listening port for incoming connections. The default port is ``80``; in this example, we change it to ``5001``.
+* ``CONTAINER_PORT``: sets the listening port for incoming connections (default is ``80``)
 
    .. code-block:: bash
 
       docker run -p 5000:5001 -e CONTAINER_PORT=5001 -it geopython/pygeoapi
 
-5. **`WSGI_WORKERS`**: 
-
-   This variable sets the number of workers used by the Gunicorn server, the default being ``4``.
-   For performance reasons, `it is not recommended to use a high number of workers <https://docs.gunicorn.org/en/latest/design.html#how-many-workers>`_ .
+* ``WSGI_WORKERS``: sets the number of workers used by the Gunicorn server (default is ``4``)
 
    .. code-block:: bash
 
       docker run -p 5000:80 -e WSGI_WORKERS=10 -it geopython/pygeoapi
 
-6. **`WSGI_WORKER_TIMEOUT`**: 
+.. note::
+   For performance reasons, `it is not recommended to use a high number of workers <https://docs.gunicorn.org/en/latest/design.html#how-many-workers>`_
 
-   Gunicorn workers silent for more than the seconds set by this variable are killed and restarted. The default value is ``6000``.
+* ``WSGI_WORKER_TIMEOUT``: sets the number of seconds before silent Gunicorn workers are killed and restarted (default is ``6000``)
 
    .. code-block:: bash
 
       docker run -p 5000:80 -e WSGI_WORKERS=10 -it geopython/pygeoapi
 
-   You can read more about this and other Gunicorn settings in the `official documentation <https://docs.gunicorn.org/en/stable/>`_
+.. note::
+   More information on Gunicorn settings can be found in the `official Gunicorn documentation <https://docs.gunicorn.org>`_
 
 Deploying on a sub-path
 -----------------------
 
-By default the ``pygeoapi`` Docker image will run from the ``root`` path (``/``).  If you need to run from a
-sub-path and have all internal URLs properly configured, you can set the ``SCRIPT_NAME`` environment variable.
+By default the ``pygeoapi`` Docker image will run from the ``root`` path (``/``).  If you need to run from a sub-path and have all internal URLs properly configured, you can set the ``SCRIPT_NAME`` environment variable.
 
 For example to run with ``my.config.yml`` on ``http://localhost:5000/mypygeoapi``:
 
@@ -176,11 +174,9 @@ Docker is an easy and reproducible approach to deploying systems.
    Additional approaches are welcome and encouraged; see :ref:`contributing` for more information on
    how to contribute to and improve the documentation
 
-
-.. _`Docker`: https://www.docker.com
 .. _`geopython Docker Hub`: https://hub.docker.com/r/geopython/pygeoapi
 .. _`GitHub Container Registry`: https://github.com/geopython/pygeoapi/pkgs/container/pygeoapi
-.. _`pygeoapi GitHub repository`: https://github.com/geopython/pygeoapi
+.. _`pygeoapi-examples GitHub repository`: https://github.com/geopython/pygeoapi-examples
 .. _`pygeoapi demo server`: https://demo.pygeoapi.io
 .. _`useful examples`: https://github.com/geopython/demo.pygeoapi.io/tree/master/services
 .. _`Docker Compose`: https://docs.docker.com/compose/

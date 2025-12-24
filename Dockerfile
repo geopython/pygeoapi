@@ -38,7 +38,7 @@ FROM ubuntu:noble-20250910
 
 LABEL maintainer="Just van den Broecke <justb4@gmail.com>"
 
-# Docker file for full geoapi server with libs/packages for all providers.
+# Dockerfile for a full pygeoapi server with libs/packages for all providers.
 # Server runs with gunicorn. You can override ENV settings.
 # Defaults:
 # SCRIPT_NAME=/
@@ -48,6 +48,7 @@ LABEL maintainer="Just van den Broecke <justb4@gmail.com>"
 # WSGI_WORKERS=4
 # WSGI_WORKER_TIMEOUT=6000
 # WSGI_WORKER_CLASS=gevent
+# PYGEOAPI_OPENAPI_GENERATE_FAIL_ON_INVALID_COLLECTION=true
 
 # Calls entrypoint.sh to run. Inspect it for options.
 # Contains some test data. Also allows you to verify by running all unit tests.

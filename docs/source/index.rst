@@ -34,7 +34,7 @@ reference documentation on all aspects of the project.
    configuration
    administration
    running
-   running-with-docker
+   docker
    tour
    openapi
    publishing/index
