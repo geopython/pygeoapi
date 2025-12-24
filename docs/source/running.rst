@@ -7,7 +7,7 @@ Since pygeoapi is a Python API at its core, it can be served via numerous web se
 So far, pygeoapi can be served via Flask `WSGI`_, Starlette `ASGI`_, and `Django`_.
 
 This section covers how pygeoapi can be run in development environments and in production environments. 
-For running pygeoapi using docker, refer to the :ref:`running-with-docker` section.
+For running pygeoapi using Docker, refer to the :ref:`docker` section.
 
 Running in development
 ----------------------
@@ -194,7 +194,7 @@ Running in production
 Running ``pygeoapi serve`` in production is not recommended or advisable.  Preferred options are described below.
 
 .. seealso::
-   :ref:`running-with-docker` for container-based production installations.
+   :ref:`docker` for container-based production installations.
 
 Apache and mod_wsgi
 ^^^^^^^^^^^^^^^^^^^

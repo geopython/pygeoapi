@@ -57,6 +57,15 @@ WSGI_WORKERS=${WSGI_WORKERS:=4}
 WSGI_WORKER_TIMEOUT=${WSGI_WORKER_TIMEOUT:=6000}
 WSGI_WORKER_CLASS=${WSGI_WORKER_CLASS:=gevent}
 
+# pygeoapi env settings with defaults
+PYGEOAPI_OPENAPI_GENERATE_FAIL_ON_INVALID_COLLECTION=${PYGEOAPI_OPENAPI_GENERATE_FAIL_ON_INVALID_COLLECTION:=true}
+
+if [ ${PYGEOAPI_OPENAPI_GENERATE_FAIL_ON_INVALID_COLLECTION} = false ] ; then
+    OPENAPI_GENERATE_FAIL_ON_INVALID_COLLECTION='--no-fail-on-invalid-collection'
+else
+    OPENAPI_GENERATE_FAIL_ON_INVALID_COLLECTION='--fail-on-invalid-collection'
+fi
+
 # What to invoke: default is to run gunicorn server
 entry_cmd=${1:-run}
 
@@ -72,7 +81,7 @@ cd ${PYGEOAPI_HOME}
 echo "Default config in ${PYGEOAPI_CONFIG}"
 
 echo "Trying to generate openapi.yml"
-/venv/bin/pygeoapi openapi generate ${PYGEOAPI_CONFIG} --output-file ${PYGEOAPI_OPENAPI}
+/venv/bin/pygeoapi openapi generate ${PYGEOAPI_CONFIG} --output-file ${PYGEOAPI_OPENAPI} ${OPENAPI_GENERATE_FAIL_ON_INVALID_COLLECTION}
 
 [[ $? -ne 0 ]] && error "openapi.yml could not be generated ERROR"
 
