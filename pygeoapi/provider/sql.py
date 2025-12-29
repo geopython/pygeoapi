@@ -57,6 +57,7 @@ from datetime import datetime
 from decimal import Decimal
 import functools
 import logging
+from re import search
 from typing import Optional
 
 from geoalchemy2 import Geometry  # noqa - this isn't used explicitly but is needed to process Geometry columns
@@ -71,7 +72,8 @@ from sqlalchemy import (
     PrimaryKeyConstraint,
     asc,
     desc,
-    delete
+    delete,
+    text
 )
 from sqlalchemy.engine import URL
 from sqlalchemy.exc import (
@@ -127,6 +129,12 @@ class GenericSQLProvider(BaseProvider):
         self.id_field = provider_def['id_field']
         self.geom = provider_def.get('geom_field', 'geom')
         self.driver_name = driver_name
+        self.postgresql_pseudo_count_enabled = provider_def.get(
+            'postgresql_pseudo_count_enabled', False
+        )
+        self.postgresql_pseudo_count_start = provider_def.get(
+            'postgresql_pseudo_count_start', 5000000
+        )
 
         LOGGER.debug(f'Name: {self.name}')
         LOGGER.debug(f'Table: {self.table}')
@@ -737,6 +745,121 @@ class PostgreSQLProvider(GenericSQLProvider):
         bbox_filter = ST_Intersects(envelope, geom_column)
 
         return bbox_filter
+
+    def query(
+        self,
+        offset=0,
+        limit=10,
+        resulttype='results',
+        bbox=[],
+        datetime_=None,
+        properties=[],
+        sortby=[],
+        select_properties=[],
+        skip_geometry=False,
+        q=None,
+        filterq=None,
+        crs_transform_spec=None,
+        **kwargs
+    ):
+        """
+        Query sql database for all the content.
+        e,g: http://localhost:5000/collections/hotosm_bdi_waterways/items?
+        limit=1&resulttype=results
+
+        :param offset: starting record to return (default 0)
+        :param limit: number of records to return (default 10)
+        :param resulttype: return results or hit limit (default results)
+        :param bbox: bounding box [minx,miny,maxx,maxy]
+        :param datetime_: temporal (datestamp or extent)
+        :param properties: list of tuples (name, value)
+        :param sortby: list of dicts (property, order)
+        :param select_properties: list of property names
+        :param skip_geometry: bool of whether to skip geometry (default False)
+        :param q: full-text search term(s)
+        :param filterq: CQL query as text string
+        :param crs_transform_spec: `CrsTransformSpec` instance, optional
+
+        :returns: GeoJSON FeatureCollection
+        """
+
+        LOGGER.debug('Preparing filters')
+        property_filters = self._get_property_filters(properties)
+        cql_filters = self._get_cql_filters(filterq)
+        bbox_filter = self._get_bbox_filter(bbox)
+        time_filter = self._get_datetime_filter(datetime_)
+        order_by_clauses = self._get_order_by_clauses(sortby, self.table_model)
+        selected_properties = self._select_properties_clause(
+            select_properties, skip_geometry
+        )
+
+        LOGGER.debug('Querying Database')
+        # Execute query within self-closing database Session context
+        with Session(self._engine) as session:
+            results = (
+                session.query(self.table_model)
+                .filter(property_filters)
+                .filter(cql_filters)
+                .filter(bbox_filter)
+                .filter(time_filter)
+                .options(selected_properties)
+            )
+
+            LOGGER.debug(f'PostgreSQL pseudo count enabled: {self.postgresql_pseudo_count_enabled}')  # noqa
+            LOGGER.debug(f'PostgreSQL pseudo count start: {self.postgresql_pseudo_count_start}')  # noqa
+
+            if self.postgresql_pseudo_count_enabled:
+                # This if statement uses is not True for cql_filters, bbox_filter, and time_filter because even when no value is provided they are True. This is because an empty object is always set for each of these values if no value is provided by the user. # noqa
+                if resulttype == 'hits' or cql_filters is not True or bbox_filter is not True or time_filter is not True: # noqa
+                    matched = results.count()
+                    LOGGER.debug('Full count executed (hits or filters)')
+                else:
+                    compiled_query = results.statement.compile(
+                        self._engine,
+                        compile_kwargs={"literal_binds": True}
+                    )
+                    explain_query = f"EXPLAIN {compiled_query}"
+                    query_explanation = session.execute(text(explain_query))
+                    explanation_overview = query_explanation.fetchone()
+                    match = (
+                        search(r'rows=(\d+)', str(explanation_overview[0]))
+                        if explanation_overview else ""
+                    )
+                    matched = int(match.group(1)) if match else 0
+                    LOGGER.debug('Pseudo count executed')
+
+                    if matched < self.postgresql_pseudo_count_start:
+                        matched = results.count()
+                        LOGGER.debug('Full count executed (too few features)')
+
+            else:
+                matched = results.count()
+
+            LOGGER.debug(f'Found {matched} result(s)')
+
+            LOGGER.debug('Preparing response')
+            response = {
+                'type': 'FeatureCollection',
+                'features': [],
+                'numberMatched': matched,
+                'numberReturned': 0
+            }
+
+            if resulttype == 'hits' or not results:
+                return response
+
+            crs_transform_out = get_transform_from_spec(crs_transform_spec)
+
+            for item in (
+                results.order_by(*order_by_clauses).offset(offset).limit(limit)
+            ):
+                response['numberReturned'] += 1
+                response['features'].append(
+                    self._sqlalchemy_to_feature(item, crs_transform_out,
+                                                select_properties)
+                )
+
+        return response
 
 
 class MySQLProvider(GenericSQLProvider):
