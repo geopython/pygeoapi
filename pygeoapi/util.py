@@ -212,11 +212,7 @@ def yaml_dump(dict_: dict, destfile: str) -> bool:
         # timestamp in a specified format, without string quotes
         return dumper.represent_scalar(u'tag:yaml.org,2002:timestamp', value)
 
-    # create a dedicated dumper to write datetime to yaml correctly
-    class MyDumper(yaml.SafeDumper):
-        pass
-
-    MyDumper.add_representer(datetime, datetime_representer)
+    yaml.add_representer(datetime, datetime_representer)
 
     lock = FileLock(f'{destfile}.lock')
 
@@ -225,7 +221,7 @@ def yaml_dump(dict_: dict, destfile: str) -> bool:
         with open(destfile, 'wb') as fh:
             yaml.dump(dict_, fh, sort_keys=False, encoding='utf8',
                       indent=4, default_flow_style=False,
-                      allow_unicode=True, Dumper=MyDumper)
+                      allow_unicode=True)
 
     return True
 
