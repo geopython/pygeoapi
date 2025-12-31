@@ -7,3 +7,5 @@ sodapy
 s3fs<=2023.6.0
 Flask>=2.2.0
 Flask-Cors
+urllib3>2
+botocore>1.42
