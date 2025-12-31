@@ -202,13 +202,26 @@ def yaml_dump(dict_: dict, destfile: str) -> bool:
 
     yaml.add_multi_representer(pathlib.PurePath, path_representer)
 
+    def datetime_representer(dumper, data: datetime):
+        if data.tzinfo is None:
+            data = data.replace(tzinfo=timezone.utc)
+        else:
+            data = data.astimezone(timezone.utc)
+        value = data.strftime("%Y-%m-%dT%H:%M:%SZ")
+
+        # timestamp in a specified format, without string quotes
+        return dumper.represent_scalar(u'tag:yaml.org,2002:timestamp', value)
+
+    yaml.add_representer(datetime, datetime_representer)
+
     lock = FileLock(f'{destfile}.lock')
 
     with lock:
         LOGGER.debug('Dumping YAML document')
         with open(destfile, 'wb') as fh:
-            yaml.dump(dict_, fh, sort_keys=False, encoding='utf8', indent=4,
-                      default_flow_style=False)
+            yaml.dump(dict_, fh, sort_keys=False, encoding='utf8',
+                      indent=4, default_flow_style=False,
+                      allow_unicode=True)
 
     return True
 
