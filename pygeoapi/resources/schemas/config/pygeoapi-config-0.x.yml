@@ -1,5 +1,5 @@
 $schema: https://json-schema.org/draft/2020-12/schema
-$id: https://raw.githubusercontent.com/geopython/pygeoapi/master/pygeoapi/schemas/config/pygeoapi-config-0.x.yml
+$id: https://raw.githubusercontent.com/geopython/pygeoapi/refs/heads/master/pygeoapi/resources/schemas/config/pygeoapi-config-0.x.yml
 title: pygeoapi configuration schema
 description: pygeoapi configuration schema
 
@@ -132,7 +132,9 @@ properties:
                         type: string
                         description: plugin name (see `pygeoapi.plugin` for supported process_managers)
                     connection:
-                        type: string
+                        type: 
+                            - string
+                            - object
                         description: connection info to store jobs (e.g. filepath)
                     output_dir:
                         type: string

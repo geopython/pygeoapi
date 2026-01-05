@@ -99,3 +99,39 @@ def test_validate_config(config):
     }
     with pytest.raises(ValidationError):
         validate_config(cfg_copy)
+
+
+def test_validate_config_process_manager(config):
+    """
+    Test that the process manager config can be validated
+    as both a string or an object (i.e. PostgreSQL or TinyDB)
+    """
+    cfg_copy = deepcopy(config)
+    cfg_copy['server']['manager'] = {
+        'name': 'TinyDB',
+        'connection': '/tmp/pygeoapi_test.db',
+        'output_dir': '/tmp/'
+    }
+    assert validate_config(cfg_copy)
+
+    with pytest.raises(ValidationError):
+        # make sure an int is validated as invalid
+        cfg_copy['server']['manager'] = {
+            'name': 'TinyDB',
+            'connection': 12345,
+            'output_dir': '/tmp/'
+        }
+        validate_config(cfg_copy)
+
+    cfg_copy['server']['manager'] = {
+        'name': 'PostgreSQL',
+        'connection': {
+            'host': 'localhost',
+            'port': 5432,
+            'database': 'pygeoapi',
+            'user': 'pygeoapi',
+            'password': 'pygeoapi'
+        },
+        'output_dir': '/tmp/'
+    }
+    assert validate_config(cfg_copy)
