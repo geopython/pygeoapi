@@ -110,7 +110,7 @@ def test_validate_config_process_manager(config):
     cfg_copy['server']['manager'] = {
         'name': 'TinyDB',
         'connection': '/tmp/pygeoapi_test.db',
-        'output_dir': '/tmp/',
+        'output_dir': '/tmp/'
     }
     assert validate_config(cfg_copy)
 
@@ -119,7 +119,7 @@ def test_validate_config_process_manager(config):
         cfg_copy['server']['manager'] = {
             'name': 'TinyDB',
             'connection': 12345,
-            'output_dir': '/tmp/',
+            'output_dir': '/tmp/'
         }
         validate_config(cfg_copy)
 
@@ -130,8 +130,8 @@ def test_validate_config_process_manager(config):
             'port': 5432,
             'database': 'pygeoapi',
             'user': 'pygeoapi',
-            'password': 'pygeoapi',
+            'password': 'pygeoapi'
         },
-        'output_dir': '/tmp/',
+        'output_dir': '/tmp/'
     }
     assert validate_config(cfg_copy)

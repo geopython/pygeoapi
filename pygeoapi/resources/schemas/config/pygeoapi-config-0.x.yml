@@ -132,9 +132,9 @@ properties:
                         type: string
                         description: plugin name (see `pygeoapi.plugin` for supported process_managers)
                     connection:
-                        oneOf:
-                            - type: string
-                            - type: object
+                        type: 
+                            - string
+                            - object
                         description: connection info to store jobs (e.g. filepath)
                     output_dir:
                         type: string
