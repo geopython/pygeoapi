@@ -329,7 +329,7 @@ def test_execute_process(config, api_):
     assert 'Location' in rsp_headers
     assert code == HTTPStatus.CREATED
     assert isinstance(response, dict)
-    assert 'id' in response
+    assert 'jobID' in response
     assert 'type' in response
     assert 'status' in response
     assert response['type'] == 'process'
