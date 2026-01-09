@@ -38,6 +38,7 @@ CRS support exists for the following OGC APIs:
    :ref:`OGC API - Features<ogcapi-features>`,✅,✅,✅
    :ref:`OGC API - Maps<ogcapi-maps>`,✅,❌,❌
    :ref:`OGC API - Coverages<ogcapi-coverages>`,✅,❌,❌
+   :ref:`OGC API - Environmental Data Retrieval<ogcapi-edr>`,❌,❌,✅
 
 Configuration
 -------------
