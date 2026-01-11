@@ -285,8 +285,7 @@ def test_get_collection_items(config, api_):
     assert '/collections/obs/items?f=csv&limit=1&bbox=-180,-90,180,90' \
         in links[3]['href']
     assert links[3]['rel'] == 'alternate'
-    assert '/collections/obs/items?offset=0&limit=1&bbox=-180,-90,180,90' \
-        in links[4]['href']
+    assert '/collections/obs/items?offset=0&limit=1&bbox=-180,-90,180,90' in links[4]['href']  # noqa
     assert links[4]['rel'] == 'prev'
     assert '/collections/obs' in links[5]['href']
     assert links[4]['rel'] == 'prev'
