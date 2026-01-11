@@ -53,7 +53,7 @@ class CSWFacadeProvider(BaseProvider):
 
         :param provider_def: provider definition
 
-        :returns: pygeoapi.provider.csv_.CSWFacadeProvider
+        :returns: pygeoapi.provider.csw_facade.CSWFacadeProvider
         """
 
         super().__init__(provider_def)
