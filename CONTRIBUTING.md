@@ -67,13 +67,6 @@ Your contribution will be under our [license](https://github.com/geopython/pygeo
 * Unclaimed copyright, by default, is assigned to the main copyright holders as specified in https://github.com/geopython/pygeoapi/blob/master/LICENSE.md
 * further notes can be found in the [documentation](https://docs.pygeoapi.io/en/latest/development.html#testing)
 
-#### Artificial Intelligence (AI)
-
-* pygeoapi encourages contributions driven by quality and understanding of the codebase.  If and when AI is used, human supervision and oversight is strongly encouraged.
-* AI supported contributions are subject to the same contribution guidelines (license, copyright, coding standards, etc.) of the project.
-* Contributors are solely responsible for any and all contributions in which AI was utilized.
-* Contributions containing AI supported code, tests, documentation or any other component of pygeoapi shall be disclosed by the submitter (human).
-
 ### Version Control Branching
 
 * Always __make a new branch__ for your work, no matter how small. This makes
