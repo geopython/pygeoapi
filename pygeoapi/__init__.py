@@ -68,7 +68,7 @@ def _find_plugins():
             try:
                 click_group.add_command(entry_point.load())
             except Exception as err:
-                print(err)
+                click.echo(err)
         return click_group
 
     return decorator

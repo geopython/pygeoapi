@@ -64,6 +64,7 @@ import yaml
 from pygeoapi import __version__
 from pygeoapi import l10n
 from pygeoapi.models import config as config_models
+from pygeoapi.plugin import load_plugin, PLUGINS
 from pygeoapi.provider.base import ProviderTypeError
 
 
@@ -764,3 +765,30 @@ def get_choice_from_headers(headers: dict,
 
     # Return one or all choices
     return sorted_choices if all else sorted_choices[0]
+
+
+def get_dataset_formatters(dataset: dict) -> dict:
+    """
+    Helper function to derive all formatters for a collection
+
+    :param dataset: `dict` of dataset resource definition
+
+    :returns: `dict` of formatters
+    """
+
+    dataset_formatters = {}
+    provider_type = get_provider_default(dataset['providers'])['type']
+
+    for key, value in PLUGINS['formatter'].items():
+        # workaround to keep items-based collections supporting CSV
+        if provider_type not in ['feature', 'record']:
+            continue
+
+        df2 = load_plugin('formatter', {'name': key})
+        dataset_formatters[key] = df2
+
+    for df in dataset.get('formatters', []):
+        df2 = load_plugin('formatter', df)
+        dataset_formatters[df2.name] = df2
+
+    return dataset_formatters

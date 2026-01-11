@@ -220,7 +220,7 @@ def test_get_collection_items(config, api_):
     assert features['features'][1]['properties']['stn_id'] == 35
 
     links = features['links']
-    assert len(links) == 5
+    assert len(links) == 6
     assert '/collections/obs/items?f=json' in links[0]['href']
     assert links[0]['rel'] == 'self'
     assert '/collections/obs/items?f=jsonld' in links[1]['href']
@@ -228,8 +228,9 @@ def test_get_collection_items(config, api_):
     assert '/collections/obs/items?f=html' in links[2]['href']
     assert links[2]['rel'] == 'alternate'
     assert '/collections/obs' in links[3]['href']
-    assert links[3]['rel'] == 'next'
-    assert links[4]['rel'] == 'collection'
+    assert links[3]['rel'] == 'alternate'
+    assert links[4]['rel'] == 'next'
+    assert links[5]['rel'] == 'collection'
 
     # Invalid offset
     req = mock_api_request({'offset': -1})
@@ -246,17 +247,19 @@ def test_get_collection_items(config, api_):
     assert features['features'][1]['properties']['stn_id'] == 2147
 
     links = features['links']
-    assert len(links) == 5
+    assert len(links) == 6
     assert '/collections/obs/items?f=json' in links[0]['href']
     assert links[0]['rel'] == 'self'
     assert '/collections/obs/items?f=jsonld' in links[1]['href']
     assert links[1]['rel'] == 'alternate'
     assert '/collections/obs/items?f=html' in links[2]['href']
     assert links[2]['rel'] == 'alternate'
-    assert '/collections/obs/items?offset=0' in links[3]['href']
-    assert links[3]['rel'] == 'prev'
-    assert '/collections/obs' in links[4]['href']
-    assert links[4]['rel'] == 'collection'
+    assert '/collections/obs/items?f=csv' in links[3]['href']
+    assert links[3]['rel'] == 'alternate'
+    assert '/collections/obs/items?offset=0' in links[4]['href']
+    assert links[4]['rel'] == 'prev'
+    assert '/collections/obs' in links[5]['href']
+    assert links[5]['rel'] == 'collection'
 
     req = mock_api_request({
         'offset': '1',
@@ -269,7 +272,7 @@ def test_get_collection_items(config, api_):
     assert len(features['features']) == 1
 
     links = features['links']
-    assert len(links) == 6
+    assert len(links) == 7
     assert '/collections/obs/items?f=json&limit=1&bbox=-180,-90,180,90' in \
         links[0]['href']
     assert links[0]['rel'] == 'self'
@@ -279,13 +282,16 @@ def test_get_collection_items(config, api_):
     assert '/collections/obs/items?f=html&limit=1&bbox=-180,-90,180,90' in \
         links[2]['href']
     assert links[2]['rel'] == 'alternate'
-    assert '/collections/obs/items?offset=0&limit=1&bbox=-180,-90,180,90' \
+    assert '/collections/obs/items?f=csv&limit=1&bbox=-180,-90,180,90' \
         in links[3]['href']
-    assert links[3]['rel'] == 'prev'
-    assert '/collections/obs' in links[4]['href']
-    assert links[3]['rel'] == 'prev'
-    assert links[4]['rel'] == 'next'
-    assert links[5]['rel'] == 'collection'
+    assert links[3]['rel'] == 'alternate'
+    assert '/collections/obs/items?offset=0&limit=1&bbox=-180,-90,180,90' \
+        in links[4]['href']
+    assert links[4]['rel'] == 'prev'
+    assert '/collections/obs' in links[5]['href']
+    assert links[4]['rel'] == 'prev'
+    assert links[5]['rel'] == 'next'
+    assert links[6]['rel'] == 'collection'
 
     req = mock_api_request({
         'sortby': ''
@@ -393,6 +399,23 @@ def test_get_collection_items(config, api_):
     rsp_headers, code, response = get_collection_items(api_, req, 'obs')
 
     assert code == HTTPStatus.BAD_REQUEST
+
+    # test Accept header for dataset formatters
+    req = mock_api_request(HTTP_ACCEPT='application/json')
+    rsp_headers, code, response = get_collection_items(api_, req, 'obs')
+    assert rsp_headers['Content-Type'] == 'application/json'
+
+    req = mock_api_request(HTTP_ACCEPT='text/csv')
+    rsp_headers, code, response = get_collection_items(api_, req, 'obs')
+    assert rsp_headers['Content-Type'] == 'text/csv; charset=utf-8'
+
+    req = mock_api_request({'f': 'json'}, HTTP_ACCEPT='text/csv')
+    rsp_headers, code, response = get_collection_items(api_, req, 'obs')
+    assert rsp_headers['Content-Type'] == 'application/json'
+
+    req = mock_api_request({'f': 'csv'}, HTTP_ACCEPT='application/json')
+    rsp_headers, code, response = get_collection_items(api_, req, 'obs')
+    assert rsp_headers['Content-Type'] == 'text/csv; charset=utf-8'
 
 
 def test_get_collection_items_include_extra_query_parameters(config, api_):
