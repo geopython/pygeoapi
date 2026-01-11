@@ -195,59 +195,71 @@ def geojson2jsonld(cls, data: dict, dataset: str,
     context = linked_data.get('context', []).copy()
     templates = cls.get_dataset_templates(dataset)
 
-    defaultVocabulary = {
-        'schema': 'https://schema.org/',
-        'gsp': 'http://www.opengis.net/ont/geosparql#',
-        'type': '@type'
-    }
-
-    if identifier:
-        # Expand properties block
-        data.update(data.pop('properties'))
-
-        # Include multiple geometry encodings
-        if (data.get('geometry') is not None):
-            jsonldify_geometry(data)
-
-        data['@id'] = identifier
-
+    if (identifier and context
+            and linked_data.get('inject_verbatim_context', False)):
+        ldjsonData = {
+            '@context': context,
+            **data
+        }
+        if replace_id_field := linked_data.get('replace_id_field'):
+            ldjsonData[replace_id_field] = identifier
     else:
-        # Collection of jsonld
-        defaultVocabulary.update({
-            'features': 'schema:itemListElement',
-            'FeatureCollection': 'schema:itemList'
-        })
 
-        ds_url = url_join(cls.get_collections_url(), dataset)
-        data['@id'] = ds_url
+        defaultVocabulary = {
+            'schema': 'https://schema.org/',
+            'gsp': 'http://www.opengis.net/ont/geosparql#',
+            'type': '@type'
+        }
 
-        for i, feature in enumerate(data['features']):
-            # Get URI for each feature
-            identifier_ = feature.get(id_field,
-                                      feature['properties'].get(id_field, ''))
-            if not is_url(str(identifier_)):
-                identifier_ = f"{ds_url}/items/{feature['id']}"  # noqa
+        if identifier:
+            # Expand properties block
+            data.update(data.pop('properties'))
 
             # Include multiple geometry encodings
-            if feature.get('geometry') is not None:
-                jsonldify_geometry(feature)
+            if (data.get('geometry') is not None):
+                jsonldify_geometry(data)
 
-            data['features'][i] = {
-                '@id': identifier_,
-                'type': 'schema:Place',
-                **feature.pop('properties'),
-                **feature
-            }
+            data['@id'] = identifier
 
-    if data.get('timeStamp', False):
-        data['https://schema.org/sdDatePublished'] = data.pop('timeStamp')
+        else:
+            # Collection of jsonld
+            defaultVocabulary.update({
+                'features': 'schema:itemListElement',
+                'FeatureCollection': 'schema:itemList'
+            })
 
-    data['links'] = data.pop('links')
+            ds_url = url_join(cls.get_collections_url(), dataset)
+            data['@id'] = ds_url
 
-    ldjsonData = {
-        '@context': [defaultVocabulary, *(context or [])],
-        **data
-    }
+            for i, feature in enumerate(data['features']):
+                # Get URI for each feature
+                identifier_ = feature.get(
+                    id_field,
+                    feature['properties'].get(id_field, '')
+                )
+                if not is_url(str(identifier_)):
+                    identifier_ = f"{ds_url}/items/{feature['id']}"  # noqa
+
+                # Include multiple geometry encodings
+                if feature.get('geometry') is not None:
+                    jsonldify_geometry(feature)
+
+                data['features'][i] = {
+                    '@id': identifier_,
+                    'type': 'schema:Place',
+                    **feature.pop('properties'),
+                    **feature
+                }
+
+        if data.get('timeStamp', False):
+            data['https://schema.org/sdDatePublished'] = data.pop('timeStamp')
+
+        data['links'] = data.pop('links')
+
+        ldjsonData = {
+            '@context': [defaultVocabulary, *(context or [])],
+            **data
+        }
 
     if identifier:
         # Render jsonld template for single item
