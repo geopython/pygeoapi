@@ -8,7 +8,7 @@
 #          Ricardo Garcia Silva <ricardo.garcia.silva@geobeyond.it>
 #          Bernhard Mallinger <bernhard.mallinger@eox.at>
 #
-# Copyright (c) 2025 Tom Kralidis
+# Copyright (c) 2026 Tom Kralidis
 # Copyright (c) 2025 Francesco Bartoli
 # Copyright (c) 2022 John A Stevenson and Colin Blackburn
 # Copyright (c) 2023 Ricardo Garcia Silva
@@ -37,7 +37,7 @@
 #
 # =================================================================
 
-
+from copy import deepcopy
 from http import HTTPStatus
 import logging
 from typing import Tuple
@@ -49,13 +49,15 @@ from shapely.wkt import loads as shapely_loads
 
 from pygeoapi import l10n
 from pygeoapi.api import evaluate_limit
+from pygeoapi.formatter.base import FormatterSerializationError
 from pygeoapi.crs import (create_crs_transform_spec, set_content_crs_header)
+from pygeoapi.openapi import get_oas_30_parameters
 from pygeoapi.plugin import load_plugin, PLUGINS
 from pygeoapi.provider.base import (
     ProviderGenericError, ProviderItemNotFoundError)
 from pygeoapi.util import (
-    filter_providers_by_type, get_provider_by_type, get_typed_value,
-    render_j2_template, to_json, filter_dict_by_key_value
+    filter_providers_by_type, get_dataset_formatters, get_provider_by_type,
+    get_typed_value, render_j2_template, to_json, filter_dict_by_key_value
 )
 
 from . import (APIRequest, API, F_COVERAGEJSON, F_HTML, F_JSON, F_JSONLD,
@@ -253,8 +255,6 @@ def get_collection_edr_query(api: API, request: APIRequest,
     :returns: tuple of headers, status code, content
     """
 
-    if not request.is_valid(PLUGINS['formatter'].keys()):
-        return api.get_format_exception(request)
     headers = request.get_response_headers(api.default_locale,
                                            **api.api_headers)
     collections = filter_dict_by_key_value(api.config['resources'],
@@ -286,6 +286,20 @@ def get_collection_edr_query(api: API, request: APIRequest,
         return api.get_exception(
             HTTPStatus.BAD_REQUEST, headers, request.format,
             'InvalidParameterValue', msg)
+
+    LOGGER.debug('Validating requested format')
+    dataset_formatters = get_dataset_formatters(collections[dataset])
+
+    if dataset_formatters:
+        LOGGER.debug(f'Dataset formatters: {dataset_formatters}')
+        request._format = request._get_format(
+            request.get_request_headers(request.headers),
+            {v.f: v.mimetype for v in dataset_formatters.values()})
+
+        LOGGER.debug(f'Request format: {request.format}')
+
+    if not request.is_valid(dataset_formatters.keys()):
+        return api.get_format_exception(request)
 
     crs_transform_spec = None
     query_crs_uri = request.params.get('crs')
@@ -442,6 +456,30 @@ def get_collection_edr_query(api: API, request: APIRequest,
         content = render_j2_template(api.tpl_config, tpl_config,
                                      'collections/edr/query.html', data,
                                      api.default_locale)
+    elif request.format in [df.f for df in dataset_formatters.values()]:
+        formatter = [v for v in dataset_formatters.values() if
+                     v.f == request.format][0]
+
+        try:
+            content = formatter.write(
+                data=data,
+                options={
+                    'provider_def': get_provider_by_type(
+                        collections[dataset]['providers'],
+                        'edr')
+                }
+            )
+        except FormatterSerializationError:
+            msg = 'Error serializing output'
+            return api.get_exception(
+                HTTPStatus.INTERNAL_SERVER_ERROR, headers, request.format,
+                'NoApplicableCode', msg)
+
+        if formatter.attachment:
+            filename = f'{dataset}.{formatter.extension}'
+            cd = f'attachment; filename="{filename}"'
+            headers['Content-Disposition'] = cd
+
     else:
         content = to_json(data, api.pretty_print)
 
@@ -515,6 +553,12 @@ def get_oas_30(cfg: dict, locale: str) -> tuple[list[dict[str, str]], dict[str, 
                     spatial_parameter = {
                         '$ref': f"{OPENAPI_YAML['oaedr']}/parameters/{eqe['qt']}Coords.yaml"  # noqa
                     }
+
+                dataset_formatters = get_dataset_formatters(v)
+                coll_f_parameter = deepcopy(get_oas_30_parameters(cfg, locale))['f']  # noqa
+                for key, value in dataset_formatters.items():
+                    coll_f_parameter['schema']['enum'].append(value.f)
+
                 paths[eqe['path']] = {
                     'get': {
                         'summary': f"query {description} by {eqe['qt']}",
@@ -527,7 +571,7 @@ def get_oas_30(cfg: dict, locale: str) -> tuple[list[dict[str, str]], dict[str, 
                             {'$ref': f"{OPENAPI_YAML['oaedr']}/parameters/parameter-name.yaml"},  # noqa
                             {'$ref': f"{OPENAPI_YAML['oaedr']}/parameters/z.yaml"},  # noqa
                             {'$ref': '#/components/parameters/crs'},
-                            {'$ref': '#/components/parameters/f'}
+                            coll_f_parameter,
                         ],
                         'responses': {
                             '200': {

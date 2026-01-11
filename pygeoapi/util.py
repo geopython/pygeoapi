@@ -769,7 +769,7 @@ def get_choice_from_headers(headers: dict,
 
 def get_dataset_formatters(dataset: dict) -> dict:
     """
-    Helper function to derive all formatters for an itemtype
+    Helper function to derive all formatters for a collection
 
     :param dataset: `dict` of dataset resource definition
 
@@ -777,10 +777,16 @@ def get_dataset_formatters(dataset: dict) -> dict:
     """
 
     dataset_formatters = {}
+    provider_type = get_provider_default(dataset['providers'])['type']
 
     for key, value in PLUGINS['formatter'].items():
+        # workaround to keep items-based collections supporting CSV
+        if provider_type not in ['feature', 'record']:
+            continue
+
         df2 = load_plugin('formatter', {'name': key})
         dataset_formatters[key] = df2
+
     for df in dataset.get('formatters', []):
         df2 = load_plugin('formatter', df)
         dataset_formatters[df2.name] = df2

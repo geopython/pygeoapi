@@ -1237,6 +1237,15 @@ def describe_collections(api: API, request: APIRequest,
                     'href': f'{api.get_collections_url()}/{k}/{qt}?f={F_HTML}'
                 })
 
+                for key, value in get_dataset_formatters(v).items():
+                    title3 = f'{qt} query for this collection as {key}'
+                    collection['links'].append({
+                        'type': value.mimetype,
+                        'rel': 'data',
+                        'title': title3,
+                        'href': f'{api.get_collections_url()}/{k}/{qt}?f={value.f}'  # noqa
+                    })
+
         if dataset is not None and k == dataset:
             fcm = collection
             break
