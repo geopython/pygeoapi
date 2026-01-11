@@ -616,19 +616,26 @@ def get_collection_items(
         if offset > 0:
             prev_link = True
 
+    print(request.format)
     if prev_link:
         prev = max(0, offset - limit)
+        url = f'{uri}?offset={prev}{serialized_query_params}'
+        if request.format is not None:
+            url = f'{uri}?f={request.format}&offset={prev}{serialized_query_params}'  # noqa
+
         content['links'].append(
             {
                 'type': 'application/geo+json',
                 'rel': 'prev',
                 'title': l10n.translate('Items (prev)', request.locale),
-                'href': f'{uri}?offset={prev}{serialized_query_params}'
+                'href': url
             })
 
     if next_link:
         next_ = offset + limit
         next_href = f'{uri}?offset={next_}{serialized_query_params}'
+        if request.format is not None:
+            next_href = f'{uri}?f={request.format}&offset={next_}{serialized_query_params}'  # noqa
         content['links'].append(
             {
                 'type': 'application/geo+json',
