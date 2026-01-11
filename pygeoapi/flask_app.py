@@ -31,7 +31,7 @@
 """Flask module providing the route paths to the api"""
 
 import os
-from typing import Callable, Union
+from typing import Union
 
 import click
 from flask import (Flask, Blueprint, make_response, request,
@@ -51,613 +51,677 @@ from pygeoapi.config import get_config
 from pygeoapi.util import get_mimetype, get_api_rules
 
 
-CONFIG = get_config()
-OPENAPI = load_openapi_document()
+# Function to return a WSGI application,
+# passing the locations for the config and
+# openapi files as variables, instead as environment variables
+def make_wsgi_app(config_location: str, openapi_location: str) -> Flask:
+    """
+    Create a WSGI application
+    Args:
+        config_location (str): location of the pygeoapi config file
+        openapi_location (str): location of the OpenAPI document file
 
-API_RULES = get_api_rules(CONFIG)
+    Returns:
+        Flask WSGI application
+    """
+    config = get_config(config_path=config_location)
+    openapi = load_openapi_document(pygeoapi_openapi=openapi_location)
 
-if CONFIG['server'].get('admin'):
-    import pygeoapi.api.admin as admin_api
-    from pygeoapi.api.admin import Admin
+    api_rules = get_api_rules(config)
 
-STATIC_FOLDER = 'static'
-if 'templates' in CONFIG['server']:
-    STATIC_FOLDER = CONFIG['server']['templates'].get('static', 'static')
+    if config['server'].get('admin'):
+        import pygeoapi.api.admin as admin_api
+        from pygeoapi.api.admin import Admin
 
-APP = Flask(__name__, static_folder=STATIC_FOLDER, static_url_path='/static')
-APP.url_map.strict_slashes = API_RULES.strict_slashes
+    static_folder = 'static'
+    if 'templates' in config['server']:
+        static_folder = config['server']['templates'].get('static', 'static')
 
-BLUEPRINT = Blueprint(
-    'pygeoapi',
-    __name__,
-    static_folder=STATIC_FOLDER,
-    url_prefix=API_RULES.get_url_prefix('flask')
-)
-ADMIN_BLUEPRINT = Blueprint(
-    'admin',
-    __name__,
-    static_folder=STATIC_FOLDER,
-    url_prefix=API_RULES.get_url_prefix('flask')
-)
+    app = Flask(
+        __name__,
+        static_folder=static_folder,
+        static_url_path='/static'
+    )
 
-# CORS: optionally enable from config.
-if CONFIG['server'].get('cors', False):
-    try:
-        from flask_cors import CORS
-        CORS(APP, CORS_EXPOSE_HEADERS=['*'])
-    except ModuleNotFoundError:
-        print('Python package flask-cors required for CORS support')
+    app.url_map.strict_slashes = api_rules.strict_slashes
 
-APP.config['JSONIFY_PRETTYPRINT_REGULAR'] = CONFIG['server'].get(
-    'pretty_print', True)
+    blueprint = Blueprint(
+        'pygeoapi',
+        __name__,
+        static_folder=static_folder,
+        url_prefix=api_rules.get_url_prefix('flask')
+    )
+    admin_blueprint = Blueprint(
+        'admin',
+        __name__,
+        static_folder=static_folder,
+        url_prefix=api_rules.get_url_prefix('flask')
+    )
 
-api_ = API(CONFIG, OPENAPI)
+    # CORS: optionally enable from config.
+    if config['server'].get('cors', False):
+        try:
+            from flask_cors import CORS
+            CORS(app, CORS_EXPOSE_HEADERS=['*'])
+        except ModuleNotFoundError:
+            print('Python package flask-cors required for CORS support')
 
-OGC_SCHEMAS_LOCATION = CONFIG['server'].get('ogc_schemas_location')
+    app.config['JSONIFY_PRETTYPRINT_REGULAR'] = config['server'].get(
+        'pretty_print', True)
 
-if (OGC_SCHEMAS_LOCATION is not None and
-        not OGC_SCHEMAS_LOCATION.startswith('http')):
-    # serve the OGC schemas locally
+    api_ = API(config, openapi)
 
-    if not os.path.exists(OGC_SCHEMAS_LOCATION):
-        raise RuntimeError('OGC schemas misconfigured')
+    ogc_schemas_location = config['server'].get('ogc_schemas_location')
 
-    @BLUEPRINT.route('/schemas/<path:path>', methods=['GET'])
-    def schemas(path: str):
+    if (ogc_schemas_location is not None and
+            not ogc_schemas_location.startswith('http')):
+        # serve the OGC schemas locally
+
+        if not os.path.exists(ogc_schemas_location):
+            raise RuntimeError('OGC schemas misconfigured')
+
+        @blueprint.route('/schemas/<path:path>', methods=['GET'])
+        def schemas(path: str) -> Response:
+            """
+            Serve OGC schemas locally
+
+            :param path: path of the OGC schema document
+
+            :returns: HTTP response
+            """
+
+            full_filepath = os.path.join(ogc_schemas_location, path)
+            dirname_ = os.path.dirname(full_filepath)
+            basename_ = os.path.basename(full_filepath)
+
+            path_ = dirname_.replace('..', '').replace('//', '').replace('./', '')  # noqa: E501
+
+            if '..' in path_:
+                return 'Invalid path', 400
+
+            return send_from_directory(
+                path_,
+                basename_,
+                mimetype=get_mimetype(basename_)
+            )
+
+    def execute_from_flask(
+            api_function: callable,
+            request: Request,
+            *args,
+            skip_valid_check: bool = False,
+            alternative_api: Response = None,
+            ) -> Response:
         """
-        Serve OGC schemas locally
+        Executes API function from Flask
 
-        :param path: path of the OGC schema document
+        :param api_function: API function
+        :param request: request object
+        :param *args: variable length additional arguments
+        :param skip_validity_check: bool
+        :param alternative_api: specify custom api instance such as Admin
+
+        :returns: A Response instance
+        """
+
+        actual_api = api_ if alternative_api is None else alternative_api
+
+        api_request = APIRequest.from_flask(request, actual_api.locales)
+
+        content: Union[str, bytes]
+
+        if not skip_valid_check and not api_request.is_valid():
+            headers, status, content = \
+                actual_api.get_format_exception(api_request)
+        else:
+            headers, status, content = \
+                api_function(actual_api, api_request, *args)
+            content = apply_gzip(headers, content)
+
+        response = make_response(content, status)
+
+        if headers:
+            response.headers = headers
+        return response
+
+    @blueprint.route('/')
+    def landing_page() -> Response:
+        """
+        OGC API landing page endpoint
+
+        :returns: HTTP response
+        """
+        return execute_from_flask(core_api.landing_page, request)
+
+    @blueprint.route('/openapi')
+    def openapi() -> Response:
+        """
+        OpenAPI endpoint
 
         :returns: HTTP response
         """
 
-        full_filepath = os.path.join(OGC_SCHEMAS_LOCATION, path)
-        dirname_ = os.path.dirname(full_filepath)
-        basename_ = os.path.basename(full_filepath)
+        return execute_from_flask(core_api.openapi_, request)
 
-        path_ = dirname_.replace('..', '').replace('//', '').replace('./', '')
+    @blueprint.route('/conformance')
+    def conformance() -> Response:
+        """
+        OGC API conformance endpoint
 
-        if '..' in path_:
-            return 'Invalid path', 400
+        :returns: HTTP response
+        """
 
-        return send_from_directory(path_, basename_,
-                                   mimetype=get_mimetype(basename_))
+        return execute_from_flask(core_api.conformance, request)
 
+    @blueprint.route('/TileMatrixSets/<tileMatrixSetId>')
+    def get_tilematrix_set(tileMatrixSetId: str) -> Response:
+        """
+        OGC API TileMatrixSet endpoint
 
-def execute_from_flask(api_function: Callable, request: Request, *args,
-                       skip_valid_check: bool = False,
-                       alternative_api: API | None = None
-                       ) -> Response:
-    """
-    Executes API function from Flask
+        :param tileMatrixSetId: identifier of tile matrix set
 
-    :param api_function: API function
-    :param request: request object
-    :param *args: variable length additional arguments
-    :param skip_validity_check: bool
-    :param alternative_api: specify custom api instance such as Admin
-
-    :returns: A Response instance
-    """
-
-    actual_api = api_ if alternative_api is None else alternative_api
-
-    api_request = APIRequest.from_flask(request, actual_api.locales)
-
-    content: Union[str, bytes]
-
-    if not skip_valid_check and not api_request.is_valid():
-        headers, status, content = actual_api.get_format_exception(api_request)
-    else:
-        headers, status, content = api_function(actual_api, api_request, *args)
-        content = apply_gzip(headers, content)
-
-    response = make_response(content, status)
-
-    if headers:
-        response.headers = headers
-    return response
-
-
-@BLUEPRINT.route('/')
-def landing_page():
-    """
-    OGC API landing page endpoint
-
-    :returns: HTTP response
-    """
-    return execute_from_flask(core_api.landing_page, request)
-
-
-@BLUEPRINT.route('/openapi')
-def openapi():
-    """
-    OpenAPI endpoint
-
-    :returns: HTTP response
-    """
-
-    return execute_from_flask(core_api.openapi_, request)
-
-
-@BLUEPRINT.route('/conformance')
-def conformance():
-    """
-    OGC API conformance endpoint
-
-    :returns: HTTP response
-    """
-
-    return execute_from_flask(core_api.conformance, request)
-
-
-@BLUEPRINT.route('/TileMatrixSets/<tileMatrixSetId>')
-def get_tilematrix_set(tileMatrixSetId: str | None = None):
-    """
-    OGC API TileMatrixSet endpoint
-
-    :param tileMatrixSetId: identifier of tile matrix set
-
-    :returns: HTTP response
-    """
-
-    return execute_from_flask(tiles_api.tilematrixset, request,
-                              tileMatrixSetId)
-
-
-@BLUEPRINT.route('/TileMatrixSets')
-def get_tilematrix_sets():
-    """
-    OGC API TileMatrixSets endpoint
-
-    :returns: HTTP response
-    """
-
-    return execute_from_flask(tiles_api.tilematrixsets, request)
-
-
-@BLUEPRINT.route('/collections')
-@BLUEPRINT.route('/collections/<path:collection_id>')
-def collections(collection_id: str | None = None):
-    """
-    OGC API collections endpoint
-
-    :param collection_id: collection identifier
-
-    :returns: HTTP response
-    """
-
-    return execute_from_flask(core_api.describe_collections, request,
-                              collection_id)
-
-
-@BLUEPRINT.route('/collections/<path:collection_id>/schema')
-def collection_schema(collection_id: str | None = None):
-    """
-    OGC API - collections schema endpoint
-
-    :param collection_id: collection identifier
-
-    :returns: HTTP response
-    """
-
-    return execute_from_flask(core_api.get_collection_schema, request,
-                              collection_id)
-
-
-@BLUEPRINT.route('/collections/<path:collection_id>/queryables')
-def collection_queryables(collection_id: str | None = None):
-    """
-    OGC API collections queryables endpoint
-
-    :param collection_id: collection identifier
-
-    :returns: HTTP response
-    """
-
-    return execute_from_flask(itemtypes_api.get_collection_queryables, request,
-                              collection_id)
-
-
-@BLUEPRINT.route('/collections/<path:collection_id>/items',
-                 methods=['GET', 'POST', 'OPTIONS'],
-                 provide_automatic_options=False)
-@BLUEPRINT.route('/collections/<path:collection_id>/items/<path:item_id>',
-                 methods=['GET', 'PUT', 'DELETE', 'OPTIONS'],
-                 provide_automatic_options=False)
-def collection_items(collection_id: str, item_id: str | None = None):
-    """
-    OGC API collections items endpoint
-
-    :param collection_id: collection identifier
-    :param item_id: item identifier
-
-    :returns: HTTP response
-    """
-
-    if item_id is None:
-        if request.method == 'POST':  # filter or manage items
-            if request.content_type is not None:
-                if request.content_type == 'application/geo+json':
-                    return execute_from_flask(
-                            itemtypes_api.manage_collection_item,
-                            request, 'create', collection_id,
-                            skip_valid_check=True)
-                else:
-                    return execute_from_flask(
-                            itemtypes_api.get_collection_items, request,
-                            collection_id, skip_valid_check=True)
-        elif request.method == 'OPTIONS':
-            return execute_from_flask(
-                    itemtypes_api.manage_collection_item, request, 'options',
-                    collection_id, skip_valid_check=True)
-        else:  # GET: list items
-            return execute_from_flask(itemtypes_api.get_collection_items,
-                                      request, collection_id,
-                                      skip_valid_check=True)
-
-    elif request.method == 'DELETE':
-        return execute_from_flask(itemtypes_api.manage_collection_item,
-                                  request, 'delete', collection_id, item_id,
-                                  skip_valid_check=True)
-    elif request.method == 'PUT':
-        return execute_from_flask(itemtypes_api.manage_collection_item,
-                                  request, 'update', collection_id, item_id,
-                                  skip_valid_check=True)
-    elif request.method == 'OPTIONS':
-        return execute_from_flask(itemtypes_api.manage_collection_item,
-                                  request, 'options', collection_id, item_id,
-                                  skip_valid_check=True)
-    else:
-        return execute_from_flask(itemtypes_api.get_collection_item, request,
-                                  collection_id, item_id)
-
-
-@BLUEPRINT.route('/collections/<path:collection_id>/coverage')
-def collection_coverage(collection_id: str):
-    """
-    OGC API - Coverages coverage endpoint
-
-    :param collection_id: collection identifier
-
-    :returns: HTTP response
-    """
-
-    return execute_from_flask(coverages_api.get_collection_coverage, request,
-                              collection_id, skip_valid_check=True)
-
-
-@BLUEPRINT.route('/collections/<path:collection_id>/tiles')
-def get_collection_tiles(collection_id: str | None = None):
-    """
-    OGC open api collections tiles access point
-
-    :param collection_id: collection identifier
-
-    :returns: HTTP response
-    """
-
-    return execute_from_flask(tiles_api.get_collection_tiles, request,
-                              collection_id)
-
-
-@BLUEPRINT.route('/collections/<path:collection_id>/tiles/<tileMatrixSetId>')
-@BLUEPRINT.route('/collections/<path:collection_id>/tiles/<tileMatrixSetId>/metadata')  # noqa
-def get_collection_tiles_metadata(collection_id: str | None = None,
-                                  tileMatrixSetId: str | None = None):
-    """
-    OGC open api collection tiles service metadata
-
-    :param collection_id: collection identifier
-    :param tileMatrixSetId: identifier of tile matrix set
-
-    :returns: HTTP response
-    """
-
-    return execute_from_flask(tiles_api.get_collection_tiles_metadata,
-                              request, collection_id, tileMatrixSetId,
-                              skip_valid_check=True)
-
-
-@BLUEPRINT.route('/collections/<path:collection_id>/tiles/\
-<tileMatrixSetId>/<tileMatrix>/<tileRow>/<tileCol>')
-def get_collection_tiles_data(collection_id: str | None = None,
-                              tileMatrixSetId: str | None = None,
-                              tileMatrix: str | None = None,
-                              tileRow: str | None = None,
-                              tileCol: str | None = None):
-    """
-    OGC open api collection tiles service data
-
-    :param collection_id: collection identifier
-    :param tileMatrixSetId: identifier of tile matrix set
-    :param tileMatrix: identifier of {z} matrix index
-    :param tileRow: identifier of {y} matrix index
-    :param tileCol: identifier of {x} matrix index
-
-    :returns: HTTP response
-    """
-
-    return execute_from_flask(
-        tiles_api.get_collection_tiles_data,
-        request, collection_id, tileMatrixSetId, tileMatrix, tileRow, tileCol,
-        skip_valid_check=True,
-    )
-
-
-@BLUEPRINT.route('/collections/<collection_id>/map')
-@BLUEPRINT.route('/collections/<collection_id>/styles/<style_id>/map')
-def collection_map(collection_id: str, style_id: str | None = None):
-    """
-    OGC API - Maps map render endpoint
-
-    :param collection_id: collection identifier
-    :param style_id: style identifier
-
-    :returns: HTTP response
-    """
-
-    return execute_from_flask(
-        maps_api.get_collection_map, request, collection_id, style_id
-    )
-
-
-@BLUEPRINT.route('/processes')
-@BLUEPRINT.route('/processes/<process_id>')
-def get_processes(process_id: str | None = None):
-    """
-    OGC API - Processes description endpoint
-
-    :param process_id: process identifier
-
-    :returns: HTTP response
-    """
-
-    return execute_from_flask(processes_api.describe_processes, request,
-                              process_id)
-
-
-@BLUEPRINT.route('/jobs')
-@BLUEPRINT.route('/jobs/<job_id>',
-                 methods=['GET', 'DELETE'])
-def get_jobs(job_id: str | None = None):
-    """
-    OGC API - Processes jobs endpoint
-
-    :param job_id: job identifier
-
-    :returns: HTTP response
-    """
-
-    if job_id is None:
-        return execute_from_flask(processes_api.get_jobs, request)
-    else:
-        if request.method == 'DELETE':  # dismiss job
-            return execute_from_flask(processes_api.delete_job, request,
-                                      job_id)
-        else:  # Return status of a specific job
-            return execute_from_flask(processes_api.get_jobs, request, job_id)
-
-
-@BLUEPRINT.route('/processes/<process_id>/execution', methods=['POST'])
-def execute_process_jobs(process_id: str):
-    """
-    OGC API - Processes execution endpoint
-
-    :param process_id: process identifier
-
-    :returns: HTTP response
-    """
-
-    return execute_from_flask(processes_api.execute_process, request,
-                              process_id)
-
-
-@BLUEPRINT.route('/jobs/<job_id>/results',
-                 methods=['GET'])
-def get_job_result(job_id: str | None = None):
-    """
-    OGC API - Processes job result endpoint
-
-    :param job_id: job identifier
-
-    :returns: HTTP response
-    """
-
-    return execute_from_flask(processes_api.get_job_result, request, job_id)
-
-
-@BLUEPRINT.route('/collections/<path:collection_id>/position')
-@BLUEPRINT.route('/collections/<path:collection_id>/area')
-@BLUEPRINT.route('/collections/<path:collection_id>/cube')
-@BLUEPRINT.route('/collections/<path:collection_id>/radius')
-@BLUEPRINT.route('/collections/<path:collection_id>/trajectory')
-@BLUEPRINT.route('/collections/<path:collection_id>/corridor')
-@BLUEPRINT.route('/collections/<path:collection_id>/locations/<location_id>')
-@BLUEPRINT.route('/collections/<path:collection_id>/locations')
-@BLUEPRINT.route('/collections/<path:collection_id>/instances/<instance_id>/position')  # noqa
-@BLUEPRINT.route('/collections/<path:collection_id>/instances/<instance_id>/area')  # noqa
-@BLUEPRINT.route('/collections/<path:collection_id>/instances/<instance_id>/cube')  # noqa
-@BLUEPRINT.route('/collections/<path:collection_id>/instances/<instance_id>/radius')  # noqa
-@BLUEPRINT.route('/collections/<path:collection_id>/instances/<instance_id>/trajectory')  # noqa
-@BLUEPRINT.route('/collections/<path:collection_id>/instances/<instance_id>/corridor')  # noqa
-@BLUEPRINT.route('/collections/<path:collection_id>/instances/<instance_id>/locations/<location_id>')  # noqa
-@BLUEPRINT.route('/collections/<path:collection_id>/instances/<instance_id>/locations')  # noqa
-@BLUEPRINT.route('/collections/<path:collection_id>/instances/<instance_id>')
-@BLUEPRINT.route('/collections/<path:collection_id>/instances')
-def get_collection_edr_query(collection_id: str,
-                             instance_id: str | None = None,
-                             location_id: str | None = None):
-    """
-    OGC EDR API endpoints
-
-    :param collection_id: collection identifier
-    :param instance_id: instance identifier
-    :param location_id: location id of a /locations/<location_id> query
-
-    :returns: HTTP response
-    """
-
-    if (request.path.endswith('instances') or
-            (instance_id is not None and
-             request.path.endswith(instance_id))):
+        :returns: HTTP response
+        """
         return execute_from_flask(
-            edr_api.get_collection_edr_instances, request, collection_id,
-            instance_id
+            tiles_api.tilematrixset, request, tileMatrixSetId
         )
 
-    if location_id:
-        query_type = 'locations'
-    else:
-        query_type = request.path.split('/')[-1]
+    @blueprint.route('/TileMatrixSets')
+    def get_tilematrix_sets() -> Response:
+        """
+        OGC API TileMatrixSets endpoint
 
-    return execute_from_flask(
-        edr_api.get_collection_edr_query, request, collection_id, instance_id,
-        query_type, location_id, skip_valid_check=True
+        :returns: HTTP response
+        """
+        return execute_from_flask(tiles_api.tilematrixsets, request)
+
+    @blueprint.route('/collections')
+    @blueprint.route('/collections/<path:collection_id>')
+    def collections(collection_id: str = None) -> Response:
+        """
+        OGC API collections endpoint
+
+        :param collection_id: collection identifier
+
+        :returns: HTTP response
+        """
+        return execute_from_flask(
+            core_api.describe_collections, request, collection_id
+        )
+
+    @blueprint.route('/collections/<path:collection_id>/schema')
+    def collection_schema(collection_id: str) -> Response:
+        """
+        OGC API - collections schema endpoint
+
+        :param collection_id: collection identifier
+
+        :returns: HTTP response
+        """
+
+        return execute_from_flask(
+            core_api.get_collection_schema, request, collection_id
+        )
+
+    @blueprint.route('/collections/<path:collection_id>/queryables')
+    def collection_queryables(collection_id: str) -> Response:
+        """
+        OGC API collections queryables endpoint
+
+        :param collection_id: collection identifier
+
+        :returns: HTTP response
+        """
+
+        return execute_from_flask(
+            itemtypes_api.get_collection_queryables, request, collection_id
+        )
+
+    @blueprint.route(
+        '/collections/<path:collection_id>/items',
+        methods=['GET', 'POST', 'OPTIONS'],
+        provide_automatic_options=False
     )
+    def collection_items(collection_id: str) -> Response:
+        """
+        OGC API collections items endpoint
+
+        :param collection_id: collection identifier
+
+        :returns: HTTP response
+        """
+
+        if request.method == 'POST':  # filter or manage items
+            if request.content_type == 'application/geo+json':
+                return execute_from_flask(
+                    itemtypes_api.manage_collection_item,
+                    request, 'create', collection_id,
+                    skip_valid_check=True
+                )
+            else:
+                return execute_from_flask(
+                    itemtypes_api.get_collection_items, request,
+                    collection_id, skip_valid_check=True
+                )
+
+        elif request.method == 'OPTIONS':
+            return execute_from_flask(
+                itemtypes_api.manage_collection_item, request, 'options',
+                collection_id, skip_valid_check=True
+            )
+
+        # GET: list items
+        return execute_from_flask(
+            itemtypes_api.get_collection_items,
+            request, collection_id,
+            skip_valid_check=True
+        )
+
+    @blueprint.route(
+        '/collections/<path:collection_id>/items/<path:item_id>',
+        methods=['GET', 'PUT', 'DELETE', 'OPTIONS'],
+        provide_automatic_options=False
+    )
+    def collection_item(collection_id: str, item_id: str) -> Response:
+        """
+        OGC API collections item endpoint
+
+        :param collection_id: collection identifier
+        :param item_id: item identifier
+
+        :returns: HTTP response
+        """
+
+        if request.method == 'DELETE':
+            return execute_from_flask(
+                itemtypes_api.manage_collection_item,
+                request, 'delete', collection_id, item_id,
+                skip_valid_check=True
+            )
+        elif request.method == 'PUT':
+            return execute_from_flask(
+                itemtypes_api.manage_collection_item,
+                request, 'update', collection_id, item_id,
+                skip_valid_check=True
+            )
+        elif request.method == 'OPTIONS':
+            return execute_from_flask(
+                itemtypes_api.manage_collection_item,
+                request, 'options', collection_id, item_id,
+                skip_valid_check=True
+            )
+        else:
+            return execute_from_flask(
+                itemtypes_api.get_collection_item, request,
+                collection_id, item_id
+            )
+
+    @blueprint.route('/collections/<path:collection_id>/coverage')
+    def collection_coverage(collection_id: str) -> Response:
+        """
+        OGC API - Coverages coverage endpoint
+
+        :param collection_id: collection identifier
+
+        :returns: HTTP response
+        """
+
+        return execute_from_flask(
+            coverages_api.get_collection_coverage, request,
+            collection_id, skip_valid_check=True
+        )
+
+    @blueprint.route('/collections/<path:collection_id>/tiles')
+    def get_collection_tiles(collection_id: str) -> Response:
+        """
+        OGC open api collections tiles access point
+
+        :param collection_id: collection identifier
+
+        :returns: HTTP response
+        """
+
+        return execute_from_flask(
+            tiles_api.get_collection_tiles, request, collection_id
+        )
+
+    @blueprint.route('/collections/<path:collection_id>/tiles/<tileMatrixSetId>')  # noqa E501
+    @blueprint.route('/collections/<path:collection_id>/tiles/<tileMatrixSetId>/metadata')  # noqa E501
+    def get_collection_tiles_metadata(
+            collection_id: str, tileMatrixSetId: str) -> Response:
+        """
+        OGC open api collection tiles service metadata
+
+        :param collection_id: collection identifier
+        :param tileMatrixSetId: identifier of tile matrix set
+
+        :returns: HTTP response
+        """
+
+        return execute_from_flask(
+            tiles_api.get_collection_tiles_metadata,
+            request, collection_id, tileMatrixSetId,
+            skip_valid_check=True
+        )
+
+    @blueprint.route(
+        '/collections/<path:collection_id>/tiles/'
+        '<tileMatrixSetId>/<tileMatrix>/<tileRow>/<tileCol>'
+    )
+    def get_collection_tiles_data(
+            collection_id: str,
+            tileMatrixSetId: str,
+            tileMatrix: str,
+            tileRow: str,
+            tileCol: str
+            ) -> Response:
+        """
+        OGC open api collection tiles service data
+
+        :param collection_id: collection identifier
+        :param tileMatrixSetId: identifier of tile matrix set
+        :param tileMatrix: identifier of {z} matrix index
+        :param tileRow: identifier of {y} matrix index
+        :param tileCol: identifier of {x} matrix index
+
+        :returns: HTTP response
+        """
+
+        return execute_from_flask(
+            tiles_api.get_collection_tiles_data,
+            request, collection_id, tileMatrixSetId, tileMatrix,
+            tileRow, tileCol, skip_valid_check=True
+        )
+
+    @blueprint.route('/collections/<collection_id>/map')
+    @blueprint.route('/collections/<collection_id>/styles/<style_id>/map')
+    def collection_map(collection_id: str, style_id: str = None) -> Response:
+        """
+        OGC API - Maps map render endpoint
+
+        :param collection_id: collection identifier
+        :param style_id: style identifier
+
+        :returns: HTTP response
+        """
+
+        return execute_from_flask(
+            maps_api.get_collection_map, request, collection_id, style_id
+        )
+
+    @blueprint.route('/processes')
+    @blueprint.route('/processes/<process_id>')
+    def get_processes(process_id: str = None) -> Response:
+        """
+        OGC API - Processes description endpoint
+
+        :param process_id: process identifier
+
+        :returns: HTTP response
+        """
+
+        return execute_from_flask(
+            processes_api.describe_processes, request, process_id
+        )
+
+    @blueprint.route('/jobs')
+    @blueprint.route(
+        '/jobs/<job_id>', methods=['GET', 'DELETE']
+    )
+    def get_jobs(job_id: str = None) -> Response:
+        """
+        OGC API - Processes jobs endpoint
+
+        :param job_id: job identifier
+
+        :returns: HTTP response
+        """
+
+        if job_id is None:
+            return execute_from_flask(processes_api.get_jobs, request)
+        else:
+            if request.method == 'DELETE':  # dismiss job
+                return execute_from_flask(
+                    processes_api.delete_job, request, job_id
+                )
+            else:  # Return status of a specific job
+                return execute_from_flask(
+                    processes_api.get_jobs, request, job_id
+                )
+
+    @blueprint.route('/processes/<process_id>/execution', methods=['POST'])
+    def execute_process_jobs(process_id: str) -> Response:
+        """
+        OGC API - Processes execution endpoint
+
+        :param process_id: process identifier
+
+        :returns: HTTP response
+        """
+
+        return execute_from_flask(
+            processes_api.execute_process, request, process_id
+        )
+
+    @blueprint.route(
+        '/jobs/<job_id>/results',
+        methods=['GET']
+    )
+    def get_job_result(job_id: str = None) -> Response:
+        """
+        OGC API - Processes job result endpoint
+
+        :param job_id: job identifier
+
+        :returns: HTTP response
+        """
+
+        return execute_from_flask(
+            processes_api.get_job_result, request, job_id
+        )
+
+    @blueprint.route('/collections/<path:collection_id>/position')
+    @blueprint.route('/collections/<path:collection_id>/area')
+    @blueprint.route('/collections/<path:collection_id>/cube')
+    @blueprint.route('/collections/<path:collection_id>/radius')
+    @blueprint.route('/collections/<path:collection_id>/trajectory')
+    @blueprint.route('/collections/<path:collection_id>/corridor')
+    @blueprint.route('/collections/<path:collection_id>/locations/<location_id>')  # noqa E501
+    @blueprint.route('/collections/<path:collection_id>/locations')
+    @blueprint.route('/collections/<path:collection_id>/instances/<instance_id>/position')  # noqa E501
+    @blueprint.route('/collections/<path:collection_id>/instances/<instance_id>/area')  # noqa E501
+    @blueprint.route('/collections/<path:collection_id>/instances/<instance_id>/cube')  # noqa E501
+    @blueprint.route('/collections/<path:collection_id>/instances/<instance_id>/radius')  # noqa E501
+    @blueprint.route('/collections/<path:collection_id>/instances/<instance_id>/trajectory')  # noqa E501
+    @blueprint.route('/collections/<path:collection_id>/instances/<instance_id>/corridor')  # noqa E501
+    @blueprint.route('/collections/<path:collection_id>/instances/<instance_id>/locations/<location_id>')  # noqa E501
+    @blueprint.route('/collections/<path:collection_id>/instances/<instance_id>/locations')  # noqa E501
+    @blueprint.route('/collections/<path:collection_id>/instances/<instance_id>')  # noqa E501
+    @blueprint.route('/collections/<path:collection_id>/instances')
+    def get_collection_edr_query(
+            collection_id: str, instance_id: str = None,
+            location_id: str = None
+            ) -> Response:
+        """
+        OGC EDR API endpoints
+
+        :param collection_id: collection identifier
+        :param instance_id: instance identifier
+        :param location_id: location id of a /locations/<location_id> query
+
+        :returns: HTTP response
+        """
+
+        if (
+            request.path.endswith('instances') or
+            (instance_id is not None and request.path.endswith(instance_id))
+        ):
+            return execute_from_flask(
+                edr_api.get_collection_edr_instances, request, collection_id,
+                instance_id
+            )
+
+        if location_id:
+            query_type = 'locations'
+        else:
+            query_type = request.path.split('/')[-1]
+
+        return execute_from_flask(
+            edr_api.get_collection_edr_query, request, collection_id,
+            instance_id, query_type, location_id, skip_valid_check=True
+        )
+
+    @blueprint.route('/stac-api')
+    def stac_landing_page() -> Response:
+        """
+        STAC API landing page endpoint
+
+        :returns: HTTP response
+        """
+
+        return execute_from_flask(stac_api.landing_page, request)
+
+    @blueprint.route('/stac-api/search', methods=['GET', 'POST'])
+    def stac_search() -> Response:
+        """
+        STAC API search endpoint
+
+        :returns: HTTP response
+        """
+
+        return execute_from_flask(stac_api.search, request)
+
+    @blueprint.route('/stac')
+    def stac_catalog_root() -> Response:
+        """
+        STAC root endpoint
+
+        :returns: HTTP response
+        """
+
+        return execute_from_flask(stac_api.get_stac_root, request)
+
+    @blueprint.route('/stac/<path:path>')
+    def stac_catalog_path(path: str) -> Response:
+        """
+        STAC path endpoint
+
+        :param path: path
+
+        :returns: HTTP response
+        """
+
+        return execute_from_flask(stac_api.get_stac_path, request, path)
+
+    @admin_blueprint.route('/admin/config', methods=['GET', 'PUT', 'PATCH'])
+    def admin_config() -> Response:
+        """
+        Admin endpoint
+
+        :returns: HTTP response
+        """
+
+        if request.method == 'GET':
+            return execute_from_flask(
+                admin_api.get_config_, request, alternative_api=admin_
+            )
+
+        elif request.method == 'PUT':
+            return execute_from_flask(
+                admin_api.put_config, request, alternative_api=admin_
+            )
+
+        elif request.method == 'PATCH':
+            return execute_from_flask(
+                admin_api.patch_config, request, alternative_api=admin_
+            )
+
+    @admin_blueprint.route('/admin/config/resources', methods=['GET', 'POST'])
+    def admin_config_resources() -> Response:
+        """
+        Resources endpoint
+
+        :returns: HTTP response
+        """
+
+        if request.method == 'POST':
+            return execute_from_flask(
+                admin_api.post_resource, request, alternative_api=admin_
+            )
+
+        return execute_from_flask(
+            admin_api.get_resources, request, alternative_api=admin_
+        )
+
+    @admin_blueprint.route(
+        '/admin/config/resources/<resource_id>',
+        methods=['GET', 'PUT', 'PATCH', 'DELETE'])
+    def admin_config_resource(resource_id: str) -> Response:
+        """
+        Resource endpoint
+
+        :returns: HTTP response
+        """
+
+        if request.method == 'DELETE':
+            return execute_from_flask(
+                admin_api.delete_resource, request,
+                resource_id, alternative_api=admin_
+            )
+
+        elif request.method == 'PUT':
+            return execute_from_flask(
+                admin_api.put_resource, request,
+                resource_id, alternative_api=admin_
+            )
+
+        elif request.method == 'PATCH':
+            return execute_from_flask(
+                admin_api.patch_resource, request,
+                resource_id, alternative_api=admin_
+            )
+
+        # GET
+        return execute_from_flask(
+                admin_api.get_resource, request,
+                resource_id, alternative_api=admin_
+            )
+
+    app.register_blueprint(blueprint)
+
+    if config['server'].get('admin'):
+        admin_ = Admin(config, openapi)
+        app.register_blueprint(admin_blueprint)
+
+    return app
 
 
-@BLUEPRINT.route('/stac-api')
-def stac_landing_page():
-    """
-    STAC API landing page endpoint
+if os.environ.get('PYGEOAPI_DISABLE_ENV_CONFIGS', 'false') == 'false':
+    APP = make_wsgi_app(
+        config_location=None,
+        openapi_location=None
+    )
+    config = get_config()
 
-    :returns: HTTP response
-    """
+    @click.command()
+    @click.pass_context
+    @click.option('--debug', '-d', default=False, is_flag=True, help='debug')
+    def serve(
+            ctx: click.Context, server: str = None, debug: bool = False
+            ) -> None:
+        """
+        Serve pygeoapi via Flask. Runs pygeoapi
+        as a flask server. Not recommend for production.
 
-    return execute_from_flask(stac_api.landing_page, request)
+        :param server: `string` of server type
+        :param debug: `bool` of whether to run in debug mode
 
+        :returns: void
+        """
 
-@BLUEPRINT.route('/stac-api/search', methods=['GET', 'POST'])
-def stac_search():
-    """
-    STAC API search endpoint
-
-    :returns: HTTP response
-    """
-
-    return execute_from_flask(stac_api.search, request)
-
-
-@BLUEPRINT.route('/stac')
-def stac_catalog_root():
-    """
-    STAC root endpoint
-
-    :returns: HTTP response
-    """
-
-    return execute_from_flask(stac_api.get_stac_root, request)
-
-
-@BLUEPRINT.route('/stac/<path:path>')
-def stac_catalog_path(path: str):
-    """
-    STAC path endpoint
-
-    :param path: path
-
-    :returns: HTTP response
-    """
-
-    return execute_from_flask(stac_api.get_stac_path, request, path)
-
-
-@ADMIN_BLUEPRINT.route('/admin/config', methods=['GET', 'PUT', 'PATCH'])
-def admin_config():
-    """
-    Admin endpoint
-
-    :returns: HTTP response
-    """
-
-    if request.method == 'GET':
-        return execute_from_flask(admin_api.get_config_, request,
-                                  alternative_api=admin_)
-
-    elif request.method == 'PUT':
-        return execute_from_flask(admin_api.put_config, request,
-                                  alternative_api=admin_)
-
-    elif request.method == 'PATCH':
-        return execute_from_flask(admin_api.patch_config, request,
-                                  alternative_api=admin_)
-
-
-@ADMIN_BLUEPRINT.route('/admin/config/resources', methods=['GET', 'POST'])
-def admin_config_resources():
-    """
-    Resources endpoint
-
-    :returns: HTTP response
-    """
-
-    if request.method == 'GET':
-        return execute_from_flask(admin_api.get_resources, request,
-                                  alternative_api=admin_)
-
-    elif request.method == 'POST':
-        return execute_from_flask(admin_api.post_resource, request,
-                                  alternative_api=admin_)
-
-
-@ADMIN_BLUEPRINT.route(
-    '/admin/config/resources/<resource_id>',
-    methods=['GET', 'PUT', 'PATCH', 'DELETE'])
-def admin_config_resource(resource_id: str):
-    """
-    Resource endpoint
-
-    :returns: HTTP response
-    """
-
-    if request.method == 'GET':
-        return execute_from_flask(admin_api.get_resource, request,
-                                  resource_id,
-                                  alternative_api=admin_)
-
-    elif request.method == 'DELETE':
-        return execute_from_flask(admin_api.delete_resource, request,
-                                  resource_id,
-                                  alternative_api=admin_)
-
-    elif request.method == 'PUT':
-        return execute_from_flask(admin_api.put_resource, request,
-                                  resource_id,
-                                  alternative_api=admin_)
-
-    elif request.method == 'PATCH':
-        return execute_from_flask(admin_api.patch_resource, request,
-                                  resource_id,
-                                  alternative_api=admin_)
-
-
-APP.register_blueprint(BLUEPRINT)
-
-if CONFIG['server'].get('admin'):
-    admin_ = Admin(CONFIG, OPENAPI)
-    APP.register_blueprint(ADMIN_BLUEPRINT)
-
-
-@click.command()
-@click.pass_context
-@click.option('--debug', '-d', default=False, is_flag=True, help='debug')
-def serve(ctx, server: str | None = None, debug: bool = False):
-    """
-    Serve pygeoapi via Flask. Runs pygeoapi
-    as a flask server. Not recommend for production.
-
-    :param server: `string` of server type
-    :param debug: `bool` of whether to run in debug mode
-
-    :returns: void
-    """
-
-    # setup_logger(CONFIG['logging'])
-    APP.run(debug=True, host=api_.config['server']['bind']['host'],
-            port=api_.config['server']['bind']['port'])
-
+        # setup_logger(CONFIG['logging'])
+        APP.run(debug=debug, host=config['server']['bind']['host'],
+                port=config['server']['bind']['port'])
 
 if __name__ == '__main__':  # run locally, for testing
     serve()
