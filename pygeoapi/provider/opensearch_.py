@@ -248,8 +248,8 @@ class OpenSearchProvider(BaseProvider):
                 }
                 query['query']['bool']['filter'].append(pf)
 
-            if '|' not in prop[1]:
-                pf['match'][prop_name]['minimum_should_match'] = '100%'
+                if '|' not in prop[1]:
+                    pf['match'][prop_name]['minimum_should_match'] = '100%'
 
         if sortby:
             LOGGER.debug('processing sortby')
