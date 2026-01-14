@@ -231,8 +231,8 @@ class OpenSearchProvider(BaseProvider):
                 }
                 query['query']['bool']['filter'].append(pf)
 
-            if '|' not in prop[1]:
-                pf['match'][prop_name]['minimum_should_match'] = '100%'
+                if '|' not in prop[1]:
+                    pf['match'][prop_name]['minimum_should_match'] = '100%'
 
         if sortby:
             LOGGER.debug('processing sortby')
@@ -373,7 +373,7 @@ class OpenSearchProvider(BaseProvider):
 
             LOGGER.debug(f'Query: {query}')
             try:
-                result = self.os_search(index=self.index_name, **query)
+                result = self.os_.search(index=self.index_name, body=query)
                 if len(result['hits']['hits']) == 0:
                     LOGGER.error(err)
                     raise ProviderItemNotFoundError(err)
@@ -425,7 +425,8 @@ class OpenSearchProvider(BaseProvider):
         identifier, json_data = self._load_and_prepare_item(
             item, identifier, raise_if_exists=False)
 
-        _ = self.os_index(index=self.index_name, id=identifier, body=json_data)
+        _ = self.os_.index(index=self.index_name, id=identifier,
+                           body=json_data)
 
         return True
 
@@ -439,7 +440,7 @@ class OpenSearchProvider(BaseProvider):
         """
 
         LOGGER.debug(f'Deleting item {identifier}')
-        _ = self.os_delete(index=self.index_name, id=identifier)
+        _ = self.os_.delete(index=self.index_name, id=identifier)
 
         return True
 
