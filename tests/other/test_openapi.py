@@ -46,7 +46,7 @@ def config():
 @pytest.fixture()
 def config_admin_empty_resources():
     with open(
-        get_test_file_path("pygeoapi-test-config-admin-empty-resources.yml")
+        get_test_file_path('pygeoapi-test-config-admin-empty-resources.yml')
     ) as fh:
         return yaml_load(fh)
 
@@ -143,4 +143,4 @@ def test_hidden_resources(config_hidden_resources):
 
 def test_admin_empty_resources(config_admin_empty_resources):
     openapi_doc = get_oas(config_admin_empty_resources)
-    assert "/admin/config" in openapi_doc["paths"]
+    assert '/admin/config' in openapi_doc['paths']
