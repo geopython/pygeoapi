@@ -7,16 +7,18 @@ from pygeoapi.api import API, APIRequest, SYSTEM_LOCALE, F_HTML, F_JSON
 import pygeoapi.api as core_api
 from pygeoapi.util import to_json
 from pygeoapi.util import render_j2_template, to_json
+import os
 
 LOGGER = logging.getLogger(__name__)
 
-def manage_collection(api: API, request: APIRequest, action: str) -> Tuple[dict, int, str]:
+def manage_collection(api: API, request: APIRequest, action: str, dataset: str = None) -> Tuple[dict, int, str]:
     """
     PNU STEMLab: Manages IndoorGML Collections (Sites/Campuses)
-    This handles the POST /collections registration.
+    This handles the POST /collections registration and DELETE /collections/{id}.
     """
     headers = request.get_response_headers(SYSTEM_LOCALE)
     
+    # --- Action: CREATE ---
     if action == 'create':
         # 1. Get the data from the request
         try:
@@ -28,10 +30,12 @@ def manage_collection(api: API, request: APIRequest, action: str) -> Tuple[dict,
                 HTTPStatus.BAD_REQUEST, headers, request.format, 
                 'InvalidParameterValue', 'Invalid JSON body')
 
-        # 2. Extract your specific schema: {id, title, description}
+        # 2. Extract your dynamic schema
         c_id = data.get('id')
         title = data.get('title')
         description = data.get('description', '')
+        # Get itemType from body, default to 'indoorfeature'
+        item_type = data.get('itemType', 'indoorfeature') 
 
         if not c_id or not title:
             return api.get_exception(
@@ -39,10 +43,9 @@ def manage_collection(api: API, request: APIRequest, action: str) -> Tuple[dict,
                 'MissingParameterValue', 'Required fields: id, title')
 
         # 3. Update the Server Configuration in-memory
-        # Note: In a production 'Moving Features' style, this might save to a DB
         api.config['resources'][c_id] = {
             'type': 'collection',
-            'itemType': 'indoorfeature',  # <--- ADD THIS LINE HERE
+            'itemType': item_type,  # <--- Dynamically set from the POST body
             'title': title,
             'description': description,
             'providers': [{
@@ -51,59 +54,116 @@ def manage_collection(api: API, request: APIRequest, action: str) -> Tuple[dict,
                 'data': f'data/{c_id}.json'
             }]
         }
+
         # 4. Success Response
         response_data = {'id': c_id, 'status': 'created'}
         return headers, HTTPStatus.CREATED, to_json(response_data, api.pretty_print)
+
+    # --- Action: DELETE ---
+    elif action == 'delete':
+        collection_id = str(dataset)
+        
+        # 1. Check if it exists in memory
+        if collection_id not in api.config['resources']:
+            return api.get_exception(
+                HTTPStatus.NOT_FOUND, headers, request.format,
+                'NotFound', f'Collection {collection_id} does not exist')
+
+        # 2. Cascade Delete: Physically remove the JSON file from the /data folder
+        file_path = os.path.join('data', f'{collection_id}.json')
+        if os.path.exists(file_path):
+            try:
+                os.remove(file_path)
+            except Exception as e:
+                # We log the error but continue to ensure memory is cleared
+                pass
+
+        # 3. Remove from in-memory configuration
+        del api.config['resources'][collection_id]
+        
+        # 4. Success Response: 204 No Content
+        return headers, HTTPStatus.NO_CONTENT, ''
 
     return headers, HTTPStatus.METHOD_NOT_ALLOWED, ''
 
 def get_collection(api: API, request: APIRequest, dataset=None) -> Tuple[dict, int, str]:
     """
     GET /collections/{collectionId}
-    Provides the specific 'indoorfeature' metadata for JSON requests
-    and redirects to core_api for a stable HTML UI.
     """
-    # 1. Handle HTML UI: Let the core handle it to avoid the UnboundLocalError
-    if request.format == F_HTML:
-        return core_api.describe_collections(api, request, dataset)
-
-    # 2. Handle JSON API: Return your custom IndoorGML metadata
-    headers = request.get_response_headers(SYSTEM_LOCALE)
     collection_id = str(dataset)
+    headers = request.get_response_headers(SYSTEM_LOCALE)
 
-    # We check if this resource actually exists in our current session
+    # 1. THE PERSISTENCE CHECK
+    # If the server was restarted, this resource will be missing.
     if collection_id not in api.config['resources']:
         return api.get_exception(
-            HTTPStatus.NOT_FOUND, headers, request.format,
-            'NotFound', 'Collection not found')
+            404, headers, request.format,
+            'NotFound', f'Collection {collection_id} not found. If you restarted the server, please re-run your POST request.')
 
+    # 2. Handle HTML UI: The "Safe Injection"
+    if request.format == 'html':
+        resource = api.config['resources'][collection_id]
+        
+        # Inject mandatory OGC fields that the HTML templates require
+        resource.setdefault('keywords', [])
+        if 'extents' not in resource:
+            resource['extents'] = {
+                'spatial': {'bbox': [0, 0, 0, 0], 'crs': 'http://www.opengis.net/def/crs/OGC/1.3/CRS84'},
+                'temporal': None
+            }
+        
+        # Call the core API to render the page
+        return core_api.describe_collections(api, request, collection_id)
+
+    # 3. Handle JSON API: Your Clean Design
+    resource = api.config['resources'][collection_id]
     collection = {
-        'id': collection_id,
-        'itemType': 'indoorfeature',  # Essential for PNU/AIST frontend logic
-        'title': api.config['resources'][collection_id].get('title', collection_id),
-        'description': api.config['resources'][collection_id].get('description', ''),
-        'links': [
+        "id": collection_id,
+        "title": resource.get('title', collection_id),
+        "description": resource.get('description', ''),
+        "links": [
             {
-                'href': f"{api.config['server']['url']}/collections/{collection_id}/items",
-                'rel': 'items',
-                'type': 'application/geo+json',
-                'title': 'Indoor Features (Cells and Nodes)'
+                "href": f"{api.config['server']['url']}/collections/{collection_id}",
+                "rel": "self", "type": "application/json", "title": "Metadata"
             },
             {
-                'href': f"{api.config['server']['url']}/collections/{collection_id}",
-                'rel': 'self',
-                'type': 'application/json',
-                'title': 'Metadata for this collection'
+                "href": f"{api.config['server']['url']}/collections/{collection_id}/items",
+                "rel": "items", "type": "application/geo+json", "title": "Items"
             }
-        ]
+        ],
+        "itemType": resource.get('itemType', 'indoorfeature')
     }
 
-    return headers, HTTPStatus.OK, to_json(collection, api.pretty_print)
+    return headers, 200, to_json(collection, api.pretty_print)
 
-    if request.format == F_HTML:
-        # Do the same for the detail view
-        return headers, HTTPStatus.OK, render_j2_template(
-            api.config, collection, str(request.locale), 'collections/collection.html')
+def get_collection(api: API, request: APIRequest, dataset=None) -> Tuple[dict, int, str]:
+    collection_id = str(dataset)
+    headers = request.get_response_headers(SYSTEM_LOCALE)
+
+    # CRITICAL: Prevent the Jinja2 UndefinedError
+    if collection_id not in api.config['resources']:
+        return api.get_exception(404, headers, request.format, 'NotFound', 'Resource missing from memory. Please re-POST.')
+
+    # JSON Spec (Always works)
+    if request.format == 'json':
+        resource = api.config['resources'][collection_id]
+        collection = {
+            "id": collection_id,
+            "title": resource.get('title', collection_id),
+            "description": resource.get('description', ''),
+            "links": [
+                {"href": f"{api.config['server']['url']}/collections/{collection_id}", "rel": "self", "type": "application/json"},
+                {"href": f"{api.config['server']['url']}/collections/{collection_id}/items", "rel": "items", "type": "application/geo+json"}
+            ],
+            "itemType": resource.get('itemType', 'indoorfeature')
+        }
+        return headers, 200, to_json(collection, api.pretty_print)
+
+    # HTML UI (Safety Injection)
+    resource = api.config['resources'][collection_id]
+    resource.setdefault('keywords', [])
+    resource.setdefault('extents', {'spatial': {'bbox': [0,0,0,0]}, 'temporal': None})
+    return core_api.describe_collections(api, request, collection_id)
 
 def describe_collections(api: API, request: APIRequest) -> Tuple[dict, int, str]:
     """

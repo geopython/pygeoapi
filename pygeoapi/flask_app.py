@@ -219,7 +219,7 @@ def get_tilematrix_sets():
 
 
 @BLUEPRINT.route('/collections', methods=['GET', 'POST'])
-@BLUEPRINT.route('/collections/<path:collection_id>', methods=['GET', 'PUT', 'DELETE'])
+@BLUEPRINT.route('/collections/<path:collection_id>', methods=['GET', 'DELETE'])
 def collections(collection_id: str | None = None):
     """
     OGC API collections endpoint
@@ -231,27 +231,30 @@ def collections(collection_id: str | None = None):
     # 1. Handle the Root Collections Directory (/collections)
     if collection_id is None:
         if request.method == 'GET':
-            # Use your custom describer to list YAML + Dynamic collections
             return execute_from_flask(indoorgml.describe_collections, request)
         elif request.method == 'POST':
-            # Register a new IndoorGML site
             return execute_from_flask(indoorgml.manage_collection, request, 'create')
     
     # 2. Handle a Specific Collection (/collections/{id})
     else:
-        # Check if the ID exists in the static YAML configuration
-        if collection_id in api_.config['resources']:
-            return execute_from_flask(core_api.describe_collections, request,
-                                      collection_id)
+        resource = api_.config['resources'].get(collection_id)
         
-        # If not in YAML, it's a dynamic IndoorGML site
+        # Check if the resource was registered as a dynamic IndoorGML type
+        if resource and resource.get('itemType') == 'indoorfeature':
+            if request.method == 'GET':
+                return execute_from_flask(indoorgml.get_collection, request, collection_id)
+            elif request.method == 'DELETE':
+                return execute_from_flask(indoorgml.manage_collection, request, 'delete', collection_id)
+        
+        # Fallback for standard YAML resources
         else:
             if request.method == 'GET':
-                return execute_from_flask(indoorgml.get_collection, request, 
-                                          collection_id)
-            elif request.method == 'DELETE':
-                return execute_from_flask(indoorgml.manage_collection, request, 
-                                          'delete', collection_id)
+                return execute_from_flask(core_api.describe_collections, request, collection_id)
+        
+
+    # Return 405 if any other method (like PUT) is attempted
+    return api_.get_exception(405, {}, request.format, 
+                              'MethodNotAllowed', 'Method not allowed')
 
 
 
