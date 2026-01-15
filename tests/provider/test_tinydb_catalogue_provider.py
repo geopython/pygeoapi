@@ -2,7 +2,7 @@
 #
 # Authors: Tom Kralidis <tomkralidis@gmail.com>
 #
-# Copyright (c) 2025 Tom Kralidis
+# Copyright (c) 2026 Tom Kralidis
 #
 # Permission is hereby granted, free of charge, to any person
 # obtaining a copy of this software and associated documentation
@@ -38,6 +38,7 @@ from pygeoapi.provider.tinydb_ import TinyDBCatalogueProvider
 from ..util import get_test_file_path
 
 path = get_test_file_path('tests/data/open.canada.ca/sample-records.tinydb')
+path2 = get_test_file_path('tests/data/dutch-nationaalgeoregister/sample-records.tinydb')  # noqa
 
 
 @pytest.fixture()
@@ -81,6 +82,19 @@ def data_no_id():
 def config(tmp_path):
     tmp_file = tmp_path / 'sample-records.tinydb'
     shutil.copy(path, tmp_file)
+    return {
+        'name': 'TinyDBCatalogue',
+        'type': 'feature',
+        'data': tmp_file,
+        'id_field': 'externalId',
+        'time_field': 'created'
+    }
+
+
+@pytest.fixture()
+def config2(tmp_path):
+    tmp_file = tmp_path / 'sample-records.tinydb'
+    shutil.copy(path2, tmp_file)
     return {
         'name': 'TinyDBCatalogue',
         'type': 'feature',
@@ -171,6 +185,12 @@ def test_query(config):
 
     results = p.query(sortby=[{'property': 'title', 'order': '-'}])
     assert results['features'][0]['id'] == '8a09413a-0a01-4aab-8925-720d987deb20'  # noqa
+
+
+def test_query_no_geom(config2):
+    p = TinyDBCatalogueProvider(config2)
+    results = p.query(bbox=[-180, -90, 180, 90])
+    assert len(results['features']) == 2
 
 
 def test_get(config):
