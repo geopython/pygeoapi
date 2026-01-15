@@ -35,7 +35,7 @@ from typing import Callable, Union
 
 import click
 from flask import (Flask, Blueprint, make_response, request,
-                   send_from_directory, Response, Request)
+                   send_from_directory, Response, Request, jsonify)
 
 from pygeoapi.api import API, APIRequest, apply_gzip
 import pygeoapi.api as core_api
@@ -46,6 +46,7 @@ import pygeoapi.api.maps as maps_api
 import pygeoapi.api.processes as processes_api
 import pygeoapi.api.stac as stac_api
 import pygeoapi.api.tiles as tiles_api
+import pygeoapi.api.indoorgml as indoorgml
 from pygeoapi.openapi import load_openapi_document
 from pygeoapi.config import get_config
 from pygeoapi.util import get_mimetype, get_api_rules
@@ -217,8 +218,8 @@ def get_tilematrix_sets():
     return execute_from_flask(tiles_api.tilematrixsets, request)
 
 
-@BLUEPRINT.route('/collections')
-@BLUEPRINT.route('/collections/<path:collection_id>')
+@BLUEPRINT.route('/collections', methods=['GET', 'POST'])
+@BLUEPRINT.route('/collections/<path:collection_id>', methods=['GET', 'PUT', 'DELETE'])
 def collections(collection_id: str | None = None):
     """
     OGC API collections endpoint
@@ -227,9 +228,31 @@ def collections(collection_id: str | None = None):
 
     :returns: HTTP response
     """
+    # 1. Handle the Root Collections Directory (/collections)
+    if collection_id is None:
+        if request.method == 'GET':
+            # Use your custom describer to list YAML + Dynamic collections
+            return execute_from_flask(indoorgml.describe_collections, request)
+        elif request.method == 'POST':
+            # Register a new IndoorGML site
+            return execute_from_flask(indoorgml.manage_collection, request, 'create')
+    
+    # 2. Handle a Specific Collection (/collections/{id})
+    else:
+        # Check if the ID exists in the static YAML configuration
+        if collection_id in api_.config['resources']:
+            return execute_from_flask(core_api.describe_collections, request,
+                                      collection_id)
+        
+        # If not in YAML, it's a dynamic IndoorGML site
+        else:
+            if request.method == 'GET':
+                return execute_from_flask(indoorgml.get_collection, request, 
+                                          collection_id)
+            elif request.method == 'DELETE':
+                return execute_from_flask(indoorgml.manage_collection, request, 
+                                          'delete', collection_id)
 
-    return execute_from_flask(core_api.describe_collections, request,
-                              collection_id)
 
 
 @BLUEPRINT.route('/collections/<path:collection_id>/schema')
