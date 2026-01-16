@@ -395,51 +395,61 @@ def manage_collection_item_layer(api: API, request: APIRequest, action, dataset,
     item_id = str(identifier)
     headers = request.get_response_headers(SYSTEM_LOCALE)
     LOGGER.debug(headers)
+
+    # 1. Parameter Normalization Logic
     real_action = action
     real_collection_id = collection_id
     real_item_id = item_id
 
-    # action 자리에 collection_id가 들어온 것으로 의심되는 경우
-    # (예: action='IndoorGML_Data', col_id='AIST_Waterfront_Center', item_id=None)
     if action not in ['create', 'update', 'delete'] and collection_id is not None:
-        LOGGER.warning("Arguments seem shifted! Auto-fixing...")
-        
-        # request.method가 POST면 action은 'create'라고 가정
         if hasattr(request, 'method') and request.method == 'POST':
             real_action = 'create'
         else:
-            real_action = 'get' # 기본값
+            real_action = 'get'
         
-        real_collection_id = action  # 첫 번째 인자가 컬렉션 ID였음
-        real_item_id = collection_id # 두 번째 인자가 아이템 ID였음
-        
-        LOGGER.info(f"Fixed Args -> action: {real_action}, col_id: {real_collection_id}, item_id: {real_item_id}")
-    if action == 'create':
-        
+        real_collection_id = action  
+        real_item_id = collection_id 
+
+    # 2. Get the Resource Configuration
+    # We look for the collection, but NOT the item id here
+    resource_config = api.config['resources'].get(real_collection_id)
+    if not resource_config:
+        return api.get_exception(404, headers, request.format, 'NotFound', f'Collection {real_collection_id} not found')
+
+    if real_action == 'create':
         try:
-            # 1. Parse incoming IndoorFeatures JSON
             data = json.loads(request.data.decode('utf-8'))
-            
             validate(instance=data, schema=THEMATIC_SCHEMA)
 
-            resource = api.config['resources'][collection_id][item_id]
-            if 'layers' not in resource:
-                resource['layers'] = []
+            # --- FIX STARTS HERE ---
+            # Instead of api.config['resources'][col][item], 
+            # we find the item in the 'items' list
+            items_list = resource_config.get('items', [])
             
-            resource['layers'].append(data)
+            # Find the specific building/feature by its String ID
+            target_feature = next((item for item in items_list if item.get('id') == real_item_id), None)
+
+            if target_feature is None:
+                return api.get_exception(404, headers, request.format, 'NotFound', f'Feature {real_item_id} not found')
+
+            # Initialize layers if they don't exist
+            if 'layers' not in target_feature:
+                target_feature['layers'] = []
             
-            return headers, 201, to_json({"status": "Created", "id": data.get('id', 'unnamed')}, api.pretty_print)
+            target_feature['layers'].append(data)
+            # --- FIX ENDS HERE ---
+            
+            return headers, 201, to_json({"status": "Layer Added", "id": data.get('id', 'unnamed')}, api.pretty_print)
 
         except ValidationError as v_err:
-            # Returns exactly where the schema failed (e.g. "Edge weight must be a number")
-            return api.get_exception(400, headers, request.format, 
-                                    'InvalidRequest', f"Schema Error: {v_err.message}")
+            return api.get_exception(400, headers, request.format, 'InvalidRequest', f"Schema Error: {v_err.message}")
         except Exception as e:
             return api.get_exception(400, headers, request.format, 'InvalidRequest', str(e))
     else:
-        print("wrong way")
+        # Placeholder for GET/UPDATE/DELETE by ID
+        return api.get_exception(405, headers, request.format, 'MethodNotAllowed', "Action not yet implemented")
         
-def get_collection_item_layer(api: API, request: APIRequest, dataset, identifier) -> Tuple[dict, int, str]:
+def get_collection_item_layers(api: API, request: APIRequest, dataset, identifier) -> Tuple[dict, int, str]:
     """
     Get temporal Geometry of collection item
 
@@ -453,6 +463,20 @@ def get_collection_item_layer(api: API, request: APIRequest, dataset, identifier
         return api.get_format_exception(request)
     headers = request.get_response_headers(SYSTEM_LOCALE)
     LOGGER.debug(headers)
-    
+
+def get_collection_item_layer(api: API, request: APIRequest, dataset, identifier) -> Tuple[dict, int, str]:
+    """
+    Get temporal Geometry of collection item
+
+    :param request: A request object
+    :param dataset: dataset name
+    :param identifier: item identifier
+
+    :returns: tuple of headers, status code, content
+    """
+    if not request.is_valid():
+        return api.get_format_exception(request)
+    headers = request.get_response_headers(SYSTEM_LOCALE)
+    LOGGER.debug(headers) 
     
     
