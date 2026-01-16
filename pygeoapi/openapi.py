@@ -717,9 +717,29 @@ def get_admin(cfg: dict) -> dict:
 
     paths = {}
 
-    res_eg_key = next(iter(cfg['resources']))
+    res_eg_key = next(iter(cfg['resources'])) if cfg['resources'] else 'example'
     res_eg = {
-        res_eg_key: cfg['resources'][res_eg_key]
+        res_eg_key: cfg['resources'][res_eg_key] 
+    } if cfg['resources'] else {
+        'example': {
+            'type': 'collection',
+            'title': 'Example',
+            'description': 'Example',
+            'keywords': ['example'],
+            'links': [],
+            'linked-data': {},
+            'extents': {
+                'spatial': {
+                    'bbox': [-180,-90,180,90],
+                    'crs': 'http://www.opengis.net/def/crs/OGC/1.3/CRS84'
+                },
+                'temporal': {
+                    'begin': '2000-10-30T18:24:39Z',
+                    'end': '2007-10-30T08:57:29Z',
+                    'trs': 'http://www.opengis.net/def/uom/ISO-8601/0/Gregorian'
+                } 
+            }
+        }
     }
     if 'extents' in res_eg[res_eg_key]:
         res_eg_eg_key = 'extents'
@@ -824,7 +844,7 @@ def get_admin(cfg: dict) -> dict:
                 'description': 'Adds resource to configuration',
                 'content': {
                     'application/json': {
-                        'example': {'new-collection': cfg['resources'][res_eg_key]}, # noqa
+                        'example': {'new-collection': cfg['resources'][res_eg_key] if cfg['resources'] else res_eg['example'] }, # noqa
                         'schema': schema_dict['properties']['resources']['patternProperties']['^.*$']  # noqa
                     }
                 },
