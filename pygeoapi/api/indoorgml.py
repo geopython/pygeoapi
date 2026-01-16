@@ -16,6 +16,9 @@ SCHEMA_PATH = 'data/indoorjson_schema.json'
 with open(SCHEMA_PATH, 'r') as f:
     INDOOR_SCHEMA = json.load(f)
 
+with open('data/thematiclayer_schema.json' ,'r') as f:
+    THEMATIC_SCHEMA= json.load(f)
+    
 LOGGER = logging.getLogger(__name__)
 
 def manage_collection(api: API, request: APIRequest, action: str, dataset: str = None) -> Tuple[dict, int, str]:
@@ -386,3 +389,70 @@ def delete_feature(api: API, request: APIRequest, dataset, identifier) -> Tuple[
             return headers, 204, ""  # 204 No Content is standard for successful DELETE
 
     return api.get_exception(404, headers, request.format, 'NotFound', f'Feature {item_id} not found.')
+
+def manage_collection_item_layer(api: API, request: APIRequest, action, dataset, identifier, layer=None) -> Tuple[dict, int, str]:
+    collection_id = str(dataset)
+    item_id = str(identifier)
+    headers = request.get_response_headers(SYSTEM_LOCALE)
+    LOGGER.debug(headers)
+    real_action = action
+    real_collection_id = collection_id
+    real_item_id = item_id
+
+    # action 자리에 collection_id가 들어온 것으로 의심되는 경우
+    # (예: action='IndoorGML_Data', col_id='AIST_Waterfront_Center', item_id=None)
+    if action not in ['create', 'update', 'delete'] and collection_id is not None:
+        LOGGER.warning("Arguments seem shifted! Auto-fixing...")
+        
+        # request.method가 POST면 action은 'create'라고 가정
+        if hasattr(request, 'method') and request.method == 'POST':
+            real_action = 'create'
+        else:
+            real_action = 'get' # 기본값
+        
+        real_collection_id = action  # 첫 번째 인자가 컬렉션 ID였음
+        real_item_id = collection_id # 두 번째 인자가 아이템 ID였음
+        
+        LOGGER.info(f"Fixed Args -> action: {real_action}, col_id: {real_collection_id}, item_id: {real_item_id}")
+    if action == 'create':
+        
+        try:
+            # 1. Parse incoming IndoorFeatures JSON
+            data = json.loads(request.data.decode('utf-8'))
+            
+            validate(instance=data, schema=THEMATIC_SCHEMA)
+
+            resource = api.config['resources'][collection_id][item_id]
+            if 'layers' not in resource:
+                resource['layers'] = []
+            
+            resource['layers'].append(data)
+            
+            return headers, 201, to_json({"status": "Created", "id": data.get('id', 'unnamed')}, api.pretty_print)
+
+        except ValidationError as v_err:
+            # Returns exactly where the schema failed (e.g. "Edge weight must be a number")
+            return api.get_exception(400, headers, request.format, 
+                                    'InvalidRequest', f"Schema Error: {v_err.message}")
+        except Exception as e:
+            return api.get_exception(400, headers, request.format, 'InvalidRequest', str(e))
+    else:
+        print("wrong way")
+        
+def get_collection_item_layer(api: API, request: APIRequest, dataset, identifier) -> Tuple[dict, int, str]:
+    """
+    Get temporal Geometry of collection item
+
+    :param request: A request object
+    :param dataset: dataset name
+    :param identifier: item identifier
+
+    :returns: tuple of headers, status code, content
+    """
+    if not request.is_valid():
+        return api.get_format_exception(request)
+    headers = request.get_response_headers(SYSTEM_LOCALE)
+    LOGGER.debug(headers)
+    
+    
+    
