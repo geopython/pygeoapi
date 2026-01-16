@@ -257,6 +257,47 @@ def collections(collection_id: str | None = None):
                               'MethodNotAllowed', 'Method not allowed')
 
 
+@BLUEPRINT.route('/collections/<path:collection_id>/items/<path:item_id>/layers', methods=['GET', 'POST'])
+@BLUEPRINT.route('/collections/<path:collection_id>/items/<path:item_id>/layers/<path:layer_id>', methods=['GET', 'DELETE'])
+def collection_items_layers(collection_id, item_id, layer_id=None):
+    """
+    OGC API collections items endpoint
+    
+    :param collection_id: collection identifier
+    :param item_id: item identifier
+    
+    :reaturns: HTTP response
+    """
+    if layer_id is None:
+        if request.method == 'GET':  #list metadata of thematic layers.
+            return execute_from_flask(
+                indoorgml.get_collection_item_layer, request, 
+                collection_id, 
+                item_id
+            )
+        elif request.method == 'POST':  # create new thematic layer
+            return execute_from_flask(
+                indoorgml.manage_collection_item_layer, request, 
+                'create', 
+                collection_id, 
+                item_id
+            )
+    else:
+        if request.method == 'GET':  # read data of specific thematic layer
+            return execute_from_flask(
+                indoorgml.get_collection_item_layer, request, 
+                collection_id,
+                item_id,
+                layer_id
+            )
+        elif request.method == 'DELETE':  #delete specific thematic layer
+            return execute_from_flask(
+                indoorgml.manage_collection_item_layer, request,
+                'delete',
+                collection_id,
+                item_id,
+                layer_id
+            )
 
 @BLUEPRINT.route('/collections/<path:collection_id>/schema')
 def collection_schema(collection_id: str | None = None):
@@ -589,6 +630,8 @@ def stac_catalog_root():
     """
 
     return execute_from_flask(stac_api.get_stac_root, request)
+
+
 
 
 @BLUEPRINT.route('/stac/<path:path>')

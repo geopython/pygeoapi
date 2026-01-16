@@ -1,0 +1,155 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://www.indoorgml.org/schemas/indoorjson/0.1/indoorjson2.core.schema.json",
+  "title": "IndoorJSON for IndoorGML 2.0 core part",
+  "description": "IndoorJSON",
+  "$defs": {
+
+
+    "ThematicLayer": {
+      "$anchor": "ThematicLayer",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "featureType": { "enum": ["ThematicLayer"] },
+        "semanticExtension": { "type": "boolean" },
+        "theme": { "enum": ["Virtual", "Physical", "Tags", "Unknown"] },
+        "primalSpace": { "$ref": "#/$defs/PrimalSpaceLayer" },
+        "dualSpace": { "$ref": "#/$defs/DualSpaceLayer" }
+      },
+      "required": ["id","featureType","semanticExtension","theme"]
+    },
+
+    "PrimalSpaceLayer": {
+      "$anchor": "PrimalSpaceLayer",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "featureType": { "enum": ["PrimalSpaceLayer"] },
+        "creationDatetime": { "type": "string", "format": "date-time" },
+        "terminationDatetime": { "type": "string", "format": "date-time" },
+        "cellSpaceMember": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "$ref": "#/$defs/CellSpace" },
+          "uniqueItems": true
+        },
+        "cellBoundaryMember": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/CellBoundary" },
+          "uniqueItems": true
+        }
+      },
+      "required": ["id","featureType","cellSpaceMember"]
+    },
+
+    "CellSpace": {
+      "$anchor": "CellSpace",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "featureType": { "enum": ["CellSpace"] },
+        "cellSpaceName:": { "type": "string" },
+        "level": { "type": "string" },
+        "poi": { "type":  "boolean" },
+        "duality" : { "type": "string", "format": "uri-reference" },
+        "cellSpaceGeom" : {
+          "type": "object",
+          "properties": {
+            "geometry2D": { "$ref": "https://beta.schemas.opengis.net/json-fg/geometry-object.json#/$defs/Polygon" },
+            "geometry3D": { "$ref": "https://beta.schemas.opengis.net/json-fg/geometry-object.json#/$defs/Polyhedron" }
+          }
+        },
+        "boundedBy": {
+          "type": "array",
+          "items": { "type": "string", "format": "uri-reference" },
+          "uniqueItems": true
+        },
+        "externalReference": { "$ref": "#/$defs/ExternalReferenceType" }
+      },
+      "required": ["id","featureType","poi"]
+    },
+
+    "CellBoundary": {
+      "$anchor": "CellBoundary",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "featureType": { "enum": ["CellBoundary"] },
+        "isVirtual": { "type":  "boolean" },
+        "duality" : { "type": "string", "format": "uri-reference" },
+        "cellBoundaryGeom" : {
+          "type": "object",
+          "properties": {
+            "geometry2D": { "$ref": "https://beta.schemas.opengis.net/json-fg/geometry-object.json#/$defs/LineString" },
+            "geometry3D": { "$ref": "https://beta.schemas.opengis.net/json-fg/geometry-object.json#/$defs/Polygon" }
+          }
+        },
+        "externalReference": { "$ref": "#/$defs/ExternalReferenceType" }
+      },
+      "required": ["id","featureType","isVirtual"]
+    },
+
+    "DualSpaceLayer": {
+      "$anchor": "DualSpaceLayer",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "featureType": { "enum": ["DualSpaceLayer"] },
+        "creationDatetime": { "type": "string", "format": "date-time" },
+        "terminationDatetime": { "type": "string", "format": "date-time" },
+        "isLogical": { "type": "boolean" },
+        "isDirected": { "type": "boolean" },
+        "nodeMember": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "$ref": "#/$defs/Node" },
+          "uniqueItems": true
+        },
+        "edgeMember": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/Edge" },
+          "uniqueItems": true
+        }
+      },
+      "required": ["id","featureType","isLogical","isDirected","nodeMember"]
+    },
+
+    "Node": {
+      "$anchor": "Node",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "featureType": { "enum": ["Node"] },
+        "duality" : { "type": "string", "format": "uri-reference" },
+        "geometry" : { "$ref": "https://beta.schemas.opengis.net/json-fg/geometry-object.json#/$defs/Point" },
+        "connects" : {
+          "type": "array",
+          "items": { "type": "string", "format": "uri-reference" },
+          "uniqueItems": true
+        }
+      },
+      "required": ["id","featureType","duality"]
+    },
+
+    "Edge": {
+      "$anchor": "Edge",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "featureType": { "enum": ["Edge"] },
+        "duality" : { "type": "string", "format": "uri-reference" },
+        "weight" : { "type": "number" },
+        "geometry" : { "$ref": "https://beta.schemas.opengis.net/json-fg/geometry-object.json#/$defs/LineString" },
+        "connects" : {
+          "type": "array",
+          "items": { "type": "string", "format": "uri-reference" },
+          "minItems": 2,
+          "maximum": 2,
+          "uniqueItems": true
+        }
+      },
+      "required": ["id","featureType","weight","connects"]
+    }
+  }
+}
