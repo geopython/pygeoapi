@@ -271,7 +271,7 @@ def collection_items_layers(collection_id, item_id, layer_id=None):
     if layer_id is None:
         if request.method == 'GET':  #list metadata of thematic layers.
             return execute_from_flask(
-                indoorgml.get_collection_item_layer, request, 
+                indoorgml.get_collection_item_layers, request, 
                 collection_id, 
                 item_id
             )
