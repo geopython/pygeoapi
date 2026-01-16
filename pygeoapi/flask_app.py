@@ -301,6 +301,20 @@ def collection_items(collection_id: str, item_id: str | None = None):
 
     :returns: HTTP response
     """
+    resource = api_.config['resources'].get(collection_id)
+    is_indoor = resource and resource.get('itemType') == 'indoorfeature'
+
+    if is_indoor:
+        if item_id is None:
+            if request.method == 'POST':
+                return execute_from_flask(indoorgml.create_item, request, collection_id)
+            elif request.method == 'GET':
+                return execute_from_flask(indoorgml.get_features, request, collection_id)
+        else:
+            if request.method == 'GET':
+                return execute_from_flask(indoorgml.get_feature, request, collection_id, item_id)
+            elif request.method == 'DELETE':
+                return execute_from_flask(indoorgml.delete_feature, request, collection_id, item_id)
 
     if item_id is None:
         if request.method == 'POST':  # filter or manage items

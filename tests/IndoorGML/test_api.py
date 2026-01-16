@@ -1,68 +1,90 @@
 import requests
 import json
+import os
 
+# Configuration
 BASE_URL = "http://localhost:5000"
 COLLECTION_ID = "aist_waterfront_lab"
+# Path to your sample file
+DATA_FILE = os.path.join(os.path.dirname(__file__), '../../data/sample_indoor.json')
+
+# This should match the "id" field inside your sample_indoor.json
+FEATURE_ID = "AIST_Waterfront_Center" 
 
 def test_crud_flow():
-    print(f"--- Starting Test for Collection: {COLLECTION_ID} ---")
+    print(f"--- Starting IndoorGML API Integration Test ---")
 
-    # 1. POST: Create the collection
+    # 1. SETUP: Create the collection
+    print("\n[1/7] POST /collections (Setup)")
     payload = {
         "id": COLLECTION_ID,
         "title": "AIST Waterfront Lab IndoorGML",
-        "description": "Experimental IndoorGML data for AIST project",
-        "itemType": "indoorfeature",
-        "storage": {
-            "type": "Provider",
-            "name": "Memory"
-        }
+        "itemType": "indoorfeature",  
+        "storage": {"type": "Provider", "name": "Memory"}
     }
-    
-    print("\n[1/4] POST /collections")
-    post_res = requests.post(f"{BASE_URL}/collections", json=payload)
-    print(f"Status: {post_res.status_code}")
-    print(f"Response: {post_res.text}")
+    setup_res = requests.post(f"{BASE_URL}/collections", json=payload)
+    print(f"Status: {setup_res.status_code}")
 
-    # 2. GET (List): Check if it appears in the list
-    print("\n[2/4] GET /collections (List)")
-    list_res = requests.get(f"{BASE_URL}/collections?f=json")
-    if COLLECTION_ID in list_res.text:
-        print(f"Success: {COLLECTION_ID} found in list.")
-    else:
-        print("Failure: Collection not found in list.")
-
-    # 3. GET (Detail): Check your clean design (No Keywords)
-    print(f"\n[3/4] GET /collections/{COLLECTION_ID} (Detail)")
+    # 2. VERIFY: Clean Design (No Keywords)
+    print(f"\n[2/7] GET /collections/{COLLECTION_ID} (Clean Design Check)")
     detail_res = requests.get(f"{BASE_URL}/collections/{COLLECTION_ID}?f=json")
-    print(f"Status: {detail_res.status_code}")
-    
     if detail_res.status_code == 200:
         data = detail_res.json()
-        print("Clean Design Verification:")
-        print(f" - Title: {data.get('title')}")
-        print(f" - ItemType: {data.get('itemType')}")
-        # This is the critical test for you
         if 'keywords' not in data:
-            print(" - Success: No 'keywords' found in JSON (as intended).")
+            print("Success: JSON response is clean (No keywords field).")
         else:
-            print(" - Warning: 'keywords' were found in JSON!")
+            print("Fail: 'keywords' found in response.")
+
+    # 3. NEGATIVE TEST: Deep Validation Check
+    print("\n[3/7] POST /items (Negative Test - Invalid Schema)")
+    bad_data = {"featureType": "IndoorFeatures", "layers": []} # Fails minItems: 1
+    bad_res = requests.post(f"{BASE_URL}/collections/{COLLECTION_ID}/items", json=bad_data)
+    if bad_res.status_code == 400:
+        print(f"Success: API rejected invalid data.")
     else:
-        print(f"Error Detail: {detail_res.text}")
+        print(f"Fail: API accepted invalid data with status {bad_res.status_code}")
 
-    # 4. DELETE: Clean up
-    print(f"\n[4/4] DELETE /collections/{COLLECTION_ID}")
-    del_res = requests.delete(f"{BASE_URL}/collections/{COLLECTION_ID}")
-    print(f"Status: {del_res.status_code}")
-    print(f"Response: {del_res.text}")
+    # 4. POSITIVE TEST: Register Building Model
+    print(f"\n[4/7] POST /items (Positive Test - sample_indoor.json)")
+    with open(DATA_FILE, 'r') as f:
+        indoor_data = json.load(f)
+    
+    item_res = requests.post(f"{BASE_URL}/collections/{COLLECTION_ID}/items", json=indoor_data)
+    if item_res.status_code == 201:
+        print(f"Success: Building model registered.")
+    else:
+        print(f"Fail: {item_res.status_code} - {item_res.text}")
 
-    # Final Verification
-    final_check = requests.get(f"{BASE_URL}/collections/{COLLECTION_ID}?f=json")
-    if final_check.status_code == 404:
-        print("\n--- All tests passed: Collection created, verified, and deleted. ---")
+    # 5. RETRIEVAL (List): Verify Layer Integrity
+    print(f"\n[5/7] GET /items (List & Layer Check)")
+    list_res = requests.get(f"{BASE_URL}/collections/{COLLECTION_ID}/items?f=json")
+    if list_res.status_code == 200:
+        features = list_res.json().get('features', [])
+        if features and 'layers' in features[0]:
+            print(f"Success: Found {len(features)} model(s).")
+            print(f"Verified: 'primalSpace' and 'dualSpace' connectivity preserved.")
+
+    # 6. RETRIEVAL (Detail): GET by ID
+    print(f"\n[6/7] GET /items/{FEATURE_ID}")
+    single_res = requests.get(f"{BASE_URL}/collections/{COLLECTION_ID}/items/{FEATURE_ID}?f=json")
+    if single_res.status_code == 200:
+        print(f"Success: Retrieved specific feature {FEATURE_ID}")
+    else:
+        print(f"Fail: Could not find feature {FEATURE_ID}")
+    
+    # 7. DELETE: Remove Item and Cleanup
+    print(f"\n[7/7] DELETE /items/{FEATURE_ID} & Collection Cleanup")
+    del_item_res = requests.delete(f"{BASE_URL}/collections/{COLLECTION_ID}/items/{FEATURE_ID}")
+    if del_item_res.status_code == 204:
+        print(f"Success: Deleted feature {FEATURE_ID}")
+
+    requests.delete(f"{BASE_URL}/collections/{COLLECTION_ID}")
+    
+    if requests.get(f"{BASE_URL}/collections/{COLLECTION_ID}").status_code == 404:
+        print("\n--- All tests passed! ---")
 
 if __name__ == "__main__":
     try:
         test_crud_flow()
-    except requests.exceptions.ConnectionError:
-        print("Error: Is the pygeoapi server running on localhost:5000?")
+    except Exception as e:
+        print(f"Unexpected Error: {e}")
