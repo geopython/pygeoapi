@@ -131,3 +131,9 @@ pygeoapi/db.sqlite3
 .pygeoapi/docker/examples/elastic/ES/data
 .pygeoapi/docker/examples/mvt-elastic/ES/data
 .pygeoapi/docker/examples/mvt-tippecanoe/ES/data
+
+# Tonny local
+venv/
+__pycache__/
+*.pyc
+data/*.json   # If you want to keep your test uploads private/local
