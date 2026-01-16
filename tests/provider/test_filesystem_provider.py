@@ -54,7 +54,7 @@ def test_query(config):
 
     r = p.get_data_path(baseurl, urlpath, dirpath)
 
-    assert len(r['links']) == 12
+    assert len(r['links']) == 13
 
     r = p.get_data_path(baseurl, urlpath, '/poi_portugal')
 

@@ -2,7 +2,7 @@
 #
 # Authors: Tom Kralidis <tomkralidis@gmail.com>
 #
-# Copyright (c) 2025 Tom Kralidis
+# Copyright (c) 2026 Tom Kralidis
 #
 # Permission is hereby granted, free of charge, to any person
 # obtaining a copy of this software and associated documentation
@@ -448,7 +448,7 @@ class TinyDBCatalogueProvider(TinyDBProvider):
         return f'<TinyDBCatalogueProvider> {self.data}'
 
 
-def bbox_intersects(record_geometry, input_bbox):
+def bbox_intersects(record_geometry, input_bbox) -> bool:
     """
     Manual bbox intersection calculation
 
@@ -458,7 +458,15 @@ def bbox_intersects(record_geometry, input_bbox):
     :returns: `bool` of whether the record_bbox intersects input_bbox
     """
 
-    bbox1 = list(shape(record_geometry).bounds)
+    if record_geometry is None:
+        LOGGER.debug('Record geometry is none; skipping')
+        return False
+
+    try:
+        bbox1 = list(shape(record_geometry).bounds)
+    except Exception as err:
+        LOGGER.debug(f'Invalid geometry: {err}')
+        return False
 
     bbox2 = [float(c) for c in input_bbox.split(',')]
 

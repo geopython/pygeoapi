@@ -1,0 +1,376 @@
+{
+    "_default": {
+        "1": {
+            "id": "35149dfb-31d3-431c-a8bc-12a4034dac48",
+            "conformsTo": [
+                "http://www.opengis.net/spec/ogcapi-records-1/1.0/conf/record-core"
+            ],
+            "type": "Feature",
+            "time": {
+                "interval": [
+                    null,
+                    null
+                ]
+            },
+            "geometry": {
+                "type": "Polygon",
+                "coordinates": [
+                    [
+                        [
+                            4.690751953125,
+                            52.358740234375
+                        ],
+                        [
+                            4.690751953125,
+                            52.6333984375
+                        ],
+                        [
+                            5.020341796875,
+                            52.6333984375
+                        ],
+                        [
+                            5.020341796875,
+                            52.358740234375
+                        ],
+                        [
+                            4.690751953125,
+                            52.358740234375
+                        ]
+                    ]
+                ]
+            },
+            "properties": {
+                "created": "2021-12-08Z",
+                "updated": "2025-06-16T12:39:57Z",
+                "type": "dataset",
+                "title": "Kaartboeck 1635",
+                "description": "Data uit kaartboeken van de periode 1635 tot 1775. De kaartboeken werden door het waterschap gebruikt om er op toe te zien dat de eigenaren geen water in beslag namen door demping.\nDe percelen op de kaart zijn naar de huidige maatstaven vrij nauwkeurig gemeten en voorzien van een administratie met de eigenaren. bijzondere locaties van molens werven en beroepen worden in de boeken vermeld. Alle 97 kaarten aan een geven een zeer gedetailleerd beeld van de Voorzaan, Nieuwe Haven en de Achterzaan. De bladen Oost en West van de zaan zijn vrij nauwkeurig. De bladen aan de Voorzaan zijn een schetsmatige weergave van de situatie. De kaart van de Nieuwe Haven si weer nauwkeurig te noemen.",
+                "contacts": [
+                    {
+                        "name": "Team Geo",
+                        "organization": "Gemeente Zaanstad",
+                        "phones": [
+                            {
+                                "value": "14 075"
+                            }
+                        ],
+                        "emails": [
+                            {
+                                "value": "geo-informatie@zaanstad.nl"
+                            }
+                        ],
+                        "addresses": [
+                            {
+                                "deliveryPoint": [
+                                    "Stadhuisplein 100"
+                                ],
+                                "city": [
+                                    "Zaanstad"
+                                ],
+                                "administrativeArea": [
+                                    "Noord-Holland"
+                                ],
+                                "postalCode": [
+                                    "1506 MZ"
+                                ],
+                                "country": [
+                                    "Netherlands"
+                                ]
+                            }
+                        ],
+                        "roles": [
+                            "custodian"
+                        ]
+                    }
+                ],
+                "externalIds": [
+                    {
+                        "scheme": "default",
+                        "value": "35149dfb-31d3-431c-a8bc-12a4034dac48"
+                    }
+                ],
+                "themes": [
+                    {
+                        "concepts": [
+                            {
+                                "id": "ARGEOLOGIE"
+                            },
+                            {
+                                "id": "MONUMENTEN"
+                            },
+                            {
+                                "id": "KADASTER"
+                            },
+                            {
+                                "id": "KAARTBOEK"
+                            },
+                            {
+                                "id": "KAARTBOECK"
+                            },
+                            {
+                                "id": "HISTORIE"
+                            }
+                        ]
+                    }
+                ],
+                "_metadata-anytext": "35149dfb-31d3-431c-a8bc-12a4034dac48 Team Geo Gemeente Zaanstad Informatie Beheer en Techniek 14 075 Stadhuisplein 100 Zaanstad Noord-Holland 1506 MZ Netherlands geo-informatie@zaanstad.nl ISO 19115 Nederlands metadata profiel op ISO 19115 voor geografie 1.3.1 28992 EPSG Kaartboeck 1635 56d832e1-7e33-4e60-a01a-6bdcd716aaa0 Eigenaren en percelen langs de Zaan en Voorzaan tussen 1635 en 1775 Data uit kaartboeken van de periode 1635 tot 1775. De kaartboeken werden door het waterschap gebruikt om er op toe te zien dat de eigenaren geen water in beslag namen door demping.\nDe percelen op de kaart zijn naar de huidige maatstaven vrij nauwkeurig gemeten en voorzien van een administratie met de eigenaren. bijzondere locaties van molens werven en beroepen worden in de boeken vermeld. Alle 97 kaarten aan een geven een zeer gedetailleerd beeld van de Voorzaan, Nieuwe Haven en de Achterzaan. De bladen Oost en West van de zaan zijn vrij nauwkeurig. De bladen aan de Voorzaan zijn een schetsmatige weergave van de situatie. De kaart van de Nieuwe Haven si weer nauwkeurig te noemen. Archeologisch onderzoek Kleij, Piet Gemeente Zaanstad, monumenten en argeologie Inhoudelijk contactpersoon 14 075 Stadhuisplein 100 Zaanstad Noord-Holland 1506 MZ Nederland geo-informatie@zaanstad.nl WWW:LINK-1.0-http--link Profielsite (intranet) https://geo.zaanstad.nl:443/geonetwork/srv/eng/resources.get?uuid=35149dfb-31d3-431c-a8bc-12a4034dac48&fname=monumenten-kaartboeck_s.png thumbnail png https://geo.zaanstad.nl:443/geonetwork/srv/eng/resources.get?uuid=35149dfb-31d3-431c-a8bc-12a4034dac48&fname=monumenten-kaartboeck.jpg large_thumbnail jpg ARGEOLOGIE MONUMENTEN KADASTER KAARTBOEK KAARTBOECK HISTORIE Niet geschikt voor commercieel gebruik Niet voor commercieel gebruik en naamsvermelding verplicht; Gemeente Zaanstad https://creativecommons.org/licenses/by-nc/4.0/ Geen beperkingen bekend dut WMS 1.1.1 OGC:WMS geo:kaartboeck geo:kaartboeck OGC:WFS geo:kaartboeck download download De dataset is afkomstig uit diverse kaartboeken uit verschillende periode."
+            },
+            "links": [
+                {
+                    "href": "https://maps-intern.zaanstad.gem.local/geoserver/wms?SERVICE=WMS",
+                    "rel": "item",
+                    "title": "geo:kaartboeck",
+                    "type": "OGC:WMS"
+                },
+                {
+                    "href": "https://maps-intern.zaanstad.gem.local/geoserver/wfs?SERVICE=WFS",
+                    "rel": "item",
+                    "title": "geo:kaartboeck",
+                    "type": "OGC:WFS"
+                },
+                {
+                    "href": "https://maps-intern.zaanstad.gem.local/geoserver/wfs?SERVICE=WFS&version=1.0.0&request=GetFeature&typeName=geo:kaartboeck&outputFormat=csv",
+                    "rel": "item",
+                    "type": "download"
+                },
+                {
+                    "href": "https://maps-intern.zaanstad.gem.local/geoserver/wfs?SERVICE=WFS&version=1.0.0&request=GetFeature&typeName=geo:kaartboeck&outputFormat=shape-zip",
+                    "rel": "item",
+                    "type": "download"
+                }
+            ]
+        },
+        "2": {
+            "id": "ffffffaa-4087-59ec-9ea7-8416f58e99dd",
+            "conformsTo": [
+                "http://www.opengis.net/spec/ogcapi-records-1/1.0/conf/record-core"
+            ],
+            "type": "Feature",
+            "time": {
+                "interval": [
+                    null,
+                    null
+                ]
+            },
+            "geometry": {
+                "type": "Polygon",
+                "coordinates": [
+                    [
+                        [
+                            4.4552947,
+                            52.3348457
+                        ],
+                        [
+                            4.4552947,
+                            53.388444
+                        ],
+                        [
+                            7.135964,
+                            53.388444
+                        ],
+                        [
+                            7.135964,
+                            52.3348457
+                        ],
+                        [
+                            4.4552947,
+                            52.3348457
+                        ]
+                    ]
+                ]
+            },
+            "properties": {
+                "created": "2022-06-01Z",
+                "updated": "2025-06-16T12:39:57Z",
+                "type": "dataset",
+                "title": "Diepteligging onderkant keileem (t.o.v. NAP)",
+                "description": "Diepteligging van de onderkant (basis) van keileem in Drenthe, in meters ten opzichte van NAP.",
+                "contacts": [
+                    {
+                        "name": "Team Gis/Cartografie",
+                        "organization": "Provincie Drenthe",
+                        "phones": [
+                            {
+                                "value": "0592-365555"
+                            }
+                        ],
+                        "emails": [
+                            {
+                                "value": "post@drenthe.nl"
+                            }
+                        ],
+                        "addresses": [
+                            {
+                                "deliveryPoint": [
+                                    "Westerbrink 1"
+                                ],
+                                "city": [
+                                    "Assen"
+                                ],
+                                "administrativeArea": [
+                                    "Drenthe"
+                                ],
+                                "postalCode": [
+                                    "9400AC"
+                                ],
+                                "country": [
+                                    "Nederland"
+                                ]
+                            }
+                        ],
+                        "links": [
+                            {
+                                "href": "https://www.provincie.drenthe.nl",
+                                "rel": null,
+                                "title": null,
+                                "description": null
+                            }
+                        ],
+                        "roles": [
+                            "pointOfContact"
+                        ]
+                    }
+                ],
+                "externalIds": [
+                    {
+                        "scheme": "default",
+                        "value": "ffffffaa-4087-59ec-9ea7-8416f58e99dd"
+                    }
+                ],
+                "themes": [
+                    {
+                        "concepts": [
+                            {
+                                "id": "beleidsinstrument"
+                            },
+                            {
+                                "id": "bodem"
+                            },
+                            {
+                                "id": "grondwaterstand"
+                            },
+                            {
+                                "id": "landbouw"
+                            },
+                            {
+                                "id": "landbouwgrond"
+                            },
+                            {
+                                "id": "waterhuishouding"
+                            }
+                        ],
+                        "scheme": null
+                    }
+                ],
+                "_metadata-anytext": "ffffffaa-4087-59ec-9ea7-8416f58e99dd Team Gis/Cartografie Provincie Drenthe Auteur 0592-365555 0592-365777 Westerbrink 1 Assen Drenthe 9400AC Nederland post@drenthe.nl ISO 19115 Nederlandse metadata profiel op ISO 19115 voor geografie 1.3 28992 EPSG Diepteligging onderkant keileem (t.o.v. NAP) GBI.KEILEEM_DIEPTE_ONDER_NAP_R 3d30357b-1bf0-5ccc-8a40-4b980f2ba493 Diepteligging van de onderkant (basis) van keileem in Drenthe, in meters ten opzichte van NAP. Milieu, energie en klimaat Team Natuur en Water Provincie Drenthe Auteur 0592-365555 0592-365777 Westerbrink 1 Assen Drenthe 9400AC Nederland post@drenthe.nl https://kaartportaal.drenthe.nl/portal/sharing/rest/content/items/d547218a21fd4c7ca666e01e4c33f237/info/thumbnail/thumbnail1651583291057.png thumbnail beleidsinstrument bodem grondwaterstand landbouw landbouwgrond waterhuishouding Trefwoordenlijst Provincie Drenthe dataset niet gebruiken bij een schaal kleiner dan Geen beperkingen http://creativecommons.org/publicdomain/mark/1.0/deed.nl Provincie Drenthe zie rapportage Team Gis/Cartografie Provincie Drenthe Auteur 0592-365555 0592-365777 Westerbrink 1 Assen Drenthe 9400AC Nederland post@drenthe.nl Gratis Neem contact op met Provincie Drenthe OGC:WMS 0 Diepteligging onderkant keileem (t.o.v. NAP) Productieproces en achtergrondinformatie zijn beschreven in de rapportage van TNO (TNO 2013 R10107). zie rapportage"
+            },
+            "links": [
+                {
+                    "href": "https://kaartportaal.drenthe.nl/server/services/GDB_actueel/GBI_KEILEEM_DIEPTE_ONDER_NAP_R/MapServer/WMSServer",
+                    "rel": "item",
+                    "title": "0",
+                    "type": "OGC:WMS"
+                }
+            ]
+        },
+        "3": {
+            "id": "59352e7f-3792-4e17-bd73-9bba84a98890",
+            "conformsTo": [
+                "http://www.opengis.net/spec/ogcapi-records-1/1.0/conf/record-core"
+            ],
+            "type": "Feature",
+            "time": {
+                "interval": [
+                    null,
+                    null
+                ]
+            },
+            "geometry": null,
+            "properties": {
+                "created": "2021-06-30Z",
+                "updated": "2025-06-16T12:39:57Z",
+                "type": "dataset",
+                "title": "Clusters geluid - wegen gecumuleerd",
+                "description": "Clusters (omtreklijn) gebaseerd op gemeentegrenzen. Per cluster zijn de aantallen woningen en gevoelige bestemmingen per GES-score geteld. Bij de gevoelige bestemmingen is onderscheid gemaakt in 3 categorien: Ziekenhuizen, Scholen en dagverblijven voor jeugd, Verpleeg en verzorgingshuizen.",
+                "contacts": [
+                    {
+                        "name": "GIS",
+                        "organization": "Provincie Utrecht",
+                        "emails": [
+                            {
+                                "value": "GIS@provincie-utrecht.nl"
+                            }
+                        ],
+                        "links": [
+                            {
+                                "href": "http://www.provincie-utrecht.nl",
+                                "rel": null,
+                                "title": null,
+                                "description": null
+                            }
+                        ],
+                        "roles": [
+                            "pointOfContact"
+                        ]
+                    }
+                ],
+                "externalIds": [
+                    {
+                        "scheme": "default",
+                        "value": "59352e7f-3792-4e17-bd73-9bba84a98890"
+                    }
+                ],
+                "themes": [
+                    {
+                        "concepts": [
+                            {
+                                "id": "GELUIDHINDER"
+                            },
+                            {
+                                "id": "GELUIDSZONES"
+                            },
+                            {
+                                "id": "PROVINCIALE WEGEN"
+                            },
+                            {
+                                "id": "VERKEERSLAWAAI"
+                            },
+                            {
+                                "id": "WET GELUIDHINDER"
+                            }
+                        ],
+                        "scheme": null
+                    },
+                    {
+                        "concepts": [
+                            {
+                                "id": "Informatief"
+                            }
+                        ],
+                        "scheme": null
+                    }
+                ],
+                "_metadata-anytext": "59352e7f-3792-4e17-bd73-9bba84a98890 GIS Provincie Utrecht Technisch verantwoordelijk GIS@provincie-utrecht.nl ISO 19115 Nederlands metadata profiel op ISO 19115 voor geografie 2.0.0 https://www.opengis.net/def/crs/EPSG/0/28992 EPSG Clusters geluid - wegen gecumuleerd milieu.mgkp_cluster_gl_wegen_cumulati d5e50c1f-37a3-4687-a146-99c0820f5e8c Clusters (omtreklijn) gebaseerd op gemeentegrenzen. Per cluster zijn de aantallen woningen en gevoelige bestemmingen per GES-score geteld. Bij de gevoelige bestemmingen is onderscheid gemaakt in 3 categorien: Ziekenhuizen, Scholen en dagverblijven voor jeugd, Verpleeg en verzorgingshuizen. milieubelasting koppelen aan gezondheidseffecten zodat het gebruikt kan worden voor andere beleidsvelden oa Europese Richtlijn Omgevingslawaai Bosch, Hans van den Provincie Utrecht Technisch verantwoordelijk GIS@provincie-utrecht.nl Janssen, Geert Provincie Utrecht Inhoudelijk verantwoordelijk gis@provincie-utrecht.nl https://services.geodata-utrecht.nl/geoserver/m01_4_overlast_hinder_mgkp/wms?request=GetMap&service=WMS&SRS=EPSG:28992&CRS=EPSG:28992&bbox=112656.06,436541.64,173834.94,482076.36&width=600&height=446&format=image/png&styles=&layers=Clusters_geluid_-_wegen_gecumuleerd GELUIDHINDER GELUIDSZONES PROVINCIALE WEGEN VERKEERSLAWAAI WET GELUIDHINDER Interprovinciale thesaurus Informatief Typering Geen gebruiksbeperkingen geen beperkingen https://creativecommons.org/publicdomain/mark/1.0/deed.nl SDE Feature Class 10.4.1 GIS Provincie Utrecht Technisch verantwoordelijk GIS@provincie-utrecht.nl landingpage OGC:WFS Clusters_geluid_-_wegen_gecumuleerd OGC:WMS Clusters_geluid_-_wegen_gecumuleerd De clusters zijn de gemeentegrenzen. Per gemeente zijn de aantallen belaste woningen en gevoelige bestemmingen per GES klasse bepaald."
+            },
+            "links": [
+                {
+                    "href": "https://download.geodata-utrecht.nl/download/vector/59352e7f-3792-4e17-bd73-9bba84a98890",
+                    "rel": "item",
+                    "type": "landingpage"
+                },
+                {
+                    "href": "https://services.geodata-utrecht.nl/geoserver/m01_4_overlast_hinder_mgkp/wfs",
+                    "rel": "item",
+                    "title": "Clusters_geluid_-_wegen_gecumuleerd",
+                    "type": "OGC:WFS"
+                },
+                {
+                    "href": "https://services.geodata-utrecht.nl/geoserver/m01_4_overlast_hinder_mgkp/wms",
+                    "rel": "item",
+                    "title": "Clusters_geluid_-_wegen_gecumuleerd",
+                    "type": "OGC:WMS"
+                }
+            ]
+        }
+    }
+}
