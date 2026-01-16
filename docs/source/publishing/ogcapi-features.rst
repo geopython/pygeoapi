@@ -450,7 +450,7 @@ Connection
             password: geo_test
             # external_auth: wallet
             # tns_name: XEPDB1
-            # tns_admin /opt/oracle/client/network/admin 
+            # tns_admin /opt/oracle/client/network/admin
             # init_oracle_client: True
 
         id_field: id
@@ -458,7 +458,7 @@ Connection
         geom_field: geometry
         title_field: name
 
-The provider supports connection over host and port with SID, SERVICE_NAME or TNS_NAME. For TNS naming, the system 
+The provider supports connection over host and port with SID, SERVICE_NAME or TNS_NAME. For TNS naming, the system
 environment variable TNS_ADMIN or the configuration parameter tns_admin must be set.
 
 The providers supports external authentication. At the moment only wallet authentication is implemented.
@@ -484,7 +484,7 @@ SDO options
         title_field: name
         sdo_operator: sdo_relate # defaults to sdo_filter
         sdo_param: mask=touch+coveredby # defaults to mask=anyinteract
-        
+
 The provider supports two different SDO operators, sdo_filter and sdo_relate. When not set, the default is sdo_relate!
 Further more  it is possible to set the sdo_param option. When sdo_relate is used the default is anyinteraction!
 `See Oracle Documentation for details <https://docs.oracle.com/en/database/oracle/oracle-database/23/spatl/spatial-operators-reference.html>`_.
@@ -509,7 +509,7 @@ Mandatory properties
         mandatory_properties:
         - example_group_id
 
-On large tables it could be useful to disallow a query on the complete dataset. For this reason it is possible to 
+On large tables it could be useful to disallow a query on the complete dataset. For this reason it is possible to
 configure mandatory properties. When this is activated, the provider throws an exception when the parameter
 is not in the query uri.
 
@@ -556,13 +556,13 @@ Extra_params
 """"""""""""
 The Oracle provider allows for additional parameters that can be passed in the request. It allows for the processing of additional parameters that are not defined in the ``pygeoapi-config.yml`` to be passed to a custom SQL-Manipulator-Plugin. An example use case of this is advanced filtering without exposing the filtered columns like follows ``.../collections/some_data/items?is_recent=true``. The ``SqlManipulator`` plugin's ``process_query`` method would receive ``extra_params = {'is_recent': 'true'}`` and could dynamically add a custom condition to the SQL query, like ``AND SYSDATE - create_date < 30``.
 
-The ``include_extra_query_parameters`` has to be set to ``true`` for the collection in ``pygeoapi-config.yml``. This ensures that the additional request parameters (e.g. ``is_recent=true``) are not discarded. 
+The ``include_extra_query_parameters`` has to be set to ``true`` for the collection in ``pygeoapi-config.yml``. This ensures that the additional request parameters (e.g. ``is_recent=true``) are not discarded.
 
 
 Custom SQL Manipulator Plugin
 """""""""""""""""""""""""""""
 The provider supports a SQL-Manipulator-Plugin class. With this, the SQL statement could be manipulated. This is
-useful e.g. for authorization at row level or manipulation of the explain plan with hints. 
+useful e.g. for authorization at row level or manipulation of the explain plan with hints.
 
 More information and examples about this feature can be found in ``tests/provider/test_oracle_provider.py``.
 
@@ -584,14 +584,14 @@ To publish a GeoParquet file (with a geometry column) the geopandas package is a
    providers:
       - type: feature
         name: Parquet
-        data: 
+        data:
           source: ./tests/data/parquet/random.parquet
         id_field: id
         time_field: time
         x_field:
           - minlon
           - maxlon
-        y_field: 
+        y_field:
           - minlat
           - maxlat
 
@@ -662,6 +662,24 @@ These are optional and if not specified, the default from the engine will be use
          id_field: osm_id
          table: hotosm_bdi_waterways
          geom_field: foo_geom
+
+Due to PostgreSQL's unique multi read multi write strategy row counts for query’s that return a lot of rows can take significant amounts of time to complete. To address this issue the following settings can be configured on your PostgreSQL provider:
+
+.. csv-table::
+   :header: Name, Type, Default Value, Description
+   :align: left
+
+   postgresql_pseudo_count_enabled, Boolean, false, Enables pseudo count.
+   postgresql_pseudo_count_start, Integer, 5000000, Sets the minimum number of rows a table must have before a pseudo count is performed when pseudo counts are enabled.
+
+This solution uses the built in PostgreSQL EXPLAIN function to “guess” the number of rows a given query will return. If that value is greater than the postgresql_pseudo_count_start value, then the “guessed” value from the EXPLAIN function is returned in the response. If the “guessed” value is lower then, a full count is completed and the result returned in the response. These settings do not affect the following types of requests:
+
+* Requests with a Result Type of Hits.
+* Requests with a CQL filter.
+* Requests with a BBOX filter.
+* Requests with a Temporal filter.
+
+Using these pseudo count options allows you to granularly configure each PostgreSQL provider to get the best performance out of your API. But when choosing weather or not to use these pseudo count settings understanding the trade-off you are making is important. By enabling pseudo counts you are choosing speed over accuracy, some pseudo counts maybe higher and others lower than the true row count for a given query. But, with some datasets this trade off might be better than not being able to provide the data at all. While these settings have default values pseudo row counts must be enabled for them to be used.
 
 The PostgreSQL provider is also able to connect to Cloud SQL databases.
 
