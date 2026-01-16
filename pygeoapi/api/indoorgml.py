@@ -8,6 +8,12 @@ import pygeoapi.api as core_api
 from pygeoapi.util import to_json
 from pygeoapi.util import render_j2_template, to_json
 import os
+from jsonschema import validate, ValidationError
+
+# Load schema once when the module is loaded
+SCHEMA_PATH = 'data/indoorjson_schema.json'
+with open(SCHEMA_PATH, 'r') as f:
+    INDOOR_SCHEMA = json.load(f)
 
 LOGGER = logging.getLogger(__name__)
 
@@ -248,3 +254,32 @@ def get_oas_30(cfg: dict, locale: str) -> tuple[list[dict], dict]:
     }
     
     return [{'name': 'IndoorGML Management'}], paths
+
+def create_item(api: API, request: APIRequest, dataset) -> Tuple[dict, int, str]:
+    """
+    POST /collections/{cId}/items
+    OperationId: createItem (Register a new building model)
+    """
+    collection_id = str(dataset)
+    headers = request.get_response_headers(SYSTEM_LOCALE)
+
+    try:
+        # 1. Parse incoming IndoorFeatures JSON
+        data = json.loads(request.data.decode('utf-8'))
+        
+        validate(instance=data, schema=INDOOR_SCHEMA)
+
+        resource = api.config['resources'][collection_id]
+        if 'items' not in resource:
+            resource['items'] = []
+        
+        resource['items'].append(data)
+        
+        return headers, 201, to_json({"status": "Created", "id": data.get('id', 'unnamed')}, api.pretty_print)
+
+    except ValidationError as v_err:
+        # Returns exactly where the schema failed (e.g. "Edge weight must be a number")
+        return api.get_exception(400, headers, request.format, 
+                                'InvalidRequest', f"Schema Error: {v_err.message}")
+    except Exception as e:
+        return api.get_exception(400, headers, request.format, 'InvalidRequest', str(e))
