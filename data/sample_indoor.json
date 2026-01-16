@@ -1,5 +1,6 @@
 {
   "featureType": "IndoorFeatures",
+  "id": "AIST_Waterfront_Center",
   "layers": [
     {
       "id": "TL-1",

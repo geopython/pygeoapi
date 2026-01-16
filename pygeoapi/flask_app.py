@@ -311,9 +311,11 @@ def collection_items(collection_id: str, item_id: str | None = None):
             elif request.method == 'GET':
                 return execute_from_flask(indoorgml.get_features, request, collection_id)
         else:
-            # Handle item-specific requests (/items/{itemId}) if needed
-            pass
-        
+            if request.method == 'GET':
+                return execute_from_flask(indoorgml.get_feature, request, collection_id, item_id)
+            elif request.method == 'DELETE':
+                return execute_from_flask(indoorgml.delete_feature, request, collection_id, item_id)
+
     if item_id is None:
         if request.method == 'POST':  # filter or manage items
             if request.content_type is not None:

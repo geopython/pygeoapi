@@ -9,6 +9,7 @@ from pygeoapi.util import to_json
 from pygeoapi.util import render_j2_template, to_json
 import os
 from jsonschema import validate, ValidationError
+from datetime import datetime
 
 # Load schema once when the module is loaded
 SCHEMA_PATH = 'data/indoorjson_schema.json'
@@ -142,35 +143,6 @@ def get_collection(api: API, request: APIRequest, dataset=None) -> Tuple[dict, i
 
     return headers, 200, to_json(collection, api.pretty_print)
 
-def get_collection(api: API, request: APIRequest, dataset=None) -> Tuple[dict, int, str]:
-    collection_id = str(dataset)
-    headers = request.get_response_headers(SYSTEM_LOCALE)
-
-    # CRITICAL: Prevent the Jinja2 UndefinedError
-    if collection_id not in api.config['resources']:
-        return api.get_exception(404, headers, request.format, 'NotFound', 'Resource missing from memory. Please re-POST.')
-
-    # JSON Spec (Always works)
-    if request.format == 'json':
-        resource = api.config['resources'][collection_id]
-        collection = {
-            "id": collection_id,
-            "title": resource.get('title', collection_id),
-            "description": resource.get('description', ''),
-            "links": [
-                {"href": f"{api.config['server']['url']}/collections/{collection_id}", "rel": "self", "type": "application/json"},
-                {"href": f"{api.config['server']['url']}/collections/{collection_id}/items", "rel": "items", "type": "application/geo+json"}
-            ],
-            "itemType": resource.get('itemType', 'indoorfeature')
-        }
-        return headers, 200, to_json(collection, api.pretty_print)
-
-    # HTML UI (Safety Injection)
-    resource = api.config['resources'][collection_id]
-    resource.setdefault('keywords', [])
-    resource.setdefault('extents', {'spatial': {'bbox': [0,0,0,0]}, 'temporal': None})
-    return core_api.describe_collections(api, request, collection_id)
-
 def describe_collections(api: API, request: APIRequest) -> Tuple[dict, int, str]:
     """
     GET /collections
@@ -283,3 +255,134 @@ def create_item(api: API, request: APIRequest, dataset) -> Tuple[dict, int, str]
                                 'InvalidRequest', f"Schema Error: {v_err.message}")
     except Exception as e:
         return api.get_exception(400, headers, request.format, 'InvalidRequest', str(e))
+
+def get_features(api: API, request: APIRequest, dataset) -> Tuple[dict, int, str]:
+    """
+    GET /collections/{cId}/items
+    Returns a list of building metadata (metaGeoJSON) wrapped in a FeatureCollection.
+    """
+    collection_id = str(dataset)
+    headers = request.get_response_headers(SYSTEM_LOCALE)
+    
+    resource = api.config['resources'].get(collection_id)
+    items = resource.get('items', [])
+
+    # 1. Transform each building into metaGeoJSON (Summary only)
+    meta_features = []
+    for item in items:
+        item_id = item.get('id', 'unnamed')
+        
+        # Extract metadata from the item or use defaults
+        # In a real scenario, you'd pull 'creationDate' from the layers
+        meta_feat = {
+            "type": "Feature",
+            "featureType": "IndoorFeatures",
+            "id": item_id,
+            "geometry": {
+                "type": "Polygon",
+                "coordinates": [[[0, 0], [10, 0], [10, 10], [0, 10], [0, 0]]] # Placeholder footprint
+            },
+            "properties": {
+                "metadata": {
+                    "description": f"Metadata for IndoorGML model: {item_id}",
+                    "creationDate": datetime.utcnow().isoformat() + "Z",
+                    "version": "2.0"
+                }
+            },
+            "links": [
+                {
+                    "href": f"{api.config['server']['url']}/collections/{collection_id}/items/{item_id}",
+                    "rel": "item",
+                    "type": "application/json",
+                    "title": "Full IndoorGML Graph"
+                }
+            ]
+        }
+        meta_features.append(meta_feat)
+
+    # 2. Wrap in featureCollectionGeoJSON structure
+    response = {
+        "type": "FeatureCollection",
+        "features": meta_features,
+        "numberMatched": len(items),
+        "numberReturned": len(items),
+        "timeStamp": datetime.utcnow().isoformat() + "Z",
+        "links": [
+            {
+                "href": f"{api.config['server']['url']}/collections/{collection_id}/items",
+                "rel": "self",
+                "type": "application/json"
+            }
+        ]
+    }
+
+    return headers, 200, to_json(response, api.pretty_print)
+    
+def get_feature(api: API, request: APIRequest, dataset, identifier) -> Tuple[dict, int, str]:
+    """
+    GET /collections/{cId}/items/{itemId}
+    Transforms raw data into the featureGeoJSON schema.
+    """
+    collection_id = str(dataset)
+    item_id = str(identifier)
+    headers = request.get_response_headers(SYSTEM_LOCALE)
+
+    resource = api.config['resources'].get(collection_id)
+    items = resource.get('items', [])
+
+    # Find the raw data
+    raw_data = next((item for item in items if item.get('id') == item_id), None)
+
+    if not raw_data:
+        return api.get_exception(404, headers, request.format, 'NotFound', f'Feature {item_id} not found.')
+
+    # TRANSFORM TO featureGeoJSON SCHEMA
+    # We'll calculate a simple footprint from the first layer for the root 'geometry'
+    footprint = {
+        "type": "Polygon",
+        "coordinates": [[[0,0], [10,0], [10,10], [0,10], [0,0]]] # Placeholder footprint
+    }
+
+    feature_geojson = {
+        "type": "Feature",
+        "featureType": "IndoorFeatures",
+        "id": item_id,
+        "geometry": footprint, # Standard GeoJSON geometry
+        "properties": {
+            "metadata": {
+                "description": f"IndoorGML model for {item_id}",
+                "creationDate": "2026-01-16T15:00:00Z", # You can grab this from data if exists
+                "version": "2.0"
+            }
+        },
+        "IndoorFeatures": raw_data, # This is the "massive IndoorGML graph"
+        "links": [
+            {
+                "href": f"{api.config['server']['url']}/collections/{collection_id}/items/{item_id}",
+                "rel": "self",
+                "type": "application/json"
+            }
+        ]
+    }
+
+    return headers, 200, to_json(feature_geojson, api.pretty_print)
+
+def delete_feature(api: API, request: APIRequest, dataset, identifier) -> Tuple[dict, int, str]:
+    """
+    DELETE /collections/{cId}/items/{itemId}
+    Remove a building model from the collection.
+    """
+    collection_id = str(dataset)
+    item_id = str(identifier)
+    headers = request.get_response_headers(SYSTEM_LOCALE)
+
+    resource = api.config['resources'].get(collection_id)
+    items = resource.get('items', [])
+
+    # Find the index of the item
+    for i, item in enumerate(items):
+        if item.get('id') == item_id:
+            items.pop(i)
+            return headers, 204, ""  # 204 No Content is standard for successful DELETE
+
+    return api.get_exception(404, headers, request.format, 'NotFound', f'Feature {item_id} not found.')
