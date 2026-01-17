@@ -1024,21 +1024,6 @@ def get_oas_30(cfg: dict, locale: str) -> tuple[list[dict[str, str]], dict[str, 
 
     from pygeoapi.openapi import OPENAPI_YAML, get_visible_collections
 
-    properties = {
-        'name': 'properties',
-        'in': 'query',
-        'description': 'The properties that should be included for each feature. The parameter value is a comma-separated list of property names.',  # noqa
-        'required': False,
-        'style': 'form',
-        'explode': False,
-        'schema': {
-            'type': 'array',
-            'items': {
-                'type': 'string'
-            }
-        }
-    }
-
     limit = {
         'name': 'limit',
         'in': 'query',
@@ -1093,8 +1078,9 @@ def get_oas_30(cfg: dict, locale: str) -> tuple[list[dict[str, str]], dict[str, 
             title = l10n.translate(v['title'], locale)
             description = l10n.translate(v['description'], locale)
 
-            coll_properties = deepcopy(properties)
+            oas_30_parameters = get_oas_30_parameters(cfg, locale)
 
+            coll_properties = deepcopy(oas_30_parameters)['properties']
             coll_properties['schema']['items']['enum'] = list(p.fields.keys())
 
             coll_limit = _derive_limit(
@@ -1103,7 +1089,7 @@ def get_oas_30(cfg: dict, locale: str) -> tuple[list[dict[str, str]], dict[str, 
             )
 
             dataset_formatters = get_dataset_formatters(v)
-            coll_f_parameter = deepcopy(get_oas_30_parameters(cfg, locale))['f']  # noqa
+            coll_f_parameter = deepcopy(oas_30_parameters)['f']
             for key, value in dataset_formatters.items():
                 coll_f_parameter['schema']['enum'].append(value.f)
 

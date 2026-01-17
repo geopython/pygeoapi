@@ -4,7 +4,7 @@
 # Authors: Tom Kralidis <tomkralidis@gmail.com>
 #
 # Copyright (c) 2020 Gregory Petrochenkov
-# Copyright (c) 2025 Tom Kralidis
+# Copyright (c) 2026 Tom Kralidis
 #
 # Permission is hereby granted, free of charge, to any person
 # obtaining a copy of this software and associated documentation
@@ -61,9 +61,14 @@ class XarrayProvider(BaseProvider):
 
         super().__init__(provider_def)
 
+        open_options = {}
+        squeeze = provider_def.get('options', {}).get('squeeze', False)
+        zarr_options = provider_def.get('options', {}).get('zarr', {})
+
         try:
             if provider_def['data'].endswith('.zarr'):
                 open_func = xarray.open_zarr
+                open_options = zarr_options
             else:
                 if '*' in self.data:
                     LOGGER.debug('Detected multi file dataset')
@@ -84,13 +89,17 @@ class XarrayProvider(BaseProvider):
                 data_to_open = self.data
 
             try:
-                self._data = open_func(data_to_open)
+                self._data = open_func(data_to_open, **open_options)
             except ValueError as err:
                 # Manage non-cf-compliant time dimensions
                 if 'time' in str(err):
                     self._data = open_func(self.data, decode_times=False)
                 else:
                     raise err
+
+            if squeeze:
+                LOGGER.debug('Squeezing data')
+                self._data = self._data.squeeze()
 
             if provider_def.get('storage_crs') is None:
                 self.storage_crs = self._parse_storage_crs()

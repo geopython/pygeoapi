@@ -8,7 +8,7 @@
 #          Ricardo Garcia Silva <ricardo.garcia.silva@geobeyond.it>
 #          Bernhard Mallinger <bernhard.mallinger@eox.at>
 #
-# Copyright (c) 2024 Tom Kralidis
+# Copyright (c) 2026 Tom Kralidis
 # Copyright (c) 2025 Francesco Bartoli
 # Copyright (c) 2022 John A Stevenson and Colin Blackburn
 # Copyright (c) 2023 Ricardo Garcia Silva
@@ -37,12 +37,13 @@
 #
 # =================================================================
 
-
+from copy import deepcopy
 import logging
 from http import HTTPStatus
 from typing import Tuple
 
 from pygeoapi import l10n
+from pygeoapi.openapi import get_oas_30_parameters
 from pygeoapi.plugin import load_plugin
 from pygeoapi.provider.base import ProviderGenericError, ProviderTypeError
 from pygeoapi.util import (
@@ -216,8 +217,8 @@ def get_oas_30(cfg: dict, locale: str) -> tuple[list[dict[str, str]], dict[str, 
 
     for k, v in get_visible_collections(cfg).items():
         try:
-            load_plugin('provider', get_provider_by_type(
-                        collections[k]['providers'], 'coverage'))
+            p = load_plugin('provider', get_provider_by_type(
+                            collections[k]['providers'], 'coverage'))
         except ProviderTypeError:
             LOGGER.debug('collection is not coverage based')
             continue
@@ -225,6 +226,11 @@ def get_oas_30(cfg: dict, locale: str) -> tuple[list[dict[str, str]], dict[str, 
         coverage_path = f'/collections/{k}/coverage'
         title = l10n.translate(v['title'], locale)
         description = l10n.translate(v['description'], locale)
+
+        parameters = get_oas_30_parameters(cfg, locale)
+
+        coll_properties = deepcopy(parameters)['properties']
+        coll_properties['schema']['items']['enum'] = list(p.fields.keys())
 
         paths[coverage_path] = {
             'get': {
@@ -236,7 +242,9 @@ def get_oas_30(cfg: dict, locale: str) -> tuple[list[dict[str, str]], dict[str, 
                     {'$ref': '#/components/parameters/lang'},
                     {'$ref': '#/components/parameters/f'},
                     {'$ref': '#/components/parameters/bbox'},
-                    {'$ref': '#/components/parameters/bbox-crs'}
+                    {'$ref': '#/components/parameters/bbox-crs'},
+                    {'$ref': f"{OPENAPI_YAML['oacov']}#/components/parameters/subset"},  # noqa
+                    coll_properties
                 ],
                 'responses': {
                     '200': {'$ref': f"{OPENAPI_YAML['oapif-1']}#/components/responses/Features"},  # noqa
