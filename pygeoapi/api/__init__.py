@@ -7,7 +7,7 @@
 #          Colin Blackburn <colb@bgs.ac.uk>
 #          Ricardo Garcia Silva <ricardo.garcia.silva@geobeyond.it>
 #
-# Copyright (c) 2025 Tom Kralidis
+# Copyright (c) 2026 Tom Kralidis
 # Copyright (c) 2025 Francesco Bartoli
 # Copyright (c) 2022 John A Stevenson and Colin Blackburn
 # Copyright (c) 2023 Ricardo Garcia Silva
@@ -588,6 +588,7 @@ class API:
         """
 
         exception_info = sys.exc_info()
+
         LOGGER.error(
             description,
             exc_info=exception_info if exception_info[0] is not None else None
@@ -709,22 +710,22 @@ def landing_page(api: API,
         'title': l10n.translate('Collections', request.locale),
         'href': api.get_collections_url()
     }, {
-        'rel': 'http://www.opengis.net/def/rel/ogc/1.0/processes',
+        'rel': f'{OGC_RELTYPES_BASE}/processes',
         'type': FORMAT_TYPES[F_JSON],
         'title': l10n.translate('Processes', request.locale),
         'href': f"{api.base_url}/processes"
     }, {
-        'rel': 'http://www.opengis.net/def/rel/ogc/1.0/job-list',
+        'rel': f'{OGC_RELTYPES_BASE}/job-list',
         'type': FORMAT_TYPES[F_JSON],
         'title': l10n.translate('Jobs', request.locale),
         'href': f"{api.base_url}/jobs"
     }, {
-        'rel': 'http://www.opengis.net/def/rel/ogc/1.0/tiling-schemes',
+        'rel': f'{OGC_RELTYPES_BASE}/tiling-schemes',
         'type': FORMAT_TYPES[F_JSON],
         'title': l10n.translate('The list of supported tiling schemes as JSON', request.locale),  # noqa
         'href': f"{api.base_url}/TileMatrixSets?f=json"
     }, {
-        'rel': 'http://www.opengis.net/def/rel/ogc/1.0/tiling-schemes',
+        'rel': f'{OGC_RELTYPES_BASE}/tiling-schemes',
         'type': FORMAT_TYPES[F_HTML],
         'title': l10n.translate('The list of supported tiling schemes as HTML', request.locale),  # noqa
         'href': f"{api.base_url}/TileMatrixSets?f=html"
@@ -990,13 +991,13 @@ def describe_collections(api: API, request: APIRequest,
         if collection_data_type == 'record':
             collection['links'].append({
                 'type': FORMAT_TYPES[F_JSON],
-                'rel': 'http://www.opengis.net/def/rel/ogc/1.0/ogc-catalog',
+                'rel': f'{OGC_RELTYPES_BASE}/ogc-catalog',
                 'title': l10n.translate('Record catalogue as JSON', request.locale),  # noqa
                 'href': f'{api.get_collections_url()}/{k}?f={F_JSON}'
             })
             collection['links'].append({
                 'type': FORMAT_TYPES[F_HTML],
-                'rel': 'http://www.opengis.net/def/rel/ogc/1.0/ogc-catalog',
+                'rel': f'{OGC_RELTYPES_BASE}/ogc-catalog',
                 'title': l10n.translate('Record catalogue as HTML', request.locale),  # noqa
                 'href': f'{api.get_collections_url()}/{k}?f={F_HTML}'
             })
@@ -1021,13 +1022,13 @@ def describe_collections(api: API, request: APIRequest,
             LOGGER.debug('Adding feature/record based links')
             collection['links'].append({
                 'type': 'application/schema+json',
-                'rel': 'http://www.opengis.net/def/rel/ogc/1.0/queryables',
+                'rel': f'{OGC_RELTYPES_BASE}/queryables',
                 'title': l10n.translate('Queryables for this collection as JSON', request.locale),  # noqa
                 'href': f'{api.get_collections_url()}/{k}/queryables?f={F_JSON}'  # noqa
             })
             collection['links'].append({
                 'type': FORMAT_TYPES[F_HTML],
-                'rel': 'http://www.opengis.net/def/rel/ogc/1.0/queryables',
+                'rel': f'{OGC_RELTYPES_BASE}/queryables',
                 'title': l10n.translate('Queryables for this collection as HTML', request.locale),  # noqa
                 'href': f'{api.get_collections_url()}/{k}/queryables?f={F_HTML}'  # noqa
             })
@@ -1135,19 +1136,20 @@ def describe_collections(api: API, request: APIRequest,
             LOGGER.debug('Adding tile links')
             collection['links'].append({
                 'type': FORMAT_TYPES[F_JSON],
-                'rel': f'http://www.opengis.net/def/rel/ogc/1.0/tilesets-{p.tile_type}',  # noqa
+                'rel': f'{OGC_RELTYPES_BASE}/tilesets-{p.tile_type}',
                 'title': l10n.translate('Tiles as JSON', request.locale),
-                'href': f'{api.get_collections_url()}/{k}/tiles?f={F_JSON}'  # noqa
+                'href': f'{api.get_collections_url()}/{k}/tiles?f={F_JSON}'
             })
             collection['links'].append({
                 'type': FORMAT_TYPES[F_HTML],
-                'rel': f'http://www.opengis.net/def/rel/ogc/1.0/tilesets-{p.tile_type}',  # noqa
+                'rel': f'{OGC_RELTYPES_BASE}/tilesets-{p.tile_type}',
                 'title': l10n.translate('Tiles as HTML', request.locale),
-                'href': f'{api.get_collections_url()}/{k}/tiles?f={F_HTML}'  # noqa
+                'href': f'{api.get_collections_url()}/{k}/tiles?f={F_HTML}'
             })
 
         try:
             map_ = get_provider_by_type(v['providers'], 'map')
+            p = load_plugin('provider', map_)
         except ProviderTypeError:
             map_ = None
 
@@ -1158,14 +1160,35 @@ def describe_collections(api: API, request: APIRequest,
             map_format = map_['format']['name']
 
             title_ = l10n.translate('Map as', request.locale)
-            title_ = f"{title_} {map_format}"
+            title_ = f'{title_} {map_format}'
 
             collection['links'].append({
                 'type': map_mimetype,
-                'rel': 'http://www.opengis.net/def/rel/ogc/1.0/map',
+                'rel': f'{OGC_RELTYPES_BASE}/map',
                 'title': title_,
-                'href': f"{api.get_collections_url()}/{k}/map?f={map_format}"  # noqa
+                'href': f'{api.get_collections_url()}/{k}/map?f={map_format}'
             })
+
+            if p._fields:
+                schema_reltype = f'{OGC_RELTYPES_BASE}/schema',
+                schema_links = [s for s in collection['links'] if
+                                schema_reltype in s]
+
+                if not schema_links:
+                    title_ = l10n.translate('Schema of collection in JSON', request.locale)  # noqa
+                    collection['links'].append({
+                        'type': 'application/schema+json',
+                        'rel': f'{OGC_RELTYPES_BASE}/schema',
+                        'title': title_,
+                        'href': f'{api.get_collections_url()}/{k}/schema?f=json'  # noqa
+                    })
+                    title_ = l10n.translate('Schema of collection in HTML', request.locale)  # noqa
+                    collection['links'].append({
+                        'type': 'text/html',
+                        'rel': f'{OGC_RELTYPES_BASE}/schema',
+                        'title': title_,
+                        'href': f'{api.get_collections_url()}/{k}/schema?f=html'  # noqa
+                    })
 
         try:
             edr = get_provider_by_type(v['providers'], 'edr')
@@ -1217,6 +1240,10 @@ def describe_collections(api: API, request: APIRequest,
                         }
                     }
                 }
+
+                if request.format is not None and request.format == 'json':
+                    data_query['link']['type'] = 'application/vnd.cov+json'
+
                 collection['data_queries'][qt] = data_query
 
                 title1 = l10n.translate('query for this collection as JSON', request.locale)  # noqa
@@ -1334,9 +1361,14 @@ def get_collection_schema(api: API, request: Union[APIRequest, Any],
             p = load_plugin('provider', get_provider_by_type(
                 api.config['resources'][dataset]['providers'], 'coverage'))  # noqa
         except ProviderTypeError:
-            LOGGER.debug('Loading record provider')
-            p = load_plugin('provider', get_provider_by_type(
-                api.config['resources'][dataset]['providers'], 'record'))
+            try:
+                LOGGER.debug('Loading record provider')
+                p = load_plugin('provider', get_provider_by_type(
+                    api.config['resources'][dataset]['providers'], 'record'))
+            except ProviderTypeError:
+                LOGGER.debug('Loading edr provider')
+                p = load_plugin('provider', get_provider_by_type(
+                    api.config['resources'][dataset]['providers'], 'edr'))
     except ProviderGenericError as err:
         LOGGER.error(err)
         return api.get_exception(

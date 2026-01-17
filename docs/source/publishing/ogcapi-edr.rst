@@ -90,10 +90,14 @@ The `xarray-edr`_ provider plugin reads and extracts `NetCDF`_ and `Zarr`_ data 
    a zip file is returned upon request for said format.
 
 .. note::
+
+   ``options.zarr`` is a custom property that can be used to set `Zarr-specific open options`_.
+
+.. note::
+
    When referencing data stored in an S3 bucket, be sure to provide the full
    S3 URL. Any parameters required to open the dataset using fsspec can be added
    to the config file under `options` and `s3`, as shown above.
-
 
 SensorThingsEDR
 ^^^^^^^^^^^^^^^
@@ -143,3 +147,4 @@ Data access examples
 .. _`NetCDF`: https://en.wikipedia.org/wiki/NetCDF
 .. _`Zarr`: https://zarr.readthedocs.io/en/stable
 .. _`OGC Environmental Data Retrieval (EDR) (API)`: https://ogcapi.ogc.org/edr
+.. _`Zarr-specific open options`: https://docs.xarray.dev/en/stable/generated/xarray.open_zarr.html
