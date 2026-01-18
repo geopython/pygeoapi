@@ -2,7 +2,7 @@
 #
 # Authors: Tom Kralidis <tomkralidis@gmail.com>
 #
-# Copyright (c) 2021 Tom Kralidis
+# Copyright (c) 2026 Tom Kralidis
 #
 # Permission is hereby granted, free of charge, to any person
 # obtaining a copy of this software and associated documentation
@@ -55,8 +55,6 @@ class BaseEDRProvider(BaseProvider):
 
         BaseProvider.__init__(self, provider_def)
 
-#        self.instances = []
-
     def __init_subclass__(cls, **kwargs):
         super().__init_subclass__(**kwargs)
 
@@ -79,6 +77,15 @@ class BaseEDRProvider(BaseProvider):
                 f'items query is registered in {cls.__name__}, '
                 'but requests will be routed to a feature provider'
             )
+
+    def get_instances(self):
+        """
+        Get a list of instance identifiers
+
+        :returns: `list` of instance identifiers
+        """
+
+        return NotImplementedError()
 
     def get_instance(self, instance):
         """

@@ -4,7 +4,7 @@
 # Authors: Francesco Bartoli <xbartolone@gmail.com>
 # Authors: Ricardo Garcia Silva <ricardo.garcia.silva@geobeyond.it>
 #
-# Copyright (c) 2025 Tom Kralidis
+# Copyright (c) 2026 Tom Kralidis
 # Copyright (c) 2025 Francesco Bartoli
 # Copyright (c) 2023 Ricardo Garcia Silva
 #
@@ -56,7 +56,8 @@ OPENAPI_YAML = {
     'oapif-1': 'https://schemas.opengis.net/ogcapi/features/part1/1.0/openapi/ogcapi-features-1.yaml',  # noqa
     'oapif-2': 'https://schemas.opengis.net/ogcapi/features/part2/1.0/openapi/ogcapi-features-2.yaml', # noqa
     'oapip': 'https://schemas.opengis.net/ogcapi/processes/part1/1.0/openapi',
-    'oacov': 'https://raw.githubusercontent.com/tomkralidis/ogcapi-coverages-1/fix-cis/yaml-unresolved',  # noqa
+    'oacov': 'https://raw.githubusercontent.com/opengeospatial/ogcapi-coverages/refs/heads/master/standard/openapi/ogcapi-coverages-1.yaml',  # noqa
+    'oamaps': 'https://schemas.opengis.net/ogcapi/maps/part1/1.0/openapi/ogcapi-maps-1.yaml',  # noqa
     'oapir': 'https://raw.githubusercontent.com/opengeospatial/ogcapi-records/master/core/openapi',  # noqa
     'oaedr': 'https://schemas.opengis.net/ogcapi/edr/1.0/openapi', # noqa
     'oapit': 'https://schemas.opengis.net/ogcapi/tiles/part1/1.0/openapi/ogcapi-tiles-1.yaml',  # noqa
@@ -665,6 +666,20 @@ def get_oas_30_parameters(cfg: dict, locale_: str):
             },
             'style': 'form',
             'explode': False
+        },
+        'properties': {
+            'name': 'properties',
+            'in': 'query',
+            'description': 'The properties that should be included. The parameter value is a comma-separated list of property names.',  # noqa
+            'required': False,
+            'style': 'form',
+            'explode': False,
+            'schema': {
+                'type': 'array',
+                'items': {
+                    'type': 'string'
+                }
+            }
         },
         'vendorSpecificParameters': {
             'name': 'vendorSpecificParameters',
