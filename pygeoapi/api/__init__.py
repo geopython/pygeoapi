@@ -892,12 +892,6 @@ def describe_collections(self, request: APIRequest, dataset=None) -> Tuple[dict,
 
     :returns: tuple of headers, status code, content
     """
-    
-    # -----------------------------------------------------------
-    # NOTE: Make sure these imports are at the top of the file!
-    # from src.database import get_db
-    # from src.models import Collection
-    # -----------------------------------------------------------
 
     headers = request.get_response_headers(**self.api_headers)
 
