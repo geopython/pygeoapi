@@ -1150,3 +1150,139 @@ def _calculate_layer_stats(layer):
         stats['isDirected'] = layer['dualSpace'].get('isDirected')
         stats['isLogical'] = layer['dualSpace'].get('isLogical')
     return stats
+
+def get_collection_item_interlayerconnections(api: API, request: APIRequest, dataset, identifier) -> Tuple[dict, int, str]:
+    if not request.is_valid():
+        return api.get_format_exception(request)
+    headers = request.get_response_headers(SYSTEM_LOCALE)
+    collection_id = str(dataset)
+    item_id = str(identifier)
+   
+    LOGGER.debug(headers) 
+    
+    # 1. Access the Collection
+    resource = api.config['resources'].get(collection_id)
+    if not resource:
+        return api.get_exception(
+            HTTPStatus.NOT_FOUND, headers, request.format, 'NotFound', f'Collection {collection_id} not found'
+        )
+
+    # 2. Find the Specific IndoorFeature (Building)
+    items = resource.get('items', [])
+    target_feature = next((item for item in items if item.get('id') == item_id), None)
+
+    if not target_feature:
+        return api.get_exception(
+            HTTPStatus.NOT_FOUND, headers, request.format, 'NotFound', f'Feature {item_id} not found'
+        )
+    
+     # 3. Extract and Summarize Layers
+    raw_interLayerConnections = target_feature.get('layerConnections', [])
+    base_url = f"{api.config['server']['url']}/collections/{collection_id}/items/{item_id}/interlayerconnections"
+
+    response = {
+        "layerConnections": raw_interLayerConnections,
+        "links": [
+            {
+                "href": base_url,
+                "rel": "self",
+                "type": "application/json",
+                "title": "InterLayer Connections (Full)"
+            },
+            {
+                "href": f"{api.config['server']['url']}/collections/{collection_id}/items/{item_id}",
+                "rel": "up",
+                "type": "application/geo+json",
+                "title": "Parent Feature"
+            }
+        ]
+    }
+
+
+    return headers, HTTPStatus.OK, to_json(response, api.pretty_print)
+def manage_collection_item_interlayerconnections(api: API, request: APIRequest, action, dataset, identifier, connection=None) -> Tuple[dict, int, str]:
+    if not request.is_valid():
+        return api.get_format_exception(request)
+    headers = request.get_response_headers(SYSTEM_LOCALE)
+    collection_id = str(dataset)
+    item_id = str(identifier)
+    connection_id = str(connection)
+    LOGGER.debug(headers) 
+
+    if action == 'create':
+        try:
+            # 1. Parse Request Body
+            data = json.loads(request.data.decode('utf-8'))
+            
+            # 2. Create Schema Wrapper for InterLayerConnection Validation
+            # We use the definitions from the main INDOOR_SCHEMA but validate against the specific definition
+            connection_schema = {
+                "$schema": INDOOR_SCHEMA.get("$schema"),
+                "$defs": INDOOR_SCHEMA.get("$defs"),
+                "$ref": "#/$defs/InterLayerConnection" 
+            }
+            
+            validate(instance=data, schema=connection_schema)
+
+            # 3. Locate the Collection and Feature
+            resource = api.config['resources'].get(collection_id)
+            if not resource:
+                 return api.get_exception(404, headers, request.format, 'NotFound', f'Collection {collection_id} not found')
+
+            items = resource.get('items', [])
+            target_feature = next((item for item in items if item.get('id') == item_id), None)
+            
+            if not target_feature:
+                return api.get_exception(404, headers, request.format, 'NotFound', f'Feature {item_id} not found')
+
+            # 4. Prepare the layerConnections Array
+            if 'layerConnections' not in target_feature:
+                target_feature['layerConnections'] = []
+
+            
+            # Check if connection ID already exists
+            if any(c.get('id') == data['id'] for c in target_feature['layerConnections']):
+                 return api.get_exception(400, headers, request.format, 'InvalidParameter', f"Connection ID {data['id']} already exists")
+
+            # 6. Save (Append) the Connection
+            target_feature['layerConnections'].append(data)
+            
+            # 7. Success Response
+            headers['Location'] = f"{api.config['server']['url']}/collections/{collection_id}/items/{item_id}/interlayerconnections/{data['id']}"
+            return headers, 201, to_json({"status": "Created", "id": data['id']}, api.pretty_print)
+
+        except ValidationError as v_err:
+            return api.get_exception(400, headers, request.format, 'InvalidRequest', f"Schema Error: {v_err.message}")
+        except Exception as e:
+            return api.get_exception(400, headers, request.format, 'InvalidRequest', str(e))
+    
+    # actions (DELETE)
+  
+    elif action == 'delete': 
+        # 1. Locate Collection and Feature
+        resource = api.config['resources'].get(collection_id)
+        if not resource:
+             return api.get_exception(404, headers, request.format, 'NotFound', f'Collection {collection_id} not found')
+
+        items = resource.get('items', [])
+        target_feature = next((item for item in items if item.get('id') == item_id), None)
+        
+        if not target_feature:
+            return api.get_exception(404, headers, request.format, 'NotFound', f'Feature {item_id} not found')
+
+        # 2. Check if connections exist
+        if 'layerConnections' not in target_feature:
+             return api.get_exception(404, headers, request.format, 'NotFound', f'Connection {connection_id} not found (No connections exist)')
+
+        current_connections = target_feature['layerConnections']
+        original_count = len(current_connections)
+
+        # 3. Filter out the specific connection
+        target_feature['layerConnections'] = [c for c in current_connections if c.get('id') != connection_id]
+
+        # 4. Verification
+        if len(target_feature['layerConnections']) == original_count:
+            return api.get_exception(404, headers, request.format, 'NotFound', f'Connection {connection_id} not found')
+
+        # 5. Success
+        return headers, 204, ''
