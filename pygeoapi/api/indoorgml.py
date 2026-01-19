@@ -16,8 +16,7 @@ SCHEMA_PATH = 'data/indoorjson_schema.json'
 with open(SCHEMA_PATH, 'r') as f:
     INDOOR_SCHEMA = json.load(f)
 
-with open('data/thematiclayer_schema.json' ,'r') as f:
-    THEMATIC_SCHEMA= json.load(f)
+
     
 LOGGER = logging.getLogger(__name__)
 
@@ -393,33 +392,27 @@ def delete_feature(api: API, request: APIRequest, dataset, identifier) -> Tuple[
 def manage_collection_item_layer(api: API, request: APIRequest, action, dataset, identifier, layer=None) -> Tuple[dict, int, str]:
     collection_id = str(dataset)
     item_id = str(identifier)
+    layer_id = str(layer)
     headers = request.get_response_headers(SYSTEM_LOCALE)
     LOGGER.debug(headers)
 
-    # 1. Parameter Normalization Logic
-    real_action = action
-    real_collection_id = collection_id
-    real_item_id = item_id
 
-    if action not in ['create', 'update', 'delete'] and collection_id is not None:
-        if hasattr(request, 'method') and request.method == 'POST':
-            real_action = 'create'
-        else:
-            real_action = 'get'
-        
-        real_collection_id = action  
-        real_item_id = collection_id 
 
     # 2. Get the Resource Configuration
     # We look for the collection, but NOT the item id here
-    resource_config = api.config['resources'].get(real_collection_id)
+    resource_config = api.config['resources'].get(collection_id)
     if not resource_config:
-        return api.get_exception(404, headers, request.format, 'NotFound', f'Collection {real_collection_id} not found')
+        return api.get_exception(404, headers, request.format, 'NotFound', f'Collection {collection_id} not found')
 
-    if real_action == 'create':
+    if action == 'create':
         try:
             data = json.loads(request.data.decode('utf-8'))
-            validate(instance=data, schema=THEMATIC_SCHEMA)
+            layer_schema = {
+                "$schema": INDOOR_SCHEMA.get("$schema"),
+                "$defs": INDOOR_SCHEMA.get("$defs"), # Copy definitions so references work
+                "$ref": "#/$defs/ThematicLayer"      # Point to the specific type you want
+            }
+            validate(instance=data, schema=layer_schema)
 
             # --- FIX STARTS HERE ---
             # Instead of api.config['resources'][col][item], 
@@ -427,10 +420,10 @@ def manage_collection_item_layer(api: API, request: APIRequest, action, dataset,
             items_list = resource_config.get('items', [])
             
             # Find the specific building/feature by its String ID
-            target_feature = next((item for item in items_list if item.get('id') == real_item_id), None)
+            target_feature = next((item for item in items_list if item.get('id') == item_id), None)
 
             if target_feature is None:
-                return api.get_exception(404, headers, request.format, 'NotFound', f'Feature {real_item_id} not found')
+                return api.get_exception(404, headers, request.format, 'NotFound', f'Feature {item_id} not found')
 
             # Initialize layers if they don't exist
             if 'layers' not in target_feature:
@@ -445,8 +438,36 @@ def manage_collection_item_layer(api: API, request: APIRequest, action, dataset,
             return api.get_exception(400, headers, request.format, 'InvalidRequest', f"Schema Error: {v_err.message}")
         except Exception as e:
             return api.get_exception(400, headers, request.format, 'InvalidRequest', str(e))
+    elif action == 'delete':
+        # 1. Find the specific Feature/Building
+        items_list = resource_config.get('items', [])
+        target_feature = next((item for item in items_list if item.get('id') == item_id), None)
+
+        if target_feature is None:
+            return api.get_exception(404, headers, request.format, 'NotFound', f'Feature {item_id} not found')
+
+        # 2. Get the current list of layers
+        # If 'layers' key doesn't exist, there is nothing to delete
+        if 'layers' not in target_feature:
+             return api.get_exception(404, headers, request.format, 'NotFound', f'Layer {layer_id} not found (No layers exist)')
+
+        current_layers = target_feature['layers']
+        original_count = len(current_layers)
+
+        # 3. Perform Deletion via Filtering
+        # We keep all layers where the ID does NOT match the requested layer_id
+        target_feature['layers'] = [l for l in current_layers if l.get('id') != layer_id]
+
+        # 4. Check if deletion actually happened
+        # If the length is the same, the ID was not found
+        if len(target_feature['layers']) == original_count:
+            return api.get_exception(404, headers, request.format, 'NotFound', f'Layer {layer_id} not found')
+
+        # 5. Success Response (204 No Content is standard for DELETE)
+        return headers, 204, ''
+    
     else:
-        # Placeholder for GET/UPDATE/DELETE by ID
+        # Placeholder for GET/UPDATE by ID
         return api.get_exception(405, headers, request.format, 'MethodNotAllowed', "Action not yet implemented")
         
 def get_collection_item_layers(api: API, request: APIRequest, dataset, identifier) -> Tuple[dict, int, str]:
@@ -462,21 +483,292 @@ def get_collection_item_layers(api: API, request: APIRequest, dataset, identifie
     if not request.is_valid():
         return api.get_format_exception(request)
     headers = request.get_response_headers(SYSTEM_LOCALE)
+    collection_id = str(dataset)
+    item_id = str(identifier)
     LOGGER.debug(headers)
+    # 1. Access the Collection
+    resource = api.config['resources'].get(collection_id)
+    if not resource:
+        return api.get_exception(
+            HTTPStatus.NOT_FOUND, headers, request.format, 'NotFound', f'Collection {collection_id} not found'
+        )
 
-def get_collection_item_layer(api: API, request: APIRequest, dataset, identifier) -> Tuple[dict, int, str]:
+    # 2. Find the Specific IndoorFeature (Building)
+    items = resource.get('items', [])
+    target_feature = next((item for item in items if item.get('id') == item_id), None)
+
+    if not target_feature:
+        return api.get_exception(
+            HTTPStatus.NOT_FOUND, headers, request.format, 'NotFound', f'Feature {item_id} not found'
+        )
+
+    # 3. Extract and Summarize Layers
+    raw_layers = target_feature.get('layers', [])
+    
+    # We create a lightweight summary list with links to the detail endpoint
+    layers_summary = []
+    base_url = api.config['server']['url']
+    
+    for l in raw_layers:
+        l_id = l.get('id', 'unknown')
+        layers_summary.append({
+            "id": l_id,
+            "theme": l.get('theme', 'Unknown'),
+            "semanticExtension": l.get('semanticExtension', False),
+            "links": [
+                {
+                    "href": f"{base_url}/collections/{collection_id}/items/{item_id}/layers/{l_id}",
+                    "rel": "item",
+                    "type": "application/json",
+                    "title": "Layer Detail"
+                }
+            ]
+        })
+
+    response = {
+        "layers": layers_summary,
+        "links": [
+            {
+                "href": f"{base_url}/collections/{collection_id}/items/{item_id}/layers",
+                "rel": "self",
+                "type": "application/json"
+            },
+            {
+                "href": f"{base_url}/collections/{collection_id}/items/{item_id}",
+                "rel": "up",
+                "type": "application/geo+json",
+                "title": "Parent Feature"
+            }
+        ]
+    }
+
+    return headers, HTTPStatus.OK, to_json(response, api.pretty_print)
+
+def get_collection_item_layer(api: API, request: APIRequest, dataset, identifier, layer) -> Tuple[dict, int, str]:
     """
     Get temporal Geometry of collection item
 
     :param request: A request object
     :param dataset: dataset name
     :param identifier: item identifier
+    :param layer: layer identifier
 
     :returns: tuple of headers, status code, content
     """
     if not request.is_valid():
         return api.get_format_exception(request)
     headers = request.get_response_headers(SYSTEM_LOCALE)
+    collection_id = str(dataset)
+    item_id = str(identifier)
+    layer_id = str(layer)
     LOGGER.debug(headers) 
     
+    # 1. Access the Collection
+    resource = api.config['resources'].get(collection_id)
+    if not resource:
+        return api.get_exception(
+            HTTPStatus.NOT_FOUND, headers, request.format, 'NotFound', f'Collection {collection_id} not found'
+        )
+
+    # 2. Find the Specific IndoorFeature
+    items = resource.get('items', [])
+    target_feature = next((item for item in items if item.get('id') == item_id), None)
+
+    if not target_feature:
+        return api.get_exception(
+            HTTPStatus.NOT_FOUND, headers, request.format, 'NotFound', f'Feature {item_id} not found'
+        )
+
+    # 3. Find the Specific Layer
+    target_layer = next((l for l in target_feature.get('layers', []) if l.get('id') == layer_id), None)
+
+    if not target_layer:
+        return api.get_exception(
+            HTTPStatus.NOT_FOUND, headers, request.format, 'NotFound', f'Layer {layer_id} not found'
+        )
+    # 1. Calculate BBOX (Existing)
+    bbox = _calculate_layer_bbox(target_layer)
+
+    # 2. Calculate STATS (New)
+    stats = _calculate_layer_stats(target_layer)
+    # 4. Return the Layer JSON
+    # We optionally add a 'link' back to self/up for HATEOAS compliance, 
+    # but strictly speaking, returning the raw layer object is also fine based on your schema.
     
+    # Using a copy to avoid modifying the in-memory data with response-specific links if not desired
+    response = {
+        "id": target_layer.get("id"),
+        "featureType": "ThematicLayer",
+        "theme": target_layer.get("theme"),
+        "semanticExtension": target_layer.get("semanticExtension"),
+        
+        "summary": {
+            "primalSpace":{
+                "cellSpaceCount": stats['cellSpaceCount'],
+                "cellBoudaryCount": stats['cellBoundaryCount'],
+                "level": stats['level']
+            },
+            "dualSpace":{
+                "nodeCount": stats['nodeCount'],
+                "edgeCount": stats['edgeCount'],
+                "isDirected": stats['isDirected'],
+                "isLogical": stats['isLogical']
+            }
+        },
+        
+        "bbox": bbox,
+        "links": []
+    }
+
+    # 3. GENERATE DYNAMIC LINKS (HATEOAS)
+    base_url = f"{api.config['server']['url']}/collections/{collection_id}/items/{item_id}/layers/{layer_id}"
+
+    # Link to Self
+    response['links'].append({
+        "href": base_url,
+        "rel": "self",
+        "type": "application/json",
+        "title": "Layer Metadata"
+    })
+
+    # Link to Primal Space (Geometry) - Only if it exists in the data
+    if "primalSpace" in target_layer:
+        response['links'].append({
+            "href": f"{base_url}/primal",
+            "rel": "data", # 'data' or 'item' is appropriate here
+            "type": "application/json",
+            "title": "Primal Space (Geometry)"
+        })
+
+    # Link to Dual Space (Topology) - Only if it exists
+    if "dualSpace" in target_layer:
+        response['links'].append({
+            "href": f"{base_url}/dual",
+            "rel": "data",
+            "type": "application/json",
+            "title": "Dual Space (Topology)"
+        })
+
+    return headers, HTTPStatus.OK, to_json(response, api.pretty_print)
+
+def _extract_coords(geometry):
+    """Recursively extract all [x, y] or [x, y, z] coordinates from a geometry object."""
+    coords = []
+    
+    # Base case: Point or simple coordinate list
+    if not isinstance(geometry, dict):
+        return []
+    
+    # Handle standard GeoJSON-like types
+    g_type = geometry.get('type')
+    coordinates = geometry.get('coordinates', [])
+
+    if g_type == 'Point':
+        coords.append(coordinates)
+    elif g_type == 'LineString':
+        coords.extend(coordinates)
+    elif g_type == 'Polygon':
+        # Polygon coords are list of rings: [[[x,y], [x,y]], [[hole...]]]
+        for ring in coordinates:
+            coords.extend(ring)
+    elif g_type == 'MultiPolygon':
+        for poly in coordinates:
+            for ring in poly:
+                coords.extend(ring)
+    # Handle IndoorGML 3D types (Solid/Polyhedron usually appear as complex nested lists)
+    elif g_type == 'Polyhedron' or g_type == 'Solid':
+        # These are often deeply nested: Shells -> Faces -> Rings -> Coords
+        # A simple flatten approach for bbox is often sufficient
+        def flatten(lst):
+            for item in lst:
+                if isinstance(item, list) and len(item) > 0 and isinstance(item[0], (int, float)):
+                    coords.append(item)
+                elif isinstance(item, list):
+                    flatten(item)
+        flatten(coordinates)
+        
+    return coords
+
+def _calculate_layer_bbox(layer):
+    """
+    Iterates through PrimalSpace and DualSpace to calculate the layer extent.
+    Returns: [minx, miny, maxx, maxy] (or None if empty)
+    """
+    all_coords = []
+
+    # 1. Check Primal Space (Rooms/Cells)
+    if 'primalSpace' in layer:
+        primal = layer['primalSpace']
+        # Check CellSpaces (Rooms)
+        for cell in primal.get('cellSpaceMember', []):
+            geom = cell.get('cellSpaceGeom', {})
+            # Prefer 2D for API bbox, fallback to 3D
+            if 'geometry2D' in geom:
+                all_coords.extend(_extract_coords(geom['geometry2D']))
+            elif 'geometry3D' in geom:
+                all_coords.extend(_extract_coords(geom['geometry3D']))
+        
+        # Check CellBoundaries (Walls)
+        for bound in primal.get('cellBoundaryMember', []):
+            geom = bound.get('cellBoundaryGeom', {})
+            if 'geometry2D' in geom:
+                all_coords.extend(_extract_coords(geom['geometry2D']))
+
+    # 2. Check Dual Space (Nodes)
+    if 'dualSpace' in layer:
+        dual = layer['dualSpace']
+        for node in dual.get('nodeMember', []):
+            if 'geometry' in node:
+                all_coords.extend(_extract_coords(node['geometry']))
+
+    if not all_coords:
+        return None
+
+    # 3. Calculate Extent
+    min_x = min(c[0] for c in all_coords)
+    max_x = max(c[0] for c in all_coords)
+    min_y = min(c[1] for c in all_coords)
+    max_y = max(c[1] for c in all_coords)
+
+    return [min_x, min_y, max_x, max_y]
+    
+def _calculate_layer_stats(layer):
+    """
+    Analyzes the layer to return summary counts and level info.
+    """
+    stats = {
+        "cellSpaceCount": 0,
+        "cellBoundaryCount": 0,
+        "nodeCount": 0,
+        "edgeCount": 0,
+        "isDirected": None,
+        "isLogical": None,
+        "level": None
+    }
+
+    # 1. Analyze Primal Space (Cells & Level)
+    if 'primalSpace' in layer:
+        cells = layer['primalSpace'].get('cellSpaceMember', [])
+        boudaries = layer['primalSpace'].get('cellBoundaryMember', [])
+        stats['cellSpaceCount'] = len(cells)
+        stats['cellBoundaryCount'] = len(boudaries)
+        # Extract unique levels from cells to describe the layer
+        # Assumes your CellSpace has a "level" property as per your earlier schema
+        found_levels = set()
+        for c in cells:
+            lvl = c.get('level')
+            if lvl: found_levels.add(str(lvl))
+        
+        if found_levels:
+            # Join sorted levels (e.g., "1F" or "1F, 2F")
+            stats['level'] = ", ".join(sorted(list(found_levels)))
+
+    # 2. Analyze Dual Space (Nodes)
+    if 'dualSpace' in layer:
+        nodes = layer['dualSpace'].get('nodeMember', [])
+        edges = layer['dualSpace'].get('edgeMember', [])
+        stats['nodeCount'] = len(nodes)
+        stats['edgeCount'] = len(edges)
+        stats['isDirected'] = layer['dualSpace'].get('isDirected')
+        stats['isLogical'] = layer['dualSpace'].get('isLogical')
+    return stats
