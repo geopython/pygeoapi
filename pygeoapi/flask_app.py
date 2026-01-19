@@ -358,7 +358,7 @@ def collection_items(collection_id: str, item_id: str | None = None):
 @BLUEPRINT.route('/collections/<path:collection_id>/items/<path:item_id>/layers/<path:layer_id>', methods=['GET', 'DELETE'])
 def collection_items_layers(collection_id, item_id, layer_id=None):
     """
-    OGC API collections items endpoint
+    OGC Indoorfeatures collections items layers endpoint
     
     :param collection_id: collection identifier
     :param item_id: item identifier
@@ -395,6 +395,44 @@ def collection_items_layers(collection_id, item_id, layer_id=None):
                 item_id,
                 layer_id
             )
+
+@BLUEPRINT.route('/collections/<path:collection_id>/items/<path:item_id>/interlayerconnections', methods=['GET', 'POST'])
+@BLUEPRINT.route('/collections/<path:collection_id>/items/<path:item_id>/interlayerconnections/<path:connection_id>', methods=['DELETE'])
+def collection_items_interlayerconnections(collection_id, item_id, connection_id=None):
+    """
+    OGC Indoorfeatures collections items interlayerconnections endpoint
+    
+    :param collection_id: collection identifier
+    :param item_id: item identifier
+    :param connection_id: inter layer connection identifier
+    
+    :reaturns: HTTP response
+    """
+    if connection_id is None:
+        if request.method == 'GET':
+            return execute_from_flask(
+                indoorgml.get_collection_item_interlayerconnections, request,
+                collection_id,
+                item_id
+            )
+        elif request.method == 'POST':
+            return execute_from_flask(
+                indoorgml.manage_collection_item_interlayerconnections, request,
+                'create',
+                collection_id,
+                item_id
+            )
+    else:
+        if request.method == 'DELETE':
+            return execute_from_flask(
+                indoorgml.manage_collection_item_interlayerconnections, request, 
+                'delete',
+                collection_id,
+                item_id,
+                connection_id
+            )
+
+    
 
 @BLUEPRINT.route('/collections/<path:collection_id>/coverage')
 def collection_coverage(collection_id: str):

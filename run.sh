@@ -1,4 +1,5 @@
 #!/bin/bash
+source ../bin/activate
 
 export PYGEOAPI_CONFIG=pygeoapi-config.yml
 export PYGEOAPI_OPENAPI=my-openapi.yml
