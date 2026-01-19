@@ -1,0 +1,14 @@
+services:
+  db:
+    image: postgis/postgis:16-3.4
+    container_name: indoor_gml_db
+    environment:
+      POSTGRES_USER: user
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: indoor_gml
+    volumes:
+      # This maps your local init file into the container
+      # It runs automatically the first time the DB starts
+      - ./database/init.sql:/docker-entrypoint-initdb.d/init.sql
+    ports:
+      - "5432:5432"

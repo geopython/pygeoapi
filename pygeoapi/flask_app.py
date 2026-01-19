@@ -228,33 +228,36 @@ def collections(collection_id: str | None = None):
 
     :returns: HTTP response
     """
-    # 1. Handle the Root Collections Directory (/collections)
+    # 1. Handle Root (/collections)
     if collection_id is None:
         if request.method == 'GET':
-            return execute_from_flask(indoorgml.describe_collections, request)
+            # We use core_api's list function because it checks BOTH DB and Config
+            return execute_from_flask(core_api.describe_collections, request)
         elif request.method == 'POST':
             return execute_from_flask(indoorgml.manage_collection, request, 'create')
     
-    # 2. Handle a Specific Collection (/collections/{id})
+    # 2. Handle Specific Collection (/collections/{id})
     else:
         resource = api_.config['resources'].get(collection_id)
         
-        # Check if the resource was registered as a dynamic IndoorGML type
-        if resource and resource.get('itemType') == 'indoorfeature':
+        # LOGIC FIX: 
+        # If resource is None (Cold DB item) OR it is explicitly 'indoorfeature',
+        # we route to indoorgml.get_collection to check the Database.
+        is_indoor = (resource and resource.get('itemType') == 'indoorfeature')
+        is_cold_db = (resource is None)
+
+        if is_indoor or is_cold_db:
             if request.method == 'GET':
                 return execute_from_flask(indoorgml.get_collection, request, collection_id)
             elif request.method == 'DELETE':
                 return execute_from_flask(indoorgml.manage_collection, request, 'delete', collection_id)
         
-        # Fallback for standard YAML resources
+        # Fallback ONLY if it exists in config but is NOT an IndoorGML item (Standard YAML item)
         else:
             if request.method == 'GET':
                 return execute_from_flask(core_api.describe_collections, request, collection_id)
-        
 
-    # Return 405 if any other method (like PUT) is attempted
-    return api_.get_exception(405, {}, request.format, 
-                              'MethodNotAllowed', 'Method not allowed')
+    return api_.get_exception(405, {}, request.format, 'MethodNotAllowed', 'Method not allowed')
 
 
 @BLUEPRINT.route('/collections/<path:collection_id>/items/<path:item_id>/layers', methods=['GET', 'POST'])
@@ -327,12 +330,8 @@ def collection_queryables(collection_id: str | None = None):
                               collection_id)
 
 
-@BLUEPRINT.route('/collections/<path:collection_id>/items',
-                 methods=['GET', 'POST', 'OPTIONS'],
-                 provide_automatic_options=False)
-@BLUEPRINT.route('/collections/<path:collection_id>/items/<path:item_id>',
-                 methods=['GET', 'PUT', 'DELETE', 'OPTIONS'],
-                 provide_automatic_options=False)
+@BLUEPRINT.route('/collections/<path:collection_id>/items', methods=['GET', 'POST', 'OPTIONS'], provide_automatic_options=False)
+@BLUEPRINT.route('/collections/<path:collection_id>/items/<path:item_id>', methods=['GET', 'PUT', 'DELETE', 'OPTIONS'], provide_automatic_options=False)
 def collection_items(collection_id: str, item_id: str | None = None):
     """
     OGC API collections items endpoint
@@ -342,57 +341,62 @@ def collection_items(collection_id: str, item_id: str | None = None):
 
     :returns: HTTP response
     """
+    # 1. Lookup in Static Config (YAML)
     resource = api_.config['resources'].get(collection_id)
-    is_indoor = resource and resource.get('itemType') == 'indoorfeature'
 
+    # 2. DECISION LOGIC
+    # It is IndoorGML if:
+    # A. It explicitly says 'indoorfeature' in YAML.
+    # B. OR It is missing from YAML (implies it's a dynamic DB collection).
+    is_indoor = (resource and resource.get('itemType') == 'indoorfeature') or (resource is None)
+
+    # --- PATH A: IndoorGML (Custom DB Logic) ---
     if is_indoor:
         if item_id is None:
             if request.method == 'POST':
+                # This will now correctly hit your create_item function!
                 return execute_from_flask(indoorgml.create_item, request, collection_id)
             elif request.method == 'GET':
                 return execute_from_flask(indoorgml.get_features, request, collection_id)
         else:
+            # Handle specific item (Get/Delete)
             if request.method == 'GET':
+                # You'll need to implement this next
                 return execute_from_flask(indoorgml.get_feature, request, collection_id, item_id)
             elif request.method == 'DELETE':
                 return execute_from_flask(indoorgml.delete_feature, request, collection_id, item_id)
 
+    # --- PATH B: Standard OGC API (YAML/Core Logic) ---
+    # We still need this! This handles standard collections defined in your .yml file
+    # (e.g. 'obs', 'lakes', etc.)
     if item_id is None:
-        if request.method == 'POST':  # filter or manage items
-            if request.content_type is not None:
-                if request.content_type == 'application/geo+json':
-                    return execute_from_flask(
-                            itemtypes_api.manage_collection_item,
-                            request, 'create', collection_id,
-                            skip_valid_check=True)
-                else:
-                    return execute_from_flask(
-                            itemtypes_api.get_collection_items, request,
-                            collection_id, skip_valid_check=True)
+        if request.method == 'POST':
+            if request.content_type == 'application/geo+json':
+                return execute_from_flask(
+                        itemtypes_api.manage_collection_item,
+                        request, 'create', collection_id, skip_valid_check=True)
+            else:
+                return execute_from_flask(
+                        itemtypes_api.get_collection_items, request,
+                        collection_id, skip_valid_check=True)
         elif request.method == 'OPTIONS':
-            return execute_from_flask(
+             return execute_from_flask(
                     itemtypes_api.manage_collection_item, request, 'options',
                     collection_id, skip_valid_check=True)
-        else:  # GET: list items
+        else:
             return execute_from_flask(itemtypes_api.get_collection_items,
-                                      request, collection_id,
-                                      skip_valid_check=True)
-
+                                      request, collection_id, skip_valid_check=True)
     elif request.method == 'DELETE':
         return execute_from_flask(itemtypes_api.manage_collection_item,
-                                  request, 'delete', collection_id, item_id,
-                                  skip_valid_check=True)
+                                  request, 'delete', collection_id, item_id, skip_valid_check=True)
     elif request.method == 'PUT':
         return execute_from_flask(itemtypes_api.manage_collection_item,
-                                  request, 'update', collection_id, item_id,
-                                  skip_valid_check=True)
+                                  request, 'update', collection_id, item_id, skip_valid_check=True)
     elif request.method == 'OPTIONS':
         return execute_from_flask(itemtypes_api.manage_collection_item,
-                                  request, 'options', collection_id, item_id,
-                                  skip_valid_check=True)
+                                  request, 'options', collection_id, item_id, skip_valid_check=True)
     else:
-        return execute_from_flask(itemtypes_api.get_collection_item, request,
-                                  collection_id, item_id)
+        return execute_from_flask(itemtypes_api.get_collection_item, request, collection_id, item_id)
 
 
 @BLUEPRINT.route('/collections/<path:collection_id>/coverage')
