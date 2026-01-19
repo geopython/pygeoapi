@@ -737,11 +737,11 @@ components:
         layers:
           type: array
           items:
-            $ref: '#/components/schemas/ThematicLayerSummary'
+            $ref: '#/components/schemas/ThematicLayerListElement'
 
-    ThematicLayerSummary:
+    ThematicLayerListElement:
       type: object
-      title: ThematicLayerSummary
+      title: ThematicLayerListElement
       required: [id, semanticExtension, theme]
       properties:
         id:
@@ -751,6 +751,78 @@ components:
         theme:
           type: string
           enum: [Virtual, Physical, Tags, Unknown]
+        bbox:
+          type: array
+          minItems: 4
+          maxItems: 4
+          items:
+            type: number
+          example: [-100, -100, 100, 100]
+        links:
+          type: array
+          items:
+            $ref: '#/components/schemas/link'
+
+
+    ThematicLayerSummary:
+      type: object
+      title: ThematicLayerSummary
+      required: [id, featureType, semanticExtension, theme]
+      properties:
+        id:
+          type: string
+          example: "layer-indoor-nav-f1"
+        featureType:
+          type: string
+          enum: ["ThematicLayer"]
+          example: "ThematicLayer"
+        theme:
+          type: string
+          enum: [Virtual, Physical, Tags, Unknown]
+          example: "Virtual"
+        semanticExtension:
+          type: boolean
+          example: true
+        
+        # --- NEW NESTED SUMMARY OBJECT ---
+        summary:
+          type: object
+          description: Statistical summary of the Primal and Dual space contents.
+          properties:
+            primalSpace:
+              type: object
+              properties:
+                cellSpaceCount:
+                  type: integer
+                  description: Number of rooms/cells.
+                  example: 2
+                cellBoudaryCount: 
+                  type: integer
+                  description: Number of walls/boundaries.
+                  example: 1
+                level:
+                  type: string
+                  description: The floor level(s) found in this layer.
+                  example: "1F"
+            dualSpace:
+              type: object
+              properties:
+                nodeCount:
+                  type: integer
+                  description: Number of navigation nodes.
+                  example: 2
+                edgeCount:
+                  type: integer
+                  description: Number of navigation edges.
+                  example: 1
+                isDirected:
+                  type: boolean
+                  description: Copy of the isDirected property from DualSpaceLayer.
+                  example: true
+                isLogical:
+                  type: boolean
+                  description: Copy of the isLogical property from DualSpaceLayer.
+                  example: true
         bbox:
           type: array
           minItems: 4
@@ -1327,7 +1399,7 @@ paths:
             application/json:
               schema:
                 oneOf:
-                  - $ref: '#/components/schemas/ThematicLayerList'
+                  - $ref: '#/components/schemas/ThematicLayerSummary'
                   - $ref: '#/components/schemas/ThematicLayer'
         '400':
           description: Bad Request. Missing mandatory filter or invalid syntax.
