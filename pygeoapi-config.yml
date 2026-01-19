@@ -15,8 +15,8 @@ server:
         max_items: 100
 
 logging:
-    level: INFO
-    logfile: /tmp/pygeoapi.log  # Or a path on your MacBook like ./pygeoapi.log
+    level: DEBUG
+    #logfile: /pygeoapi/log.py  # Or a path on your MacBook like ./pygeoapi.log
 
 metadata:
     identification:
