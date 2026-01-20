@@ -8,10 +8,6 @@ import enum
 Base = declarative_base()
 
 # --- ENUMS (Must match SQL types) ---
-class SpaceType(enum.Enum):
-    primal = "primal"
-    dual = "dual"
-
 class CellType(enum.Enum):
     space = "space"
     boundary = "boundary"
@@ -19,6 +15,20 @@ class CellType(enum.Enum):
 class NodeEdgeType(enum.Enum):
     node = "node"
     edge = "edge"
+
+class ThemeType(enum.Enum):
+    physical = "physical"
+    virtual = "virtual"
+    tags = "tags"
+    unknown = "unknown"
+
+class TopoType(enum.Enum):
+    contains = "contains"
+    overlaps = "overlaps"
+    equals = "equals"
+    within = "within"
+    crosses = "crosses"
+    others = "others"
 
 # --- MODELS ---
 
@@ -55,17 +65,19 @@ class ThematicLayer(Base):
 
     id = Column(Integer, primary_key=True)
     id_str = Column(String, unique=True)
-    space_id_str = Column(String, unique=True)
+    primalspace_id_str = Column(String, unique=True)
+    dualspace_id_str = Column(String, unique=True)
     collection_id = Column(Integer, ForeignKey("collection.id"), nullable=False)
     indoorfeature_id = Column(Integer, ForeignKey("indoorfeature.id"), nullable=False)
     
     semantic_extension = Column(Boolean, nullable=False)
-    space_type = Column(Enum(SpaceType, name="spcaetype")) # Maps to SQL Enum
-    creation_datetime = Column(DateTime)
-    termination_datetime = Column(DateTime)
+    p_creation_datetime = Column(DateTime)
+    p_termination_datetime = Column(DateTime)
+    d_creation_datetime = Column(DateTime)
+    d_termination_datetime = Column(DateTime)
     is_logical = Column(Boolean)
     is_directed = Column(Boolean)
-
+    theme = Column(Enum(ThemeType, name='theme_type'), nullable=False)
     feature = relationship("IndoorFeature", back_populates="thematic_layers")
 
 
@@ -134,3 +146,4 @@ class InterLayerConnection(Base):
     connected_node_a = Column(Integer)
     connected_node_b = Column(Integer)
     comment = Column(String)
+    topo_type = Column(Enum(TopoType, name='topo_type'), nullable=False)

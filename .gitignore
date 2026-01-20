@@ -140,3 +140,5 @@ data/*.json   # If you want to keep your test uploads private/local
 
 # Seongmin local
 run.sh
+pygeoapi-config.yml
+init_db.py
