@@ -436,6 +436,100 @@ def collection_items_interlayerconnections(collection_id, item_id, connection_id
                 connection_id
             )
 
+@BLUEPRINT.route('/collections/<path:collection_id>/items/<path:item_id>/layers/<path:layer_id>/primal', methods=['POST', 'GET'])
+@BLUEPRINT.route('/collections/<path:collection_id>/items/<path:item_id>/layers/<path:layer_id>/primal/<path:member_id>', methods=['GET','PATCH','DELETE']) # cellboundary : only get
+def collection_items_layers_primal(collection_id, item_id, layer_id, member_id=None):
+    if member_id==None:
+        if request.method == 'GET':
+            return execute_from_flask(
+                indoorgml.get_primal, request, 
+                collection_id,
+                item_id,
+                layer_id
+            )
+        elif request.method == 'POST':
+            return execute_from_flask(
+                indoorgml.manage_primal, request,
+                'create',
+                collection_id,
+                item_id,
+                layer_id
+            )
+    else: 
+        if request.method == 'GET':
+            return execute_from_flask(
+                indoorgml.get_primal_member, request,
+                collection_id,
+                item_id,
+                layer_id,
+                member_id
+            ) 
+        elif request.method == 'PATCH':
+            return execute_from_flask(
+                indoorgml.manage_primal, request,
+                'update',
+                collection_id,
+                item_id,
+                layer_id
+            )  
+        else:
+            return execute_from_flask(
+                indoorgml.manage_primal, request,
+                'delete',
+                collection_id,
+                item_id,
+                layer_id
+            )
+    pass
+
+
+@BLUEPRINT.route('/collections/<path:collection_id>/items/<path:item_id>/layers/<path:layer_id>/dual', methods=['POST', 'GET'])
+@BLUEPRINT.route('/collections/<path:collection_id>/items/<path:item_id>/layers/<path:layer_id>/dual/<path:member_id>', methods=['GET','PATCH','DELETE']) # only edge can update
+def collection_items_layers_dual(collection_id, item_id, layer_id, member_id=None):
+    if member_id == None:
+        if request.method == 'GET':
+            return execute_from_flask(
+                indoorgml.get_dual, request,
+                collection_id, 
+                item_id,
+                layer_id
+            )
+        else:
+            return execute_from_flask(
+                indoorgml.manage_dual, request,
+                'create',
+                collection_id,
+                item_id,
+                layer_id
+            )
+    else:
+        if request.method == 'GET':
+            return execute_from_flask(
+                indoorgml.get_dual_member, request,
+                collection_id,
+                item_id,
+                layer_id,
+                member_id
+            )
+        elif request.method == 'PATCH':
+            return execute_from_flask(
+                indoorgml.manage_dual, request,
+                'update',
+                collection_id,
+                item_id,
+                layer_id,
+                member_id
+            )
+        else: 
+            return execute_from_flask(
+                indoorgml.manage_dual, request,
+                'delete',
+                collection_id,
+                item_id,
+                layer_id,
+                member_id
+            )
+
     
 
 @BLUEPRINT.route('/collections/<path:collection_id>/coverage')
