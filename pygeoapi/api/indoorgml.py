@@ -327,18 +327,62 @@ def get_oas_30(cfg: dict, locale: str) -> tuple[list[dict], dict]:
     
     return [{'name': 'IndoorGML Management'}], paths
 
+from dateutil import parser as date_parser  # Ensure you have python-dateutil installed
+
 def create_item(api: API, request: APIRequest, dataset) -> Tuple[dict, int, str]:
     """
     POST /collections/{cId}/items
+    Updated to handle ID prefixes and missing fields correctly.
     """
     collection_str_id = str(dataset)
     headers = request.get_response_headers(SYSTEM_LOCALE)
     
-    # --- Helper: Handle List or String input safely ---
+    # --- Helper 1: Handle List or String input safely ---
     def get_single_id(val):
         if isinstance(val, list) and len(val) > 0:
             return val[0]
         return val
+
+    # --- Helper 2: Clean ID (Fixes TL-1:DS-1:N1 -> N1) ---
+    def clean_id(val):
+        """
+        Extracts the local ID if a full URI is provided.
+        e.g., "TL-1:DS-1:N1" -> "N1"
+        e.g., "N1" -> "N1"
+        """
+        raw = get_single_id(val)
+        if raw and isinstance(raw, str) and ":" in raw:
+            return raw.split(":")[-1] # Take the last part
+        return raw
+
+    # --- Helper 3: Safe Date Parsing ---
+    def parse_dt(val):
+        if not val: 
+            return None
+        try:
+            return date_parser.parse(val)
+        except:
+            return None
+    # --- Helper: Smart Geometry Extractor ---
+    def extract_geom(geom_obj):
+        """
+        Handles both nested OGC structure ({geometry2D: {...}}) 
+        and direct GeoJSON ({type: ...}).
+        """
+        if not geom_obj:
+            return None
+        
+        # Check if it's the Nested Standard (OGC)
+        if 'geometry2D' in geom_obj:
+            return geojson_to_wkt(geom_obj['geometry2D'])
+        if 'geometry3D' in geom_obj:
+            return geojson_to_wkt(geom_obj['geometry3D'])
+            
+        # Check if it's Direct GeoJSON (Your Input)
+        if 'type' in geom_obj and 'coordinates' in geom_obj:
+            return geojson_to_wkt(geom_obj)
+            
+        return None
 
     try:
         data = json.loads(request.data.decode('utf-8'))
@@ -362,29 +406,26 @@ def create_item(api: API, request: APIRequest, dataset) -> Tuple[dict, int, str]
             geojson_properties=data.get('properties', {})
         )
         db.add(indoor_feature)
-        db.flush() # Flush to ensure ID exists
+        db.flush() 
 
-        # --- TRACKING DEFERRED UPDATES (To solve Chicken & Egg) ---
-        # Format: (SourceClass, SourcePK, TargetClass, TargetStringID, FieldName)
         deferred_updates = []
 
         # 3. Parse Layers
         layers_data = data.get('layers', [])
         if layers_data:
-            layer_json = layers_data[0] # Assuming single layer for now
+            layer_json = layers_data[0] 
             primal_data = layer_json.get('primalSpace', {})
             dual_data = layer_json.get('dualSpace', {})
 
-            # A. Create Thematic Layer
             thematic_layer_pk = generate_id()
             
-            # SAFE THEME HANDLING
             raw_theme = layer_json.get('theme', 'unknown').lower()
             try:
                 theme_val = ThemeType(raw_theme)
             except ValueError:
                 theme_val = ThemeType.unknown
 
+            # --- FIX: Added is_logical, is_directed, and date parsing ---
             thematic_layer = ThematicLayer(
                 id=thematic_layer_pk,
                 id_str=layer_json.get('id', f"TH-{thematic_layer_pk}"),
@@ -394,7 +435,16 @@ def create_item(api: API, request: APIRequest, dataset) -> Tuple[dict, int, str]
                 dualspace_id_str=dual_data.get('id'),
                 semantic_extension=layer_json.get('semanticExtension', False),
                 theme=theme_val,
-                # ... date parsing omitted for brevity, add back if needed
+                
+                # Parsing Dates
+                p_creation_datetime=parse_dt(primal_data.get('creationDatetime')),
+                p_termination_datetime=parse_dt(primal_data.get('terminationDatetime')),
+                d_creation_datetime=parse_dt(dual_data.get('creationDatetime')),
+                d_termination_datetime=parse_dt(dual_data.get('terminationDatetime')),
+                
+                # Mapping Dual Space Properties
+                is_logical=dual_data.get('isLogical', False),
+                is_directed=dual_data.get('isDirected', False)
             )
             db.add(thematic_layer)
             db.flush()
@@ -409,19 +459,18 @@ def create_item(api: API, request: APIRequest, dataset) -> Tuple[dict, int, str]
                     collection_id=collection.id,
                     indoorfeature_id=feature_pk,
                     thematiclayer_id=thematic_layer_pk,
-                    geometry_2d=geojson_to_wkt(cell.get('cellSpaceGeom', {}).get('geometry2D')),
-                    duality_id=None, # Insert None initially
-                    level=cell.get('level')
+                    geometry_2d=extract_geom(cell.get('cellSpaceGeom')),
+                    duality_id=None, 
+                    level=str(cell.get('level')), # Ensure string
+                    cell_name=cell.get('cellSpaceName') # Ensure this matches JSON key exactly
                 ))
                 
-                # Defer Duality (Target is NodeEdge)
+                # --- FIX: Use clean_id() here ---
                 if cell.get('duality'):
-                    deferred_updates.append((CellSpaceBoundary, c_pk, NodeEdge, get_single_id(cell.get('duality')), 'duality_id'))
+                    deferred_updates.append((CellSpaceBoundary, c_pk, NodeEdge, clean_id(cell.get('duality')), 'duality_id'))
                 
-                # Defer BoundedBy (Target is CellSpaceBoundary)
                 if cell.get('boundedBy'):
-                     # boundedBy is a list ["B1"], extract string "B1"
-                    deferred_updates.append((CellSpaceBoundary, c_pk, CellSpaceBoundary, get_single_id(cell.get('boundedBy')), 'bounded_by_cell_id'))
+                    deferred_updates.append((CellSpaceBoundary, c_pk, CellSpaceBoundary, clean_id(cell.get('boundedBy')), 'bounded_by_cell_id'))
 
             # C. Parse Boundaries (Primal)
             for bound in primal_data.get('cellBoundaryMember', []):
@@ -433,13 +482,14 @@ def create_item(api: API, request: APIRequest, dataset) -> Tuple[dict, int, str]
                     collection_id=collection.id,
                     indoorfeature_id=feature_pk,
                     thematiclayer_id=thematic_layer_pk,
-                    geometry_2d=geojson_to_wkt(bound.get('cellBoundaryGeom', {}).get('geometry2D')),
+                    geometry_2d=extract_geom(bound.get('cellBoundaryGeom')),
                     duality_id=None,
                     is_virtual=bound.get('isVirtual')
                 ))
 
+                # --- FIX: Use clean_id() here ---
                 if bound.get('duality'):
-                    deferred_updates.append((CellSpaceBoundary, b_pk, NodeEdge, get_single_id(bound.get('duality')), 'duality_id'))
+                    deferred_updates.append((CellSpaceBoundary, b_pk, NodeEdge, clean_id(bound.get('duality')), 'duality_id'))
 
             # D. Parse Nodes (Dual)
             for node in dual_data.get('nodeMember', []):
@@ -455,9 +505,9 @@ def create_item(api: API, request: APIRequest, dataset) -> Tuple[dict, int, str]
                     duality_id=None
                 ))
 
-                # Defer Duality (Target is CellSpaceBoundary)
+                # --- FIX: Use clean_id() here ---
                 if node.get('duality'):
-                    deferred_updates.append((NodeEdge, n_pk, CellSpaceBoundary, get_single_id(node.get('duality')), 'duality_id'))
+                    deferred_updates.append((NodeEdge, n_pk, CellSpaceBoundary, clean_id(node.get('duality')), 'duality_id'))
 
             # E. Parse Edges (Dual)
             for edge in dual_data.get('edgeMember', []):
@@ -474,37 +524,36 @@ def create_item(api: API, request: APIRequest, dataset) -> Tuple[dict, int, str]
                     duality_id=None
                 ))
 
+                # --- FIX: Use clean_id() here ---
                 if edge.get('duality'):
-                    deferred_updates.append((NodeEdge, e_pk, CellSpaceBoundary, get_single_id(edge.get('duality')), 'duality_id'))
+                    deferred_updates.append((NodeEdge, e_pk, CellSpaceBoundary, clean_id(edge.get('duality')), 'duality_id'))
 
-        # 4. FLUSH to ensure all objects exist in DB (even if duality is null)
         db.flush()
 
-        # 5. EXECUTE DEFERRED UPDATES (Link everything up)
+        # 5. EXECUTE DEFERRED UPDATES
         for row in deferred_updates:
             source_model, source_id, target_model, target_str_id, target_field = row
             
-            # Resolve the Target ID now that everything is flushed
+            # Resolve using the CLEANED ID
             target_pk = resolve_db_id(db, target_model, target_str_id)
             
             if target_pk:
-                # Update the specific field (duality_id or bounded_by_cell_id)
                 db.query(source_model).filter(source_model.id == source_id).update({target_field: target_pk})
             else:
-                LOGGER.warning(f"Could not resolve {target_field} for {target_str_id}")
+                # Log warning if ID still not found
+                print(f"⚠️ Warning: Could not link {target_str_id} to {source_model.__tablename__}")
 
         db.commit()
         return headers, 201, to_json({"status": "Created", "id": indoor_feature.id_str}, api.pretty_print)
 
     except Exception as e:
         db.rollback()
-        print(f"❌ DB Error: {e}")
-        # Print full traceback for easier debugging
         import traceback
         traceback.print_exc()
         return api.get_exception(HTTPStatus.BAD_REQUEST, headers, request.format, 'InvalidRequest', str(e))
     finally:
         db.close()
+
 def get_features(api: API, request: APIRequest, dataset) -> Tuple[dict, int, str]:
     """
     GET /collections/{cId}/items
@@ -578,12 +627,20 @@ def get_features(api: API, request: APIRequest, dataset) -> Tuple[dict, int, str
 def get_feature(api: API, request: APIRequest, dataset, identifier) -> Tuple[dict, int, str]:
     """
     GET /collections/{cId}/items/{itemId}
-    Reconstructs the full nested IndoorGML JSON strictly following the new IndoorJSON schema.
+    Reconstructs the full nested IndoorGML JSON strictly following the new schema.
     """
     collection_str_id = str(dataset)
     feature_str_id = str(identifier)
     headers = request.get_response_headers(api.api_headers)
     db = next(get_db())
+
+    # --- Helper: Resolve Integer ID -> String ID for Duality ---
+    def get_duality_str(target_model, target_pk):
+        if not target_pk:
+            return None
+        # Efficiently fetch only the id_str column
+        res = db.query(target_model.id_str).filter(target_model.id == target_pk).first()
+        return res[0] if res else None
 
     try:
         # 1. Resolve IDs and Validate Existence
@@ -610,7 +667,7 @@ def get_feature(api: API, request: APIRequest, dataset, identifier) -> Tuple[dic
         # 3. RECONSTRUCTION: Build "layers" Array
         # =====================================================================
         
-        # We fetch ALL layers (Primal + Dual) associated with this feature
+        # Fetch ALL layers associated with this feature
         db_layers = db.query(ThematicLayer).filter(
             ThematicLayer.indoorfeature_id == feature.id
         ).all()
@@ -618,105 +675,130 @@ def get_feature(api: API, request: APIRequest, dataset, identifier) -> Tuple[dic
         json_layers = []
 
         for layer in db_layers:
-            # Base ThematicLayer Object (Schema Definition)
-            # Required: id, featureType, semanticExtension, theme
+            # Base ThematicLayer Object
             layer_obj = {
                 "id": layer.id_str,
                 "featureType": "ThematicLayer",
                 "semanticExtension": layer.semantic_extension or False,
-                "theme": layer.theme
-                # Note: You might want to map 'theme' explicitly if stored in DB
+                # Convert Enum back to Title Case or keep as is (e.g., 'physical' -> 'Physical')
+                "theme": layer.theme.value.title() if layer.theme else "Unknown" 
             }
 
-            # --- A. PRIMAL SPACE LAYER ---
-            if layer.space_type == SpaceType.primal:
-                # Fetch Cells
-                cells = db.query(CellSpaceBoundary).filter(
-                    CellSpaceBoundary.thematiclayer_id == layer.id
-                ).all()
+            # --- A. PRIMAL SPACE RECONSTRUCTION ---
+            # Fetch Cells & Boundaries
+            cells = db.query(CellSpaceBoundary).filter(
+                CellSpaceBoundary.thematiclayer_id == layer.id,
+                CellSpaceBoundary.type == CellType.space
+            ).all()
 
+            boundaries = db.query(CellSpaceBoundary).filter(
+                CellSpaceBoundary.thematiclayer_id == layer.id,
+                CellSpaceBoundary.type == CellType.boundary
+            ).all()
+
+            # If this layer has any primal data
+            if cells or boundaries:
                 cell_members = []
                 for cell in cells:
-                    # Geometry conversion
-                    geom_3d = None
-                    if cell.geometry_3d is not None:
-                        geom_3d = mapping(to_shape(cell.geometry_3d))
-                    
-                    # Construct CellSpace Object
+                    # Geometry 2D/3D
+                    geom_2d = mapping(to_shape(cell.geometry_2d)) if cell.geometry_2d else None
+                    # Resolve Duality (Int -> Str) (Target: Node)
+                    dual_str = get_duality_str(NodeEdge, cell.duality_id)
+                    # Resolve BoundedBy (Int -> Str) (Target: Boundary)
+                    bounded_str = get_duality_str(CellSpaceBoundary, cell.bounded_by_cell_id)
+
                     cell_obj = {
                         "id": cell.id_str,
                         "featureType": "CellSpace",
                         "cellSpaceName": cell.cell_name,
-                        "poi": False, # Defaulting to False if not in DB
+                        "poi": cell.poi or False,
+                        "level": cell.level,
+                        "duality": dual_str, 
+                        "boundedBy": [bounded_str] if bounded_str else [],
                         "cellSpaceGeom": {
-                            "geometry3D": geom_3d
+                            "geometry2D": geom_2d
                         }
                     }
-                    if cell.external_reference:
-                        # Assuming external_reference column is a JSON string or dict matching schema
-                        # If it's just a URI string, you might need to wrap it.
-                        pass 
-
                     cell_members.append(cell_obj)
 
-                # Add PrimalSpaceLayer to the ThematicLayer
-                if cell_members:
-                    layer_obj["primalSpace"] = {
-                        "id": f"PrimalSpace_{layer.id_str}", # Generate/Store ID if needed
-                        "featureType": "PrimalSpaceLayer",
-                        "cellSpaceMember": cell_members
+                boundary_members = []
+                for bound in boundaries:
+                    geom_2d = mapping(to_shape(bound.geometry_2d)) if bound.geometry_2d else None
+                    # Resolve Duality (Int -> Str) (Target: Edge)
+                    dual_str = get_duality_str(NodeEdge, bound.duality_id)
+
+                    bound_obj = {
+                        "id": bound.id_str,
+                        "featureType": "CellBoundary",
+                        "isVirtual": bound.is_virtual,
+                        "duality": dual_str,
+                        "cellBoundaryGeom": {
+                            "geometry2D": geom_2d
+                        }
                     }
+                    boundary_members.append(bound_obj)
 
-            # --- B. DUAL SPACE LAYER ---
-            elif layer.space_type == SpaceType.dual:
-                # Fetch Nodes
-                nodes = db.query(NodeEdge).filter(
-                    NodeEdge.thematiclayer_id == layer.id,
-                    NodeEdge.type == NodeEdgeType.node
-                ).all()
-                
-                # Fetch Edges
-                edges = db.query(NodeEdge).filter(
-                    NodeEdge.thematiclayer_id == layer.id,
-                    NodeEdge.type == NodeEdgeType.edge
-                ).all()
+                # Add PrimalSpace Object
+                layer_obj["primalSpace"] = {
+                    "id": layer.primalspace_id_str or f"PS-{layer.id_str}",
+                    "featureType": "PrimalSpaceLayer",
+                    "creationDatetime": layer.p_creation_datetime.isoformat() if layer.p_creation_datetime else None,
+                    "cellSpaceMember": cell_members,
+                    "cellBoundaryMember": boundary_members
+                }
 
+            # --- B. DUAL SPACE RECONSTRUCTION ---
+            # Fetch Nodes & Edges
+            nodes = db.query(NodeEdge).filter(
+                NodeEdge.thematiclayer_id == layer.id,
+                NodeEdge.type == NodeEdgeType.node
+            ).all()
+            
+            edges = db.query(NodeEdge).filter(
+                NodeEdge.thematiclayer_id == layer.id,
+                NodeEdge.type == NodeEdgeType.edge
+            ).all()
+
+            # If this layer has any dual data
+            if nodes or edges:
                 node_members = []
                 for n in nodes:
                     g_json = mapping(to_shape(n.geometry_val)) if n.geometry_val else None
+                    # Resolve Duality (Int -> Str) (Target: Cell)
+                    dual_str = get_duality_str(CellSpaceBoundary, n.duality_id)
+
                     node_obj = {
                         "id": n.id_str,
                         "featureType": "Node",
                         "geometry": g_json,
-                        "duality": n.duality # Ensure this column exists or is handled
+                        "duality": dual_str
                     }
                     node_members.append(node_obj)
 
                 edge_members = []
                 for e in edges:
                     g_json = mapping(to_shape(e.geometry_val)) if e.geometry_val else None
-                    # We need 'connects' array for edges (minItems: 2)
-                    # If you store this in DB, load it. If not, this schema validation might fail 
-                    # if we don't provide it.
-                    connects_list = [] # You need to populate this from DB if available
-                    
+                    # Resolve Duality (Int -> Str) (Target: Boundary)
+                    dual_str = get_duality_str(CellSpaceBoundary, e.duality_id)
+
                     edge_obj = {
                         "id": e.id_str,
                         "featureType": "Edge",
                         "weight": e.weight or 1.0,
                         "geometry": g_json,
-                        "connects": connects_list, 
-                        "duality": e.duality
+                        "duality": dual_str
+                        # Note: 'connects' is harder to reconstruct without a separate association table.
+                        # If needed, you must query the 'connects' table if you created it.
                     }
                     edge_members.append(edge_obj)
 
-                # Add DualSpaceLayer to the ThematicLayer
-                # Only add if we actually have content to avoid empty objects if strictly validated
+                # Add DualSpace Object
                 layer_obj["dualSpace"] = {
-                    "id": f"DualSpace_{layer.id_str}",
+                    "id": layer.dualspace_id_str or f"DS-{layer.id_str}",
                     "featureType": "DualSpaceLayer",
-                    "isLogical": True,   # Default or fetch from DB
-                    "isDirected": False, # Default or fetch from DB
+                    "creationDatetime": layer.d_creation_datetime.isoformat() if layer.d_creation_datetime else None,
+                    "isLogical": layer.is_logical, 
+                    "isDirected": layer.is_directed,
                     "nodeMember": node_members,
                     "edgeMember": edge_members
                 }
@@ -729,14 +811,15 @@ def get_feature(api: API, request: APIRequest, dataset, identifier) -> Tuple[dic
             "id": feature.id_str,
             "featureType": "IndoorFeatures",
             "layers": json_layers,
-            "layerConnections": [] # Optional in schema properties, can leave empty or populate
+            "layerConnections": [] 
         }
 
-        # 5. Create standard GeoJSON Feature Wrapper
+        # 5. Create standard OGC Feature Wrapper
         footprint = None
         if feature.geojson_geometry:
              footprint = mapping(to_shape(feature.geojson_geometry))
         else:
+             # Default dummy footprint if none exists
              footprint = {"type": "Polygon", "coordinates": [[[0,0], [10,0], [10,10], [0,10], [0,0]]]}
 
         response = {
@@ -751,7 +834,7 @@ def get_feature(api: API, request: APIRequest, dataset, identifier) -> Tuple[dic
                     "version": "2.0"
                 }
             },
-            # <--- The Field You Requested --->
+            # <--- The IndoorGML Content --->
             "IndoorFeatures": indoor_features_doc, 
             "links": [
                 {"href": f"{api.config['server']['url']}/collections/{collection_str_id}/items/{feature_str_id}", "rel": "self", "type": "application/json"}
@@ -762,11 +845,13 @@ def get_feature(api: API, request: APIRequest, dataset, identifier) -> Tuple[dic
 
     except Exception as e:
         LOGGER.error(f"Error fetching feature: {e}")
+        # Print stack trace for debugging
+        import traceback
+        traceback.print_exc()
         return api.get_exception(500, headers, request.format, 'ServerError', str(e))
 
     finally:
         db.close()
-
 def delete_feature(api: API, request: APIRequest, dataset, identifier) -> Tuple[dict, int, str]:
     collection_str_id = str(dataset) # <--- Get Collection ID
     feature_str_id = str(identifier)
