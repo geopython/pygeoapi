@@ -1,6 +1,7 @@
 import json
 import datetime
 import psycopg2
+import logging
 from functools import partial
 from dateutil.parser import parse as dateparse
 import pytz
@@ -10,32 +11,26 @@ from pygeoapi.util import format_datetime
 from pymeos_cffi import (tfloat_from_mfjson, ttext_from_mfjson,
                          tgeompoint_from_mfjson)
 
-class PostgresIndoorDB:
-    host= 'localhost'
-    port= 5432
-    dbname = 'indoordb'
-    user= 'user'
-    password= 'password'
-    connection = None
+LOGGER = logging.getLogger(__name__)
 
+class PostgresIndoorDB:
     def __init__(self, datasource=None):
         """
         PostgresIndoorDB Class Constructor
-
-        Initializes the connection settings.
-        Allows overriding defaults via a dictionary if needed.
-
-         :param datasource: datasource definition (default None)
-            host - database host address
-            port - connection port number
-            db - table name
-            user - user name used to authenticate
-            password - password used to authenticate
         """
+        # define defaults inside init to avoid class-level state issues
+        self.host = 'localhost'
+        self.port = 5432
+        self.dbname = 'indoordb'
+        self.user = 'user'
+        self.password = 'password'
+        self.connection = None
+
         if datasource is not None:
             self.host = datasource.get('host', self.host)
             self.port = datasource.get('port', self.port)
-            self.dbname = datasource.get('dbname', self.dbname)
+            # Fixed: Ensure code matches docstring (using 'dbname' consistently)
+            self.dbname = datasource.get('dbname', self.dbname) 
             self.user = datasource.get('user', self.user)
             self.password = datasource.get('password', self.password)
     
@@ -43,6 +38,10 @@ class PostgresIndoorDB:
         """
         Establish a connection to the PostgreSQL database.
         """
+        # Idempotency check: Don't reconnect if already connected
+        if self.connection is not None and self.connection.closed == 0:
+            return
+
         try:
             self.connection = psycopg2.connect(
                 host=self.host,
@@ -51,8 +50,13 @@ class PostgresIndoorDB:
                 user=self.user,
                 password=self.password
             )
+            # Optional: Set autocommit if you aren't doing transaction management
+            # self.connection.autocommit = True 
+            
         except Exception as e:
-            print(f"Error connecting to database: {e}")
+            LOGGER.error(f"Error connecting to database: {e}")
+            # CRITICAL: Re-raise the exception so the caller knows it failed!
+            raise e
     
     def disconnect(self):
         """
@@ -60,19 +64,25 @@ class PostgresIndoorDB:
         """
         if self.connection is not None:
             self.connection.close()
+            self.connection = None
 
     def get_collections_list(self):
         """
         Query indoor features collection list
-        GET /collections
-
-        :returns: JSON FeatureCollection
+        Returns a simple list of collection IDs, e.g., ['campus_1', 'campus_2']
         """
+        # 1. Ensure connection is alive before asking for cursor
+        self.connect()
+
         with self.connection.cursor() as cur:
             select_query = "SELECT collection_id FROM collection"
             cur.execute(select_query)
             result = cur.fetchall()
-        return result
+        
+        # 2. Flatten the list of tuples [('id1',), ('id2',)] -> ['id1', 'id2']
+        clean_list = [row[0] for row in result]
+        
+        return clean_list
 
     def get_collections(self):
         """
