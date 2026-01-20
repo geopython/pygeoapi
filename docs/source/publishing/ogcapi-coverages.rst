@@ -89,10 +89,19 @@ The `Xarray`_ provider plugin reads and extracts `NetCDF`_ and `Zarr`_ data.
          format:
             name: zarr
             mimetype: application/zip
+         options:
+             zarr:
+                 consolidated: true
+             squeeze: true
+
 
 .. note::
    `Zarr`_ files are directories with files and subdirectories.  Therefore
    a zip file is returned upon request for said format.
+
+.. note::
+
+   ``options.zarr`` is a custom property that can be used to set `Zarr-specific open options`_.
 
 .. note::
    When referencing `NetCDF`_ or `Zarr`_ data stored in an S3 bucket, 
@@ -155,3 +164,4 @@ Data access examples
 .. _`Zarr`: https://zarr.readthedocs.io/en/stable
 .. _`GDAL raster driver short name`: https://gdal.org/drivers/raster/index.html
 .. _`pyproj.CRS.from_user_input`: https://pyproj4.github.io/pyproj/stable/api/crs/coordinate_system.html#pyproj.crs.CoordinateSystem.from_user_input
+.. _`Zarr-specific open options`: https://docs.xarray.dev/en/stable/generated/xarray.open_zarr.html

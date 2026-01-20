@@ -5,7 +5,7 @@
 #          Colin Blackburn <colb@bgs.ac.uk>
 #          Bernhard Mallinger <bernhard.mallinger@eox.at>
 #
-# Copyright (c) 2024 Tom Kralidis
+# Copyright (c) 2026 Tom Kralidis
 # Copyright (c) 2022 John A Stevenson and Colin Blackburn
 #
 # Permission is hereby granted, free of charge, to any person
@@ -51,6 +51,18 @@ def test_get_collection_map(config, api_):
     assert isinstance(response, bytes)
     assert response[1:4] == b'PNG'
 
+    req = mock_api_request({'subset': 'foo("bar")'})
+    rsp_headers, code, response = get_collection_map(
+        api_, req, 'mapserver_world_map')
+
+    assert code == HTTPStatus.BAD_REQUEST
+
+    req = mock_api_request({'properties': 'foo,bar'})
+    rsp_headers, code, response = get_collection_map(
+        api_, req, 'mapserver_world_map')
+
+    assert code == HTTPStatus.NOT_IMPLEMENTED
+
 
 def test_map_crs_transform(config, api_):
     # Florida in EPSG:4326
@@ -58,9 +70,11 @@ def test_map_crs_transform(config, api_):
         'bbox': '-88.374023,24.826625,-78.112793,31.015279',
         # crs is 4326 by implicit since it is the default
     }
+
     req = mock_api_request(params)
     _, code, floridaIn4326 = get_collection_map(
         api_, req, 'mapserver_world_map')
+
     assert code == HTTPStatus.OK
 
     # Area that isn't florida in the ocean; used to make sure
@@ -73,6 +87,7 @@ def test_map_crs_transform(config, api_):
     req = mock_api_request(params)
     _, code, florida4326InWrongCRS = get_collection_map(
         api_, req, 'mapserver_world_map')
+
     assert code == HTTPStatus.OK
 
     assert florida4326InWrongCRS != floridaIn4326
@@ -82,8 +97,10 @@ def test_map_crs_transform(config, api_):
         'bbox': '-9837751.2884,2854464.3843,-8695476.3377,3634733.5690',
         'bbox-crs': 'http://www.opengis.net/def/crs/EPSG/0/3857'
     }
+
     req = mock_api_request(params)
     _, code, floridaProjectedIn3857 = get_collection_map(
         api_, req, 'mapserver_world_map')
+
     assert code == HTTPStatus.OK
     assert floridaIn4326 == floridaProjectedIn3857

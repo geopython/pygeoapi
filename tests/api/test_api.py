@@ -592,6 +592,7 @@ def test_describe_collections(config, api_):
     assert collection['title'] == 'Observations'
     assert collection['description'] == 'My cool observations'
     assert len(collection['links']) == 15
+
     assert collection['extent'] == {
         'spatial': {
             'bbox': [[-180, -90, 180, 90]],
@@ -655,6 +656,28 @@ def test_describe_collections(config, api_):
     assert collection['storageCrs'] is not None
     assert collection['storageCrs'] == 'http://www.opengis.net/def/crs/OGC/1.3/CRS84' # noqa
     assert collection['storageCrsCoordinateEpoch'] == 2017.23
+
+    # test custom extents
+    rsp_headers, code, response = describe_collections(
+       api_, req, 'mapserver_world_map')
+
+    collection = json.loads(response)
+
+    assert collection['extent'] == {
+        'spatial': {
+            'bbox': [[-180, -90, 180, 90]],
+            'crs': 'http://www.opengis.net/def/crs/OGC/1.3/CRS84'
+        },
+        'custom-extent': {
+            'definition': 'https://example.org/custom-extent',
+            'interval': [[0, 10]],
+            'unit': '°C',
+            'grid': {
+                'cellsCount': 3,
+                'coordinates': [0, 5, 10]
+            }
+        }
+    }
 
 
 def test_describe_collections_hidden_resources(

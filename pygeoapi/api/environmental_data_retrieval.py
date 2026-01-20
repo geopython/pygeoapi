@@ -113,13 +113,14 @@ def get_collection_edr_instances(api: API, request: APIRequest,
 
     if instance_id is not None:
         try:
-            instances = [p.get_instance(instance_id)]
+            if p.get_instance(instance_id):
+                instances = [instance_id]
         except ProviderItemNotFoundError:
             msg = 'Instance not found'
             return api.get_exception(
                 HTTPStatus.NOT_FOUND, headers, request.format, 'NotFound', msg)
     else:
-        instances = p.instances()
+        instances = p.get_instances()
 
     for instance in instances:
         instance_dict = {
@@ -149,13 +150,18 @@ def get_collection_edr_instances(api: API, request: APIRequest,
         for qt in p.get_query_types():
             if qt == 'instances':
                 continue
+
             data_query = {
                 'link': {
-                    'href': f'{uri}/instances/{instance}/{qt}',
+                    'href': f'{uri}/instances/{instance}/{qt}?f={request.format}',  # noqa
                     'rel': 'data',
                     'title': f'{qt} query'
                 }
             }
+
+            if request.format is not None and request.format == 'json':
+                data_query['link']['type'] = 'application/vnd.cov+json'
+
             instance_dict['data_queries'][qt] = data_query
 
         data['instances'].append(instance_dict)
@@ -369,6 +375,15 @@ def get_collection_edr_query(api: API, request: APIRequest,
         within = request.params.get('within')
         within_units = request.params.get('within-units')
 
+    corridor_width = width_units = None
+    corridor_height = height_units = None
+    if query_type == 'corridor':
+        LOGGER.debug('Processing corridor width / height / units parameters')
+        corridor_width = request.params.get('corridor-width')
+        width_units = request.params.get('width-units')
+        corridor_height = request.params.get('corridor-height')
+        height_units = request.params.get('height-units')
+
     LOGGER.debug('Processing z parameter')
     try:
         z = get_typed_value(request.params.get('z'))
@@ -408,6 +423,10 @@ def get_collection_edr_query(api: API, request: APIRequest,
         bbox=bbox,
         within=within,
         within_units=within_units,
+        corridor_width=corridor_width,
+        width_units=width_units,
+        corridor_height=corridor_height,
+        height_units=height_units,
         limit=limit,
         location_id=location_id,
         crs_transform_spec=crs_transform_spec
@@ -481,6 +500,7 @@ def get_collection_edr_query(api: API, request: APIRequest,
             headers['Content-Disposition'] = cd
 
     else:
+        headers['Content-Type'] = 'application/vnd.cov+json'
         content = to_json(data, api.pretty_print)
 
     return headers, HTTPStatus.OK, content

@@ -225,6 +225,12 @@ default.
                   begin: 2000-10-30T18:24:39Z  # start datetime in RFC3339
                   end: 2007-10-30T08:57:29Z  # end datetime in RFC3339
                   trs: http://www.opengis.net/def/uom/ISO-8601/0/Gregorian  # TRS
+              # additional extents can be added as desired (1..n)
+              foo:
+                  url: https://example.org/def  # required URL of the extent
+                  range: [0, 10] # required overall range/extent
+                  units: °C  # optional units
+                  values: [0, 2, 5, 5, 10]  # optional, enumeration of values
           providers:  # list of 1..n required connections information
               - type: feature  # underlying data geospatial type. Allowed values are: feature, coverage, record, tile, edr
                 name: CSV  # required: plugin name or import path. See Plugins section for more information.

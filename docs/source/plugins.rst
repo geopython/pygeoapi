@@ -30,10 +30,15 @@ The core pygeoapi plugin registry can be found in ``pygeoapi.plugin.PLUGINS``.
 
 Each plugin type implements its relevant base class as the API contract:
 
-* data providers: ``pygeoapi.provider.base``
-* output formats: ``pygeoapi.formatter.base``
-* processes: ``pygeoapi.process.base``
-* process_manager: ``pygeoapi.process.manager.base``
+* data providers:
+
+  * features/records/maps: ``pygeoapi.provider.base.BaseProvider``
+  * edr: ``pygeoapi.provider.base_edr.BaseEDRProvider``
+  * tiles: ``pygeoapi.provider.tile.BaseTileProvider``
+
+* output formats: ``pygeoapi.formatter.base.BaseFormatter``
+* processes: ``pygeoapi.process.base.BaseProcessor``
+* process_manager: ``pygeoapi.process.manager.base.BaseManager``
 
 .. todo:: link PLUGINS to API doc
 
@@ -150,7 +155,7 @@ option 2 above).
 Example: custom pygeoapi vector data provider
 ---------------------------------------------
 
-Lets consider the steps for a vector data provider plugin:
+Let's consider the steps for a vector data provider plugin:
 
 Python code
 ^^^^^^^^^^^
@@ -223,7 +228,7 @@ Each base class documents the functions, arguments and return types required for
 Example: custom pygeoapi raster data provider
 ---------------------------------------------
 
-Lets consider the steps for a raster data provider plugin:
+Let's consider the steps for a raster data provider plugin:
 
 Python code
 ^^^^^^^^^^^
@@ -277,6 +282,51 @@ implementation.
 Each base class documents the functions, arguments and return types required for implementation.
 
 .. _example-custom-pygeoapi-processing-plugin:
+
+Example: custom pygeoapi EDR data provider
+------------------------------------------
+
+Let's consider the steps for an EDR data provider plugin:
+
+Python code
+^^^^^^^^^^^
+
+The below template provides a minimal example (let's call the file ``mycooledrdata.py``:
+
+.. code-block:: python
+
+   from pygeoapi.provider.base_edr import BaseEDRProvider
+
+   class MyCoolEDRDataProvider(BaseEDRProvider):
+
+       def __init__(self, provider_def):
+           """Inherit from the parent class"""
+
+           super().__init__(provider_def)
+
+           self.covjson = {...}
+
+       def get_instances(self):
+           return ['foo', 'bar']
+
+       def get_instance(self, instance):
+           return instance in get_instances()
+
+       def position(self, **kwargs):
+           return self.covjson
+
+       def trajectory(self, **kwargs):
+           return self.covjson
+
+
+For brevity, the ``position`` function returns ``self.covjson`` which is a
+dictionary of a CoverageJSON representation.  ``get_instances`` returns a list
+of instances associated with the collection/plugin, and ``get_instance`` returns
+a boolean of whether a given instance exists/is valid.  EDR query types are subject
+to the query functions defined in the plugin.  In the example above, the plugin
+implements ``position`` and ``trajectory`` queries, which will be advertised as
+supported query types.
+
 
 Example: custom pygeoapi processing plugin
 ------------------------------------------
