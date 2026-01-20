@@ -13,6 +13,7 @@ from jsonschema import validate, ValidationError
 from datetime import datetime
 from geoalchemy2.shape import to_shape
 from shapely.geometry import mapping
+from sqlalchemy import func, and_
 
 # --- Database Imports ---
 from src.database import get_db
@@ -768,521 +769,686 @@ def delete_feature(api: API, request: APIRequest, dataset, identifier) -> Tuple[
         db.close()
 
 def manage_collection_item_layer(api: API, request: APIRequest, action, dataset, identifier, layer=None) -> Tuple[dict, int, str]:
-    collection_id = str(dataset)
-    item_id = str(identifier)
-    layer_id = str(layer)
-    headers = request.get_response_headers(SYSTEM_LOCALE)
-    LOGGER.debug(headers)
-
-
-
-    # 2. Get the Resource Configuration
-    # We look for the collection, but NOT the item id here
-    resource_config = api.config['resources'].get(collection_id)
-    if not resource_config:
-        return api.get_exception(404, headers, request.format, 'NotFound', f'Collection {collection_id} not found')
-
-    if action == 'create':
-        try:
-            data = json.loads(request.data.decode('utf-8'))
-            layer_schema = {
-                "$schema": INDOOR_SCHEMA.get("$schema"),
-                "$defs": INDOOR_SCHEMA.get("$defs"), # Copy definitions so references work
-                "$ref": "#/$defs/ThematicLayer"      # Point to the specific type you want
-            }
-            validate(instance=data, schema=layer_schema)
-
-            # --- FIX STARTS HERE ---
-            # Instead of api.config['resources'][col][item], 
-            # we find the item in the 'items' list
-            items_list = resource_config.get('items', [])
-            
-            # Find the specific building/feature by its String ID
-            target_feature = next((item for item in items_list if item.get('id') == item_id), None)
-
-            if target_feature is None:
-                return api.get_exception(404, headers, request.format, 'NotFound', f'Feature {item_id} not found')
-
-            # Initialize layers if they don't exist
-            if 'layers' not in target_feature:
-                target_feature['layers'] = []
-            
-            target_feature['layers'].append(data)
-            # --- FIX ENDS HERE ---
-            
-            return headers, 201, to_json({"status": "Layer Added", "id": data.get('id', 'unnamed')}, api.pretty_print)
-
-        except ValidationError as v_err:
-            return api.get_exception(400, headers, request.format, 'InvalidRequest', f"Schema Error: {v_err.message}")
-        except Exception as e:
-            return api.get_exception(400, headers, request.format, 'InvalidRequest', str(e))
-    elif action == 'delete':
-        # 1. Find the specific Feature/Building
-        items_list = resource_config.get('items', [])
-        target_feature = next((item for item in items_list if item.get('id') == item_id), None)
-
-        if target_feature is None:
-            return api.get_exception(404, headers, request.format, 'NotFound', f'Feature {item_id} not found')
-
-        # 2. Get the current list of layers
-        # If 'layers' key doesn't exist, there is nothing to delete
-        if 'layers' not in target_feature:
-             return api.get_exception(404, headers, request.format, 'NotFound', f'Layer {layer_id} not found (No layers exist)')
-
-        current_layers = target_feature['layers']
-        original_count = len(current_layers)
-
-        # 3. Perform Deletion via Filtering
-        # We keep all layers where the ID does NOT match the requested layer_id
-        target_feature['layers'] = [l for l in current_layers if l.get('id') != layer_id]
-
-        # 4. Check if deletion actually happened
-        # If the length is the same, the ID was not found
-        if len(target_feature['layers']) == original_count:
-            return api.get_exception(404, headers, request.format, 'NotFound', f'Layer {layer_id} not found')
-
-        # 5. Success Response (204 No Content is standard for DELETE)
-        return headers, 204, ''
+    collection_str_id = str(dataset)
+    feature_str_id = str(identifier)
+    layer_str_id = str(layer) if layer else None
     
-    else:
-        # Placeholder for GET/UPDATE by ID
-        return api.get_exception(405, headers, request.format, 'MethodNotAllowed', "Action not yet implemented")
+    headers = request.get_response_headers(api.api_headers)
+    db = next(get_db())
+
+    try:
+        # 1. Resolve Parent IDs and Validate Existence
+        coll_pk = resolve_db_id(db, Collection, collection_str_id)
+        feat_pk = resolve_db_id(db, IndoorFeature, feature_str_id)
+
+        if not coll_pk:
+            return api.get_exception(404, headers, request.format, 'NotFound', 'Collection not found')
         
+        if not feat_pk:
+            return api.get_exception(404, headers, request.format, 'NotFound', 'Feature not found')
+
+        # 2. Strict Hierarchy Check: Feature MUST belong to this Collection
+        feature = db.query(IndoorFeature).filter(
+            IndoorFeature.id == feat_pk,
+            IndoorFeature.collection_id == coll_pk
+        ).first()
+
+        if not feature:
+            return api.get_exception(404, headers, request.format, 'NotFound', 
+                                   f'Feature {feature_str_id} not found in collection {collection_str_id}')
+
+        # =====================================================================
+        # ACTION: CREATE (POST)
+        # =====================================================================
+        if action == 'create':
+            try:
+                data = json.loads(request.data.decode('utf-8'))
+                
+                # Schema Validation
+                layer_schema = {
+                    "$schema": INDOOR_SCHEMA.get("$schema"),
+                    "$defs": INDOOR_SCHEMA.get("$defs"), 
+                    "$ref": "#/$defs/ThematicLayer"      
+                }
+                validate(instance=data, schema=layer_schema)
+
+                # Check for ID conflict
+                new_layer_id = data.get('id')
+                existing = db.query(ThematicLayer).filter(
+                    ThematicLayer.indoorfeature_id == feature.id,
+                    ThematicLayer.id_str == new_layer_id
+                ).first()
+                
+                if existing:
+                    return api.get_exception(409, headers, request.format, 'Conflict', f"Layer {new_layer_id} already exists")
+
+                # Determine Space Type (Primal vs Dual)
+                # Note: Schema usually enforces one or the other, or we check keys
+                space_type_enum = None
+                if 'primalSpace' in data:
+                    space_type_enum = SpaceType.primal
+                elif 'dualSpace' in data:
+                    space_type_enum = SpaceType.dual
+                else:
+                    # Fallback or error if neither (though schema validation should catch this)
+                    space_type_enum = SpaceType.primal 
+
+                # A. Insert ThematicLayer Record
+                new_layer = ThematicLayer(
+                    id_str=new_layer_id,
+                    indoorfeature_id=feature.id,
+                    class_name="ThematicLayer",
+                    semantic_extension=data.get('semanticExtension', False),
+                    space_type=space_type_enum,
+                    # Map other fields like 'doc' if present in your model
+                )
+                db.add(new_layer)
+                db.flush() # Flush to get new_layer.id (PK) for children
+
+                # B. Insert Primal Members (CellSpace)
+                if space_type_enum == SpaceType.primal and 'primalSpace' in data:
+                    primal_data = data['primalSpace']
+                    # Assuming 'cellSpaceMember' is a list of objects
+                    for cell in primal_data.get('cellSpaceMember', []):
+                        
+                        # Geometry Conversion: GeoJSON -> DB Format
+                        geom_db = None
+                        if 'cellSpaceGeom' in cell and 'geometry3D' in cell['cellSpaceGeom']:
+                            geojson_geom = cell['cellSpaceGeom']['geometry3D']
+                            geom_db = from_shape(shape(geojson_geom))
+
+                        new_cell = CellSpaceBoundary(
+                            id_str=cell.get('id'),
+                            thematiclayer_id=new_layer.id,
+                            cell_name=cell.get('cellSpaceName'),
+                            geometry_3d=geom_db,
+                            external_reference=None # Fill if schema has it
+                        )
+                        db.add(new_cell)
+
+                # C. Insert Dual Members (Nodes/Edges)
+                elif space_type_enum == SpaceType.dual and 'dualSpace' in data:
+                    dual_data = data['dualSpace']
+                    
+                    # Nodes
+                    for node in dual_data.get('nodeMember', []):
+                        geom_db = None
+                        if 'geometry' in node and node['geometry']:
+                            geom_db = from_shape(shape(node['geometry']))
+                        
+                        new_node = NodeEdge(
+                            id_str=node.get('id'),
+                            thematiclayer_id=new_layer.id,
+                            type=NodeEdgeType.node,
+                            geometry_val=geom_db,
+                            duality=node.get('duality')
+                        )
+                        db.add(new_node)
+
+                    # Edges
+                    for edge in dual_data.get('edgeMember', []):
+                        geom_db = None
+                        if 'geometry' in edge and edge['geometry']:
+                            geom_db = from_shape(shape(edge['geometry']))
+
+                        new_edge = NodeEdge(
+                            id_str=edge.get('id'),
+                            thematiclayer_id=new_layer.id,
+                            type=NodeEdgeType.edge,
+                            geometry_val=geom_db,
+                            duality=edge.get('duality'),
+                            weight=edge.get('weight', 1.0)
+                        )
+                        db.add(new_edge)
+
+                db.commit()
+                return headers, 201, to_json({"status": "Layer Added", "id": new_layer_id}, api.pretty_print)
+
+            except ValidationError as v_err:
+                db.rollback()
+                return api.get_exception(400, headers, request.format, 'InvalidRequest', f"Schema Error: {v_err.message}")
+            except Exception as e:
+                db.rollback()
+                LOGGER.error(f"Error creating layer: {e}")
+                return api.get_exception(500, headers, request.format, 'ServerError', str(e))
+
+        # =====================================================================
+        # ACTION: DELETE (DELETE)
+        # =====================================================================
+        elif action == 'delete':
+            # Find the layer by its String ID and Parent Feature
+            target_layer = db.query(ThematicLayer).filter(
+                ThematicLayer.id_str == layer_str_id,
+                ThematicLayer.indoorfeature_id == feature.id
+            ).first()
+
+            if not target_layer:
+                return api.get_exception(404, headers, request.format, 'NotFound', f'Layer {layer_str_id} not found')
+
+            try:
+                # SQLAlchemy cascade should handle children (Cells/Nodes) if configured in models.
+                # Otherwise, you might need to manually delete children here.
+                # Assuming standard Cascade delete:
+                db.delete(target_layer)
+                db.commit()
+
+                return headers, 204, '' # No Content
+            except Exception as e:
+                db.rollback()
+                return api.get_exception(500, headers, request.format, 'ServerError', str(e))
+
+        else:
+            return api.get_exception(405, headers, request.format, 'MethodNotAllowed', "Action not yet implemented")
+
+    except Exception as e:
+        LOGGER.error(f"Global error in manage_layer: {e}")
+        return api.get_exception(500, headers, request.format, 'ServerError', str(e))
+
+    finally:
+        db.close()
+
 def get_collection_item_layers(api: API, request: APIRequest, dataset, identifier) -> Tuple[dict, int, str]:
     """
-    Get temporal Geometry of collection item
-
-    :param request: A request object
-    :param dataset: dataset name
-    :param identifier: item identifier
-
-    :returns: tuple of headers, status code, content
+    Get summary of layers for a collection item (IndoorFeature)
     """
     if not request.is_valid():
         return api.get_format_exception(request)
-    headers = request.get_response_headers(SYSTEM_LOCALE)
-    collection_id = str(dataset)
-    item_id = str(identifier)
-    LOGGER.debug(headers)
-    # 1. Access the Collection
-    resource = api.config['resources'].get(collection_id)
-    if not resource:
-        return api.get_exception(
-            HTTPStatus.NOT_FOUND, headers, request.format, 'NotFound', f'Collection {collection_id} not found'
-        )
-
-    # 2. Find the Specific IndoorFeature (Building)
-    items = resource.get('items', [])
-    target_feature = next((item for item in items if item.get('id') == item_id), None)
-
-    if not target_feature:
-        return api.get_exception(
-            HTTPStatus.NOT_FOUND, headers, request.format, 'NotFound', f'Feature {item_id} not found'
-        )
-
-    # 3. Extract and Summarize Layers
-    raw_layers = target_feature.get('layers', [])
     
-    # We create a lightweight summary list with links to the detail endpoint
-    layers_summary = []
-    base_url = api.config['server']['url']
+    headers = request.get_response_headers(api.api_headers)
+    collection_str_id = str(dataset)
+    feature_str_id = str(identifier)
     
-    for l in raw_layers:
-        l_id = l.get('id', 'unknown')
-        layers_summary.append({
-            "id": l_id,
-            "theme": l.get('theme', 'Unknown'),
-            "semanticExtension": l.get('semanticExtension', False),
+    db = next(get_db())
+
+    try:
+        # 1. Resolve IDs and Validate Existence
+        coll_pk = resolve_db_id(db, Collection, collection_str_id)
+        feat_pk = resolve_db_id(db, IndoorFeature, feature_str_id)
+
+        if not coll_pk:
+            return api.get_exception(404, headers, request.format, 'NotFound', 'Collection not found')
+        
+        if not feat_pk:
+            return api.get_exception(404, headers, request.format, 'NotFound', 'Feature not found')
+
+        # 2. Strict Check: Feature MUST belong to this Collection
+        feature = db.query(IndoorFeature).filter(
+            IndoorFeature.id == feat_pk,
+            IndoorFeature.collection_id == coll_pk
+        ).first()
+
+        if not feature:
+            return api.get_exception(404, headers, request.format, 'NotFound', 
+                                   f'Feature {feature_str_id} not found in collection {collection_str_id}')
+
+        # 3. Query DB for Layers
+        db_layers = db.query(ThematicLayer).filter(
+            ThematicLayer.indoorfeature_id == feature.id
+        ).all()
+
+        # 4. Construct Lightweight Summary
+        layers_summary = []
+        base_url = api.config['server']['url']
+
+        for layer in db_layers:
+            # Map SpaceType Enum to "Theme" string for readability
+            # You can adjust this mapping based on your preference (e.g. 'Primal' vs 'Physical')
+            theme_val = "Physical" if layer.space_type == SpaceType.primal else "Virtual"
+
+            layers_summary.append({
+                "id": layer.id_str,
+                "theme": theme_val,
+                "semanticExtension": layer.semantic_extension or False,
+                "links": [
+                    {
+                        "href": f"{base_url}/collections/{collection_str_id}/items/{feature_str_id}/layers/{layer.id_str}",
+                        "rel": "item",
+                        "type": "application/json",
+                        "title": "Layer Detail"
+                    }
+                ]
+            })
+
+        response = {
+            "layers": layers_summary,
             "links": [
                 {
-                    "href": f"{base_url}/collections/{collection_id}/items/{item_id}/layers/{l_id}",
-                    "rel": "item",
-                    "type": "application/json",
-                    "title": "Layer Detail"
+                    "href": f"{base_url}/collections/{collection_str_id}/items/{feature_str_id}/layers",
+                    "rel": "self",
+                    "type": "application/json"
+                },
+                {
+                    "href": f"{base_url}/collections/{collection_str_id}/items/{feature_str_id}",
+                    "rel": "up",
+                    "type": "application/geo+json",
+                    "title": "Parent Feature"
                 }
             ]
-        })
+        }
 
-    response = {
-        "layers": layers_summary,
-        "links": [
-            {
-                "href": f"{base_url}/collections/{collection_id}/items/{item_id}/layers",
-                "rel": "self",
-                "type": "application/json"
-            },
-            {
-                "href": f"{base_url}/collections/{collection_id}/items/{item_id}",
-                "rel": "up",
-                "type": "application/geo+json",
-                "title": "Parent Feature"
-            }
-        ]
-    }
+        return headers, 200, to_json(response, api.pretty_print)
 
-    return headers, HTTPStatus.OK, to_json(response, api.pretty_print)
+    except Exception as e:
+        LOGGER.error(f"Error fetching layers: {e}")
+        return api.get_exception(500, headers, request.format, 'ServerError', str(e))
+
+    finally:
+        db.close()
 
 def get_collection_item_layer(api: API, request: APIRequest, dataset, identifier, layer) -> Tuple[dict, int, str]:
     """
-    Get temporal Geometry of collection item
-
-    :param request: A request object
-    :param dataset: dataset name
-    :param identifier: item identifier
-    :param layer: layer identifier
-
-    :returns: tuple of headers, status code, content
+    Get metadata, stats, and bbox for a specific layer.
     """
     if not request.is_valid():
         return api.get_format_exception(request)
-    headers = request.get_response_headers(SYSTEM_LOCALE)
-    collection_id = str(dataset)
-    item_id = str(identifier)
-    layer_id = str(layer)
-    LOGGER.debug(headers) 
     
-    # 1. Access the Collection
-    resource = api.config['resources'].get(collection_id)
-    if not resource:
-        return api.get_exception(
-            HTTPStatus.NOT_FOUND, headers, request.format, 'NotFound', f'Collection {collection_id} not found'
-        )
-
-    # 2. Find the Specific IndoorFeature
-    items = resource.get('items', [])
-    target_feature = next((item for item in items if item.get('id') == item_id), None)
-
-    if not target_feature:
-        return api.get_exception(
-            HTTPStatus.NOT_FOUND, headers, request.format, 'NotFound', f'Feature {item_id} not found'
-        )
-
-    # 3. Find the Specific Layer
-    target_layer = next((l for l in target_feature.get('layers', []) if l.get('id') == layer_id), None)
-
-    if not target_layer:
-        return api.get_exception(
-            HTTPStatus.NOT_FOUND, headers, request.format, 'NotFound', f'Layer {layer_id} not found'
-        )
-    # 1. Calculate BBOX (Existing)
-    bbox = _calculate_layer_bbox(target_layer)
-
-    # 2. Calculate STATS (New)
-    stats = _calculate_layer_stats(target_layer)
-    # 4. Return the Layer JSON
-    # We optionally add a 'link' back to self/up for HATEOAS compliance, 
-    # but strictly speaking, returning the raw layer object is also fine based on your schema.
+    headers = request.get_response_headers(api.api_headers)
+    collection_str_id = str(dataset)
+    feature_str_id = str(identifier)
+    layer_str_id = str(layer)
     
-    # Using a copy to avoid modifying the in-memory data with response-specific links if not desired
-    response = {
-        "id": target_layer.get("id"),
-        "featureType": "ThematicLayer",
-        "theme": target_layer.get("theme"),
-        "semanticExtension": target_layer.get("semanticExtension"),
+    db = next(get_db())
+
+    try:
+        # 1. Resolve IDs and Validate Hierarchy
+        coll_pk = resolve_db_id(db, Collection, collection_str_id)
+        feat_pk = resolve_db_id(db, IndoorFeature, feature_str_id)
+
+        if not coll_pk:
+            return api.get_exception(404, headers, request.format, 'NotFound', 'Collection not found')
         
-        "summary": {
-            "primalSpace":{
-                "cellSpaceCount": stats['cellSpaceCount'],
-                "cellBoudaryCount": stats['cellBoundaryCount'],
-                "level": stats['level']
-            },
-            "dualSpace":{
-                "nodeCount": stats['nodeCount'],
-                "edgeCount": stats['edgeCount'],
-                "isDirected": stats['isDirected'],
-                "isLogical": stats['isLogical']
-            }
-        },
-        
-        "bbox": bbox,
-        "links": []
-    }
+        if not feat_pk:
+            return api.get_exception(404, headers, request.format, 'NotFound', 'Feature not found')
 
-    # 3. GENERATE DYNAMIC LINKS (HATEOAS)
-    base_url = f"{api.config['server']['url']}/collections/{collection_id}/items/{item_id}/layers/{layer_id}"
+        # Feature must belong to Collection
+        feature = db.query(IndoorFeature).filter(
+            IndoorFeature.id == feat_pk,
+            IndoorFeature.collection_id == coll_pk
+        ).first()
 
-    # Link to Self
-    response['links'].append({
-        "href": base_url,
-        "rel": "self",
-        "type": "application/json",
-        "title": "Layer Metadata"
-    })
+        if not feature:
+            return api.get_exception(404, headers, request.format, 'NotFound', 
+                                   f'Feature {feature_str_id} not found in collection {collection_str_id}')
 
-    # Link to Primal Space (Geometry) - Only if it exists in the data
-    if "primalSpace" in target_layer:
+        # 2. Find the Specific Layer
+        target_layer = db.query(ThematicLayer).filter(
+            ThematicLayer.id_str == layer_str_id,
+            ThematicLayer.indoorfeature_id == feature.id
+        ).first()
+
+        if not target_layer:
+            return api.get_exception(404, headers, request.format, 'NotFound', f'Layer {layer_str_id} not found')
+
+        # 3. Calculate Stats & BBOX using DB helpers
+        stats = _calculate_layer_stats_db(db, target_layer)
+        bbox = _calculate_layer_bbox_db(db, target_layer)
+
+        # 4. Construct Response
+        response = {
+            "id": target_layer.id_str,
+            "featureType": "ThematicLayer",
+            "theme": "Physical" if target_layer.space_type == SpaceType.primal else "Virtual",
+            "semanticExtension": target_layer.semantic_extension or False,
+            
+            "summary": stats, # Injected from helper
+            "bbox": bbox,     # Injected from helper
+            "links": []
+        }
+
+        # 5. Generate Dynamic HATEOAS Links
+        base_url = f"{api.config['server']['url']}/collections/{collection_str_id}/items/{feature_str_id}/layers/{layer_str_id}"
+
         response['links'].append({
-            "href": f"{base_url}/primal",
-            "rel": "data", # 'data' or 'item' is appropriate here
+            "href": base_url,
+            "rel": "self",
             "type": "application/json",
-            "title": "Primal Space (Geometry)"
+            "title": "Layer Metadata"
         })
 
-    # Link to Dual Space (Topology) - Only if it exists
-    if "dualSpace" in target_layer:
-        response['links'].append({
-            "href": f"{base_url}/dual",
-            "rel": "data",
-            "type": "application/json",
-            "title": "Dual Space (Topology)"
-        })
+        # Check stats to decide which links to show
+        if stats['primalSpace']['cellSpaceCount'] > 0:
+            response['links'].append({
+                "href": f"{base_url}/primal",
+                "rel": "data",
+                "type": "application/json",
+                "title": "Primal Space (Geometry)"
+            })
 
-    return headers, HTTPStatus.OK, to_json(response, api.pretty_print)
+        if stats['dualSpace']['nodeCount'] > 0 or stats['dualSpace']['edgeCount'] > 0:
+            response['links'].append({
+                "href": f"{base_url}/dual",
+                "rel": "data",
+                "type": "application/json",
+                "title": "Dual Space (Topology)"
+            })
 
-def _extract_coords(geometry):
-    """Recursively extract all [x, y] or [x, y, z] coordinates from a geometry object."""
-    coords = []
-    
-    # Base case: Point or simple coordinate list
-    if not isinstance(geometry, dict):
-        return []
-    
-    # Handle standard GeoJSON-like types
-    g_type = geometry.get('type')
-    coordinates = geometry.get('coordinates', [])
+        return headers, 200, to_json(response, api.pretty_print)
 
-    if g_type == 'Point':
-        coords.append(coordinates)
-    elif g_type == 'LineString':
-        coords.extend(coordinates)
-    elif g_type == 'Polygon':
-        # Polygon coords are list of rings: [[[x,y], [x,y]], [[hole...]]]
-        for ring in coordinates:
-            coords.extend(ring)
-    elif g_type == 'MultiPolygon':
-        for poly in coordinates:
-            for ring in poly:
-                coords.extend(ring)
-    # Handle IndoorGML 3D types (Solid/Polyhedron usually appear as complex nested lists)
-    elif g_type == 'Polyhedron' or g_type == 'Solid':
-        # These are often deeply nested: Shells -> Faces -> Rings -> Coords
-        # A simple flatten approach for bbox is often sufficient
-        def flatten(lst):
-            for item in lst:
-                if isinstance(item, list) and len(item) > 0 and isinstance(item[0], (int, float)):
-                    coords.append(item)
-                elif isinstance(item, list):
-                    flatten(item)
-        flatten(coordinates)
-        
-    return coords
+    except Exception as e:
+        LOGGER.error(f"Error fetching layer detail: {e}")
+        return api.get_exception(500, headers, request.format, 'ServerError', str(e))
 
-def _calculate_layer_bbox(layer):
+    finally:
+        db.close()
+
+
+def _calculate_layer_stats_db(db, layer_row):
     """
-    Iterates through PrimalSpace and DualSpace to calculate the layer extent.
-    Returns: [minx, miny, maxx, maxy] (or None if empty)
-    """
-    all_coords = []
-
-    # 1. Check Primal Space (Rooms/Cells)
-    if 'primalSpace' in layer:
-        primal = layer['primalSpace']
-        # Check CellSpaces (Rooms)
-        for cell in primal.get('cellSpaceMember', []):
-            geom = cell.get('cellSpaceGeom', {})
-            # Prefer 2D for API bbox, fallback to 3D
-            if 'geometry2D' in geom:
-                all_coords.extend(_extract_coords(geom['geometry2D']))
-            elif 'geometry3D' in geom:
-                all_coords.extend(_extract_coords(geom['geometry3D']))
-        
-        # Check CellBoundaries (Walls)
-        for bound in primal.get('cellBoundaryMember', []):
-            geom = bound.get('cellBoundaryGeom', {})
-            if 'geometry2D' in geom:
-                all_coords.extend(_extract_coords(geom['geometry2D']))
-
-    # 2. Check Dual Space (Nodes)
-    if 'dualSpace' in layer:
-        dual = layer['dualSpace']
-        for node in dual.get('nodeMember', []):
-            if 'geometry' in node:
-                all_coords.extend(_extract_coords(node['geometry']))
-
-    if not all_coords:
-        return None
-
-    # 3. Calculate Extent
-    min_x = min(c[0] for c in all_coords)
-    max_x = max(c[0] for c in all_coords)
-    min_y = min(c[1] for c in all_coords)
-    max_y = max(c[1] for c in all_coords)
-
-    return [min_x, min_y, max_x, max_y]
-    
-def _calculate_layer_stats(layer):
-    """
-    Analyzes the layer to return summary counts and level info.
+    Counts rows in child tables (CellSpaceBoundary, NodeEdge) efficiently.
     """
     stats = {
-        "cellSpaceCount": 0,
-        "cellBoundaryCount": 0,
-        "nodeCount": 0,
-        "edgeCount": 0,
-        "isDirected": None,
-        "isLogical": None,
-        "level": None
+        "primalSpace": {
+            "cellSpaceCount": 0,
+            "cellBoundaryCount": 0,
+            "level": None
+        },
+        "dualSpace": {
+            "nodeCount": 0,
+            "edgeCount": 0,
+            "isDirected": False, # Default
+            "isLogical": True    # Default
+        }
     }
 
-    # 1. Analyze Primal Space (Cells & Level)
-    if 'primalSpace' in layer:
-        cells = layer['primalSpace'].get('cellSpaceMember', [])
-        boudaries = layer['primalSpace'].get('cellBoundaryMember', [])
-        stats['cellSpaceCount'] = len(cells)
-        stats['cellBoundaryCount'] = len(boudaries)
-        # Extract unique levels from cells to describe the layer
-        # Assumes your CellSpace has a "level" property as per your earlier schema
-        found_levels = set()
-        for c in cells:
-            lvl = c.get('level')
-            if lvl: found_levels.add(str(lvl))
+    if layer_row.space_type == SpaceType.primal:
+        # Count Cells
+        cell_count = db.query(CellSpaceBoundary).filter(
+            CellSpaceBoundary.thematiclayer_id == layer_row.id
+        ).count()
+        stats["primalSpace"]["cellSpaceCount"] = cell_count
         
-        if found_levels:
-            # Join sorted levels (e.g., "1F" or "1F, 2F")
-            stats['level'] = ", ".join(sorted(list(found_levels)))
+        # Note: If you separate Boundaries (Walls) from Spaces (Rooms) in the same table
+        # you might need a 'type' filter here. For now, we assume this table holds Cells.
+        
+        # Attempt to get Levels (if stored in external_reference or a specific column)
+        # simplistic query for distinct levels if column exists:
+        # levels = db.query(distinct(CellSpaceBoundary.level)).filter(...).all()
+        pass
 
-    # 2. Analyze Dual Space (Nodes)
-    if 'dualSpace' in layer:
-        nodes = layer['dualSpace'].get('nodeMember', [])
-        edges = layer['dualSpace'].get('edgeMember', [])
-        stats['nodeCount'] = len(nodes)
-        stats['edgeCount'] = len(edges)
-        stats['isDirected'] = layer['dualSpace'].get('isDirected')
-        stats['isLogical'] = layer['dualSpace'].get('isLogical')
+    elif layer_row.space_type == SpaceType.dual:
+        # Count Nodes
+        node_count = db.query(NodeEdge).filter(
+            NodeEdge.thematiclayer_id == layer_row.id,
+            NodeEdge.type == NodeEdgeType.node
+        ).count()
+        
+        # Count Edges
+        edge_count = db.query(NodeEdge).filter(
+            NodeEdge.thematiclayer_id == layer_row.id,
+            NodeEdge.type == NodeEdgeType.edge
+        ).count()
+
+        stats["dualSpace"]["nodeCount"] = node_count
+        stats["dualSpace"]["edgeCount"] = edge_count
+        
+        # You can fetch these bools from the layer_row if you added columns for them
+        # stats["dualSpace"]["isDirected"] = layer_row.is_directed 
+
     return stats
+
+
+def _calculate_layer_bbox_db(db, layer_row):
+    """
+    Uses PostGIS ST_Extent to calculate the bounding box of the layer's children.
+    Returns: [minx, miny, maxx, maxy] or None
+    """
+    bbox_result = None
+
+    if layer_row.space_type == SpaceType.primal:
+        # Aggregate extent of all Cell geometries
+        # ST_Extent returns a bounding box (xmin, ymin, xmax, ymax)
+        # To extract values, we can cast to geometry and ask for XMin, etc.
+        # But a simpler way in raw SQL is ST_XMin(ST_Extent(geom)), etc.
+        
+        # Query: SELECT ST_XMin(ext), ST_YMin(ext), ST_XMax(ext), ST_YMax(ext) 
+        #        FROM (SELECT ST_Extent(geometry_3d) as ext FROM cellspaceboundary WHERE ...)
+        
+        subq = db.query(func.ST_Extent(CellSpaceBoundary.geometry_3d).label("ext")).filter(
+            CellSpaceBoundary.thematiclayer_id == layer_row.id
+        ).subquery()
+        
+        result = db.query(
+            func.ST_XMin(subq.c.ext),
+            func.ST_YMin(subq.c.ext),
+            func.ST_XMax(subq.c.ext),
+            func.ST_YMax(subq.c.ext)
+        ).first()
+        
+        if result and result[0] is not None:
+            bbox_result = [result[0], result[1], result[2], result[3]]
+
+    elif layer_row.space_type == SpaceType.dual:
+        subq = db.query(func.ST_Extent(NodeEdge.geometry_val).label("ext")).filter(
+            NodeEdge.thematiclayer_id == layer_row.id
+        ).subquery()
+        
+        result = db.query(
+            func.ST_XMin(subq.c.ext),
+            func.ST_YMin(subq.c.ext),
+            func.ST_XMax(subq.c.ext),
+            func.ST_YMax(subq.c.ext)
+        ).first()
+
+        if result and result[0] is not None:
+            bbox_result = [result[0], result[1], result[2], result[3]]
+
+    return bbox_result
 
 def get_collection_item_interlayerconnections(api: API, request: APIRequest, dataset, identifier) -> Tuple[dict, int, str]:
     if not request.is_valid():
         return api.get_format_exception(request)
-    headers = request.get_response_headers(SYSTEM_LOCALE)
-    collection_id = str(dataset)
-    item_id = str(identifier)
-   
-    LOGGER.debug(headers) 
     
-    # 1. Access the Collection
-    resource = api.config['resources'].get(collection_id)
-    if not resource:
-        return api.get_exception(
-            HTTPStatus.NOT_FOUND, headers, request.format, 'NotFound', f'Collection {collection_id} not found'
-        )
-
-    # 2. Find the Specific IndoorFeature (Building)
-    items = resource.get('items', [])
-    target_feature = next((item for item in items if item.get('id') == item_id), None)
-
-    if not target_feature:
-        return api.get_exception(
-            HTTPStatus.NOT_FOUND, headers, request.format, 'NotFound', f'Feature {item_id} not found'
-        )
+    headers = request.get_response_headers(api.api_headers)
+    collection_str_id = str(dataset)
+    feature_str_id = str(identifier)
     
-     # 3. Extract and Summarize Layers
-    raw_interLayerConnections = target_feature.get('layerConnections', [])
-    base_url = f"{api.config['server']['url']}/collections/{collection_id}/items/{item_id}/interlayerconnections"
+    db = next(get_db())
 
-    response = {
-        "layerConnections": raw_interLayerConnections,
-        "links": [
-            {
-                "href": base_url,
-                "rel": "self",
-                "type": "application/json",
-                "title": "InterLayer Connections (Full)"
-            },
-            {
-                "href": f"{api.config['server']['url']}/collections/{collection_id}/items/{item_id}",
-                "rel": "up",
-                "type": "application/geo+json",
-                "title": "Parent Feature"
+    try:
+        # 1. Resolve IDs and Validate
+        coll_pk = resolve_db_id(db, Collection, collection_str_id)
+        feat_pk = resolve_db_id(db, IndoorFeature, feature_str_id)
+
+        if not coll_pk:
+            return api.get_exception(404, headers, request.format, 'NotFound', 'Collection not found')
+        if not feat_pk:
+            return api.get_exception(404, headers, request.format, 'NotFound', 'Feature not found')
+
+        feature = db.query(IndoorFeature).filter(
+            IndoorFeature.id == feat_pk,
+            IndoorFeature.collection_id == coll_pk
+        ).first()
+
+        if not feature:
+            return api.get_exception(404, headers, request.format, 'NotFound', 
+                                   f'Feature {feature_str_id} not found in collection {collection_str_id}')
+
+        # 2. Query InterLayerConnections
+        connections = db.query(InterLayerConnection).filter(
+            InterLayerConnection.indoorfeature_id == feature.id
+        ).all()
+
+        # 3. Construct Response
+        # We assume InterLayerConnection objects have a relationship or method to retrieve their edges/members
+        conn_list_json = []
+        
+        for conn in connections:
+            # Reconstruct the JSON object
+            # You might need to query child InterLayerEdges here if they aren't lazy-loaded
+            edges = db.query(InterLayerEdge).filter(
+                InterLayerEdge.interlayerconnection_id == conn.id
+            ).all()
+
+            edge_members = []
+            for e in edges:
+                edge_members.append({
+                    "id": e.id_str,
+                    "weight": e.weight,
+                    "connects": [e.node_a_id, e.node_b_id] # Assuming you store the connected node IDs
+                })
+
+            conn_obj = {
+                "id": conn.id_str,
+                "typeOfTopoExpression": conn.topo_expression, # e.g., 'CONTAINS', 'OVERLAPS'
+                "comment": conn.comment,
+                "interConnects": [conn.layer_a_id, conn.layer_b_id], # Assuming you store the 2 connected layer IDs
+                "interLayerConnectionMember": edge_members
             }
-        ]
-    }
+            conn_list_json.append(conn_obj)
 
+        base_url = f"{api.config['server']['url']}/collections/{collection_str_id}/items/{feature_str_id}/interlayerconnections"
+        
+        response = {
+            "layerConnections": conn_list_json,
+            "links": [
+                {
+                    "href": base_url,
+                    "rel": "self",
+                    "type": "application/json",
+                    "title": "InterLayer Connections (Full)"
+                },
+                {
+                    "href": f"{api.config['server']['url']}/collections/{collection_str_id}/items/{feature_str_id}",
+                    "rel": "up",
+                    "type": "application/geo+json",
+                    "title": "Parent Feature"
+                }
+            ]
+        }
 
-    return headers, HTTPStatus.OK, to_json(response, api.pretty_print)
+        return headers, 200, to_json(response, api.pretty_print)
+
+    except Exception as e:
+        LOGGER.error(f"Error fetching connections: {e}")
+        return api.get_exception(500, headers, request.format, 'ServerError', str(e))
+
+    finally:
+        db.close()
+
 def manage_collection_item_interlayerconnections(api: API, request: APIRequest, action, dataset, identifier, connection=None) -> Tuple[dict, int, str]:
     if not request.is_valid():
         return api.get_format_exception(request)
-    headers = request.get_response_headers(SYSTEM_LOCALE)
-    collection_id = str(dataset)
-    item_id = str(identifier)
-    connection_id = str(connection)
-    LOGGER.debug(headers) 
-
-    if action == 'create':
-        try:
-            # 1. Parse Request Body
-            data = json.loads(request.data.decode('utf-8'))
-            
-            # 2. Create Schema Wrapper for InterLayerConnection Validation
-            # We use the definitions from the main INDOOR_SCHEMA but validate against the specific definition
-            connection_schema = {
-                "$schema": INDOOR_SCHEMA.get("$schema"),
-                "$defs": INDOOR_SCHEMA.get("$defs"),
-                "$ref": "#/$defs/InterLayerConnection" 
-            }
-            
-            validate(instance=data, schema=connection_schema)
-
-            # 3. Locate the Collection and Feature
-            resource = api.config['resources'].get(collection_id)
-            if not resource:
-                 return api.get_exception(404, headers, request.format, 'NotFound', f'Collection {collection_id} not found')
-
-            items = resource.get('items', [])
-            target_feature = next((item for item in items if item.get('id') == item_id), None)
-            
-            if not target_feature:
-                return api.get_exception(404, headers, request.format, 'NotFound', f'Feature {item_id} not found')
-
-            # 4. Prepare the layerConnections Array
-            if 'layerConnections' not in target_feature:
-                target_feature['layerConnections'] = []
-
-            
-            # Check if connection ID already exists
-            if any(c.get('id') == data['id'] for c in target_feature['layerConnections']):
-                 return api.get_exception(400, headers, request.format, 'InvalidParameter', f"Connection ID {data['id']} already exists")
-
-            # 6. Save (Append) the Connection
-            target_feature['layerConnections'].append(data)
-            
-            # 7. Success Response
-            headers['Location'] = f"{api.config['server']['url']}/collections/{collection_id}/items/{item_id}/interlayerconnections/{data['id']}"
-            return headers, 201, to_json({"status": "Created", "id": data['id']}, api.pretty_print)
-
-        except ValidationError as v_err:
-            return api.get_exception(400, headers, request.format, 'InvalidRequest', f"Schema Error: {v_err.message}")
-        except Exception as e:
-            return api.get_exception(400, headers, request.format, 'InvalidRequest', str(e))
     
-    # actions (DELETE)
-  
-    elif action == 'delete': 
-        # 1. Locate Collection and Feature
-        resource = api.config['resources'].get(collection_id)
-        if not resource:
-             return api.get_exception(404, headers, request.format, 'NotFound', f'Collection {collection_id} not found')
+    headers = request.get_response_headers(api.api_headers)
+    collection_str_id = str(dataset)
+    feature_str_id = str(identifier)
+    connection_str_id = str(connection)
+    
+    db = next(get_db())
 
-        items = resource.get('items', [])
-        target_feature = next((item for item in items if item.get('id') == item_id), None)
+    try:
+        # 1. Resolve Parent Feature
+        coll_pk = resolve_db_id(db, Collection, collection_str_id)
+        feat_pk = resolve_db_id(db, IndoorFeature, feature_str_id)
+
+        if not coll_pk or not feat_pk:
+             return api.get_exception(404, headers, request.format, 'NotFound', 'Collection or Feature not found')
+
+        feature = db.query(IndoorFeature).filter(
+            IndoorFeature.id == feat_pk,
+            IndoorFeature.collection_id == coll_pk
+        ).first()
+
+        if not feature:
+            return api.get_exception(404, headers, request.format, 'NotFound', f'Feature not found')
+
+        # =====================================================================
+        # ACTION: CREATE
+        # =====================================================================
+        if action == 'create':
+            try:
+                # A. Parse & Validate
+                data = json.loads(request.data.decode('utf-8'))
+                connection_schema = {
+                    "$schema": INDOOR_SCHEMA.get("$schema"),
+                    "$defs": INDOOR_SCHEMA.get("$defs"),
+                    "$ref": "#/$defs/InterLayerConnection" 
+                }
+                validate(instance=data, schema=connection_schema)
+                
+                new_id = data.get('id')
+                
+                # B. Check for Duplicates
+                existing = db.query(InterLayerConnection).filter(
+                    InterLayerConnection.indoorfeature_id == feature.id,
+                    InterLayerConnection.id_str == new_id
+                ).first()
+                
+                if existing:
+                    return api.get_exception(409, headers, request.format, 'Conflict', f"Connection ID {new_id} already exists")
+
+                # C. Insert Parent Connection Record
+                # We expect 'interConnects' to be a list of 2 Layer IDs
+                layer_ids = data.get('interConnects', [])
+                layer_a = layer_ids[0] if len(layer_ids) > 0 else None
+                layer_b = layer_ids[1] if len(layer_ids) > 1 else None
+
+                new_conn = InterLayerConnection(
+                    id_str=new_id,
+                    indoorfeature_id=feature.id,
+                    topo_expression=data.get('typeOfTopoExpression'),
+                    comment=data.get('comment'),
+                    layer_a_id=layer_a, # Storing the String ID or resolving to FK if preferred
+                    layer_b_id=layer_b
+                )
+                db.add(new_conn)
+                db.flush() # Generate ID for children
+
+                # D. Insert Children (Edges)
+                members = data.get('interLayerConnectionMember', [])
+                for edge in members:
+                    # 'connects' is usually [NodeID_A, NodeID_B]
+                    connects = edge.get('connects', [])
+                    node_a = connects[0] if len(connects) > 0 else None
+                    node_b = connects[1] if len(connects) > 1 else None
+
+                    new_edge = InterLayerEdge(
+                        id_str=edge.get('id'),
+                        interlayerconnection_id=new_conn.id,
+                        weight=edge.get('weight', 1.0),
+                        node_a_id=node_a,
+                        node_b_id=node_b
+                    )
+                    db.add(new_edge)
+
+                db.commit()
+                
+                headers['Location'] = f"{api.config['server']['url']}/collections/{collection_str_id}/items/{feature_str_id}/interlayerconnections/{new_id}"
+                return headers, 201, to_json({"status": "Created", "id": new_id}, api.pretty_print)
+
+            except ValidationError as v_err:
+                db.rollback()
+                return api.get_exception(400, headers, request.format, 'InvalidRequest', f"Schema Error: {v_err.message}")
+            except Exception as e:
+                db.rollback()
+                return api.get_exception(500, headers, request.format, 'ServerError', str(e))
+
+        # =====================================================================
+        # ACTION: DELETE
+        # =====================================================================
+        elif action == 'delete':
+            target_conn = db.query(InterLayerConnection).filter(
+                InterLayerConnection.id_str == connection_str_id,
+                InterLayerConnection.indoorfeature_id == feature.id
+            ).first()
+
+            if not target_conn:
+                return api.get_exception(404, headers, request.format, 'NotFound', f'Connection {connection_str_id} not found')
+
+            try:
+                db.delete(target_conn) # Cascades should handle InterLayerEdges
+                db.commit()
+                return headers, 204, ''
+            except Exception as e:
+                db.rollback()
+                return api.get_exception(500, headers, request.format, 'ServerError', str(e))
         
-        if not target_feature:
-            return api.get_exception(404, headers, request.format, 'NotFound', f'Feature {item_id} not found')
+        else:
+            return api.get_exception(405, headers, request.format, 'MethodNotAllowed', "Action not implemented")
 
-        # 2. Check if connections exist
-        if 'layerConnections' not in target_feature:
-             return api.get_exception(404, headers, request.format, 'NotFound', f'Connection {connection_id} not found (No connections exist)')
+    except Exception as e:
+        LOGGER.error(f"Global error in manage_connections: {e}")
+        return api.get_exception(500, headers, request.format, 'ServerError', str(e))
 
-        current_connections = target_feature['layerConnections']
-        original_count = len(current_connections)
-
-        # 3. Filter out the specific connection
-        target_feature['layerConnections'] = [c for c in current_connections if c.get('id') != connection_id]
-
-        # 4. Verification
-        if len(target_feature['layerConnections']) == original_count:
-            return api.get_exception(404, headers, request.format, 'NotFound', f'Connection {connection_id} not found')
-
-        # 5. Success
-        return headers, 204, ''
+    finally:
+        db.close()
