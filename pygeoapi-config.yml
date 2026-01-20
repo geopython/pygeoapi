@@ -56,9 +56,8 @@ resources:
               data: data/sample_indoor.json
             
 database:
-  drivername: postgresql
   host: localhost
   port: 5432
-  username: user
-  password: password
-  database: indoor_gml
+  database: indoordb
+  username: user       # Must match your Docker setup
+  password: password   # Must match your Docker setup

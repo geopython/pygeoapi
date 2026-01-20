@@ -1,11 +1,6 @@
 -- Enable PostGIS extension immediately
 CREATE EXTENSION IF NOT EXISTS postgis;
 
-CREATE TYPE "spcaetype" AS ENUM (
-  'primal',
-  'dual'
-);
-
 CREATE TYPE "celltype" AS ENUM (
   'space',
   'boundary'
@@ -16,13 +11,20 @@ CREATE TYPE "node_edge_type" AS ENUM (
   'edge'
 );
 
+CREATE TYPE "theme_type" AS ENUM (
+  'physical',
+  'virtual',
+  'tags',
+  'unknown'
+);
+
 CREATE TYPE "topo_type" AS ENUM (
-  'CONTAINS',
-  'OVERLAPS',
-  'EQUALS',
-  'WITHIN',
-  'CROSSES',
-  'OTHERS'
+  'contains',
+  'overlaps',
+  'equals',
+  'within',
+  'crosses',
+  'others'
 );
 
 CREATE TABLE "collection" (
@@ -42,15 +44,18 @@ CREATE TABLE "indoorfeature" (
 CREATE TABLE "thematiclayer" (
   "id" bigint PRIMARY KEY,
   "id_str" varchar UNIQUE,
-  "space_id_str" varchar UNIQUE,
+  "primalspace_id_str" varchar UNIQUE,
+  "dualspace_id_str" varchar UNIQUE,
   "collection_id" bigint NOT NULL,
   "indoorfeature_id" bigint NOT NULL,
   "semantic_extension" bool NOT NULL,
-  "space_type" spcaetype,
-  "creation_datetime" timestamp,
-  "termination_datetime" timestamp,
+  "p_creation_datetime" timestamp,
+  "p_termination_datetime" timestamp,
+  "d_creation_datetime" timestamp,
+  "d_termination_datetime" timestamp,
   "is_logical" bool,
-  "is_directed" bool
+  "is_directed" bool,
+  "theme" theme_type NOT NULL
 );
 
 CREATE TABLE "cell_space_n_boundary" (
@@ -100,6 +105,7 @@ CREATE TABLE "interlayerconnection" (
   "connected_cell_b" bigint,
   "connected_node_a" bigint,
   "connected_node_b" bigint,
+  "topo_type" topo_type NOT NULL,
   "comment" varchar
 );
 
