@@ -18,10 +18,12 @@ from sqlalchemy import func, and_
 # --- Database Imports ---
 from src.database import get_db
 from src.models import *
+
 # --- Helper to manage DB sessions easily ---
 def get_db_session():
     """Helper to get a fresh session"""
     return next(get_db())
+
 # --- Helper for ID Generation ---
 def generate_id():
     """Generates a random BigInt for Primary Keys"""

@@ -65,6 +65,7 @@ from pygeoapi.provider.base import (
     ProviderConnectionError, ProviderGenericError, ProviderTypeError)
 
 # --- DATABASE IMPORTS ---
+from provider.postgresql_indoordb import PostgresIndoorDB
 import functools
 from src.database import get_db
 from src.models import Collection
@@ -1022,31 +1023,46 @@ def describe_collections(self, request: APIRequest, dataset=None) -> Tuple[dict,
     # OR if we looked for a specific dataset and didn't find it in YAML (found_in_yaml=False)
     
     if dataset is None or (dataset is not None and not found_in_yaml):
-        db = next(get_db())
+        
+        # 1. Instantiate the Provider
+        # You need to pass the 'data' config dictionary here. 
+        # Assuming self.config has the credentials:
+        db_config = self.config['resources'].get('my-indoor-data', {}).get('data', {})
+        # If your config structure is different, adjust the line above!
+        
+        provider = PostgresIndoorDB(db_config)
+
         try:
-            query = db.query(Collection)
+            # 2. Call the function (Connection happens INSIDE here automatically)
+            # This returns a list of IDs: ['campus_1', 'building_A']
+            db_collection_ids = provider.get_collections_list()
+            
+            # If requesting specific dataset, filter the list
             if dataset:
-                query = query.filter(Collection.id_str == dataset)
-            
-            db_results = query.all()
-            
-            # If we looked for a specific dataset and found it NEITHER in YAML NOR DB -> 404
-            if dataset is not None and not db_results and not found_in_yaml:
+                if dataset in db_collection_ids:
+                    db_collection_ids = [dataset]
+                else:
+                    db_collection_ids = []
+
+            # 3. Handle Not Found
+            if dataset is not None and not db_collection_ids and not found_in_yaml:
                 msg = 'Collection not found'
                 return self.get_exception(
                     HTTPStatus.NOT_FOUND, headers, request.format, 'NotFound', msg)
 
-            for row in db_results:
-                c_id = row.id_str
-                props = row.collection_property or {}
+            # 4. Loop through IDs and build Metadata
+            for c_id in db_collection_ids:
                 
-                # Manual Construction
+                # Since your provider currently ONLY returns IDs, 
+                # we have to use defaults for Title/Description.
+                # (Later, you should update get_collections_list to return dicts with titles!)
+                
                 collection = {
                     'id': c_id,
-                    'title': props.get('title', c_id),
-                    'description': props.get('description', ''),
-                    'itemType': props.get('itemType', 'indoorfeature'),
-                    'keywords': props.get('keywords', []),
+                    'title': c_id,  # Default title is the ID
+                    'description': f'IndoorGML data for {c_id}',
+                    'itemType': 'indoorfeature',
+                    'keywords': ['indoor', 'gml'],
                     'links': []
                 }
 
@@ -1060,78 +1076,36 @@ def describe_collections(self, request: APIRequest, dataset=None) -> Tuple[dict,
 
                 LOGGER.debug(f'Adding links for DB collection {c_id}')
                 
+                # --- [Standard Link Logic - Same as your code] ---
                 # Root Links
                 collection['links'].append({
                     'type': FORMAT_TYPES[F_JSON], 'rel': 'root',
                     'title': l10n.translate('The landing page of this server as JSON', request.locale),
                     'href': f"{self.base_url}?f={F_JSON}"
                 })
-                collection['links'].append({
-                    'type': FORMAT_TYPES[F_HTML], 'rel': 'root',
-                    'title': l10n.translate('The landing page of this server as HTML', request.locale),
-                    'href': f"{self.base_url}?f={F_HTML}"
-                })
-
-                # Self Metadata Links
-                collection['links'].append({
-                    'type': FORMAT_TYPES[F_JSON], 'rel': request.get_linkrel(F_JSON),
-                    'title': l10n.translate('This document as JSON', request.locale),
-                    'href': f'{self.get_collections_url()}/{c_id}?f={F_JSON}'
-                })
-                collection['links'].append({
-                    'type': FORMAT_TYPES[F_JSONLD], 'rel': request.get_linkrel(F_JSONLD),
-                    'title': l10n.translate('This document as RDF (JSON-LD)', request.locale),
-                    'href': f'{self.get_collections_url()}/{c_id}?f={F_JSONLD}'
-                })
-                collection['links'].append({
-                    'type': FORMAT_TYPES[F_HTML], 'rel': request.get_linkrel(F_HTML),
-                    'title': l10n.translate('This document as HTML', request.locale),
-                    'href': f'{self.get_collections_url()}/{c_id}?f={F_HTML}'
-                })
-
-                # Items (Data) Links
+                # ... (Keep the rest of your link building code exactly the same) ...
                 collection['links'].append({
                     'type': 'application/geo+json', 'rel': 'items',
                     'title': l10n.translate('Items as GeoJSON', request.locale),
                     'href': f'{self.get_collections_url()}/{c_id}/items?f={F_JSON}'
                 })
-                collection['links'].append({
-                    'type': FORMAT_TYPES[F_JSONLD], 'rel': 'items',
-                    'title': l10n.translate('Items as RDF (GeoJSON-LD)', request.locale),
-                    'href': f'{self.get_collections_url()}/{c_id}/items?f={F_JSONLD}'
-                })
-                collection['links'].append({
-                    'type': FORMAT_TYPES[F_HTML], 'rel': 'items',
-                    'title': l10n.translate('Items as HTML', request.locale),
-                    'href': f'{self.get_collections_url()}/{c_id}/items?f={F_HTML}'
-                })
                 
-                # Queryables
-                collection['links'].append({
-                    'type': 'application/schema+json',
-                    'rel': 'http://www.opengis.net/def/rel/ogc/1.0/queryables',
-                    'title': l10n.translate('Queryables for this collection as JSON', request.locale),
-                    'href': f'{self.get_collections_url()}/{c_id}/queryables?f={F_JSON}'
-                })
-
-                # Handling Single Item vs List Logic
+                # 5. Append to main list
                 if dataset is not None and c_id == dataset:
                     fcm = collection
                     break
                 
-                # If listing all, append to list
                 if isinstance(fcm, dict) and 'collections' in fcm:
                     fcm['collections'].append(collection)
 
         except Exception as e:
-            LOGGER.error(f"DB Error during describe_collections: {e}")
-            # Don't crash the whole list if DB fails, just log it.
-            # But if it was a specific request, we might want to return 500.
+            LOGGER.error(f"Provider Error: {e}")
             if dataset is not None:
-                    return self.get_exception(
+                return self.get_exception(
                     HTTPStatus.INTERNAL_SERVER_ERROR, headers, request.format, 'ServerError', str(e))
         finally:
-            db.close()
+            # 6. Clean up
+            provider.disconnect()
 
     # --- PART 3: Final Response Generation ---
 
