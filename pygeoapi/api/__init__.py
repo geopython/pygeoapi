@@ -65,7 +65,6 @@ from pygeoapi.provider.base import (
     ProviderConnectionError, ProviderGenericError, ProviderTypeError)
 
 # --- DATABASE IMPORTS ---
-from provider.postgresql_indoordb import PostgresIndoorDB
 import functools
 from src.database import get_db
 from src.models import Collection
@@ -904,6 +903,13 @@ def describe_collections(self, request: APIRequest, dataset=None) -> Tuple[dict,
     # --- PART 1: Standard YAML Config Loop ---
     collections = filter_dict_by_key_value(self.config['resources'], 'type', 'collection')
 
+    # [MODIFICATION 1] COMMENTED OUT: Early 404 Check
+    # We disable this so we can check the Database later if YAML fails.
+    # if all([dataset is not None, dataset not in collections.keys()]):
+    #     msg = 'Collection not found'
+    #     return self.get_exception(
+    #         HTTPStatus.NOT_FOUND, headers, request.format, 'NotFound', msg)
+
     if dataset is not None:
         collections_dict = {
             k: v for k, v in collections.items() if k == dataset
@@ -1018,81 +1024,79 @@ def describe_collections(self, request: APIRequest, dataset=None) -> Tuple[dict,
         fcm['collections'].append(collection)
 
 
-    # --- PART 2: Database Query (Moving Features Style) ---
-    # Run this if looking for ALL collections (dataset=None)
-    # OR if we looked for a specific dataset and didn't find it in YAML (found_in_yaml=False)
-    
+    # --- [MODIFICATION 2] PART 2: Database Query ---
+    # Only run if we are listing ALL, or if we looked for one and missed it.
     if dataset is None or (dataset is not None and not found_in_yaml):
         
-        # 1. Instantiate the Provider
-        # You need to pass the 'data' config dictionary here. 
-        # Assuming self.config has the credentials:
-        db_config = self.config['resources'].get('my-indoor-data', {}).get('data', {})
-        # If your config structure is different, adjust the line above!
-        
-        provider = PostgresIndoorDB(db_config)
+        # 1. Initialize Provider
+        from pygeoapi.provider.postgresql_indoordb import PostgresIndoorDB
+        provider = PostgresIndoorDB() 
 
         try:
-            # 2. Call the function (Connection happens INSIDE here automatically)
-            # This returns a list of IDs: ['campus_1', 'building_A']
-            db_collection_ids = provider.get_collections_list()
+            # 2. Fetch Data from DB
+            db_collections_list = provider.get_collections_list()
             
-            # If requesting specific dataset, filter the list
+            # 3. Filter for specific dataset (if requested)
             if dataset:
-                if dataset in db_collection_ids:
-                    db_collection_ids = [dataset]
-                else:
-                    db_collection_ids = []
+                filtered_list = [c for c in db_collections_list if c['id'] == dataset]
+                db_collections_list = filtered_list
 
-            # 3. Handle Not Found
-            if dataset is not None and not db_collection_ids and not found_in_yaml:
-                msg = 'Collection not found'
-                return self.get_exception(
-                    HTTPStatus.NOT_FOUND, headers, request.format, 'NotFound', msg)
+            # 4. Loop through Provider Data and build Metadata
+            for item in db_collections_list:
+                
+                c_id = item['id']
+                c_title = item.get('title', c_id)
+                c_item_type = item.get('itemType', 'feature')
 
-            # 4. Loop through IDs and build Metadata
-            for c_id in db_collection_ids:
-                
-                # Since your provider currently ONLY returns IDs, 
-                # we have to use defaults for Title/Description.
-                # (Later, you should update get_collections_list to return dicts with titles!)
-                
                 collection = {
                     'id': c_id,
-                    'title': c_id,  # Default title is the ID
-                    'description': f'IndoorGML data for {c_id}',
-                    'itemType': 'indoorfeature',
-                    'keywords': ['indoor', 'gml'],
+                    'title': c_title, 
+                    'description': f'IndoorGML data for {c_title}',
+                    'itemType': c_item_type,
+                    'keywords': [], # Empty list to satisfy legacy requirements
                     'links': []
                 }
 
                 # Manual Extents (Global Default)
-                collection['extent'] = {
-                    'spatial': {
-                        'bbox': [[-180, -90, 180, 90]],
-                        'crs': 'http://www.opengis.net/def/crs/OGC/1.3/CRS84'
-                    }
-                }
+
+                collection['links'].append({
+                    'type': 'application/schema+json',
+                    'rel': 'http://www.opengis.net/def/rel/ogc/1.0/queryables',
+                    'title': l10n.translate('Queryables for this collection as JSON', request.locale),
+                    'href': f'{self.get_collections_url()}/{c_id}/queryables?f={F_JSON}'
+                })
 
                 LOGGER.debug(f'Adding links for DB collection {c_id}')
                 
-                # --- [Standard Link Logic - Same as your code] ---
-                # Root Links
+                # --- Link Generation (Standard) ---
                 collection['links'].append({
                     'type': FORMAT_TYPES[F_JSON], 'rel': 'root',
                     'title': l10n.translate('The landing page of this server as JSON', request.locale),
                     'href': f"{self.base_url}?f={F_JSON}"
                 })
-                # ... (Keep the rest of your link building code exactly the same) ...
+                
+                collection['links'].append({
+                    'type': 'application/json', 'rel': 'self',
+                    'title': l10n.translate('This document as JSON', request.locale),
+                    'href': f'{self.get_collections_url()}/{c_id}?f={F_JSON}'
+                })
+                
                 collection['links'].append({
                     'type': 'application/geo+json', 'rel': 'items',
                     'title': l10n.translate('Items as GeoJSON', request.locale),
                     'href': f'{self.get_collections_url()}/{c_id}/items?f={F_JSON}'
                 })
+
+                collection['links'].append({
+                    'type': FORMAT_TYPES[F_HTML], 'rel': 'items',
+                    'title': l10n.translate('Items as HTML', request.locale),
+                    'href': f'{self.get_collections_url()}/{c_id}/items?f={F_HTML}'
+                })
                 
-                # 5. Append to main list
+                # 5. Append to main response object
                 if dataset is not None and c_id == dataset:
                     fcm = collection
+                    found_in_yaml = True # Mark as found in DB
                     break
                 
                 if isinstance(fcm, dict) and 'collections' in fcm:
@@ -1100,12 +1104,18 @@ def describe_collections(self, request: APIRequest, dataset=None) -> Tuple[dict,
 
         except Exception as e:
             LOGGER.error(f"Provider Error: {e}")
-            if dataset is not None:
-                return self.get_exception(
-                    HTTPStatus.INTERNAL_SERVER_ERROR, headers, request.format, 'ServerError', str(e))
+            # We log errors but try not to crash the whole list if one DB call fails
         finally:
-            # 6. Clean up
-            provider.disconnect()
+            if provider:
+                provider.disconnect()
+
+    # --- [MODIFICATION 3] Final 404 Check ---
+    # If we checked BOTH Config and DB and still found nothing:
+    if dataset is not None and not found_in_yaml:
+        msg = 'Collection not found'
+        return self.get_exception(
+            HTTPStatus.NOT_FOUND, headers, request.format, 'NotFound', msg)
+
 
     # --- PART 3: Final Response Generation ---
 

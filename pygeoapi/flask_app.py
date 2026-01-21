@@ -231,36 +231,38 @@ def collections(collection_id: str | None = None):
     # 1. Handle Root (/collections)
     if collection_id is None:
         if request.method == 'GET':
-            # We use core_api's list function because it checks BOTH DB and Config
+            # Returns list (Merged YAML + DB from our previous step)
             return execute_from_flask(core_api.describe_collections, request)
+        
         elif request.method == 'POST':
+            # Creates new collection in DB
             return execute_from_flask(indoorgml.manage_collection, request, 'create')
     
     # 2. Handle Specific Collection (/collections/{id})
     else:
+        # Check if it exists in the standard YAML config
         resource = api_.config['resources'].get(collection_id)
         
-        # LOGIC FIX: 
-        # If resource is None (Cold DB item) OR it is explicitly 'indoorfeature',
-        # we route to indoorgml.get_collection to check the Database.
+        # LOGIC: Route to IndoorGML handler if:
+        # A. It is explicitly marked 'indoorfeature' in Config
+        # B. It is NOT in Config (meaning it exists only in the DB)
         is_indoor = (resource and resource.get('itemType') == 'indoorfeature')
         is_cold_db = (resource is None)
 
         if is_indoor or is_cold_db:
             if request.method == 'GET':
+                # Fetch Single Metadata from DB
                 return execute_from_flask(indoorgml.get_collection, request, collection_id)
             elif request.method == 'DELETE':
+                # Delete from DB
                 return execute_from_flask(indoorgml.manage_collection, request, 'delete', collection_id)
         
-        # Fallback ONLY if it exists in config but is NOT an IndoorGML item (Standard YAML item)
+        # Fallback: Standard OGC API (YAML-based GeoJSON/CSV features)
         else:
             if request.method == 'GET':
                 return execute_from_flask(core_api.describe_collections, request, collection_id)
 
     return api_.get_exception(405, {}, request.format, 'MethodNotAllowed', 'Method not allowed')
-
-
-
 
 @BLUEPRINT.route('/collections/<path:collection_id>/schema')
 def collection_schema(collection_id: str | None = None):

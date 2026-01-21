@@ -1,15 +1,12 @@
 import json
+import random
 import datetime
 import psycopg2
 import logging
 from functools import partial
 from dateutil.parser import parse as dateparse
 import pytz
-from IndoorGML_API.pygeoapi.process.manager import postgresql
-from pymeos import (Temporal, TFloatSeq, TFloatSeqSet, pymeos_initialize)
 from pygeoapi.util import format_datetime
-from pymeos_cffi import (tfloat_from_mfjson, ttext_from_mfjson,
-                         tgeompoint_from_mfjson)
 
 LOGGER = logging.getLogger(__name__)
 
@@ -68,50 +65,180 @@ class PostgresIndoorDB:
 
     def get_collections_list(self):
         """
-        Query indoor features collection list
-        Returns a simple list of collection IDs, e.g., ['campus_1', 'campus_2']
+        Query indoor features collection list with metadata.
+        Returns:
+            list[dict]: A list of dicts, e.g. 
+            [{'id': 'campus_1', 'title': 'Main Campus', 'itemType': 'feature'}, ...]
         """
-        # 1. Ensure connection is alive before asking for cursor
         self.connect()
 
         with self.connection.cursor() as cur:
-            select_query = "SELECT collection_id FROM collection"
+            # Fetch both the ID and the properties JSON
+            select_query = "SELECT collection_id, collection_property FROM collection"
             cur.execute(select_query)
             result = cur.fetchall()
         
-        # 2. Flatten the list of tuples [('id1',), ('id2',)] -> ['id1', 'id2']
-        clean_list = [row[0] for row in result]
+        clean_list = []
+        for row in result:
+            c_id = row[0]
+            # Handle cases where collection_property might be None
+            props = row[1] if row[1] else {}
+            
+            clean_list.append({
+                'id': c_id,
+                # Replicate your original logic: default title to ID if missing
+                'title': props.get('title', c_id), 
+                'itemType': props.get('itemType', 'feature')
+            })
         
         return clean_list
 
-    def get_collections(self):
+    def get_collections_list(self):
         """
-        Query indoor features collections
+        Query indoor features collection list with metadata.
+        Returns: [{'id': 'campus_1', 'title': 'My Campus', 'itemType': 'indoorfeature'}, ...]
+        """
+        self.connect()
 
-        :returns: JSON FeatureCollections
-        """
         with self.connection.cursor() as cur:
-            select_query = """TODO """
+            # Select the String ID and the JSON properties
+            select_query = "SELECT id_str, collection_property FROM collection"
 
             cur.execute(select_query)
             result = cur.fetchall()
-        return result
-
+        
+        clean_list = []
+        for row in result:
+            c_id = row[0]       # id_str column
+            props = row[1]      # collection_property column (JSONB)
+            
+            # Safety check: if props is None, use empty dict
+            if props is None:
+                props = {}
+            
+            clean_list.append({
+                'id': c_id,
+                # Default to the ID if title is missing
+                'title': props.get('title', c_id),
+                'itemType': props.get('itemType', 'indoorfeature')
+            })
+            
+        return clean_list
+    
     def get_collection(self, collection_id):
         """
-        Query specific indoor features collection
-        GET /collections/{collectionId}
-
-        :param collection_id: local identifier of a collection
-
-        :returns: JSON FeatureCollection
+        Query specific indoor features collection metadata.
+        Args:
+            collection_id (str): The string ID (e.g. 'campus_1')
+        Returns:
+            dict: Metadata dict or None if not found.
         """
+        self.connect()
+        
         with self.connection.cursor() as cur:
-            select_query = ("""TODO""")
+            # Query for the ID and Properties using the String ID
+            query = "SELECT id_str, collection_property FROM collection WHERE id_str = %s"
+            cur.execute(query, (collection_id,))
+            row = cur.fetchone()
+        
+        if not row:
+            return None
+            
+        c_id = row[0]
+        props = row[1] if row[1] else {}
+        
+        return {
+            'id': c_id,
+            'title': props.get('title', c_id),
+            'description': props.get('description', ''),
+            'itemType': props.get('itemType', 'indoorfeature')
+        }
+    
 
-            cur.execute(select_query)
-            result = cur.fetchall()
-        return result
+    def create_collection(self, id_str, title, description, item_type='indoorfeature'):
+        """
+        Creates a new collection in the IndoorGML database.
+        """
+        self.connect()
+        
+        # 1. Generate a random BigInt ID (since your schema uses BigInt PKs, not Serial)
+        # Matches your previous logic: random.randint(1, 9223372036854775800)
+        new_pk_id = random.randint(1, 9223372036854775800)
+
+        # 2. Prepare the JSON property blob
+        properties = {
+            'title': title,
+            'description': description,
+            'itemType': item_type
+        }
+        
+        with self.connection.cursor() as cur:
+            # 3. Check if exists first (safety check)
+            cur.execute("SELECT 1 FROM collection WHERE id_str = %s", (id_str,))
+            if cur.fetchone():
+                return False  # Already exists
+
+            # 4. Insert
+            insert_query = """
+                INSERT INTO collection (id, id_str, collection_property)
+                VALUES (%s, %s, %s)
+            """
+            cur.execute(insert_query, (new_pk_id, id_str, json.dumps(properties)))
+            
+            # Commit is handled by the connection context or autocommit settings, 
+            # but usually explicit commit is safer in transactional wrapper.
+            self.connection.commit()
+            
+        return True
+
+    def delete_collection(self, id_str):
+        """
+        Deletes a collection and CASCADES valid deletions down to all child tables.
+        Matches the "Deep Clean" logic of your SQLAlchemy code.
+        """
+        self.connect()
+
+        with self.connection.cursor() as cur:
+            # 1. Get the Numeric Primary Key (id) from the String ID (id_str)
+            cur.execute("SELECT id FROM collection WHERE id_str = %s", (id_str,))
+            row = cur.fetchone()
+            
+            if not row:
+                return False # Collection not found
+            
+            coll_pk = row[0]
+
+            # 2. CASCADE DELETE (Bottom-Up Order)
+            
+            # A. Delete Connections (Edges between nodes)
+            # Logic: Delete from 'connects' where source or target is in the set of nodes belonging to this collection
+            delete_connects = """
+                DELETE FROM connects 
+                WHERE node_source_id IN (SELECT id FROM node_n_edge WHERE collection_id = %s)
+                   OR node_target_id IN (SELECT id FROM node_n_edge WHERE collection_id = %s)
+                   OR edge_id IN (SELECT id FROM node_n_edge WHERE collection_id = %s)
+            """
+            cur.execute(delete_connects, (coll_pk, coll_pk, coll_pk))
+
+            # B. Delete Inter-Layer Connections
+            cur.execute("DELETE FROM interlayerconnection WHERE collection_id = %s", (coll_pk,))
+
+            # C. Delete Spatial Elements (Nodes & Cells)
+            cur.execute("DELETE FROM node_n_edge WHERE collection_id = %s", (coll_pk,))
+            cur.execute("DELETE FROM cell_space_n_boundary WHERE collection_id = %s", (coll_pk,))
+
+            # D. Delete Thematic Layers
+            cur.execute("DELETE FROM thematiclayer WHERE collection_id = %s", (coll_pk,))
+
+            # E. Delete IndoorFeatures
+            cur.execute("DELETE FROM indoorfeature WHERE collection_id = %s", (coll_pk,))
+
+            # F. FINALLY: Delete the Collection itself
+            cur.execute("DELETE FROM collection WHERE id = %s", (coll_pk,))
+            
+            self.connection.commit()
+        
+        return True
 
     def get_features_list(self):
         """
