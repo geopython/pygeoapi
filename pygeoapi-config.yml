@@ -10,9 +10,8 @@ server:
     map:
         url: https://tile.openstreetmap.org/{z}/{x}/{y}.png
         attribution: '&copy; <a href="https://openstreetmap.org/copyright">OpenStreetMap contributors</a>'
-    limits:
-        default_items: 10
-        max_items: 100
+    limit: 10
+
 
 logging:
     level: DEBUG
