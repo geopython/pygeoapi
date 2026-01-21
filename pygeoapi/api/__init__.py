@@ -65,7 +65,7 @@ from pygeoapi.provider.base import (
     ProviderConnectionError, ProviderGenericError, ProviderTypeError)
 
 # --- DATABASE IMPORTS ---
-from provider.postgresql_indoordb import PostgresIndoorDB
+from pygeoapi.provider.postgresql_indoordb import PostgresIndoorDB
 import functools
 from src.database import get_db
 from src.models import Collection
@@ -170,7 +170,7 @@ def all_apis() -> dict:
     """
 
     from . import (coverages, environmental_data_retrieval, itemtypes, maps,
-                   processes, tiles, stac)
+                   processes, tiles, stac, indoorgml)
 
     return {
         'coverage': coverages,
@@ -179,7 +179,8 @@ def all_apis() -> dict:
         'map': maps,
         'process': processes,
         'tile': tiles,
-        'stac': stac
+        'stac': stac,
+        'indoorgml': indoorgml
     }
 
 
@@ -1027,7 +1028,7 @@ def describe_collections(self, request: APIRequest, dataset=None) -> Tuple[dict,
         # 1. Instantiate the Provider
         # You need to pass the 'data' config dictionary here. 
         # Assuming self.config has the credentials:
-        db_config = self.config['resources'].get('my-indoor-data', {}).get('data', {})
+        db_config = self.config['database']
         # If your config structure is different, adjust the line above!
         
         provider = PostgresIndoorDB(db_config)

@@ -567,7 +567,16 @@ components:
         rel: { type: string, example: "self" }
         type: { type: string, example: "application/geo+json" }
         title: { type: string }
+        length: { type: integer }
 
+    landingPage: 
+      type: object
+      required: [links]
+      properties:
+        title: { type: string, example: "Indoor feautres data server"}
+        description: { type: string, example: "Access to data about indoor features"}
+        links: { type: array, items: { $ref: '#/components/schemas/link'}}
+  
     featureCollectionGeoJSON:
       type: object
       title: featureCollectionGeoJSON
@@ -783,8 +792,6 @@ components:
         semanticExtension:
           type: boolean
           example: true
-        
-        # --- NEW NESTED SUMMARY OBJECT ---
         summary:
           type: object
           description: Statistical summary of the Primal and Dual space contents.
@@ -1061,17 +1068,134 @@ components:
             - type: boolean
             - type: object
             - type: array
-    Collection:
+
+    extent:
+      description: |-
+        The extent of the features in the collection. In the Core only spatial and temporal
+        extents are specified. Extensions may add additional members to represent other
+        extents, for example, thermal or pressure ranges.
+
+        An array of extents is provided for each extent type (spatial, temporal). The first item
+        in the array describes the overall extent of the data. All subsequent items describe more
+        precise extents, e.g., to identify clusters of data. Clients only interested in the
+        overall extent will only need to access the first extent in the array.
       type: object
-      required: [id, title, itemType]
+      properties:
+        spatial:
+          description: The spatial extent of the features in the collection.
+          type: object
+          properties:
+            bbox:
+              description: |-
+                One or more bounding boxes that describe the spatial extent of the dataset.
+                In the Core only a single bounding box is supported.
+
+                Extensions may support additional areas.
+                The first bounding box describes the overall spatial
+                extent of the data. All subsequent bounding boxes describe
+                more precise bounding boxes, e.g., to identify clusters of data.
+                Clients only interested in the overall spatial extent will
+                only need to access the first bounding box in the array.
+              type: array
+              minItems: 1
+              items:
+                description: |-
+                  Each bounding box is provided as four or six numbers, depending on
+                  whether the coordinate reference system includes a vertical axis
+                  (height or depth):
+
+                  * Lower left corner, coordinate axis 1
+                  * Lower left corner, coordinate axis 2
+                  * Minimum value, coordinate axis 3 (optional)
+                  * Upper right corner, coordinate axis 1
+                  * Upper right corner, coordinate axis 2
+                  * Maximum value, coordinate axis 3 (optional)
+
+                  If the value consists of four numbers, the coordinate reference system is
+                  WGS 84 longitude/latitude (http://www.opengis.net/def/crs/OGC/1.3/CRS84)
+                  unless a different coordinate reference system is specified in `crs`.
+
+                  If the value consists of six numbers, the coordinate reference system is WGS 84
+                  longitude/latitude/ellipsoidal height (http://www.opengis.net/def/crs/OGC/0/CRS84h)
+                  unless a different coordinate reference system is specified in `crs`.
+
+                  For WGS 84 longitude/latitude the values are in most cases the sequence of
+                  minimum longitude, minimum latitude, maximum longitude and maximum latitude.
+                  However, in cases where the box spans the antimeridian the first value
+                  (west-most box edge) is larger than the third value (east-most box edge).
+
+                  If the vertical axis is included, the third and the sixth number are
+                  the bottom and the top of the 3-dimensional bounding box.
+
+                  If a feature has multiple spatial geometry properties, it is the decision of the
+                  server whether only a single spatial geometry property is used to determine
+                  the extent or all relevant geometries.
+                type: array
+                oneOf:
+                  - minItems: 4
+                    maxItems: 4
+                  - minItems: 6
+                    maxItems: 6
+                items:
+                  type: number
+                example:
+                  - -180
+                  - -90
+                  - 180
+                  - 90
+            crs:
+              description: |-
+                Coordinate reference system of the coordinates in the spatial extent
+                (property `bbox`). The default reference system is WGS 84 longitude/latitude.
+                In the Core the only other supported coordinate reference system is
+                WGS 84 longitude/latitude/ellipsoidal height for coordinates with height.
+                Extensions may support additional coordinate reference systems and add
+                additional enum values.
+              type: string
+              enum:
+                - http://www.opengis.net/def/crs/OGC/1.3/CRS84
+                - http://www.opengis.net/def/crs/OGC/0/CRS84h
+              default: http://www.opengis.net/def/crs/OGC/1.3/CRS84
+
+    collection:
+      type: object
+      required: [id, title, itemType, links]
       properties:
         id: { type: string }
         title: { type: string }
         description: { type: string }
-        itemType: { type: string }
+        itemType: { type: string, default: "indoorfeature" }
         links:
           type: array
           items: { $ref: '#/components/schemas/link' }
+        extent:
+          $ref: '#/components/schemas/extent'
+        crs:
+          description: the list of coordinate reference systems supported by the service
+          type: array
+          items:
+            type: string
+          default:
+            - https://www.opengis.net/def/crs/OGC/1.3/CRS84
+          example:
+            - https://www.opengis.net/def/crs/OGC/1.3/CRS84
+            - https://www.opengis.net/def/crs/EPSG/0/4326
+    
+    collection-body:
+      type: object
+      required: [id, title, itemType]
+      properties:
+        id: { type: string }
+        title: { type: string, description: "human readable title of thte collections"}
+        description: { type: string, description: "any description"}
+        itemType: { type: string, description: indicator about the type of the items in the indoor features collection (the default value is 'indoorfeature')., default: "indoorfeature"}
+
+    collections:
+      type: object
+      required: [colelctons, links]
+      properties:
+        collections: { type: array, items: { $ref: '#/components/schemas/collection'} }
+        links: { type: array, items: { $ref: '#/components/schemas/link'} }
 
 
   responses:
@@ -1095,11 +1219,35 @@ components:
                 type: array
                 description: The list of available IndoorGML collections.
                 items:
-                  $ref: '#/components/schemas/Collection'
+                  $ref: '#/components/schemas/collection'
               links:
                 type: array
                 items:
                   $ref: '#/components/schemas/link'
+    
+    Collection:
+      description: The metadata being returned.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/collection'
+          example:
+            id: ifc-1
+            title: indoor_feature_collection_sample
+            itemType: indoorfeature
+            extent:
+              spatial:
+                bbox:
+                  - -180
+                  - -90
+                  - -190
+                  - 90
+                crs:
+                  - http://www.opengis.net/def/crs/OGC/1.3/CRS84
+            links:
+              - href: https://data.example.org/collections/ifc-1
+                rel: self
+                type: application/json
                     
     BadRequest:
       description: Invalid request parameters or malformed input.
@@ -1146,62 +1294,58 @@ components:
 paths:
   /collections:
     post:
-      summary: Register a new collection
-      tags: [Capabilities]
+      summary: Register metadata about a collection of indoor features
+      tags: [IndoorFeatureCollection]
       operationId: createCollection
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              type: object
-              required: [id, title, itemType]
-              properties:
-                id: { type: string }
-                title: { type: string }
-                itemType: { type: string, enum: [IndoorFeatures] }
-                description: { type: string }
+              $ref: '#/components/schemas/collection-body'
+            example: { "id": "aist_waterfront_lab", title: "AIST Waterfront Lab IndoorGML", description: "Experimental IndoorGML data for AIST project", itemType: "indoorfeature" }       
       responses:
-        '201': { description: Collection Created }
-        '400': 
-          $ref: '#/components/responses/BadRequest'
+        '201': { description: Successful create a colelction to manage indoor features.}
+        '500': 
+          $ref: '#/components/responses/InternalServerError'
     get:
-      summary: Read meta data of all collections 
+      summary: Retrive catalogs of indoor feature collections
       tags: [Capabilities]
       operationId: getCollections
       responses:
         '200':
           $ref: '#/components/responses/Collections'
+        '500':
+          $ref: '#/components/response/InternalServerError'
 
 
   /collections/{collectionId}:
     parameters:
       - $ref: '#/components/parameters/collectionId'
     get:
-      summary: Get collection metadata
-      tags: [Capabilities]
+      summary: Access metadata about the collection
+      description: |
+        A user can access metadata with id 'collectionId'.
+      tags: [IndoorFeatureCollection]
       operationId: getCollection
       responses:
         '200':
-          description: Successfully Retrieved
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  id: { type: string }
-                  title: { type: string }
-                  description: { type: string }
-                  links:
-                    type: array
-                    items: { $ref: '#/components/schemas/link' }
+          $ref: '#/components/responses/Collection'
+        '404':
+          description: A collection with the specified id was not found.
+        '500':
+          $ref: '#/components/response/InternalServerError'
     delete:
+      parameters:
+        - $ref: '#/components/parameters/collectionId'
       summary: Delete a collection
       tags: [Capabilities]
       operationId: deleteCollection
       responses:
-        '204': { description: Deleted }
-        '404': { description: Not Found }
+        '204': { description: Successfully deleted. }
+        '404': { description: A collection with the specified name was not found. }
+        '500': 
+          $ref: '#/components/responses/InternalServerError'
 
   /collections/{collectionId}/items:
     parameters:
@@ -1217,19 +1361,27 @@ paths:
             schema:
               $ref: '#/components/schemas/IndoorJSON'
       responses:
-        '201': { description: Created }
-        '400': { description: Bad Request }
+        '201': { description: Successful create a indoor feature into a specific collection. }
+        '400': { description: A query parameter was not validly used. }
+        '404': { description: A collection with the specified id was not found. }
+        '500': 
+          $ref: '#/components/responses/InternalServerError'
 
     get:
-      tags: [Data]
-      summary: fetch indoor features
-      operationId: getFeatures
+      tags: [IndoorFeatures]
+      summary: Retrieve indoor feature collection
+      operationId: getIndoorFeatures
       parameters:
+        - $ref: '#/components/parameters/collectionId'
         - $ref: '#/components/parameters/limit'
         - $ref: '#/components/parameters/bbox'
       responses:
         '200':
           $ref: '#/components/responses/Features'
+        '404':
+          description: A collection with the specified id was not found.
+        '500':
+          $ref: '#/components/responses/InternalServerError'
   /collections/{collectionId}/items/{fId}:
     parameters:
       - $ref: '#/components/parameters/collectionId'

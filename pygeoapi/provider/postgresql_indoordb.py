@@ -5,11 +5,11 @@ import logging
 from functools import partial
 from dateutil.parser import parse as dateparse
 import pytz
-from IndoorGML_API.pygeoapi.process.manager import postgresql
-from pymeos import (Temporal, TFloatSeq, TFloatSeqSet, pymeos_initialize)
+#from pygeoapi.process.manager import postgresql
+#from pymeos import (Temporal, TFloatSeq, TFloatSeqSet, pymeos_initialize)
 from pygeoapi.util import format_datetime
-from pymeos_cffi import (tfloat_from_mfjson, ttext_from_mfjson,
-                         tgeompoint_from_mfjson)
+# from pymeos_cffi import (tfloat_from_mfjson, ttext_from_mfjson,
+#                          tgeompoint_from_mfjson)
 
 LOGGER = logging.getLogger(__name__)
 
