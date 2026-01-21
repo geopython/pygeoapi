@@ -16,6 +16,7 @@ from shapely.geometry import mapping
 from sqlalchemy import func, and_
 
 # --- Database Imports ---
+from pygeoapi.provider.postgresql_indoordb import PostgresIndoorDB
 from src.database import get_db
 from src.models import *
 
@@ -74,28 +75,29 @@ LOGGER = logging.getLogger(__name__)
 
 def manage_collection(api: API, request: APIRequest, action: str, dataset: str = None) -> Tuple[dict, int, str]:
     """
-    PNU STEMLab: Manages IndoorGML Collections (Sites/Campuses)
-    This handles the POST /collections registration and DELETE /collections/{id}.
+    PNU STEMLab: Manages IndoorGML Collections via Provider
     """
     headers = request.get_response_headers(SYSTEM_LOCALE)
-    db = get_db_session()  # Open DB connection
     
+    # Initialize Provider
+    provider = PostgresIndoorDB()
+
     try:
         # --- Action: CREATE ---
         if action == 'create':
-            # 1. Get the data from the request
+            # 1. Safe JSON Parsing
             try:
                 data = request.data
                 if isinstance(data, bytes):
                     data = json.loads(data.decode('utf-8'))
-            except Exception as e:
+            except Exception:
                 return api.get_exception(
                     HTTPStatus.BAD_REQUEST, headers, request.format, 
                     'InvalidParameterValue', 'Invalid JSON body')
 
-            # 2. Extract Data
             c_id = data.get('id')
             title = data.get('title')
+            # Use .get() defaults to prevent errors
             description = data.get('description', '')
             item_type = data.get('itemType', 'indoorfeature')
 
@@ -104,38 +106,14 @@ def manage_collection(api: API, request: APIRequest, action: str, dataset: str =
                     HTTPStatus.BAD_REQUEST, headers, request.format, 
                     'MissingParameterValue', 'Required fields: id, title')
 
-            # 3. DB Check: Does it already exist?
-            existing = db.query(Collection).filter(Collection.id_str == c_id).first()
-            if existing:
-                return api.get_exception(
+            # 2. Call Provider to Create
+            # We don't need to touch api.config anymore. The DB is the authority.
+            success = provider.create_collection(c_id, title, description, item_type)
+
+            if not success:
+                 return api.get_exception(
                     HTTPStatus.CONFLICT, headers, request.format,
                     'Conflict', f'Collection {c_id} already exists')
-
-            # 4. Save to Database (PERSISTENCE)
-            # Note: Generating a random BigInt for 'id' since your SQL schema wasn't SERIAL
-            new_collection = Collection(
-                id=random.randint(1, 9223372036854775800), 
-                id_str=c_id,
-                collection_property={
-                    'title': title, 
-                    'description': description,
-                    'itemType': item_type
-                }
-            )
-            db.add(new_collection)
-            db.commit()
-
-            # 5. Update In-Memory Config (AVAILABILITY)
-            # This ensures pygeoapi can serve it immediately without a restart
-            api.config['resources'][c_id] = {
-                'type': 'collection',
-                'itemType': item_type,
-                'title': title,
-                'description': description,
-                # We point the provider to the DB now (conceptual, requires a DB Provider implementation)
-                # For now, we keep the metadata active so the /collections endpoint sees it.
-                'providers': [{'type': 'feature', 'name': 'PostgreSQL', 'data': c_id}] 
-            }
 
             response_data = {'id': c_id, 'status': 'created'}
             return headers, HTTPStatus.CREATED, to_json(response_data, api.pretty_print)
@@ -144,152 +122,75 @@ def manage_collection(api: API, request: APIRequest, action: str, dataset: str =
         elif action == 'delete':
             collection_id = str(dataset)
             
-            # 1. Get the Collection Object (and its Integer ID)
-            collection_obj = db.query(Collection).filter(Collection.id_str == collection_id).first()
+            # 1. Call Provider to Delete
+            # We trust the provider to handle the cascade
+            success = provider.delete_collection(collection_id)
             
-            if not collection_obj:
+            if not success:
                 return api.get_exception(
                     HTTPStatus.NOT_FOUND, headers, request.format,
-                    'NotFound', f'Collection {collection_id} does not exist in DB')
+                    'NotFound', f'Collection {collection_id} not found')
 
-            coll_pk = collection_obj.id  # We need the Integer ID for the cleanup
-
-            # 2. CASCADE CLEANUP (The "Deep Clean")
-            # We must delete data from the bottom up to satisfy Foreign Keys.
-            
-            # A. Delete Connections (Edges between nodes)
-            # Find all nodes in this entire collection
-            subquery_nodes = db.query(NodeEdge.id).filter(NodeEdge.collection_id == coll_pk)
-            # Delete any connection touching these nodes
-            db.query(Connects).filter(
-                (Connects.node_source_id.in_(subquery_nodes)) | 
-                (Connects.node_target_id.in_(subquery_nodes))
-            ).delete(synchronize_session=False)
-
-            # B. Delete Inter-Layer Connections
-            db.query(InterLayerConnection).filter(InterLayerConnection.collection_id == coll_pk).delete()
-
-            # C. Delete Spatial Elements (Nodes & Cells)
-            db.query(NodeEdge).filter(NodeEdge.collection_id == coll_pk).delete()
-            db.query(CellSpaceBoundary).filter(CellSpaceBoundary.collection_id == coll_pk).delete()
-
-            # D. Delete Thematic Layers
-            db.query(ThematicLayer).filter(ThematicLayer.collection_id == coll_pk).delete()
-
-            # E. Delete IndoorFeatures
-            db.query(IndoorFeature).filter(IndoorFeature.collection_id == coll_pk).delete()
-
-            # F. FINALLY: Delete the Collection itself
-            db.delete(collection_obj)
-            db.commit()
-
-            # 3. Delete from In-Memory Config
-            if collection_id in api.config['resources']:
-                del api.config['resources'][collection_id]
+            # Note: No need to delete from api.config because we never added it there!
             
             return headers, HTTPStatus.NO_CONTENT, ''
 
     except Exception as e:
-        db.rollback()
         return api.get_exception(HTTPStatus.INTERNAL_SERVER_ERROR, headers, request.format, 'ServerError', str(e))
     finally:
-        db.close()  # Always close the connection
+        provider.disconnect()
 
     return headers, HTTPStatus.METHOD_NOT_ALLOWED, ''
+
 
 def get_collection(api: API, request: APIRequest, dataset=None) -> Tuple[dict, int, str]:
     """
     GET /collections/{collectionId}
-    Retrieves collection metadata from PostGIS.
+    Retrieves a single collection's metadata from the IndoorGML Database.
     """
     collection_id = str(dataset)
     headers = request.get_response_headers(SYSTEM_LOCALE)
-    db = next(get_db())  # Standardized DB session
+    
+    # Initialize Provider
+    provider = PostgresIndoorDB()
 
     try:
-        # 1. Query the DB (We need the full object, not just the ID)
-        collection_row = db.query(Collection).filter(Collection.id_str == collection_id).first()
+        # 1. Fetch from DB
+        collection_data = provider.get_collection(collection_id)
 
-        if not collection_row:
+        # 2. Handle Not Found
+        if not collection_data:
             return api.get_exception(
                 HTTPStatus.NOT_FOUND, headers, request.format,
                 'NotFound', f'Collection {collection_id} not found.')
 
-        # Extract metadata
-        props = collection_row.collection_property or {}
-        
-        # 2. Handle HTML UI (The "Injection" Trick)
-        # We temporarily inject this DB data into the API config so the Jinja2 templates can render it.
-        if request.format == 'html':
-            if collection_id not in api.config['resources']:
-                api.config['resources'][collection_id] = {
-                    'title': props.get('title', collection_id),
-                    'description': props.get('description', ''),
-                    # OGC requires 'extents', so we provide a default global box
-                    'extents': {'spatial': {'bbox': [-180, -90, 180, 90], 'crs': 'http://www.opengis.net/def/crs/OGC/1.3/CRS84'}}
-                }
-            # Delegate to the core pygeoapi logic to render the HTML template
-            return core_api.describe_collections(api, request, collection_id)
-
-        # 3. Handle JSON API (Clean Output)
-        collection_response = {
-            "id": collection_id,
-            "title": props.get('title', collection_id),
-            "description": props.get('description', ''),
-            "links": [
-                {
-                    "href": f"{api.config['server']['url']}/collections/{collection_id}", 
-                    "rel": "self", "type": "application/json", "title": "Metadata"
-                },
-                {
-                    "href": f"{api.config['server']['url']}/collections/{collection_id}/items", 
-                    "rel": "items", "type": "application/geo+json", "title": "IndoorGML Features"
-                }
-            ],
-            "itemType": props.get('itemType', 'indoorfeature')
+        # 3. Construct Response
+        # We manually build the response to ensure it matches OGC standards
+        response = {
+            "id": collection_data['id'],
+            "title": collection_data['title'],
+            "description": collection_data.get('description', ''),
+            "itemType": collection_data.get('itemType', 'indoorfeature'),
+            "keywords": [], # Empty defaults to prevent crashes
+            "links": [],
         }
 
-        return headers, HTTPStatus.OK, to_json(collection_response, api.pretty_print)
+        # Add Links
+        response['links'].append({
+            "href": f"{api.config['server']['url']}/collections/{collection_id}?f=json", 
+            "rel": "self", "type": "application/json", "title": "Metadata"
+        })
+        response['links'].append({
+            "href": f"{api.config['server']['url']}/collections/{collection_id}/items?f=json", 
+            "rel": "items", "type": "application/geo+json", "title": "IndoorGML Features"
+        })
+
+        return headers, HTTPStatus.OK, to_json(response, api.pretty_print)
     
     except Exception as e:
-        # Catch unexpected DB errors
         return api.get_exception(HTTPStatus.INTERNAL_SERVER_ERROR, headers, request.format, 'ServerError', str(e))
-        
     finally:
-        db.close()
-
-def describe_collections(api: API, request: APIRequest) -> Tuple[dict, int, str]:
-    """
-    GET /collections
-    Reads directly from the DB to list all registered sites.
-    """
-    headers = request.get_response_headers(SYSTEM_LOCALE)
-    db = get_db_session()
-    
-    try:
-        # 1. Fetch all collections
-        all_collections = db.query(Collection).all()
-        collections_list = []
-
-        for row in all_collections:
-            props = row.collection_property or {}
-            c_id = row.id_str
-            
-            collections_list.append({
-                'id': c_id,
-                'title': props.get('title', c_id),
-                'itemType': props.get('itemType', 'feature'),
-                'links': [
-                    {'href': f"{api.config['server']['url']}/collections/{c_id}", 'rel': 'self', 'type': 'application/json'},
-                    {'href': f"{api.config['server']['url']}/collections/{c_id}/items", 'rel': 'items', 'type': 'application/geo+json'}
-                ]
-            })
-
-        content = {'collections': collections_list, 'links': []}
-        return headers, HTTPStatus.OK, to_json(content, api.pretty_print)
-
-    finally:
-        db.close()
+        provider.disconnect()
 
 def get_oas_30(cfg: dict, locale: str) -> tuple[list[dict], dict]:
     """
