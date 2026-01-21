@@ -193,7 +193,6 @@ def get_collection(api: API, request: APIRequest, dataset=None) -> Tuple[dict, i
     finally:
         provider.disconnect()
 
-from dateutil import parser as date_parser  # Ensure you have python-dateutil installed
 
 def manage_collection_item(api: API, request: APIRequest, action, 
                            dataset, identifier=None) -> Tuple[dict, int, str]:
@@ -267,14 +266,15 @@ def manage_collection_item(api: API, request: APIRequest, action,
         headers['Location'] = '{}/{}/items/{}'.format(
             api.get_collections_url(), dataset, ifeature_id)
 
-        return headers, HTTPStatus.CREATED, ''    
+        return headers, 201, to_json({"status": "Created", "id": ifeature_id}, api.pretty_print)  
+    
     if action == 'delete':
         LOGGER.debug('Deleting item')  
 
         try:
             pidb_provider.connect()  
             pidb_provider.delete_indoorfeature(
-                "AND mfeature_id ='{0}'".format(ifeature_id)
+                collection_str_id, ifeature_id
             )
         except (Exception, psycopg2.Error) as error:
             msg = str(error)
@@ -284,291 +284,135 @@ def manage_collection_item(api: API, request: APIRequest, action,
         finally:
             pidb_provider.disconnect()
 
-        return headers, HTTPStatus.NO_CONTENT, ''     
-    
-    # # --- Helper 1: Handle List or String input safely ---
-    # def get_single_id(val):
-    #     if isinstance(val, list) and len(val) > 0:
-    #         return val[0]
-    #     return val
+        return headers, HTTPStatus.NO_CONTENT, ''    
 
-    # # --- Helper 2: Clean ID (Fixes TL-1:DS-1:N1 -> N1) ---
-    # def clean_id(val):
-    #     """
-    #     Extracts the local ID if a full URI is provided.
-    #     e.g., "TL-1:DS-1:N1" -> "N1"
-    #     e.g., "N1" -> "N1"
-    #     """
-    #     raw = get_single_id(val)
-    #     if raw and isinstance(raw, str) and ":" in raw:
-    #         return raw.split(":")[-1] # Take the last part
-    #     return raw
-
-    # # --- Helper 3: Safe Date Parsing ---
-    # def parse_dt(val):
-    #     if not val: 
-    #         return None
-    #     try:
-    #         return date_parser.parse(val)
-    #     except:
-    #         return None
-    # # --- Helper: Smart Geometry Extractor ---
-    # def extract_geom(geom_obj):
-    #     """
-    #     Handles both nested OGC structure ({geometry2D: {...}}) 
-    #     and direct GeoJSON ({type: ...}).
-    #     """
-    #     if not geom_obj:
-    #         return None
-        
-    #     # Check if it's the Nested Standard (OGC)
-    #     if 'geometry2D' in geom_obj:
-    #         return geojson_to_wkt(geom_obj['geometry2D'])
-    #     if 'geometry3D' in geom_obj:
-    #         return geojson_to_wkt(geom_obj['geometry3D'])
-            
-    #     # Check if it's Direct GeoJSON (Your Input)
-    #     if 'type' in geom_obj and 'coordinates' in geom_obj:
-    #         return geojson_to_wkt(geom_obj)
-            
-    #     return None
-
-    
-
-    # db = next(get_db())
-    
-    # try:
-    #     # 1. Verify Collection
-    #     collection = db.query(Collection).filter(Collection.id_str == collection_str_id).first()
-    #     if not collection:
-    #         return api.get_exception(HTTPStatus.NOT_FOUND, headers, request.format, 'NotFound', f'Collection {collection_str_id} not found')
-
-    #     # 2. Create Root IndoorFeature
-    #     feature_pk = generate_id()
-    #     indoor_feature = IndoorFeature(
-    #         id=feature_pk,
-    #         id_str=data.get('id', f"IF_{feature_pk}"),
-    #         collection_id=collection.id,
-    #         geojson_properties=data.get('properties', {})
-    #     )
-    #     db.add(indoor_feature)
-    #     db.flush() 
-
-    #     deferred_updates = []
-
-    #     # 3. Parse Layers
-    #     layers_data = data.get('layers', [])
-    #     if layers_data:
-    #         layer_json = layers_data[0] 
-    #         primal_data = layer_json.get('primalSpace', {})
-    #         dual_data = layer_json.get('dualSpace', {})
-
-    #         thematic_layer_pk = generate_id()
-            
-    #         raw_theme = layer_json.get('theme', 'unknown').lower()
-    #         try:
-    #             theme_val = ThemeType(raw_theme)
-    #         except ValueError:
-    #             theme_val = ThemeType.unknown
-
-    #         # --- FIX: Added is_logical, is_directed, and date parsing ---
-    #         thematic_layer = ThematicLayer(
-    #             id=thematic_layer_pk,
-    #             id_str=layer_json.get('id', f"TH-{thematic_layer_pk}"),
-    #             collection_id=collection.id,
-    #             indoorfeature_id=feature_pk,
-    #             primalspace_id_str=primal_data.get('id'),
-    #             dualspace_id_str=dual_data.get('id'),
-    #             semantic_extension=layer_json.get('semanticExtension', False),
-    #             theme=theme_val,
-                
-    #             # Parsing Dates
-    #             p_creation_datetime=parse_dt(primal_data.get('creationDatetime')),
-    #             p_termination_datetime=parse_dt(primal_data.get('terminationDatetime')),
-    #             d_creation_datetime=parse_dt(dual_data.get('creationDatetime')),
-    #             d_termination_datetime=parse_dt(dual_data.get('terminationDatetime')),
-                
-    #             # Mapping Dual Space Properties
-    #             is_logical=dual_data.get('isLogical', False),
-    #             is_directed=dual_data.get('isDirected', False)
-    #         )
-    #         db.add(thematic_layer)
-    #         db.flush()
-
-    #         # B. Parse Cells (Primal)
-    #         for cell in primal_data.get('cellSpaceMember', []):
-    #             c_pk = generate_id()
-    #             db.add(CellSpaceBoundary(
-    #                 id=c_pk,
-    #                 id_str=cell.get('id'),
-    #                 type=CellType.space,
-    #                 collection_id=collection.id,
-    #                 indoorfeature_id=feature_pk,
-    #                 thematiclayer_id=thematic_layer_pk,
-    #                 geometry_2d=extract_geom(cell.get('cellSpaceGeom')),
-    #                 duality_id=None, 
-    #                 level=str(cell.get('level')), # Ensure string
-    #                 cell_name=cell.get('cellSpaceName') # Ensure this matches JSON key exactly
-    #             ))
-                
-    #             # --- FIX: Use clean_id() here ---
-    #             if cell.get('duality'):
-    #                 deferred_updates.append((CellSpaceBoundary, c_pk, NodeEdge, clean_id(cell.get('duality')), 'duality_id'))
-                
-    #             if cell.get('boundedBy'):
-    #                 deferred_updates.append((CellSpaceBoundary, c_pk, CellSpaceBoundary, clean_id(cell.get('boundedBy')), 'bounded_by_cell_id'))
-
-    #         # C. Parse Boundaries (Primal)
-    #         for bound in primal_data.get('cellBoundaryMember', []):
-    #             b_pk = generate_id()
-    #             db.add(CellSpaceBoundary(
-    #                 id=b_pk,
-    #                 id_str=bound.get('id'),
-    #                 type=CellType.boundary,
-    #                 collection_id=collection.id,
-    #                 indoorfeature_id=feature_pk,
-    #                 thematiclayer_id=thematic_layer_pk,
-    #                 geometry_2d=extract_geom(bound.get('cellBoundaryGeom')),
-    #                 duality_id=None,
-    #                 is_virtual=bound.get('isVirtual')
-    #             ))
-
-    #             # --- FIX: Use clean_id() here ---
-    #             if bound.get('duality'):
-    #                 deferred_updates.append((CellSpaceBoundary, b_pk, NodeEdge, clean_id(bound.get('duality')), 'duality_id'))
-
-    #         # D. Parse Nodes (Dual)
-    #         for node in dual_data.get('nodeMember', []):
-    #             n_pk = generate_id()
-    #             db.add(NodeEdge(
-    #                 id=n_pk,
-    #                 id_str=node.get('id'),
-    #                 type=NodeEdgeType.node,
-    #                 collection_id=collection.id,
-    #                 indoorfeature_id=feature_pk,
-    #                 thematiclayer_id=thematic_layer_pk,
-    #                 geometry_val=geojson_to_wkt(node.get('geometry')),
-    #                 duality_id=None
-    #             ))
-
-    #             # --- FIX: Use clean_id() here ---
-    #             if node.get('duality'):
-    #                 deferred_updates.append((NodeEdge, n_pk, CellSpaceBoundary, clean_id(node.get('duality')), 'duality_id'))
-
-    #         # E. Parse Edges (Dual)
-    #         for edge in dual_data.get('edgeMember', []):
-    #             e_pk = generate_id()
-    #             db.add(NodeEdge(
-    #                 id=e_pk,
-    #                 id_str=edge.get('id'),
-    #                 type=NodeEdgeType.edge,
-    #                 collection_id=collection.id,
-    #                 indoorfeature_id=feature_pk,
-    #                 thematiclayer_id=thematic_layer_pk,
-    #                 geometry_val=geojson_to_wkt(edge.get('geometry')),
-    #                 weight=edge.get('weight'),
-    #                 duality_id=None
-    #             ))
-
-    #             # --- FIX: Use clean_id() here ---
-    #             if edge.get('duality'):
-    #                 deferred_updates.append((NodeEdge, e_pk, CellSpaceBoundary, clean_id(edge.get('duality')), 'duality_id'))
-
-    #     db.flush()
-
-    #     # 5. EXECUTE DEFERRED UPDATES
-    #     for row in deferred_updates:
-    #         source_model, source_id, target_model, target_str_id, target_field = row
-            
-    #         # Resolve using the CLEANED ID
-    #         target_pk = resolve_db_id(db, target_model, target_str_id)
-            
-    #         if target_pk:
-    #             db.query(source_model).filter(source_model.id == source_id).update({target_field: target_pk})
-    #         else:
-    #             # Log warning if ID still not found
-    #             print(f"⚠️ Warning: Could not link {target_str_id} to {source_model.__tablename__}")
-
-    #     db.commit()
-    #     return headers, 201, to_json({"status": "Created", "id": indoor_feature.id_str}, api.pretty_print)
-
-    # except Exception as e:
-    #     db.rollback()
-    #     import traceback
-    #     traceback.print_exc()
-    #     return api.get_exception(HTTPStatus.BAD_REQUEST, headers, request.format, 'InvalidRequest', str(e))
-    # finally:
-    #     db.close()
-
-def get_features(api: API, request: APIRequest, dataset) -> Tuple[dict, int, str]:
+def get_collection_items(api: API, request: APIRequest, dataset) -> Tuple[dict, int, str]:
     """
     GET /collections/{cId}/items
     Returns a list of building metadata (metaGeoJSON) from the Database.
     """
-    collection_str_id = str(dataset)
+    if not request.is_valid():
+        return api.get_format_exception(request)
+    
     headers = request.get_response_headers(SYSTEM_LOCALE)
-    db = next(get_db())
+    executed, collections = get_list_of_collections_id()
+    collection_str_id = str(dataset)
+    if executed is False:
+        msg = str(collections)
+        return api.get_exception(
+            HTTPStatus.BAD_REQUEST,
+            headers, request.format, 'ConnectingError', msg)
 
+    if collection_str_id not in collections:
+        msg = 'Collection not found'
+        LOGGER.error(msg)
+        return api.get_exception(
+            HTTPStatus.NOT_FOUND,
+            headers, request.format, 'NotFound', msg)
+    LOGGER.debug('Processing query parameters')
+
+    LOGGER.debug('Processing offset parameter')
     try:
-        # 1. Resolve Collection
-        collection = db.query(Collection).filter(Collection.id_str == collection_str_id).first()
-        if not collection:
+        offset = int(request.params.get('offset'))
+        if offset < 0:
+            msg = 'offset value should be positive or zero'
             return api.get_exception(
-                HTTPStatus.NOT_FOUND, headers, request.format, 
-                'NotFound', f'Collection {collection_str_id} not found')
+                HTTPStatus.BAD_REQUEST,
+                headers, request.format, 'InvalidParameterValue', msg)
+    except TypeError as err:
+        LOGGER.warning(err)
+        offset = 0
+    except ValueError:
+        msg = 'offset value should be an integer'
+        return api.get_exception(
+            HTTPStatus.BAD_REQUEST,
+            headers, request.format, 'InvalidParameterValue', msg)
 
-        # 2. Fetch all IndoorFeatures for this collection
-        features_db = db.query(IndoorFeature).filter(IndoorFeature.collection_id == collection.id).all()
+    LOGGER.debug('Processing limit parameter')
+    try:
+        limit = int(request.params.get('limit'))
+        # TODO: We should do more validation, against the min and max
+        #       allowed by the server configuration
+        if limit <= 0:
+            msg = 'limit value should be strictly positive'
+            return api.get_exception(
+                HTTPStatus.BAD_REQUEST,
+                headers, request.format, 'InvalidParameterValue', msg)
+        if limit > 100:
+            msg = 'limit value should be less than or equal to 100'
+            return api.get_exception(
+                HTTPStatus.BAD_REQUEST,
+                headers, request.format, 'InvalidParameterValue', msg)
+    except TypeError as err:
+        LOGGER.warning(err)
+        limit = int(api.config['server']['limit'])
+    except ValueError:
+        msg = 'limit value should be an integer'
+        return api.get_exception(
+            HTTPStatus.BAD_REQUEST,
+            headers, request.format, 'InvalidParameterValue', msg)
+    
+    LOGGER.debug('Processing bbox parameter')
+    bbox = request.params.get('bbox')
 
-        meta_features = []
-        for feat in features_db:
-            # Handle Geometry: Use stored geometry or fallback to a placeholder
-            geom_dict = None
-            if feat.geojson_geometry is not None:
-                # Convert PostGIS Element -> Shapely -> GeoJSON Dict
-                geom_dict = mapping(to_shape(feat.geojson_geometry))
-            else:
-                # Placeholder footprint if none exists
-                geom_dict = {"type": "Polygon", "coordinates": [[[0, 0], [10, 0], [10, 10], [0, 10], [0, 0]]]}
+    if bbox is None: 
+        bbox = []
+    else:
+        try:
+            bbox = validate_bbox(bbox)
+        except ValueError as err:
+            msg = str(err)
+            return api.get_exception(
+                HTTPStatus.BAD_REQUEST,
+                headers, request.format, 'InvalidParameterValue', msg)
+    LOGGER.debug('Querying provider')
+    LOGGER.debug('offset: {}'.format(offset))
+    LOGGER.debug('limit: {}'.format(limit))
+    LOGGER.debug('bbox: {}'.format(bbox))
 
-            # Construct the summary feature
-            meta_feat = {
-                "type": "Feature",
-                "featureType": "IndoorFeatures",
-                "id": feat.id_str,
-                "geometry": geom_dict,
-                "properties": {
-                    "metadata": {
-                        "description": feat.geojson_properties.get('description', f"Model {feat.id_str}"),
-                        "creationDate": datetime.utcnow().isoformat() + "Z", # Or fetch from DB if you add a column
-                        "version": "2.0"
-                    }
-                },
-                "links": [
-                    {
-                        "href": f"{api.config['server']['url']}/collections/{collection_str_id}/items/{feat.id_str}",
-                        "rel": "item", "type": "application/json", "title": "Full IndoorGML Graph"
-                    }
-                ]
-            }
-            meta_features.append(meta_feat)
-
-        # 3. Wrap in FeatureCollection
-        response = {
+    pidb_provider = PostgresIndoorDB()
+    try:
+        pidb_provider.connect()
+        features, number_matched, number_returned = \
+            pidb_provider.get_features(collection_id=collection_str_id,
+                                        bbox=bbox, limit=limit, offset=offset)
+        content = {
             "type": "FeatureCollection",
-            "features": meta_features,
-            "numberMatched": len(meta_features),
-            "numberReturned": len(meta_features),
-            "timeStamp": datetime.utcnow().isoformat() + "Z",
+            "numberMatched": number_matched,
+            "numberReturned": number_returned,
+            "features": features,
             "links": [
-                {"href": f"{api.config['server']['url']}/collections/{collection_str_id}/items", "rel": "self", "type": "application/json"}
-            ]
+                # Standard links usually go here (self, next, prev, etc.)
+                # You can use api.get_items_links() if pygeoapi provides it, 
+                # or build them manually.
+                 {
+                    "type": "application/geo+json",
+                    "rel": "self",
+                    "title": "This document",
+                    "href": f"{api.base_url}/collections/{collection_str_id}/items"
+                }
+            ],
+            "timeStamp": "" # Optional: add current timestamp
         }
-
-        return headers, 200, to_json(response, api.pretty_print)
-
+        # Add "next" link for pagination if there are more results
+        if number_matched > (offset + limit):
+            next_offset = offset + limit
+            content["links"].append({
+                "rel": "next",
+                "title": "Next page",
+                "href": f"{api.base_url}/collections/{collection_str_id}/items?offset={next_offset}&limit={limit}"
+            })
+    except (Exception, psycopg2.Error) as error:
+        LOGGER.error(f"Database error: {error}")
+        msg = str(error)
+        return api.get_exception(
+            HTTPStatus.INTERNAL_SERVER_ERROR,
+            headers, request.format, 'ConnectingError', msg)
     finally:
-        db.close()
+        pidb_provider.disconnect()
+    return headers, HTTPStatus.OK, content
+    
+
 
 def get_feature(api: API, request: APIRequest, dataset, identifier) -> Tuple[dict, int, str]:
     """
@@ -1404,33 +1248,61 @@ def get_list_of_collections_id():
     finally:
         pidb_provider.disconnect()
 
-def check_required_field_feature(feature):
-    if 'featureType' in feature:
-        if feature['type'] == 'IndoorFeatures':
-            return True
+def validate_bbox(value=None) -> list:
+    """
+    Helper function to validate bbox parameter
 
-    if 'type' not in feature or 'temporalGeometry' not in feature:
-        return False
+    :param value: `list` of minx, miny, maxx, maxy
 
-    if check_required_field_temporal_geometries(
-            feature['temporalGeometry']) is False:
-        return False
+    :returns: bbox as `list` of `float` values
+    """
 
-    if 'temporalProperties' in feature:
-        if check_required_field_temporal_property(
-                feature['temporalProperties']) is False:
-            return False
+    if value is None:
+        LOGGER.debug('bbox is empty')
+        return []
 
-    if 'geometry' in feature:
-        if check_required_field_geometries(feature['geometry']) is False:
-            return False
+    bbox = value.split(',')
 
-    if 'crs' in feature:
-        if check_required_field_crs(feature['crs']) is False:
-            return False
+    if len(bbox) != 4 and len(bbox) != 6:
+        msg = 'bbox should be 4 values (minx,miny,maxx,maxy) or \
+            6 values (minx,miny,minz,maxx,maxy,maxz)'
+        LOGGER.debug(msg)
+        raise ValueError(msg)
 
-    if 'trs' in feature:
-        if check_required_field_trs(feature['trs']) is False:
-            return False
+    try:
+        bbox = [float(c) for c in bbox]
+    except ValueError as err:
+        msg = 'bbox values must be numbers'
+        err.args = (msg,)
+        LOGGER.debug(msg)
+        raise
 
-    return True
+    if len(bbox) == 4:
+        if bbox[1] > bbox[3]:
+            msg = 'miny should be less than maxy'
+            LOGGER.debug(msg)
+            raise ValueError(msg)
+
+        if bbox[0] > bbox[2]:
+            msg = 'minx is greater than maxx (possibly antimeridian bbox)'
+            LOGGER.debug(msg)
+            raise ValueError(msg)
+
+    if len(bbox) == 6:
+        if bbox[2] > bbox[5]:
+            msg = 'minz should be less than maxz'
+            LOGGER.debug(msg)
+            raise ValueError(msg)
+
+        if bbox[1] > bbox[4]:
+            msg = 'miny should be less than maxy'
+            LOGGER.debug(msg)
+            raise ValueError(msg)
+
+        if bbox[0] > bbox[3]:
+            msg = 'minx is greater than maxx (possibly antimeridian bbox)'
+            LOGGER.debug(msg)
+            raise ValueError(msg)
+
+    return bbox
+

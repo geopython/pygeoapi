@@ -255,8 +255,7 @@ class PostgresIndoorDB:
         return result
 
     def get_features(
-            self, collection_id, bbox='', datetime='', limit=10, offset=0,
-            sub_trajectory=False):
+            self, collection_id, bbox='', limit=10, offset=0):
         """
         Retrieve the indoor feature collection to access
         the static information of the indoor feature
@@ -265,52 +264,93 @@ class PostgresIndoorDB:
         :param collection_id: local identifier of a collection
         :param bbox: bounding box [lowleft1,lowleft2,min(optional),
                                    upright1,upright2,max(optional)]
-        :param datetime: either a date-time or an interval(datestamp or extent)
         :param limit: number of items (default 10) [optional]
         :param offset: starting record to return (default 0)
 
         :returns: JSON IndoorFeatures
         """
 
+        
+        if bbox is None:
+            bbox = []
+            
+        # 1. Prepare Filter Strings
+        # We need to filter by collection_id_str (which is passed in)
+        # We assume collection_id here is the STRING ID (e.g., 'AIST_Building'), 
+        # so we join with the collection table.
+        
+        where_clauses = ["c.id_str = %s"]
+        params = [collection_id]
+
+        # 2. Handle BBOX (Bounding Box)
+        # bbox format: [minx, miny, maxx, maxy]
+        if bbox and len(bbox) == 4:
+            # PostGIS && operator checks if bounding boxes overlap
+            # ST_MakeEnvelope creates a rectangle from the 4 coordinates
+            where_clauses.append("i.geojson_geometry && ST_MakeEnvelope(%s, %s, %s, %s, 4326)")
+            params.extend(bbox)
+
+        # Join all where clauses
+        where_str = " AND ".join(where_clauses)
+
         with self.connection.cursor() as cur:
-            bbox_restriction = ""
-            if bbox != '' and bbox is not None:
-                s_bbox = ','.join(str(x) for x in bbox)
-                if len(bbox) == 4:
-                    bbox_restriction = " and box2d(stboxx(" + \
-                        s_bbox + ")) &&& box2d(extentTGeometry) "
-                elif len(bbox) == 6:
-                    bbox_restriction = " and box3d(stboxz(" + \
-                        s_bbox + ")) &&& box3d(extentTGeometry) "
+            # 3. Get Total Count (number_matched)
+            # This counts ALL items that match the filter (ignoring limit/offset)
+            count_sql = f"""
+                SELECT COUNT(*) 
+                FROM indoorfeature i
+                JOIN collection c ON i.collection_id = c.id
+                WHERE {where_str}
+            """
+            
+            # We must pass parameters safely to avoid SQL injection
+            # Note: params currently has [collection_id] + [bbox values]
+            cur.execute(count_sql, tuple(params))
+            number_matched = cur.fetchone()[0]
 
-            datetime_restriction = ""
-            if datetime != '' and datetime is not None:
-                if sub_trajectory is False or sub_trajectory == "false":
-                    datetime_restriction = (
-                        """ and((lifespan && tstzspan('[{0}]'))
-                        or (extentTPropertiesValueFloat::tstzspan &&
-                        tstzspan('[{0}]')) or
-                        (extentTPropertiesValueText::tstzspan &&
-                        tstzspan('[{0}]')) or
-                        (extentTGeometry::tstzspan && tstzspan('[{0}]')))"""
-                        .format(datetime))
-            limit_restriction = " LIMIT " + \
-                str(limit) + " OFFSET " + str(offset)
+            # 4. Get Data (Features) with Limit/Offset
+            # We select the necessary columns to build the GeoJSON
+            data_sql = f"""
+                SELECT 
+                    i.id_str, 
+                    ST_AsGeoJSON(i.geojson_geometry) as geom,
+                    i.geojson_properties
+                FROM indoorfeature i
+                JOIN collection c ON i.collection_id = c.id
+                WHERE {where_str}
+                ORDER BY i.id ASC
+                LIMIT %s OFFSET %s
+            """
+            
+            # Add limit/offset to the parameters list for the second query
+            query_params = list(params) # Copy existing params
+            query_params.extend([limit, offset])
+            
+            cur.execute(data_sql, tuple(query_params))
+            rows = cur.fetchall()
 
-            # sub_trajectory is false
-            select_query = (
-                """TODO""" )
+            # 5. Format Rows into GeoJSON Feature Objects
+            features = []
+            import json
+            
+            for row in rows:
+                feature_id, geom_text, props = row
+                
+                # Parse geometry string into JSON object (or None)
+                geometry = json.loads(geom_text) if geom_text else None
+                
+                # Construct the GeoJSON Feature dictionary
+                feature = {
+                    "type": "Feature",
+                    "id": feature_id,
+                    "geometry": geometry,
+                    "properties": props or {} 
+                }
+                features.append(feature)
 
-            cur.execute(select_query)
-            result = cur.fetchall()
-            number_matched = len(result)
-
-            select_query += limit_restriction
-            cur.execute(select_query)
-            result = cur.fetchall()
-            number_returned = len(result)
-
-        return result, number_matched, number_returned
+            number_returned = len(features)
+            
+            return features, number_matched, number_returned
 
     def get_feature(self, collection_id, mfeature_id):
         """
@@ -347,14 +387,14 @@ class PostgresIndoorDB:
         with self.connection.cursor() as cur:
             try:
                 # 2. Resolve Collection DB ID (Integer) from String ID
-                cur.execute("SELECT id_str FROM collection WHERE id_str = %s", (collection_str_id,))
+                cur.execute("SELECT id FROM collection WHERE id_str = %s", (collection_str_id,))
                 res = cur.fetchone()
                 if not res:
                     raise Exception(f"Collection {collection_str_id} not found.")
+                LOGGER.debug(res)
                 collection_pk = res[0]
 
                 # 3. Insert Main IndoorFeature
-                # We store the raw GeoJSON properties in a JSONB column
                 cur.execute(
                     """
                     INSERT INTO indoorfeature (id_str, collection_id, geojson_properties)
@@ -662,3 +702,64 @@ class PostgresIndoorDB:
             self.connection.rollback()
             LOGGER.error(f"DB Error deleting connection {connection_id}: {e}")
             return False
+
+    def delete_indoorfeature(self, collection_str_id, feature_id_str):
+        """
+        Deletes an IndoorFeature and all its associated layers, cells, nodes, and connections.
+        
+        :param collection_str_id: The String ID of the Collection (e.g., 'IndoorGML_DataSet_1')
+        :param feature_id_str: The String ID of the Feature to delete (e.g., 'AIST_Waterfront')
+        """
+        LOGGER.debug(f"Deleting IndoorFeature: {feature_id_str} in {collection_str_id}")
+
+        with self.connection.cursor() as cur:
+            try:
+                # 1. Resolve IDs (We need the Integer IDs to delete efficiently)
+                cur.execute(
+                    "SELECT c.id, i.id FROM collection c "
+                    "JOIN indoorfeature i ON c.id = i.collection_id "
+                    "WHERE c.id_str = %s AND i.id_str = %s",
+                    (collection_str_id, feature_id_str)
+                )
+                res = cur.fetchone()
+                
+                if not res:
+                    # Item not found, usually returns 404 in API, but here we can just return
+                    LOGGER.warning(f"Feature {feature_id_str} not found.")
+                    return
+
+                coll_pk, feature_pk = res
+
+                # 2. DELETE CHILDREN FIRST (Because we don't have CASCADE in SQL)
+                
+                # A. Delete Connections (Edges between nodes)
+                # We must delete rows in 'connects' where the nodes belong to this feature
+                cur.execute("""
+                    DELETE FROM connects 
+                    WHERE node_source_id IN (
+                        SELECT id FROM node_n_edge WHERE indoorfeature_id = %s
+                    )
+                """, (feature_pk,))
+
+                # B. Delete InterLayerConnections
+                cur.execute("DELETE FROM interlayerconnection WHERE indoorfeature_id = %s", (feature_pk,))
+
+                # C. Delete Nodes and Edges
+                cur.execute("DELETE FROM node_n_edge WHERE indoorfeature_id = %s", (feature_pk,))
+
+                # D. Delete Cells and Boundaries
+                cur.execute("DELETE FROM cell_space_n_boundary WHERE indoorfeature_id = %s", (feature_pk,))
+
+                # E. Delete Thematic Layers
+                cur.execute("DELETE FROM thematiclayer WHERE indoorfeature_id = %s", (feature_pk,))
+
+                # 3. DELETE PARENT (The IndoorFeature itself)
+                cur.execute("DELETE FROM indoorfeature WHERE id = %s", (feature_pk,))
+
+                # Commit is handled by the context manager
+                self.connection.commit()
+                
+            except Exception as e:
+                self.connection.rollback()
+                LOGGER.error(f"Error deleting indoorfeature: {e}")
+                raise e
