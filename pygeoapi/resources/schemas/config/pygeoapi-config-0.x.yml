@@ -540,6 +540,10 @@ properties:
                                           type: boolean
                                           description: whether the resource is editable
                                           default: false
+                                      count:
+                                          type: boolean
+                                          description: whether to perform a count query for collection queries
+                                          default: true
                                       table:
                                           type: string
                                           description: table name for RDBMS-based providers

@@ -132,6 +132,20 @@ def test_query_with_paging(config):
     assert feature_collection['numberReturned'] == ALL_ITEMS_IN_DB - 3
 
 
+def test_no_count(config):
+    """Test query with no count"""
+    p = MySQLProvider(config)
+    feature_collection = p.query()
+    assert feature_collection['numberMatched'] == 5
+    assert feature_collection['numberReturned'] == 5
+
+    config['count'] = False
+    p = MySQLProvider(config)
+    feature_collection = p.query()
+    assert 'numberMatched' not in feature_collection
+    assert feature_collection['numberReturned'] == 5
+
+
 def test_query_bbox(config):
     """Test query with a specified bounding box"""
     p = MySQLProvider(config)
