@@ -382,227 +382,179 @@ def collection_items(collection_id: str, item_id: str | None = None):
     # It is IndoorGML if:
     # A. It explicitly says 'indoorfeature' in YAML.
     # B. OR It is missing from YAML (implies it's a dynamic DB collection).
-    is_indoor = (resource and resource.get('itemType') == 'indoorfeature') or (resource is None)
 
-    # --- PATH A: IndoorGML (Custom DB Logic) ---
-    if is_indoor:
-        if item_id is None:
-            if request.method == 'POST':
-                # This will now correctly hit your create_item function!
-                return execute_from_flask(indoorgml.create_item, request, collection_id)
-            elif request.method == 'GET':
-                return execute_from_flask(indoorgml.get_features, request, collection_id)
-        else:
-            # Handle specific item (Get/Delete)
-            if request.method == 'GET':
-                # You'll need to implement this next
-                return execute_from_flask(indoorgml.get_feature, request, collection_id, item_id)
-            elif request.method == 'DELETE':
-                return execute_from_flask(indoorgml.delete_feature, request, collection_id, item_id)
 
-    # --- PATH B: Standard OGC API (YAML/Core Logic) ---
-    # We still need this! This handles standard collections defined in your .yml file
-    # (e.g. 'obs', 'lakes', etc.)
-    if item_id is None:
-        if request.method == 'POST':
-            if request.content_type == 'application/geo+json':
-                return execute_from_flask(
-                        itemtypes_api.manage_collection_item,
-                        request, 'create', collection_id, skip_valid_check=True)
-            else:
-                return execute_from_flask(
-                        itemtypes_api.get_collection_items, request,
-                        collection_id, skip_valid_check=True)
-        elif request.method == 'OPTIONS':
-             return execute_from_flask(
-                    itemtypes_api.manage_collection_item, request, 'options',
-                    collection_id, skip_valid_check=True)
-        else:
-            return execute_from_flask(itemtypes_api.get_collection_items,
-                                      request, collection_id, skip_valid_check=True)
-    elif request.method == 'DELETE':
-        return execute_from_flask(itemtypes_api.manage_collection_item,
-                                  request, 'delete', collection_id, item_id, skip_valid_check=True)
-    elif request.method == 'PUT':
-        return execute_from_flask(itemtypes_api.manage_collection_item,
-                                  request, 'update', collection_id, item_id, skip_valid_check=True)
-    elif request.method == 'OPTIONS':
-        return execute_from_flask(itemtypes_api.manage_collection_item,
-                                  request, 'options', collection_id, item_id, skip_valid_check=True)
-    else:
-        return execute_from_flask(itemtypes_api.get_collection_item, request, collection_id, item_id)
-
-@BLUEPRINT.route('/collections/<path:collection_id>/items/<path:item_id>/layers', methods=['GET', 'POST'])
-@BLUEPRINT.route('/collections/<path:collection_id>/items/<path:item_id>/layers/<path:layer_id>', methods=['GET', 'DELETE'])
-def collection_items_layers(collection_id, item_id, layer_id=None):
-    """
-    OGC Indoorfeatures collections items layers endpoint
+# @BLUEPRINT.route('/collections/<path:collection_id>/items/<path:item_id>/layers', methods=['GET', 'POST'])
+# @BLUEPRINT.route('/collections/<path:collection_id>/items/<path:item_id>/layers/<path:layer_id>', methods=['GET', 'DELETE'])
+# def collection_items_layers(collection_id, item_id, layer_id=None):
+#     """
+#     OGC Indoorfeatures collections items layers endpoint
     
-    :param collection_id: collection identifier
-    :param item_id: item identifier
+#     :param collection_id: collection identifier
+#     :param item_id: item identifier
     
-    :reaturns: HTTP response
-    """
-    if layer_id is None:
-        if request.method == 'GET':  #list metadata of thematic layers.
-            return execute_from_flask(
-                indoorgml.get_collection_item_layers, request, 
-                collection_id, 
-                item_id
-            )
-        elif request.method == 'POST':  # create new thematic layer
-            return execute_from_flask(
-                indoorgml.manage_collection_item_layer, request, 
-                'create', 
-                collection_id, 
-                item_id
-            )
-    else:
-        if request.method == 'GET':  # read data of specific thematic layer
-            return execute_from_flask(
-                indoorgml.get_collection_item_layer, request, 
-                collection_id,
-                item_id,
-                layer_id
-            )
-        elif request.method == 'DELETE':  #delete specific thematic layer
-            return execute_from_flask(
-                indoorgml.manage_collection_item_layer, request,
-                'delete',
-                collection_id,
-                item_id,
-                layer_id
-            )
+#     :reaturns: HTTP response
+#     """
+#     if layer_id is None:
+#         if request.method == 'GET':  #list metadata of thematic layers.
+#             return execute_from_flask(
+#                 indoorgml.get_collection_item_layers, request, 
+#                 collection_id, 
+#                 item_id
+#             )
+#         elif request.method == 'POST':  # create new thematic layer
+#             return execute_from_flask(
+#                 indoorgml.manage_collection_item_layer, request, 
+#                 'create', 
+#                 collection_id, 
+#                 item_id
+#             )
+#     else:
+#         if request.method == 'GET':  # read data of specific thematic layer
+#             return execute_from_flask(
+#                 indoorgml.get_collection_item_layer, request, 
+#                 collection_id,
+#                 item_id,
+#                 layer_id
+#             )
+#         elif request.method == 'DELETE':  #delete specific thematic layer
+#             return execute_from_flask(
+#                 indoorgml.manage_collection_item_layer, request,
+#                 'delete',
+#                 collection_id,
+#                 item_id,
+#                 layer_id
+#             )
 
-@BLUEPRINT.route('/collections/<path:collection_id>/items/<path:item_id>/interlayerconnections', methods=['GET', 'POST'])
-@BLUEPRINT.route('/collections/<path:collection_id>/items/<path:item_id>/interlayerconnections/<path:connection_id>', methods=['DELETE'])
-def collection_items_interlayerconnections(collection_id, item_id, connection_id=None):
-    """
-    OGC Indoorfeatures collections items interlayerconnections endpoint
+# @BLUEPRINT.route('/collections/<path:collection_id>/items/<path:item_id>/interlayerconnections', methods=['GET', 'POST'])
+# @BLUEPRINT.route('/collections/<path:collection_id>/items/<path:item_id>/interlayerconnections/<path:connection_id>', methods=['DELETE'])
+# def collection_items_interlayerconnections(collection_id, item_id, connection_id=None):
+#     """
+#     OGC Indoorfeatures collections items interlayerconnections endpoint
     
-    :param collection_id: collection identifier
-    :param item_id: item identifier
-    :param connection_id: inter layer connection identifier
+#     :param collection_id: collection identifier
+#     :param item_id: item identifier
+#     :param connection_id: inter layer connection identifier
     
-    :reaturns: HTTP response
-    """
-    if connection_id is None:
-        if request.method == 'GET':
-            return execute_from_flask(
-                indoorgml.get_collection_item_interlayerconnections, request,
-                collection_id,
-                item_id
-            )
-        elif request.method == 'POST':
-            return execute_from_flask(
-                indoorgml.manage_collection_item_interlayerconnections, request,
-                'create',
-                collection_id,
-                item_id
-            )
-    else:
-        if request.method == 'DELETE':
-            return execute_from_flask(
-                indoorgml.manage_collection_item_interlayerconnections, request, 
-                'delete',
-                collection_id,
-                item_id,
-                connection_id
-            )
+#     :reaturns: HTTP response
+#     """
+#     if connection_id is None:
+#         if request.method == 'GET':
+#             return execute_from_flask(
+#                 indoorgml.get_collection_item_interlayerconnections, request,
+#                 collection_id,
+#                 item_id
+#             )
+#         elif request.method == 'POST':
+#             return execute_from_flask(
+#                 indoorgml.manage_collection_item_interlayerconnections, request,
+#                 'create',
+#                 collection_id,
+#                 item_id
+#             )
+#     else:
+#         if request.method == 'DELETE':
+#             return execute_from_flask(
+#                 indoorgml.manage_collection_item_interlayerconnections, request, 
+#                 'delete',
+#                 collection_id,
+#                 item_id,
+#                 connection_id
+#             )
 
-@BLUEPRINT.route('/collections/<path:collection_id>/items/<path:item_id>/layers/<path:layer_id>/primal', methods=['POST', 'GET'])
-@BLUEPRINT.route('/collections/<path:collection_id>/items/<path:item_id>/layers/<path:layer_id>/primal/<path:member_id>', methods=['GET','PATCH','DELETE']) # cellboundary : only get
-def collection_items_layers_primal(collection_id, item_id, layer_id, member_id=None):
-    if member_id==None:
-        if request.method == 'GET':
-            return execute_from_flask(
-                indoorgml.get_primal, request, 
-                collection_id,
-                item_id,
-                layer_id
-            )
-        elif request.method == 'POST':
-            return execute_from_flask(
-                indoorgml.manage_primal, request,
-                'create',
-                collection_id,
-                item_id,
-                layer_id
-            )
-    else: 
-        if request.method == 'GET':
-            return execute_from_flask(
-                indoorgml.get_primal_member, request,
-                collection_id,
-                item_id,
-                layer_id,
-                member_id
-            ) 
-        elif request.method == 'PATCH':
-            return execute_from_flask(
-                indoorgml.manage_primal, request,
-                'update',
-                collection_id,
-                item_id,
-                layer_id
-            )  
-        else:
-            return execute_from_flask(
-                indoorgml.manage_primal, request,
-                'delete',
-                collection_id,
-                item_id,
-                layer_id
-            )
-    pass
+# @BLUEPRINT.route('/collections/<path:collection_id>/items/<path:item_id>/layers/<path:layer_id>/primal', methods=['POST', 'GET'])
+# @BLUEPRINT.route('/collections/<path:collection_id>/items/<path:item_id>/layers/<path:layer_id>/primal/<path:member_id>', methods=['GET','PATCH','DELETE']) # cellboundary : only get
+# def collection_items_layers_primal(collection_id, item_id, layer_id, member_id=None):
+#     if member_id==None:
+#         if request.method == 'GET':
+#             return execute_from_flask(
+#                 indoorgml.get_primal, request, 
+#                 collection_id,
+#                 item_id,
+#                 layer_id
+#             )
+#         elif request.method == 'POST':
+#             return execute_from_flask(
+#                 indoorgml.manage_primal, request,
+#                 'create',
+#                 collection_id,
+#                 item_id,
+#                 layer_id
+#             )
+#     else: 
+#         if request.method == 'GET':
+#             return execute_from_flask(
+#                 indoorgml.get_primal_member, request,
+#                 collection_id,
+#                 item_id,
+#                 layer_id,
+#                 member_id
+#             ) 
+#         elif request.method == 'PATCH':
+#             return execute_from_flask(
+#                 indoorgml.manage_primal, request,
+#                 'update',
+#                 collection_id,
+#                 item_id,
+#                 layer_id
+#             )  
+#         else:
+#             return execute_from_flask(
+#                 indoorgml.manage_primal, request,
+#                 'delete',
+#                 collection_id,
+#                 item_id,
+#                 layer_id
+#             )
+#     pass
 
 
-@BLUEPRINT.route('/collections/<path:collection_id>/items/<path:item_id>/layers/<path:layer_id>/dual', methods=['POST', 'GET'])
-@BLUEPRINT.route('/collections/<path:collection_id>/items/<path:item_id>/layers/<path:layer_id>/dual/<path:member_id>', methods=['GET','PATCH','DELETE']) # only edge can update
-def collection_items_layers_dual(collection_id, item_id, layer_id, member_id=None):
-    if member_id == None:
-        if request.method == 'GET':
-            return execute_from_flask(
-                indoorgml.get_dual, request,
-                collection_id, 
-                item_id,
-                layer_id
-            )
-        else:
-            return execute_from_flask(
-                indoorgml.manage_dual, request,
-                'create',
-                collection_id,
-                item_id,
-                layer_id
-            )
-    else:
-        if request.method == 'GET':
-            return execute_from_flask(
-                indoorgml.get_dual_member, request,
-                collection_id,
-                item_id,
-                layer_id,
-                member_id
-            )
-        elif request.method == 'PATCH':
-            return execute_from_flask(
-                indoorgml.manage_dual, request,
-                'update',
-                collection_id,
-                item_id,
-                layer_id,
-                member_id
-            )
-        else: 
-            return execute_from_flask(
-                indoorgml.manage_dual, request,
-                'delete',
-                collection_id,
-                item_id,
-                layer_id,
-                member_id
-            )
+# @BLUEPRINT.route('/collections/<path:collection_id>/items/<path:item_id>/layers/<path:layer_id>/dual', methods=['POST', 'GET'])
+# @BLUEPRINT.route('/collections/<path:collection_id>/items/<path:item_id>/layers/<path:layer_id>/dual/<path:member_id>', methods=['GET','PATCH','DELETE']) # only edge can update
+# def collection_items_layers_dual(collection_id, item_id, layer_id, member_id=None):
+#     if member_id == None:
+#         if request.method == 'GET':
+#             return execute_from_flask(
+#                 indoorgml.get_dual, request,
+#                 collection_id, 
+#                 item_id,
+#                 layer_id
+#             )
+#         else:
+#             return execute_from_flask(
+#                 indoorgml.manage_dual, request,
+#                 'create',
+#                 collection_id,
+#                 item_id,
+#                 layer_id
+#             )
+#     else:
+#         if request.method == 'GET':
+#             return execute_from_flask(
+#                 indoorgml.get_dual_member, request,
+#                 collection_id,
+#                 item_id,
+#                 layer_id,
+#                 member_id
+#             )
+#         elif request.method == 'PATCH':
+#             return execute_from_flask(
+#                 indoorgml.manage_dual, request,
+#                 'update',
+#                 collection_id,
+#                 item_id,
+#                 layer_id,
+#                 member_id
+#             )
+#         else: 
+#             return execute_from_flask(
+#                 indoorgml.manage_dual, request,
+#                 'delete',
+#                 collection_id,
+#                 item_id,
+#                 layer_id,
+#                 member_id
+#             )
 
     
 

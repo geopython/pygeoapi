@@ -323,22 +323,65 @@ class PostgresIndoorDB:
             
             return features, number_matched, number_returned
 
-    def get_feature(self, collection_id, mfeature_id):
+    def get_feature(self, collection_id, feature_id):
         """
-        Access the static data of the indoor feature
-
-        :param collection_id: local identifier of a collection
-        :param mfeature_id: local identifier of a indoor feature
-
-        :returns: JSON IndoorFeature
+        Retrieves the complete IndoorFeature (Metadata + Full Hierarchy).
+        Returns a single Dictionary representing the Feature or None if not found.
         """
+        result_feature = None
         with self.connection.cursor() as cur:
-            # cur = self.connection.cursor()
-            select_query = (
-                """TODO""")
-            cur.execute(select_query)
-            result = cur.fetchall()
-        return result
+            # 1. Fetch the Main IndoorFeature (Metadata)
+            # We need the Integer ID (pk) to query children tables
+            cur.execute("""
+                SELECT i.id, i.id_str, ST_AsGeoJSON(i.geojson_geometry), i.geojson_properties
+                FROM indoorfeature i
+                JOIN collection c ON i.collection_id = c.id
+                WHERE c.id_str = %s AND i.id_str = %s
+            """, (collection_id, feature_id))
+            
+            row = cur.fetchone()
+            if not row:
+                return None
+            LOGGER.debug(row)
+            feature_pk, feature_id_str, geom_str, props = row
+            import json
+            geometry = json.loads(geom_str) if geom_str else None
+            properties = props or {}
+            cur.execute("""SELECT * FROM thematiclayer """)
+            LOGGER.debug(cur.fetchall())
+            result_feature = {
+                "type": "Feature",
+                "featureType": "IndoorFeatures",
+                "id": feature_id_str,
+                "geometry": geometry,
+                "properties": properties,
+                "IndoorFeatures": {
+                    "featureType": "IndoorFeatures",
+                    "layers": [],
+                    "layerConnections": []
+                }
+            }
+            cur.execute("""
+                SELECT id, id_str, primalspace_id_str, dualspace_id_str, semantic_extension, theme
+                FROM thematiclayer
+                WHERE indoorfeature_id = %s
+            """, (feature_pk,))
+            
+            layer_rows = cur.fetchall()
+            LOGGER.debug(layer_rows)
+            for l_row in layer_rows:
+             
+                l_pk, l_id, l_p, l_d, l_se, l_t = l_row
+                thematic_layer = {
+                        "id": l_id,
+                        "featureType": "ThematicLayer",
+                        "theme": l_t if l_t else "Unknown",
+                        "semanticExtension": l_se if l_se else False, # Defaulting to False unless stored in DB
+                        "primalSpace": l_p,
+                        "dualSpace": l_d
+                    }
+                result_feature["IndoorFeatures"]["layers"].append(thematic_layer)
+        return result_feature
     
     def post_indoorfeature(self, collection_str_id, indoorfeature):
         """
@@ -352,8 +395,8 @@ class PostgresIndoorDB:
         """        
         feature_id_str = indoorfeature.get('id')
         properties = indoorfeature.get('properties', {})
-        indoor_content = indoorfeature.get('IndoorFeatures', {})
-        layers = indoor_content.get('layers', [])
+        
+        layers = indoorfeature.get('layers', [])
 
         with self.connection.cursor() as cur:
             try:
@@ -362,7 +405,6 @@ class PostgresIndoorDB:
                 res = cur.fetchone()
                 if not res:
                     raise Exception(f"Collection {collection_str_id} not found.")
-                LOGGER.debug(res)
                 collection_pk = res[0]
 
                 # 3. Insert Main IndoorFeature
@@ -375,7 +417,7 @@ class PostgresIndoorDB:
                     (feature_id_str, collection_pk, Json(properties))
                 )
                 indoorfeature_pk = cur.fetchone()[0]
-
+                
                 # 4. Iterate and Insert Layers
                 for layer in layers:
                     self._post_thematic_layer(cur, collection_pk, indoorfeature_pk, layer)
@@ -411,7 +453,7 @@ class PostgresIndoorDB:
                 layer_data.get('id'),
                 coll_pk,
                 feature_pk,
-                layer_data.get('theme', 'Unknown'),
+                layer_data.get('theme', 'Unknown').lower(),
                 layer_data.get('semanticExtension', False),
                 dual.get('isLogical', False),
                 dual.get('isDirected', False),
@@ -488,7 +530,7 @@ class PostgresIndoorDB:
             geom_json = node.get('geometry')
             
             sql = """
-                INSERT INTO node_edge 
+                INSERT INTO node_n_edge 
                 (id_str, type, collection_id, indoorfeature_id, thematiclayer_id, geometry_val)
                 VALUES (%s, 'node', %s, %s, %s, ST_SetSRID(ST_GeomFromGeoJSON(%s), 4326))
             """
@@ -505,7 +547,7 @@ class PostgresIndoorDB:
             geom_json = edge.get('geometry')
 
             sql = """
-                INSERT INTO node_edge 
+                INSERT INTO node_n_edge 
                 (id_str, type, collection_id, indoorfeature_id, thematiclayer_id, geometry_val, weight)
                 VALUES (%s, 'edge', %s, %s, %s, ST_SetSRID(ST_GeomFromGeoJSON(%s), 4326), %s)
             """
