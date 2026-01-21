@@ -327,3 +327,121 @@ class PostgresIndoorDB:
             cur.execute(select_query)
             result = cur.fetchall()
         return result
+
+    def get_interlayer_connections(self, feature_str_id):
+        """
+        Fetches connections for a specific IndoorFeature.
+        Matches table: interlayerconnection
+        """
+        self.connect()
+        with self.connection.cursor() as cur:
+            # 1. Get Feature PK
+            cur.execute("SELECT id FROM indoorfeature WHERE id_str = %s", (feature_str_id,))
+            res = cur.fetchone()
+            if not res: return []
+            feature_pk = res[0]
+
+            # 2. Get Connections
+            # Note: We join with 'layer' table (l1, l2) to get the String IDs back for the JSON response
+            query = """
+                SELECT 
+                    c.id_str, 
+                    c.topo_type, 
+                    c.comment, 
+                    l1.id_str as layer_a_str, 
+                    l2.id_str as layer_b_str,
+                    c.id as conn_pk
+                FROM interlayerconnection c
+                LEFT JOIN layer l1 ON c.connected_layer_a = l1.id
+                LEFT JOIN layer l2 ON c.connected_layer_b = l2.id
+                WHERE c.indoorfeature_id = %s
+            """
+            cur.execute(query, (feature_pk,))
+            rows = cur.fetchall()
+            
+            results = []
+            for row in rows:
+                conn_pk = row[5]
+                
+                # TODO: If you have an 'interlayeredge' table, fetch edges here using conn_pk
+                # For now, we return the connection shell
+                
+                results.append({
+                    "id": row[0],
+                    "typeOfTopoExpression": row[1],
+                    "comment": row[2],
+                    "interConnects": [row[3], row[4]], # Layer String IDs
+                    "interLayerConnectionMember": [] # Populate this if you have an edge table
+                })
+                
+        return results
+
+
+    def create_interlayer_connection(self, collection_str_id, feature_str_id, data):
+        """
+        Creates a connection in the 'interlayerconnection' table.
+        Resolves String IDs to BigInt IDs for Foreign Keys.
+        """
+        self.connect()
+        
+        new_id = data.get('id')
+        topo = data.get('typeOfTopoExpression', 'EQUALS')
+        comment = data.get('comment', '')
+        
+        # Extract Layer String IDs from JSON
+        layers = data.get('interConnects', [])
+        layer_a_str = layers[0] if len(layers) > 0 else None
+        layer_b_str = layers[1] if len(layers) > 1 else None
+
+        try:
+            with self.connection.cursor() as cur:
+                # 1. Resolve IDs (This is robust SQL to get BigInts from Strings)
+                
+                # Resolve Collection PK
+                cur.execute("SELECT id FROM collection WHERE id_str = %s", (collection_str_id,))
+                res = cur.fetchone()
+                if not res: raise Exception("Collection not found")
+                coll_pk = res[0]
+
+                # Resolve Feature PK
+                cur.execute("SELECT id FROM indoorfeature WHERE id_str = %s AND collection_id = %s", (feature_str_id, coll_pk))
+                res = cur.fetchone()
+                if not res: raise Exception("Feature not found")
+                feat_pk = res[0]
+
+                # Resolve Layer A PK
+                cur.execute("SELECT id FROM layer WHERE id_str = %s", (layer_a_str,))
+                res = cur.fetchone()
+                if not res: raise Exception(f"Layer {layer_a_str} not found")
+                layer_a_pk = res[0]
+
+                # Resolve Layer B PK
+                cur.execute("SELECT id FROM layer WHERE id_str = %s", (layer_b_str,))
+                res = cur.fetchone()
+                if not res: raise Exception(f"Layer {layer_b_str} not found")
+                layer_b_pk = res[0]
+
+                # 2. Insert Record
+                insert_query = """
+                    INSERT INTO interlayerconnection 
+                    (id_str, collection_id, indoorfeature_id, connected_layer_a, connected_layer_b, topo_type, comment)
+                    VALUES (%s, %s, %s, %s, %s, %s, %s)
+                """
+                
+                cur.execute(insert_query, (
+                    new_id, 
+                    coll_pk, 
+                    feat_pk, 
+                    layer_a_pk, 
+                    layer_b_pk, 
+                    topo, 
+                    comment
+                ))
+                
+                self.connection.commit()
+                return new_id
+
+        except Exception as e:
+            self.connection.rollback()
+            LOGGER.error(f"DB Error: {e}")
+            return None

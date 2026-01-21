@@ -1273,223 +1273,77 @@ def _calculate_layer_bbox_db(db, layer_row):
 
     return bbox_result
 
-def get_collection_item_interlayerconnections(api: API, request: APIRequest, dataset, identifier) -> Tuple[dict, int, str]:
-    if not request.is_valid():
-        return api.get_format_exception(request)
-    
-    headers = request.get_response_headers(api.api_headers)
-    collection_str_id = str(dataset)
-    feature_str_id = str(identifier)
-    
-    db = next(get_db())
+def get_collection_item_interlayerconnections(api: API, request: APIRequest, collection_id: str, item_id: str) -> Tuple[dict, int, str]:
+    """
+    GET /collections/{id}/items/{featureId}/interlayerconnections
+    Retrieves the connections for a specific feature.
+    """
+    headers = request.get_response_headers(SYSTEM_LOCALE)
+    provider = PostgresIndoorDB()
 
     try:
-        # 1. Resolve IDs and Validate
-        coll_pk = resolve_db_id(db, Collection, collection_str_id)
-        feat_pk = resolve_db_id(db, IndoorFeature, feature_str_id)
-
-        if not coll_pk:
-            return api.get_exception(404, headers, request.format, 'NotFound', 'Collection not found')
-        if not feat_pk:
-            return api.get_exception(404, headers, request.format, 'NotFound', 'Feature not found')
-
-        feature = db.query(IndoorFeature).filter(
-            IndoorFeature.id == feat_pk,
-            IndoorFeature.collection_id == coll_pk
-        ).first()
-
-        if not feature:
-            return api.get_exception(404, headers, request.format, 'NotFound', 
-                                   f'Feature {feature_str_id} not found in collection {collection_str_id}')
-
-        # 2. Query InterLayerConnections
-        connections = db.query(InterLayerConnection).filter(
-            InterLayerConnection.indoorfeature_id == feature.id
-        ).all()
-
-        # 3. Construct Response
-        # We assume InterLayerConnection objects have a relationship or method to retrieve their edges/members
-        conn_list_json = []
-        
-        for conn in connections:
-            # Reconstruct the JSON object
-            # You might need to query child InterLayerEdges here if they aren't lazy-loaded
-            edges = db.query(InterLayerEdge).filter(
-                InterLayerEdge.interlayerconnection_id == conn.id
-            ).all()
-
-            edge_members = []
-            for e in edges:
-                edge_members.append({
-                    "id": e.id_str,
-                    "weight": e.weight,
-                    "connects": [e.node_a_id, e.node_b_id] # Assuming you store the connected node IDs
-                })
-
-            conn_obj = {
-                "id": conn.id_str,
-                "typeOfTopoExpression": conn.topo_expression, # e.g., 'CONTAINS', 'OVERLAPS'
-                "comment": conn.comment,
-                "interConnects": [conn.layer_a_id, conn.layer_b_id], # Assuming you store the 2 connected layer IDs
-                "interLayerConnectionMember": edge_members
-            }
-            conn_list_json.append(conn_obj)
-
-        base_url = f"{api.config['server']['url']}/collections/{collection_str_id}/items/{feature_str_id}/interlayerconnections"
+        # Fetch connections (Clean name, no 'nested')
+        connections_data = provider.get_interlayer_connections(item_id)
         
         response = {
-            "layerConnections": conn_list_json,
+            "layerConnections": connections_data,
             "links": [
                 {
-                    "href": base_url,
+                    "href": f"{api.config['server']['url']}/collections/{collection_id}/items/{item_id}/interlayerconnections",
                     "rel": "self",
                     "type": "application/json",
-                    "title": "InterLayer Connections (Full)"
-                },
-                {
-                    "href": f"{api.config['server']['url']}/collections/{collection_str_id}/items/{feature_str_id}",
-                    "rel": "up",
-                    "type": "application/geo+json",
-                    "title": "Parent Feature"
+                    "title": "InterLayer Connections"
                 }
             ]
         }
-
-        return headers, 200, to_json(response, api.pretty_print)
-
+        return headers, HTTPStatus.OK, to_json(response, api.pretty_print)
+        
     except Exception as e:
-        LOGGER.error(f"Error fetching connections: {e}")
-        return api.get_exception(500, headers, request.format, 'ServerError', str(e))
-
+        return api.get_exception(HTTPStatus.INTERNAL_SERVER_ERROR, headers, request.format, 'ServerError', str(e))
     finally:
-        db.close()
+        provider.disconnect()
 
-def manage_collection_item_interlayerconnections(api: API, request: APIRequest, action, dataset, identifier, connection=None) -> Tuple[dict, int, str]:
-    if not request.is_valid():
-        return api.get_format_exception(request)
-    
-    headers = request.get_response_headers(api.api_headers)
-    collection_str_id = str(dataset)
-    feature_str_id = str(identifier)
-    connection_str_id = str(connection)
-    
-    db = next(get_db())
+
+def manage_collection_item_interlayerconnections(api: API, request: APIRequest, action: str, collection_id: str, item_id: str, connection_id: str = None) -> Tuple[dict, int, str]:
+    """
+    POST / DELETE for Interlayer Connections
+    """
+    headers = request.get_response_headers(SYSTEM_LOCALE)
+    provider = PostgresIndoorDB()
 
     try:
-        # 1. Resolve Parent Feature
-        coll_pk = resolve_db_id(db, Collection, collection_str_id)
-        feat_pk = resolve_db_id(db, IndoorFeature, feature_str_id)
-
-        if not coll_pk or not feat_pk:
-             return api.get_exception(404, headers, request.format, 'NotFound', 'Collection or Feature not found')
-
-        feature = db.query(IndoorFeature).filter(
-            IndoorFeature.id == feat_pk,
-            IndoorFeature.collection_id == coll_pk
-        ).first()
-
-        if not feature:
-            return api.get_exception(404, headers, request.format, 'NotFound', f'Feature not found')
-
-        # =====================================================================
-        # ACTION: CREATE
-        # =====================================================================
         if action == 'create':
             try:
-                # A. Parse & Validate
-                data = json.loads(request.data.decode('utf-8'))
-                connection_schema = {
-                    "$schema": INDOOR_SCHEMA.get("$schema"),
-                    "$defs": INDOOR_SCHEMA.get("$defs"),
-                    "$ref": "#/$defs/InterLayerConnection" 
-                }
-                validate(instance=data, schema=connection_schema)
-                
-                new_id = data.get('id')
-                
-                # B. Check for Duplicates
-                existing = db.query(InterLayerConnection).filter(
-                    InterLayerConnection.indoorfeature_id == feature.id,
-                    InterLayerConnection.id_str == new_id
-                ).first()
-                
-                if existing:
-                    return api.get_exception(409, headers, request.format, 'Conflict', f"Connection ID {new_id} already exists")
+                data = request.data
+                if isinstance(data, bytes):
+                    data = json.loads(data.decode('utf-8'))
+            except Exception:
+                return api.get_exception(HTTPStatus.BAD_REQUEST, headers, request.format, 'InvalidParameterValue', 'Invalid JSON')
 
-                # C. Insert Parent Connection Record
-                # We expect 'interConnects' to be a list of 2 Layer IDs
-                layer_ids = data.get('interConnects', [])
-                layer_a = layer_ids[0] if len(layer_ids) > 0 else None
-                layer_b = layer_ids[1] if len(layer_ids) > 1 else None
+            # Pass collection_id and item_id (feature_id) to helper for ID resolution
+            new_id = provider.create_interlayer_connection(collection_id, item_id, data)
+            
+            if new_id:
+                headers['Location'] = f"{api.config['server']['url']}/collections/{collection_id}/items/{item_id}/interlayerconnections/{new_id}"
+                return headers, HTTPStatus.CREATED, to_json({"status": "Created", "id": new_id}, api.pretty_print)
+            else:
+                return api.get_exception(HTTPStatus.INTERNAL_SERVER_ERROR, headers, request.format, 'ServerError', 'Creation failed (check logs)')
 
-                new_conn = InterLayerConnection(
-                    id_str=new_id,
-                    indoorfeature_id=feature.id,
-                    topo_expression=data.get('typeOfTopoExpression'),
-                    comment=data.get('comment'),
-                    layer_a_id=layer_a, # Storing the String ID or resolving to FK if preferred
-                    layer_b_id=layer_b
-                )
-                db.add(new_conn)
-                db.flush() # Generate ID for children
-
-                # D. Insert Children (Edges)
-                members = data.get('interLayerConnectionMember', [])
-                for edge in members:
-                    # 'connects' is usually [NodeID_A, NodeID_B]
-                    connects = edge.get('connects', [])
-                    node_a = connects[0] if len(connects) > 0 else None
-                    node_b = connects[1] if len(connects) > 1 else None
-
-                    new_edge = InterLayerEdge(
-                        id_str=edge.get('id'),
-                        interlayerconnection_id=new_conn.id,
-                        weight=edge.get('weight', 1.0),
-                        node_a_id=node_a,
-                        node_b_id=node_b
-                    )
-                    db.add(new_edge)
-
-                db.commit()
-                
-                headers['Location'] = f"{api.config['server']['url']}/collections/{collection_str_id}/items/{feature_str_id}/interlayerconnections/{new_id}"
-                return headers, 201, to_json({"status": "Created", "id": new_id}, api.pretty_print)
-
-            except ValidationError as v_err:
-                db.rollback()
-                return api.get_exception(400, headers, request.format, 'InvalidRequest', f"Schema Error: {v_err.message}")
-            except Exception as e:
-                db.rollback()
-                return api.get_exception(500, headers, request.format, 'ServerError', str(e))
-
-        # =====================================================================
-        # ACTION: DELETE
-        # =====================================================================
         elif action == 'delete':
-            target_conn = db.query(InterLayerConnection).filter(
-                InterLayerConnection.id_str == connection_str_id,
-                InterLayerConnection.indoorfeature_id == feature.id
-            ).first()
+            if not connection_id:
+                return api.get_exception(HTTPStatus.BAD_REQUEST, headers, request.format, 'MissingParameterValue', 'ID required')
 
-            if not target_conn:
-                return api.get_exception(404, headers, request.format, 'NotFound', f'Connection {connection_str_id} not found')
-
-            try:
-                db.delete(target_conn) # Cascades should handle InterLayerEdges
-                db.commit()
-                return headers, 204, ''
-            except Exception as e:
-                db.rollback()
-                return api.get_exception(500, headers, request.format, 'ServerError', str(e))
-        
-        else:
-            return api.get_exception(405, headers, request.format, 'MethodNotAllowed', "Action not implemented")
+            success = provider.delete_interlayer_connection(connection_id)
+            if success:
+                return headers, HTTPStatus.NO_CONTENT, ''
+            else:
+                return api.get_exception(HTTPStatus.NOT_FOUND, headers, request.format, 'NotFound', 'Connection not found')
 
     except Exception as e:
-        LOGGER.error(f"Global error in manage_connections: {e}")
-        return api.get_exception(500, headers, request.format, 'ServerError', str(e))
-
+        return api.get_exception(HTTPStatus.INTERNAL_SERVER_ERROR, headers, request.format, 'ServerError', str(e))
     finally:
-        db.close()
+        provider.disconnect()
+
+    return headers, HTTPStatus.METHOD_NOT_ALLOWED, ''
 
 
