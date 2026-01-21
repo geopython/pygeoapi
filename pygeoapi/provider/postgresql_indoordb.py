@@ -330,8 +330,8 @@ class PostgresIndoorDB:
 
     def get_interlayer_connections(self, feature_str_id):
         """
-        Fetches connections for a specific IndoorFeature.
-        Matches table: interlayerconnection
+        Fetches connections for a feature.
+        Matches JSON Schema: Flat structure (connectedLayers, connectedNodes, connectedCells)
         """
         self.connect()
         with self.connection.cursor() as cur:
@@ -341,19 +341,23 @@ class PostgresIndoorDB:
             if not res: return []
             feature_pk = res[0]
 
-            # 2. Get Connections
-            # Note: We join with 'layer' table (l1, l2) to get the String IDs back for the JSON response
+            # 2. Huge Join Query
+            # We join Layers, Nodes (State), AND Cells (CellSpace) to resolve all IDs at once.
             query = """
                 SELECT 
                     c.id_str, 
                     c.topo_type, 
-                    c.comment, 
-                    l1.id_str as layer_a_str, 
-                    l2.id_str as layer_b_str,
-                    c.id as conn_pk
+                    c.comment,
+                    l1.id_str as l1_id, l2.id_str as l2_id,
+                    n1.id_str as n1_id, n2.id_str as n2_id,
+                    cs1.id_str as c1_id, cs2.id_str as c2_id
                 FROM interlayerconnection c
                 LEFT JOIN layer l1 ON c.connected_layer_a = l1.id
                 LEFT JOIN layer l2 ON c.connected_layer_b = l2.id
+                LEFT JOIN state n1 ON c.connected_node_a = n1.id
+                LEFT JOIN state n2 ON c.connected_node_b = n2.id
+                LEFT JOIN cellspace cs1 ON c.connected_cell_a = cs1.id
+                LEFT JOIN cellspace cs2 ON c.connected_cell_b = cs2.id
                 WHERE c.indoorfeature_id = %s
             """
             cur.execute(query, (feature_pk,))
@@ -361,81 +365,87 @@ class PostgresIndoorDB:
             
             results = []
             for row in rows:
-                conn_pk = row[5]
-                
-                # TODO: If you have an 'interlayeredge' table, fetch edges here using conn_pk
-                # For now, we return the connection shell
-                
-                results.append({
+                # Helper to filter out None values if a connection is missing a node/cell
+                layers = [x for x in [row[3], row[4]] if x]
+                nodes = [x for x in [row[5], row[6]] if x]
+                cells = [x for x in [row[7], row[8]] if x]
+
+                conn_obj = {
                     "id": row[0],
+                    "featureType": "InterLayerConnection",
                     "typeOfTopoExpression": row[1],
-                    "comment": row[2],
-                    "interConnects": [row[3], row[4]], # Layer String IDs
-                    "interLayerConnectionMember": [] # Populate this if you have an edge table
-                })
+                    "comment": row[2] or "",
+                    "connectedLayers": layers,
+                    "connectedNodes": nodes,
+                    "connectedCells": cells
+                }
+                results.append(conn_obj)
                 
         return results
 
 
     def create_interlayer_connection(self, collection_str_id, feature_str_id, data):
         """
-        Creates a connection in the 'interlayerconnection' table.
-        Resolves String IDs to BigInt IDs for Foreign Keys.
+        Creates a connection matching the Flat Schema.
         """
         self.connect()
         
+        # 1. Parse JSON
         new_id = data.get('id')
         topo = data.get('typeOfTopoExpression', 'EQUALS')
         comment = data.get('comment', '')
         
-        # Extract Layer String IDs from JSON
-        layers = data.get('interConnects', [])
-        layer_a_str = layers[0] if len(layers) > 0 else None
-        layer_b_str = layers[1] if len(layers) > 1 else None
+        # Extract ID pairs
+        layers = data.get('connectedLayers', [])
+        nodes = data.get('connectedNodes', [])
+        cells = data.get('connectedCells', [])
+
+        l1_str, l2_str = (layers[0], layers[1]) if len(layers) >= 2 else (None, None)
+        n1_str, n2_str = (nodes[0], nodes[1]) if len(nodes) >= 2 else (None, None)
+        c1_str, c2_str = (cells[0], cells[1]) if len(cells) >= 2 else (None, None)
 
         try:
             with self.connection.cursor() as cur:
-                # 1. Resolve IDs (This is robust SQL to get BigInts from Strings)
+                # 2. Resolve ALL IDs (Strings -> BigInts)
                 
-                # Resolve Collection PK
-                cur.execute("SELECT id FROM collection WHERE id_str = %s", (collection_str_id,))
-                res = cur.fetchone()
-                if not res: raise Exception("Collection not found")
-                coll_pk = res[0]
+                # Resolvers (Helper to keep code clean)
+                def get_id(table, id_str):
+                    if not id_str: return None
+                    cur.execute(f"SELECT id FROM {table} WHERE id_str = %s", (id_str,))
+                    res = cur.fetchone()
+                    return res[0] if res else None
 
-                # Resolve Feature PK
+                coll_pk = get_id('collection', collection_str_id)
+                # Feature must belong to this collection
                 cur.execute("SELECT id FROM indoorfeature WHERE id_str = %s AND collection_id = %s", (feature_str_id, coll_pk))
                 res = cur.fetchone()
                 if not res: raise Exception("Feature not found")
                 feat_pk = res[0]
 
-                # Resolve Layer A PK
-                cur.execute("SELECT id FROM layer WHERE id_str = %s", (layer_a_str,))
-                res = cur.fetchone()
-                if not res: raise Exception(f"Layer {layer_a_str} not found")
-                layer_a_pk = res[0]
+                l1_pk = get_id('layer', l1_str)
+                l2_pk = get_id('layer', l2_str)
+                n1_pk = get_id('state', n1_str)
+                n2_pk = get_id('state', n2_str)
+                c1_pk = get_id('cellspace', c1_str)
+                c2_pk = get_id('cellspace', c2_str)
 
-                # Resolve Layer B PK
-                cur.execute("SELECT id FROM layer WHERE id_str = %s", (layer_b_str,))
-                res = cur.fetchone()
-                if not res: raise Exception(f"Layer {layer_b_str} not found")
-                layer_b_pk = res[0]
-
-                # 2. Insert Record
+                # 3. Insert Record
                 insert_query = """
                     INSERT INTO interlayerconnection 
-                    (id_str, collection_id, indoorfeature_id, connected_layer_a, connected_layer_b, topo_type, comment)
-                    VALUES (%s, %s, %s, %s, %s, %s, %s)
+                    (id_str, collection_id, indoorfeature_id, 
+                     connected_layer_a, connected_layer_b, 
+                     connected_node_a, connected_node_b,
+                     connected_cell_a, connected_cell_b,
+                     topo_type, comment)
+                    VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
                 """
                 
                 cur.execute(insert_query, (
-                    new_id, 
-                    coll_pk, 
-                    feat_pk, 
-                    layer_a_pk, 
-                    layer_b_pk, 
-                    topo, 
-                    comment
+                    new_id, coll_pk, feat_pk, 
+                    l1_pk, l2_pk, 
+                    n1_pk, n2_pk, 
+                    c1_pk, c2_pk, 
+                    topo, comment
                 ))
                 
                 self.connection.commit()
@@ -445,3 +455,30 @@ class PostgresIndoorDB:
             self.connection.rollback()
             LOGGER.error(f"DB Error: {e}")
             return None
+        
+    def delete_interlayer_connection(self, connection_id):
+        """
+        Deletes a connection by its String ID.
+        """
+        self.connect()
+        
+        try:
+            with self.connection.cursor() as cur:
+                # 1. Check existence (Optional, but good for returning 404 vs 204)
+                cur.execute("SELECT id FROM interlayerconnection WHERE id_str = %s", (connection_id,))
+                if cur.fetchone() is None:
+                    return False
+
+                # 2. Delete
+                # Note: If you have foreign keys in other tables pointing here, 
+                # ensure they are set to ON DELETE CASCADE in your DB schema.
+                delete_query = "DELETE FROM interlayerconnection WHERE id_str = %s"
+                cur.execute(delete_query, (connection_id,))
+                
+                self.connection.commit()
+                return True
+
+        except Exception as e:
+            self.connection.rollback()
+            LOGGER.error(f"DB Error deleting connection {connection_id}: {e}")
+            return False
