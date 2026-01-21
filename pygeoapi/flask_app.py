@@ -49,7 +49,7 @@ import pygeoapi.api.tiles as tiles_api
 import pygeoapi.api.indoorgml as indoorgml
 from pygeoapi.openapi import load_openapi_document
 from pygeoapi.config import get_config
-from pygeoapi.util import get_mimetype, get_api_rules
+from pygeoapi.util import get_mimetype, get_api_rules, filter_dict_by_key_value
 
 
 CONFIG = get_config()
@@ -306,6 +306,78 @@ def collection_items(collection_id: str, item_id: str | None = None):
     # 1. Lookup in Static Config (YAML)
     resource = api_.config['resources'].get(collection_id)
 
+    collections = filter_dict_by_key_value(api_.config['resources'],
+                                           'type', 'collection')
+    # collection in config
+    if collection_id in collections:
+        if item_id is None:
+            if request.method == 'GET': # list items
+                return execute_from_flask(itemtypes_api.get_collection_items,
+                                          request, collection_id, skip_valid_check=True)
+            elif request.method == 'POST': # filter or manage items
+                if request.content_type is not None:
+                    if request.content_type == 'application/geo+json':
+                        return execute_from_flask(
+                            itemtypes_api.manage_collection_item,
+                            request, 'create', collection_id,
+                            skip_valid_check=True)
+                    else:
+                        return execute_from_flask(
+                            itemtypes_api.post_collection_items, request, 
+                            collection_id, skip_valid_check=True
+                        )
+                elif request.method == 'OPTIONS':
+                    return execute_from_flask(
+                        itemtypes_api.manage_collection_item, request,
+                        'options', collection_id, skip_valid_check=True)
+            elif request.method == 'DELETE':
+                return execute_from_flask(
+                    itemtypes_api.manage_collection_item,
+                    request,
+                    'delete',
+                    collection_id,
+                    item_id,
+                    skip_valid_check=True)
+        elif request.method == 'PUT':
+            return execute_from_flask(
+                itemtypes_api.manage_collection_item,
+                request,
+                'update',
+                collection_id,
+                item_id,
+                skip_valid_check=True)
+        elif request.method == 'OPTIONS':
+            return execute_from_flask(
+                itemtypes_api.manage_collection_item,
+                request,
+                'options',
+                collection_id,
+                item_id,
+                skip_valid_check=True)
+        else:
+            return execute_from_flask(itemtypes_api.get_collection_item,
+                                      request, collection_id, item_id)
+    else:
+        if item_id is None:
+            if request.method == 'GET':  # list items
+                return execute_from_flask(
+                    indoorgml.get_collection_items, request,
+                    collection_id)
+            elif request.method == 'POST':  # filter or manage items
+                return execute_from_flask(
+                    indoorgml.manage_collection_item, request,
+                    'create', collection_id)
+
+        elif request.method == 'DELETE':
+            return execute_from_flask(
+                indoorgml.manage_collection_item, request,
+                'delete', collection_id,
+                item_id)
+        else:
+            return execute_from_flask(
+                indoorgml.get_collection_item, request,
+                collection_id, item_id)
+                        
     # 2. DECISION LOGIC
     # It is IndoorGML if:
     # A. It explicitly says 'indoorfeature' in YAML.
