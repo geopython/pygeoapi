@@ -1493,4 +1493,3 @@ def manage_collection_item_interlayerconnections(api: API, request: APIRequest, 
         db.close()
 
 
-        
