@@ -64,35 +64,6 @@ class PostgresIndoorDB:
             self.connection.close()
             self.connection = None
 
-    def get_collections_list(self):
-        """
-        Query indoor features collection list with metadata.
-        Returns:
-            list[dict]: A list of dicts, e.g. 
-            [{'id': 'campus_1', 'title': 'Main Campus', 'itemType': 'feature'}, ...]
-        """
-        self.connect()
-
-        with self.connection.cursor() as cur:
-            # Fetch both the ID and the properties JSON
-            select_query = "SELECT collection_id, collection_property FROM collection"
-            cur.execute(select_query)
-            result = cur.fetchall()
-        
-        clean_list = []
-        for row in result:
-            c_id = row[0]
-            # Handle cases where collection_property might be None
-            props = row[1] if row[1] else {}
-            
-            clean_list.append({
-                'id': c_id,
-                # Replicate your original logic: default title to ID if missing
-                'title': props.get('title', c_id), 
-                'itemType': props.get('itemType', 'feature')
-            })
-        
-        return clean_list
 
     def get_collections_list(self):
         """
@@ -158,39 +129,39 @@ class PostgresIndoorDB:
 
     def create_collection(self, id_str, title, description, item_type='indoorfeature'):
         """
-        Creates a new collection in the IndoorGML database.
+        Creates a new collection.
+        Refactored for 2026 Schema: Relies on DB to auto-generate the Integer ID.
         """
         self.connect()
         
-        # 1. Generate a random BigInt ID (since your schema uses BigInt PKs, not Serial)
-        # Matches your previous logic: random.randint(1, 9223372036854775800)
-        new_pk_id = random.randint(1, 9223372036854775800)
-
-        # 2. Prepare the JSON property blob
+        # REMOVED: new_pk_id = random.randint(...) <- No longer needed!
+        
         properties = {
             'title': title,
             'description': description,
             'itemType': item_type
         }
         
-        with self.connection.cursor() as cur:
-            # 3. Check if exists first (safety check)
-            cur.execute("SELECT 1 FROM collection WHERE id_str = %s", (id_str,))
-            if cur.fetchone():
-                return False  # Already exists
+        try:
+            with self.connection.cursor() as cur:
+                # 1. Check if exists
+                cur.execute("SELECT 1 FROM collection WHERE id_str = %s", (id_str,))
+                if cur.fetchone():
+                    return False
 
-            # 4. Insert
-            insert_query = """
-                INSERT INTO collection (id_str, collection_property)
-                VALUES (%s, %s)
-            """
-            cur.execute(insert_query, (id_str, json.dumps(properties)))
-            
-            # Commit is handled by the connection context or autocommit settings, 
-            # but usually explicit commit is safer in transactional wrapper.
-            self.connection.commit()
-            
-        return True
+                # 2. Insert (Let Postgres handle the 'id' column automatically)
+                insert_query = """
+                    INSERT INTO collection (id_str, collection_property)
+                    VALUES (%s, %s)
+                """
+                cur.execute(insert_query, (id_str, json.dumps(properties)))
+                
+                self.connection.commit()
+                return True
+        except Exception as e:
+            self.connection.rollback()
+            LOGGER.error(f"Error creating collection: {e}")
+            return False
 
     def delete_collection(self, id_str):
         """
@@ -508,21 +479,32 @@ class PostgresIndoorDB:
             ))
         
 
-    def get_interlayer_connections(self, feature_str_id):
+    def get_interlayer_connections(self, collection_str_id, feature_str_id):
         """
         Fetches connections for a feature.
-        Matches JSON Schema: Flat structure (connectedLayers, connectedNodes, connectedCells)
+        UPDATED 2026: Scoped by Collection ID to handle non-unique Feature IDs.
         """
         self.connect()
         with self.connection.cursor() as cur:
-            # 1. Get Feature PK
-            cur.execute("SELECT id FROM indoorfeature WHERE id_str = %s", (feature_str_id,))
-            res = cur.fetchone()
-            if not res: return []
-            feature_pk = res[0]
+            # 1. Get Collection Anchor
+            # This ensures we are looking in the right 'folder' (e.g. Busan vs Seoul)
+            cur.execute("SELECT id FROM collection WHERE id_str = %s", (collection_str_id,))
+            res_coll = cur.fetchone()
+            if not res_coll: 
+                return [] # Collection doesn't exist
 
-            # 2. Huge Join Query
-            # We join Layers, Nodes (State), AND Cells (CellSpace) to resolve all IDs at once.
+            coll_pk = res_coll[0]
+
+            # 2. Get Feature PK (Scoped lookup)
+            # We filter by BOTH the feature name AND the collection PK
+            cur.execute("SELECT id FROM indoorfeature WHERE id_str = %s AND collection_id = %s", (feature_str_id, coll_pk))
+            res_feat = cur.fetchone()
+            if not res_feat: 
+                return [] # Feature doesn't exist in this collection
+
+            feature_pk = res_feat[0]
+
+            # 3. Fetch Connections (Using the safe feature_pk)
             query = """
                 SELECT 
                     c.id_str, 
@@ -532,12 +514,12 @@ class PostgresIndoorDB:
                     n1.id_str as n1_id, n2.id_str as n2_id,
                     cs1.id_str as c1_id, cs2.id_str as c2_id
                 FROM interlayerconnection c
-                LEFT JOIN layer l1 ON c.connected_layer_a = l1.id
-                LEFT JOIN layer l2 ON c.connected_layer_b = l2.id
-                LEFT JOIN state n1 ON c.connected_node_a = n1.id
-                LEFT JOIN state n2 ON c.connected_node_b = n2.id
-                LEFT JOIN cellspace cs1 ON c.connected_cell_a = cs1.id
-                LEFT JOIN cellspace cs2 ON c.connected_cell_b = cs2.id
+                LEFT JOIN thematiclayer l1 ON c.connected_layer_a = l1.id
+                LEFT JOIN thematiclayer l2 ON c.connected_layer_b = l2.id
+                LEFT JOIN node_n_edge n1 ON c.connected_node_a = n1.id
+                LEFT JOIN node_n_edge n2 ON c.connected_node_b = n2.id
+                LEFT JOIN cell_space_n_boundary cs1 ON c.connected_cell_a = cs1.id
+                LEFT JOIN cell_space_n_boundary cs2 ON c.connected_cell_b = cs2.id
                 WHERE c.indoorfeature_id = %s
             """
             cur.execute(query, (feature_pk,))
@@ -545,7 +527,7 @@ class PostgresIndoorDB:
             
             results = []
             for row in rows:
-                # Helper to filter out None values if a connection is missing a node/cell
+                # Build lists, filtering out None values (e.g. if a connection has no nodes, just layers)
                 layers = [x for x in [row[3], row[4]] if x]
                 nodes = [x for x in [row[5], row[6]] if x]
                 cells = [x for x in [row[7], row[8]] if x]
@@ -566,16 +548,16 @@ class PostgresIndoorDB:
 
     def create_interlayer_connection(self, collection_str_id, feature_str_id, data):
         """
-        Creates a connection matching the Flat Schema.
+        Creates a connection.
+        UPDATED: Implements Supervisor's "Direct SQL Check" to prevent duplicates 
+        within the same Feature scope.
         """
         self.connect()
         
-        # 1. Parse JSON
-        new_id = data.get('id')
-        topo = data.get('typeOfTopoExpression', 'EQUALS')
+        new_id_str = data.get('id')
+        topo = data.get('typeOfTopoExpression', 'others')
         comment = data.get('comment', '')
         
-        # Extract ID pairs
         layers = data.get('connectedLayers', [])
         nodes = data.get('connectedNodes', [])
         cells = data.get('connectedCells', [])
@@ -586,30 +568,48 @@ class PostgresIndoorDB:
 
         try:
             with self.connection.cursor() as cur:
-                # 2. Resolve ALL IDs (Strings -> BigInts)
-                
-                # Resolvers (Helper to keep code clean)
-                def get_id(table, id_str):
-                    if not id_str: return None
-                    cur.execute(f"SELECT id FROM {table} WHERE id_str = %s", (id_str,))
-                    res = cur.fetchone()
-                    return res[0] if res else None
+                # 1. Resolve Context (Collection & Feature)
+                cur.execute("SELECT id FROM collection WHERE id_str = %s", (collection_str_id,))
+                res = cur.fetchone()
+                if not res: raise Exception("Collection not found")
+                coll_pk = res[0]
 
-                coll_pk = get_id('collection', collection_str_id)
-                # Feature must belong to this collection
                 cur.execute("SELECT id FROM indoorfeature WHERE id_str = %s AND collection_id = %s", (feature_str_id, coll_pk))
                 res = cur.fetchone()
                 if not res: raise Exception("Feature not found")
                 feat_pk = res[0]
 
-                l1_pk = get_id('layer', l1_str)
-                l2_pk = get_id('layer', l2_str)
-                n1_pk = get_id('state', n1_str)
-                n2_pk = get_id('state', n2_str)
-                c1_pk = get_id('cellspace', c1_str)
-                c2_pk = get_id('cellspace', c2_str)
+                # ---------------------------------------------------------
+                # 2. SUPERVISOR FIX: Manual Duplicate Check
+                # Since 'id_str' is no longer UNIQUE in the DB schema,
+                # we must check if this ID exists *inside this specific feature*.
+                # ---------------------------------------------------------
+                check_dup = """
+                    SELECT 1 FROM interlayerconnection 
+                    WHERE id_str = %s AND indoorfeature_id = %s
+                """
+                cur.execute(check_dup, (new_id_str, feat_pk))
+                if cur.fetchone():
+                    LOGGER.warning(f"Duplicate Connection ID {new_id_str} rejected.")
+                    return None # Or raise Exception("ID already exists in this feature")
 
-                # 3. Insert Record
+                # 3. Helper for Scoped Lookup (Same as before)
+                def get_scoped_id(table, id_str, parent_col_name, parent_pk):
+                    if not id_str: return None
+                    query = f"SELECT id FROM {table} WHERE id_str = %s AND {parent_col_name} = %s"
+                    cur.execute(query, (id_str, parent_pk))
+                    res = cur.fetchone()
+                    return res[0] if res else None
+
+                # 4. Resolve Foreign Keys
+                l1_pk = get_scoped_id('thematiclayer', l1_str, 'indoorfeature_id', feat_pk)
+                l2_pk = get_scoped_id('thematiclayer', l2_str, 'indoorfeature_id', feat_pk)
+                n1_pk = get_scoped_id('node_n_edge', n1_str, 'indoorfeature_id', feat_pk)
+                n2_pk = get_scoped_id('node_n_edge', n2_str, 'indoorfeature_id', feat_pk)
+                c1_pk = get_scoped_id('cell_space_n_boundary', c1_str, 'indoorfeature_id', feat_pk)
+                c2_pk = get_scoped_id('cell_space_n_boundary', c2_str, 'indoorfeature_id', feat_pk)
+
+                # 5. Insert
                 insert_query = """
                     INSERT INTO interlayerconnection 
                     (id_str, collection_id, indoorfeature_id, 
@@ -621,7 +621,7 @@ class PostgresIndoorDB:
                 """
                 
                 cur.execute(insert_query, (
-                    new_id, coll_pk, feat_pk, 
+                    new_id_str, coll_pk, feat_pk, 
                     l1_pk, l2_pk, 
                     n1_pk, n2_pk, 
                     c1_pk, c2_pk, 
@@ -629,7 +629,7 @@ class PostgresIndoorDB:
                 ))
                 
                 self.connection.commit()
-                return new_id
+                return new_id_str
 
         except Exception as e:
             self.connection.rollback()
