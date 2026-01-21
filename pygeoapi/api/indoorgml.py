@@ -3,7 +3,7 @@ import json
 import random
 from http import HTTPStatus
 from typing import Tuple
-
+from pygeoapi.plugin import PLUGINS
 from pygeoapi.api import API, APIRequest, SYSTEM_LOCALE, F_HTML, F_JSON 
 import pygeoapi.api as core_api
 from pygeoapi.util import to_json
@@ -19,6 +19,7 @@ from sqlalchemy import func, and_
 from pygeoapi.provider.postgresql_indoordb import PostgresIndoorDB
 from src.database import get_db
 from src.models import *
+import psycopg2
 
 # --- Helper to manage DB sessions easily ---
 def get_db_session():
@@ -192,270 +193,312 @@ def get_collection(api: API, request: APIRequest, dataset=None) -> Tuple[dict, i
     finally:
         provider.disconnect()
 
-def get_oas_30(cfg: dict, locale: str) -> tuple[list[dict], dict]:
-    """
-    Generates the OpenAPI documentation fragments for IndoorGML.
-    This ensures your POST /collections shows up in Swagger.
-    """
-    paths = {}
-    
-    # Define the POST /collections path
-    paths['/collections'] = {
-        'post': {
-            'summary': 'Register a new IndoorGML site',
-            'tags': ['IndoorGML Management'],
-            'operationId': 'createCollection',
-            'requestBody': {
-                'required': True,
-                'content': {
-                    'application/json': {
-                        'schema': {
-                            'type': 'object',
-                            'required': ['id', 'title'],
-                            'properties': {
-                                'id': {'type': 'string'},
-                                'title': {'type': 'string'},
-                                'description': {'type': 'string'}
-                            }
-                        }
-                    }
-                }
-            },
-            'responses': {
-                '201': {'description': 'Collection Created'},
-                '400': {'description': 'Invalid Request'}
-            }
-        }
-    }
-    
-    return [{'name': 'IndoorGML Management'}], paths
-
 from dateutil import parser as date_parser  # Ensure you have python-dateutil installed
 
-def create_item(api: API, request: APIRequest, dataset) -> Tuple[dict, int, str]:
+def manage_collection_item(api: API, request: APIRequest, action, 
+                           dataset, identifier=None) -> Tuple[dict, int, str]:
     """
-    POST /collections/{cId}/items
-    Updated to handle ID prefixes and missing fields correctly.
+    Adds an item to a collection
+
+    :param request: A request object
+    :param dataset: dataset name
+
+    :returns: tuple of headers, status code, content
     """
-    collection_str_id = str(dataset)
+    if not request.is_valid(PLUGINS['formatter'].keys()):
+        return api.get_format_exception(request)
+    
     headers = request.get_response_headers(SYSTEM_LOCALE)
+    pidb_provider = PostgresIndoorDB()
+    executed, collections = get_list_of_collections_id()
+    if executed is False:
+        msg = str(collections)
+        return api.get_exception(
+            HTTPStatus.BAD_REQUEST,
+            headers, request.format, 'ConnectingError', msg)
     
-    # --- Helper 1: Handle List or String input safely ---
-    def get_single_id(val):
-        if isinstance(val, list) and len(val) > 0:
-            return val[0]
-        return val
-
-    # --- Helper 2: Clean ID (Fixes TL-1:DS-1:N1 -> N1) ---
-    def clean_id(val):
-        """
-        Extracts the local ID if a full URI is provided.
-        e.g., "TL-1:DS-1:N1" -> "N1"
-        e.g., "N1" -> "N1"
-        """
-        raw = get_single_id(val)
-        if raw and isinstance(raw, str) and ":" in raw:
-            return raw.split(":")[-1] # Take the last part
-        return raw
-
-    # --- Helper 3: Safe Date Parsing ---
-    def parse_dt(val):
-        if not val: 
-            return None
+    if dataset not in collections:
+        msg = 'Collection not found'
+        LOGGER.error(msg)
+        return api.get_exception(
+            HTTPStatus.NOT_FOUND,
+            headers, request.format, 'NotFound', msg)
+    
+    collection_str_id = str(dataset)
+    ifeature_id = identifier
+    if action == 'create':
+        if not request.data:
+            msg = 'No data found'
+            LOGGER.error(msg)
+            return api.get_exception(
+                HTTPStatus.BAD_REQUEST,
+                headers, request.format, 'InvalidParameterValue', msg) 
+        data = request.data
         try:
-            return date_parser.parse(val)
-        except:
-            return None
-    # --- Helper: Smart Geometry Extractor ---
-    def extract_geom(geom_obj):
-        """
-        Handles both nested OGC structure ({geometry2D: {...}}) 
-        and direct GeoJSON ({type: ...}).
-        """
-        if not geom_obj:
-            return None
-        
-        # Check if it's the Nested Standard (OGC)
-        if 'geometry2D' in geom_obj:
-            return geojson_to_wkt(geom_obj['geometry2D'])
-        if 'geometry3D' in geom_obj:
-            return geojson_to_wkt(geom_obj['geometry3D'])
-            
-        # Check if it's Direct GeoJSON (Your Input)
-        if 'type' in geom_obj and 'coordinates' in geom_obj:
-            return geojson_to_wkt(geom_obj)
-            
-        return None
+            # Parse bytes data, if applicable
+            data = data.decode()
+            LOGGER.debug(data)
+        except (UnicodeDecodeError, AttributeError):
+            pass
 
-    try:
-        data = json.loads(request.data.decode('utf-8'))
-    except Exception as e:
-        return api.get_exception(HTTPStatus.BAD_REQUEST, headers, request.format, 'InvalidRequest', str(e))
-
-    db = next(get_db())
-    
-    try:
-        # 1. Verify Collection
-        collection = db.query(Collection).filter(Collection.id_str == collection_str_id).first()
-        if not collection:
-            return api.get_exception(HTTPStatus.NOT_FOUND, headers, request.format, 'NotFound', f'Collection {collection_str_id} not found')
-
-        # 2. Create Root IndoorFeature
-        feature_pk = generate_id()
-        indoor_feature = IndoorFeature(
-            id=feature_pk,
-            id_str=data.get('id', f"IF_{feature_pk}"),
-            collection_id=collection.id,
-            geojson_properties=data.get('properties', {})
-        )
-        db.add(indoor_feature)
-        db.flush() 
-
-        deferred_updates = []
-
-        # 3. Parse Layers
-        layers_data = data.get('layers', [])
-        if layers_data:
-            layer_json = layers_data[0] 
-            primal_data = layer_json.get('primalSpace', {})
-            dual_data = layer_json.get('dualSpace', {})
-
-            thematic_layer_pk = generate_id()
-            
-            raw_theme = layer_json.get('theme', 'unknown').lower()
-            try:
-                theme_val = ThemeType(raw_theme)
-            except ValueError:
-                theme_val = ThemeType.unknown
-
-            # --- FIX: Added is_logical, is_directed, and date parsing ---
-            thematic_layer = ThematicLayer(
-                id=thematic_layer_pk,
-                id_str=layer_json.get('id', f"TH-{thematic_layer_pk}"),
-                collection_id=collection.id,
-                indoorfeature_id=feature_pk,
-                primalspace_id_str=primal_data.get('id'),
-                dualspace_id_str=dual_data.get('id'),
-                semantic_extension=layer_json.get('semanticExtension', False),
-                theme=theme_val,
-                
-                # Parsing Dates
-                p_creation_datetime=parse_dt(primal_data.get('creationDatetime')),
-                p_termination_datetime=parse_dt(primal_data.get('terminationDatetime')),
-                d_creation_datetime=parse_dt(dual_data.get('creationDatetime')),
-                d_termination_datetime=parse_dt(dual_data.get('terminationDatetime')),
-                
-                # Mapping Dual Space Properties
-                is_logical=dual_data.get('isLogical', False),
-                is_directed=dual_data.get('isDirected', False)
+        try:
+            data = json.loads(data)
+        except (json.decoder.JSONDecodeError, TypeError) as err:
+            # Input does not appear to be valid JSON
+            LOGGER.error(err)
+            msg = 'invalid request data'
+            return api.get_exception(
+                HTTPStatus.BAD_REQUEST,
+                headers, request.format, 'InvalidParameterValue', msg)
+        LOGGER.debug('Creating item')  
+        try:
+            pidb_provider.connect()
+            validate(instance=data, schema=INDOOR_SCHEMA)
+            ifeature_id = pidb_provider.post_indoorfeature(
+                collection_str_id, data
             )
-            db.add(thematic_layer)
-            db.flush()
+        except (Exception, psycopg2.Error) as error:
+            msg = str(error)
+            return api.get_exception(
+                HTTPStatus.BAD_REQUEST,
+                headers, request.format, 'ConnectingError', msg)
+        finally:
+            pidb_provider.disconnect()
+        headers['Location'] = '{}/{}/items/{}'.format(
+            api.get_collections_url(), dataset, ifeature_id)
 
-            # B. Parse Cells (Primal)
-            for cell in primal_data.get('cellSpaceMember', []):
-                c_pk = generate_id()
-                db.add(CellSpaceBoundary(
-                    id=c_pk,
-                    id_str=cell.get('id'),
-                    type=CellType.space,
-                    collection_id=collection.id,
-                    indoorfeature_id=feature_pk,
-                    thematiclayer_id=thematic_layer_pk,
-                    geometry_2d=extract_geom(cell.get('cellSpaceGeom')),
-                    duality_id=None, 
-                    level=str(cell.get('level')), # Ensure string
-                    cell_name=cell.get('cellSpaceName') # Ensure this matches JSON key exactly
-                ))
-                
-                # --- FIX: Use clean_id() here ---
-                if cell.get('duality'):
-                    deferred_updates.append((CellSpaceBoundary, c_pk, NodeEdge, clean_id(cell.get('duality')), 'duality_id'))
-                
-                if cell.get('boundedBy'):
-                    deferred_updates.append((CellSpaceBoundary, c_pk, CellSpaceBoundary, clean_id(cell.get('boundedBy')), 'bounded_by_cell_id'))
+        return headers, HTTPStatus.CREATED, ''    
+    if action == 'delete':
+        LOGGER.debug('Deleting item')  
 
-            # C. Parse Boundaries (Primal)
-            for bound in primal_data.get('cellBoundaryMember', []):
-                b_pk = generate_id()
-                db.add(CellSpaceBoundary(
-                    id=b_pk,
-                    id_str=bound.get('id'),
-                    type=CellType.boundary,
-                    collection_id=collection.id,
-                    indoorfeature_id=feature_pk,
-                    thematiclayer_id=thematic_layer_pk,
-                    geometry_2d=extract_geom(bound.get('cellBoundaryGeom')),
-                    duality_id=None,
-                    is_virtual=bound.get('isVirtual')
-                ))
+        try:
+            pidb_provider.connect()  
+            pidb_provider.delete_indoorfeature(
+                "AND mfeature_id ='{0}'".format(ifeature_id)
+            )
+        except (Exception, psycopg2.Error) as error:
+            msg = str(error)
+            return api.get_exception(
+                HTTPStatus.BAD_REQUEST,
+                headers, request.format, 'ConnectingError', msg)
+        finally:
+            pidb_provider.disconnect()
 
-                # --- FIX: Use clean_id() here ---
-                if bound.get('duality'):
-                    deferred_updates.append((CellSpaceBoundary, b_pk, NodeEdge, clean_id(bound.get('duality')), 'duality_id'))
+        return headers, HTTPStatus.NO_CONTENT, ''     
+    
+    # # --- Helper 1: Handle List or String input safely ---
+    # def get_single_id(val):
+    #     if isinstance(val, list) and len(val) > 0:
+    #         return val[0]
+    #     return val
 
-            # D. Parse Nodes (Dual)
-            for node in dual_data.get('nodeMember', []):
-                n_pk = generate_id()
-                db.add(NodeEdge(
-                    id=n_pk,
-                    id_str=node.get('id'),
-                    type=NodeEdgeType.node,
-                    collection_id=collection.id,
-                    indoorfeature_id=feature_pk,
-                    thematiclayer_id=thematic_layer_pk,
-                    geometry_val=geojson_to_wkt(node.get('geometry')),
-                    duality_id=None
-                ))
+    # # --- Helper 2: Clean ID (Fixes TL-1:DS-1:N1 -> N1) ---
+    # def clean_id(val):
+    #     """
+    #     Extracts the local ID if a full URI is provided.
+    #     e.g., "TL-1:DS-1:N1" -> "N1"
+    #     e.g., "N1" -> "N1"
+    #     """
+    #     raw = get_single_id(val)
+    #     if raw and isinstance(raw, str) and ":" in raw:
+    #         return raw.split(":")[-1] # Take the last part
+    #     return raw
 
-                # --- FIX: Use clean_id() here ---
-                if node.get('duality'):
-                    deferred_updates.append((NodeEdge, n_pk, CellSpaceBoundary, clean_id(node.get('duality')), 'duality_id'))
-
-            # E. Parse Edges (Dual)
-            for edge in dual_data.get('edgeMember', []):
-                e_pk = generate_id()
-                db.add(NodeEdge(
-                    id=e_pk,
-                    id_str=edge.get('id'),
-                    type=NodeEdgeType.edge,
-                    collection_id=collection.id,
-                    indoorfeature_id=feature_pk,
-                    thematiclayer_id=thematic_layer_pk,
-                    geometry_val=geojson_to_wkt(edge.get('geometry')),
-                    weight=edge.get('weight'),
-                    duality_id=None
-                ))
-
-                # --- FIX: Use clean_id() here ---
-                if edge.get('duality'):
-                    deferred_updates.append((NodeEdge, e_pk, CellSpaceBoundary, clean_id(edge.get('duality')), 'duality_id'))
-
-        db.flush()
-
-        # 5. EXECUTE DEFERRED UPDATES
-        for row in deferred_updates:
-            source_model, source_id, target_model, target_str_id, target_field = row
+    # # --- Helper 3: Safe Date Parsing ---
+    # def parse_dt(val):
+    #     if not val: 
+    #         return None
+    #     try:
+    #         return date_parser.parse(val)
+    #     except:
+    #         return None
+    # # --- Helper: Smart Geometry Extractor ---
+    # def extract_geom(geom_obj):
+    #     """
+    #     Handles both nested OGC structure ({geometry2D: {...}}) 
+    #     and direct GeoJSON ({type: ...}).
+    #     """
+    #     if not geom_obj:
+    #         return None
+        
+    #     # Check if it's the Nested Standard (OGC)
+    #     if 'geometry2D' in geom_obj:
+    #         return geojson_to_wkt(geom_obj['geometry2D'])
+    #     if 'geometry3D' in geom_obj:
+    #         return geojson_to_wkt(geom_obj['geometry3D'])
             
-            # Resolve using the CLEANED ID
-            target_pk = resolve_db_id(db, target_model, target_str_id)
+    #     # Check if it's Direct GeoJSON (Your Input)
+    #     if 'type' in geom_obj and 'coordinates' in geom_obj:
+    #         return geojson_to_wkt(geom_obj)
             
-            if target_pk:
-                db.query(source_model).filter(source_model.id == source_id).update({target_field: target_pk})
-            else:
-                # Log warning if ID still not found
-                print(f"⚠️ Warning: Could not link {target_str_id} to {source_model.__tablename__}")
+    #     return None
 
-        db.commit()
-        return headers, 201, to_json({"status": "Created", "id": indoor_feature.id_str}, api.pretty_print)
+    
 
-    except Exception as e:
-        db.rollback()
-        import traceback
-        traceback.print_exc()
-        return api.get_exception(HTTPStatus.BAD_REQUEST, headers, request.format, 'InvalidRequest', str(e))
-    finally:
-        db.close()
+    # db = next(get_db())
+    
+    # try:
+    #     # 1. Verify Collection
+    #     collection = db.query(Collection).filter(Collection.id_str == collection_str_id).first()
+    #     if not collection:
+    #         return api.get_exception(HTTPStatus.NOT_FOUND, headers, request.format, 'NotFound', f'Collection {collection_str_id} not found')
+
+    #     # 2. Create Root IndoorFeature
+    #     feature_pk = generate_id()
+    #     indoor_feature = IndoorFeature(
+    #         id=feature_pk,
+    #         id_str=data.get('id', f"IF_{feature_pk}"),
+    #         collection_id=collection.id,
+    #         geojson_properties=data.get('properties', {})
+    #     )
+    #     db.add(indoor_feature)
+    #     db.flush() 
+
+    #     deferred_updates = []
+
+    #     # 3. Parse Layers
+    #     layers_data = data.get('layers', [])
+    #     if layers_data:
+    #         layer_json = layers_data[0] 
+    #         primal_data = layer_json.get('primalSpace', {})
+    #         dual_data = layer_json.get('dualSpace', {})
+
+    #         thematic_layer_pk = generate_id()
+            
+    #         raw_theme = layer_json.get('theme', 'unknown').lower()
+    #         try:
+    #             theme_val = ThemeType(raw_theme)
+    #         except ValueError:
+    #             theme_val = ThemeType.unknown
+
+    #         # --- FIX: Added is_logical, is_directed, and date parsing ---
+    #         thematic_layer = ThematicLayer(
+    #             id=thematic_layer_pk,
+    #             id_str=layer_json.get('id', f"TH-{thematic_layer_pk}"),
+    #             collection_id=collection.id,
+    #             indoorfeature_id=feature_pk,
+    #             primalspace_id_str=primal_data.get('id'),
+    #             dualspace_id_str=dual_data.get('id'),
+    #             semantic_extension=layer_json.get('semanticExtension', False),
+    #             theme=theme_val,
+                
+    #             # Parsing Dates
+    #             p_creation_datetime=parse_dt(primal_data.get('creationDatetime')),
+    #             p_termination_datetime=parse_dt(primal_data.get('terminationDatetime')),
+    #             d_creation_datetime=parse_dt(dual_data.get('creationDatetime')),
+    #             d_termination_datetime=parse_dt(dual_data.get('terminationDatetime')),
+                
+    #             # Mapping Dual Space Properties
+    #             is_logical=dual_data.get('isLogical', False),
+    #             is_directed=dual_data.get('isDirected', False)
+    #         )
+    #         db.add(thematic_layer)
+    #         db.flush()
+
+    #         # B. Parse Cells (Primal)
+    #         for cell in primal_data.get('cellSpaceMember', []):
+    #             c_pk = generate_id()
+    #             db.add(CellSpaceBoundary(
+    #                 id=c_pk,
+    #                 id_str=cell.get('id'),
+    #                 type=CellType.space,
+    #                 collection_id=collection.id,
+    #                 indoorfeature_id=feature_pk,
+    #                 thematiclayer_id=thematic_layer_pk,
+    #                 geometry_2d=extract_geom(cell.get('cellSpaceGeom')),
+    #                 duality_id=None, 
+    #                 level=str(cell.get('level')), # Ensure string
+    #                 cell_name=cell.get('cellSpaceName') # Ensure this matches JSON key exactly
+    #             ))
+                
+    #             # --- FIX: Use clean_id() here ---
+    #             if cell.get('duality'):
+    #                 deferred_updates.append((CellSpaceBoundary, c_pk, NodeEdge, clean_id(cell.get('duality')), 'duality_id'))
+                
+    #             if cell.get('boundedBy'):
+    #                 deferred_updates.append((CellSpaceBoundary, c_pk, CellSpaceBoundary, clean_id(cell.get('boundedBy')), 'bounded_by_cell_id'))
+
+    #         # C. Parse Boundaries (Primal)
+    #         for bound in primal_data.get('cellBoundaryMember', []):
+    #             b_pk = generate_id()
+    #             db.add(CellSpaceBoundary(
+    #                 id=b_pk,
+    #                 id_str=bound.get('id'),
+    #                 type=CellType.boundary,
+    #                 collection_id=collection.id,
+    #                 indoorfeature_id=feature_pk,
+    #                 thematiclayer_id=thematic_layer_pk,
+    #                 geometry_2d=extract_geom(bound.get('cellBoundaryGeom')),
+    #                 duality_id=None,
+    #                 is_virtual=bound.get('isVirtual')
+    #             ))
+
+    #             # --- FIX: Use clean_id() here ---
+    #             if bound.get('duality'):
+    #                 deferred_updates.append((CellSpaceBoundary, b_pk, NodeEdge, clean_id(bound.get('duality')), 'duality_id'))
+
+    #         # D. Parse Nodes (Dual)
+    #         for node in dual_data.get('nodeMember', []):
+    #             n_pk = generate_id()
+    #             db.add(NodeEdge(
+    #                 id=n_pk,
+    #                 id_str=node.get('id'),
+    #                 type=NodeEdgeType.node,
+    #                 collection_id=collection.id,
+    #                 indoorfeature_id=feature_pk,
+    #                 thematiclayer_id=thematic_layer_pk,
+    #                 geometry_val=geojson_to_wkt(node.get('geometry')),
+    #                 duality_id=None
+    #             ))
+
+    #             # --- FIX: Use clean_id() here ---
+    #             if node.get('duality'):
+    #                 deferred_updates.append((NodeEdge, n_pk, CellSpaceBoundary, clean_id(node.get('duality')), 'duality_id'))
+
+    #         # E. Parse Edges (Dual)
+    #         for edge in dual_data.get('edgeMember', []):
+    #             e_pk = generate_id()
+    #             db.add(NodeEdge(
+    #                 id=e_pk,
+    #                 id_str=edge.get('id'),
+    #                 type=NodeEdgeType.edge,
+    #                 collection_id=collection.id,
+    #                 indoorfeature_id=feature_pk,
+    #                 thematiclayer_id=thematic_layer_pk,
+    #                 geometry_val=geojson_to_wkt(edge.get('geometry')),
+    #                 weight=edge.get('weight'),
+    #                 duality_id=None
+    #             ))
+
+    #             # --- FIX: Use clean_id() here ---
+    #             if edge.get('duality'):
+    #                 deferred_updates.append((NodeEdge, e_pk, CellSpaceBoundary, clean_id(edge.get('duality')), 'duality_id'))
+
+    #     db.flush()
+
+    #     # 5. EXECUTE DEFERRED UPDATES
+    #     for row in deferred_updates:
+    #         source_model, source_id, target_model, target_str_id, target_field = row
+            
+    #         # Resolve using the CLEANED ID
+    #         target_pk = resolve_db_id(db, target_model, target_str_id)
+            
+    #         if target_pk:
+    #             db.query(source_model).filter(source_model.id == source_id).update({target_field: target_pk})
+    #         else:
+    #             # Log warning if ID still not found
+    #             print(f"⚠️ Warning: Could not link {target_str_id} to {source_model.__tablename__}")
+
+    #     db.commit()
+    #     return headers, 201, to_json({"status": "Created", "id": indoor_feature.id_str}, api.pretty_print)
+
+    # except Exception as e:
+    #     db.rollback()
+    #     import traceback
+    #     traceback.print_exc()
+    #     return api.get_exception(HTTPStatus.BAD_REQUEST, headers, request.format, 'InvalidRequest', str(e))
+    # finally:
+    #     db.close()
 
 def get_features(api: API, request: APIRequest, dataset) -> Tuple[dict, int, str]:
     """
@@ -1493,3 +1536,47 @@ def manage_collection_item_interlayerconnections(api: API, request: APIRequest, 
         db.close()
 
 
+def get_list_of_collections_id():
+    pidb_provider = PostgresIndoorDB()
+    try:
+        pidb_provider.connect()
+        result = pidb_provider.get_collections_list()
+        collections_id = []
+        for row in result:
+            collections_id.append(row.get('id'))
+        return True, collections_id
+    except (Exception, psycopg2.Error) as error:
+        return False, error
+    finally:
+        pidb_provider.disconnect()
+
+def check_required_field_feature(feature):
+    if 'featureType' in feature:
+        if feature['type'] == 'IndoorFeatures':
+            return True
+
+    if 'type' not in feature or 'temporalGeometry' not in feature:
+        return False
+
+    if check_required_field_temporal_geometries(
+            feature['temporalGeometry']) is False:
+        return False
+
+    if 'temporalProperties' in feature:
+        if check_required_field_temporal_property(
+                feature['temporalProperties']) is False:
+            return False
+
+    if 'geometry' in feature:
+        if check_required_field_geometries(feature['geometry']) is False:
+            return False
+
+    if 'crs' in feature:
+        if check_required_field_crs(feature['crs']) is False:
+            return False
+
+    if 'trs' in feature:
+        if check_required_field_trs(feature['trs']) is False:
+            return False
+
+    return True

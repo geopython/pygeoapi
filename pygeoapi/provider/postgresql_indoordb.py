@@ -7,6 +7,7 @@ from functools import partial
 from dateutil.parser import parse as dateparse
 import pytz
 from pygeoapi.util import format_datetime
+from psycopg2.extras import Json
 
 LOGGER = logging.getLogger(__name__)
 
@@ -180,10 +181,10 @@ class PostgresIndoorDB:
 
             # 4. Insert
             insert_query = """
-                INSERT INTO collection (id, id_str, collection_property)
-                VALUES (%s, %s, %s)
+                INSERT INTO collection (id_str, collection_property)
+                VALUES (%s, %s)
             """
-            cur.execute(insert_query, (new_pk_id, id_str, json.dumps(properties)))
+            cur.execute(insert_query, (id_str, json.dumps(properties)))
             
             # Commit is handled by the connection context or autocommit settings, 
             # but usually explicit commit is safer in transactional wrapper.
@@ -327,3 +328,182 @@ class PostgresIndoorDB:
             cur.execute(select_query)
             result = cur.fetchall()
         return result
+    
+    def post_indoorfeature(self, collection_str_id, indoorfeature):
+        """
+        Insert a indoor feature into a collection
+
+        :param collection_id: local identifier of a collection
+        :param movingfeature: IndoorFeature object or
+                           
+
+        :returns: IndoorFeature ID
+        """        
+        feature_id_str = indoorfeature.get('id')
+        properties = indoorfeature.get('properties', {})
+        indoor_content = indoorfeature.get('IndoorFeatures', {})
+        layers = indoor_content.get('layers', [])
+
+        with self.connection.cursor() as cur:
+            try:
+                # 2. Resolve Collection DB ID (Integer) from String ID
+                cur.execute("SELECT id_str FROM collection WHERE id_str = %s", (collection_str_id,))
+                res = cur.fetchone()
+                if not res:
+                    raise Exception(f"Collection {collection_str_id} not found.")
+                collection_pk = res[0]
+
+                # 3. Insert Main IndoorFeature
+                # We store the raw GeoJSON properties in a JSONB column
+                cur.execute(
+                    """
+                    INSERT INTO indoorfeature (id_str, collection_id, geojson_properties)
+                    VALUES (%s, %s, %s)
+                    RETURNING id
+                    """,
+                    (feature_id_str, collection_pk, Json(properties))
+                )
+                indoorfeature_pk = cur.fetchone()[0]
+
+                # 4. Iterate and Insert Layers
+                for layer in layers:
+                    self._post_thematic_layer(cur, collection_pk, indoorfeature_pk, layer)
+
+                # Commit is handled automatically by the context manager if no error is raised
+                self.connection.commit()
+                return feature_id_str
+
+            except Exception as e:
+                self.connection.rollback()
+                raise e
+    def _post_thematic_layer(self, cur, coll_pk, feature_pk, layer_data):
+        """
+        Helper to insert a ThematicLayer and trigger its content insertion.
+        """
+        # Extract Primal/Dual logical blocks
+        primal = layer_data.get('primalSpace', {})
+        dual = layer_data.get('dualSpace', {})
+
+        # Insert ThematicLayer
+        cur.execute(
+            """
+            INSERT INTO thematiclayer 
+            (id_str, collection_id, indoorfeature_id, theme, semantic_extension, 
+             is_logical, is_directed, 
+             primalspace_id_str, dualspace_id_str, 
+             p_creation_datetime, p_termination_datetime,
+             d_creation_datetime, d_termination_datetime)
+            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+            RETURNING id
+            """,
+            (
+                layer_data.get('id'),
+                coll_pk,
+                feature_pk,
+                layer_data.get('theme', 'Unknown'),
+                layer_data.get('semanticExtension', False),
+                dual.get('isLogical', False),
+                dual.get('isDirected', False),
+                primal.get('id'),
+                dual.get('id'),
+                primal.get('creationDatetime'),
+                primal.get('terminationDatetime'),
+                dual.get('creationDatetime'),
+                dual.get('terminationDatetime')
+            )
+        )
+        layer_pk = cur.fetchone()[0]
+
+        # Insert Primal Members (Cells/Boundaries)
+        self._post_primal_members(cur, coll_pk, feature_pk, layer_pk, primal)
+        
+        # Insert Dual Members (Nodes/Edges)
+        self._post_dual_members(cur, coll_pk, feature_pk, layer_pk, dual)
+
+    def _post_primal_members(self, cur, coll_pk, feat_pk, layer_pk, primal_data):
+        """
+        Helper to insert CellSpace and CellSpaceBoundary
+        """
+        # 1. Cells
+        for cell in primal_data.get('cellSpaceMember', []):
+            geom_raw = cell.get('cellSpaceGeom', {})
+            geom_json = geom_raw.get('geometry2D') or geom_raw.get('geometry3D') or geom_raw.get('geometry')
+
+            # Insert Cell
+            # Note: We use ST_SetSRID(ST_GeomFromGeoJSON(...), 4326) to handle the geometry conversion safely
+            sql = """
+                INSERT INTO cell_space_n_boundary 
+                (id_str, type, collection_id, indoorfeature_id, thematiclayer_id, 
+                 cell_name, level, "2D_geometry", poi)
+                VALUES (%s, 'space', %s, %s, %s, %s, %s, ST_SetSRID(ST_GeomFromGeoJSON(%s), 4326), %s)
+            """
+            cur.execute(sql, (
+                cell.get('id'),
+                coll_pk,
+                feat_pk,
+                layer_pk,
+                cell.get('cellSpaceName'),
+                str(cell.get('level')),
+                json.dumps(geom_json) if geom_json else None,
+                cell.get('poi')
+            ))
+
+        # 2. Boundaries
+        for bound in primal_data.get('cellBoundaryMember', []):
+            geom_raw = bound.get('cellBoundaryGeom', {})
+            geom_json = geom_raw.get('geometry2D') or geom_raw.get('geometry3D') or geom_raw.get('geometry')
+
+            sql = """
+                INSERT INTO cell_space_n_boundary 
+                (id_str, type, collection_id, indoorfeature_id, thematiclayer_id, 
+                 is_virtual, "2D_geometry")
+                VALUES (%s, 'boundary', %s, %s, %s, %s, ST_SetSRID(ST_GeomFromGeoJSON(%s), 4326))
+            """
+            cur.execute(sql, (
+                bound.get('id'),
+                coll_pk,
+                feat_pk,
+                layer_pk,
+                bound.get('isVirtual', False),
+                json.dumps(geom_json) if geom_json else None
+            ))
+
+    def _post_dual_members(self, cur, coll_pk, feat_pk, layer_pk, dual_data):
+        """
+        Helper to insert Nodes and Edges
+        """
+        # 1. Nodes
+        for node in dual_data.get('nodeMember', []):
+            geom_json = node.get('geometry')
+            
+            sql = """
+                INSERT INTO node_edge 
+                (id_str, type, collection_id, indoorfeature_id, thematiclayer_id, geometry_val)
+                VALUES (%s, 'node', %s, %s, %s, ST_SetSRID(ST_GeomFromGeoJSON(%s), 4326))
+            """
+            cur.execute(sql, (
+                node.get('id'),
+                coll_pk,
+                feat_pk,
+                layer_pk,
+                json.dumps(geom_json) if geom_json else None
+            ))
+
+        # 2. Edges
+        for edge in dual_data.get('edgeMember', []):
+            geom_json = edge.get('geometry')
+
+            sql = """
+                INSERT INTO node_edge 
+                (id_str, type, collection_id, indoorfeature_id, thematiclayer_id, geometry_val, weight)
+                VALUES (%s, 'edge', %s, %s, %s, ST_SetSRID(ST_GeomFromGeoJSON(%s), 4326), %s)
+            """
+            cur.execute(sql, (
+                edge.get('id'),
+                coll_pk,
+                feat_pk,
+                layer_pk,
+                json.dumps(geom_json) if geom_json else None,
+                edge.get('weight', 1.0)
+            ))
+        
