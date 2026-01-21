@@ -111,6 +111,20 @@ def test_get(config):
     assert 'Reykjavik' in result['properties']['ls_name']
 
 
+def test_no_count(config):
+    p = MongoProvider(config)
+
+    results = p.query()
+    assert results['numberMatched'] == 243
+    assert results['numberReturned'] == 10
+
+    config['count'] = False
+    p = MongoProvider(config)
+    results = p.query()
+    assert 'numberMatched' not in results
+    assert results['numberReturned'] == 10
+
+
 def test_get_not_existing_item_raise_exception(config):
     """Testing query for a not existing object"""
     p = MongoProvider(config)
