@@ -1238,3 +1238,329 @@ def update_primal_member(self, collection_str, item_str, layer_str, member_id, d
 
             self.conn.commit()
             return True
+
+def post_dual_member(self, collection_str, item_str, layer_str, data):
+        # 1. Resolve Layer Context
+        lookup_sql = """
+            SELECT t.id, t.collection_id, t.indoorfeature_id 
+            FROM thematiclayer t
+            WHERE t.id_str = %s
+              AND t.indoorfeature_id = (SELECT id FROM indoorfeature WHERE id_str = %s)
+              AND t.collection_id = (SELECT id FROM collection WHERE id_str = %s)
+        """
+        
+        with self.conn.cursor(cursor_factory=RealDictCursor) as cur:
+            cur.execute(lookup_sql, (layer_str, item_str, collection_str))
+            layer_row = cur.fetchone()
+            if not layer_row: return None
+
+            f_type = data.get('featureType')
+            id_str = data.get('id')
+            geom_json = json.dumps(data.get('geometry')) if data.get('geometry') else None
+
+            # --- CASE A: STATE (NODE) ---
+            if f_type == 'State':
+                duality_ref = data.get('duality') 
+                
+                # CONSTRAINT: Node MUST have a duality
+                if not duality_ref:
+                    raise ValueError("State must have a 'duality' reference to a CellSpace.")
+                
+                clean_duality = duality_ref.replace('#', '')
+
+                # 1. Find the Primal CellSpace
+                # We need its internal ID to link the Node -> Space
+                check_space_sql = """
+                    SELECT id FROM cell_space_n_boundary 
+                    WHERE id_str = %s AND indoorfeature_id = %s AND type = 'space'
+                """
+                cur.execute(check_space_sql, (clean_duality, layer_row['indoorfeature_id']))
+                space_row = cur.fetchone()
+                
+                if not space_row:
+                    raise ValueError(f"Duality target '{clean_duality}' does not exist or is not a CellSpace.")
+                
+                primal_id = space_row['id']
+
+                # 2. Insert Node (Pointing to Space)
+                insert_node_sql = """
+                    INSERT INTO node_n_edge (
+                        id_str, type, collection_id, indoorfeature_id, thematiclayer_id,
+                        geometry_val, duality_id
+                    ) VALUES (
+                        %s, 'node', %s, %s, %s,
+                        ST_SetSRID(ST_GeomFromGeoJSON(%s), 4326), %s
+                    ) RETURNING id, id_str
+                """
+                try:
+                    cur.execute(insert_node_sql, (
+                        id_str, layer_row['collection_id'], layer_row['indoorfeature_id'], layer_row['id'],
+                        geom_json, primal_id
+                    ))
+                    new_node = cur.fetchone()
+
+                    # 3. REVERSE UPDATE: Update Space -> Point to Node
+                    update_space_sql = "UPDATE cell_space_n_boundary SET duality_id = %s WHERE id = %s"
+                    cur.execute(update_space_sql, (new_node['id'], primal_id))
+                    
+                    self.conn.commit()
+                    return new_node['id_str']
+
+                except Exception as e:
+                    self.conn.rollback()
+                    print(f"Node Creation Error: {e}")
+                    raise ValueError("Failed to create State (Check for duplicate IDs)")
+
+            # --- CASE B: TRANSITION (EDGE) ---
+            elif f_type == 'Transition':
+                connects = data.get('connects')
+                if not connects or len(connects) != 2:
+                    raise ValueError("Transition must connect exactly two States.")
+
+                # Duality is OPTIONAL for Edges
+                duality_ref = data.get('duality')
+                primal_id = None
+                
+                if duality_ref:
+                    clean_duality = duality_ref.replace('#', '')
+                    # Check if Boundary exists
+                    check_bound_sql = """
+                        SELECT id FROM cell_space_n_boundary 
+                        WHERE id_str = %s AND indoorfeature_id = %s AND type = 'boundary'
+                    """
+                    cur.execute(check_bound_sql, (clean_duality, layer_row['indoorfeature_id']))
+                    bound_row = cur.fetchone()
+                    
+                    if not bound_row:
+                        raise ValueError(f"Duality target '{clean_duality}' does not exist or is not a CellBoundary.")
+                    primal_id = bound_row['id']
+
+                # Resolve Connected Nodes
+                refs = [c.replace('#', '') for c in connects]
+                check_nodes_sql = "SELECT id FROM node_n_edge WHERE id_str = ANY(%s) AND thematiclayer_id = %s AND type = 'node'"
+                cur.execute(check_nodes_sql, (refs, layer_row['id']))
+                node_rows = cur.fetchall()
+
+                if len(node_rows) != 2:
+                     raise ValueError("One or both connected States do not exist.")
+
+                # Insert Edge
+                insert_edge_sql = """
+                    INSERT INTO node_n_edge (
+                        id_str, type, collection_id, indoorfeature_id, thematiclayer_id,
+                        geometry_val, weight, duality_id
+                    ) VALUES (
+                        %s, 'edge', %s, %s, %s,
+                        ST_SetSRID(ST_GeomFromGeoJSON(%s), 4326), %s, %s
+                    ) RETURNING id, id_str
+                """
+                
+                try:
+                    cur.execute(insert_edge_sql, (
+                        id_str, layer_row['collection_id'], layer_row['indoorfeature_id'], layer_row['id'],
+                        geom_json, data.get('weight', 1.0), primal_id
+                    ))
+                    new_edge = cur.fetchone()
+
+                    # Insert 'connects' Link
+                    insert_link_sql = "INSERT INTO connects (node_source_id, node_target_id, edge_id) VALUES (%s, %s, %s)"
+                    cur.execute(insert_link_sql, (node_rows[0]['id'], node_rows[1]['id'], new_edge['id']))
+                    
+                    # REVERSE UPDATE (If duality existed)
+                    if primal_id:
+                        update_bound_sql = "UPDATE cell_space_n_boundary SET duality_id = %s WHERE id = %s"
+                        cur.execute(update_bound_sql, (new_edge['id'], primal_id))
+
+                    self.conn.commit()
+                    return new_edge['id_str']
+
+                except Exception as e:
+                    self.conn.rollback()
+                    print(f"Edge Creation Error: {e}")
+                    raise ValueError("Failed to create Transition")
+            
+            return None
+
+def get_dual_layer(self, collection_str, item_str, layer_str):
+    """
+    Fetches ALL Nodes and Edges for a layer.
+    Joins with:
+    1. 'connects' -> To get source/target Node IDs for edges.
+    2. 'cell_space_n_boundary' -> To get the String ID of the duality target.
+    """
+    query = """
+        SELECT 
+            ne.id, ne.id_str, ne.type, ne.weight, ne.external_reference,
+            ST_AsGeoJSON(ne.geometry_val) as geometry,
+            -- Resolve Duality ID to String
+            cs.id_str as duality_ref,
+            -- Resolve Connects (for Edges)
+            n_source.id_str as source_ref,
+            n_target.id_str as target_ref
+        FROM node_n_edge ne
+        -- Join for Duality (Primal Space)
+        LEFT JOIN cell_space_n_boundary cs ON ne.duality_id = cs.id
+        -- Joins for Connectivity (Edges only)
+        LEFT JOIN connects c ON ne.id = c.edge_id
+        LEFT JOIN node_n_edge n_source ON c.node_source_id = n_source.id
+        LEFT JOIN node_n_edge n_target ON c.node_target_id = n_target.id
+        WHERE ne.thematiclayer_id = (
+            SELECT t.id FROM thematiclayer t
+            WHERE t.id_str = %s
+                AND t.indoorfeature_id = (SELECT id FROM indoorfeature WHERE id_str = %s)
+                AND t.collection_id = (SELECT id FROM collection WHERE id_str = %s)
+        )
+    """
+    
+    try:
+        with self.conn.cursor(cursor_factory=RealDictCursor) as cur:
+            cur.execute(query, (layer_str, item_str, collection_str))
+            return cur.fetchall()
+    except Exception as e:
+        print(f"Get Dual Layer Error: {e}")
+        return []
+
+def get_dual_member(self, collection_str, item_str, layer_str, member_id):
+    """
+    Fetches a SINGLE Node or Edge.
+    Uses the same Join logic as get_dual_layer but filtered by ID.
+    """
+    query = """
+        SELECT 
+            ne.id, ne.id_str, ne.type, ne.weight, ne.external_reference,
+            ST_AsGeoJSON(ne.geometry_val) as geometry,
+            cs.id_str as duality_ref,
+            n_source.id_str as source_ref,
+            n_target.id_str as target_ref
+        FROM node_n_edge ne
+        LEFT JOIN cell_space_n_boundary cs ON ne.duality_id = cs.id
+        LEFT JOIN connects c ON ne.id = c.edge_id
+        LEFT JOIN node_n_edge n_source ON c.node_source_id = n_source.id
+        LEFT JOIN node_n_edge n_target ON c.node_target_id = n_target.id
+        WHERE ne.id_str = %s
+            AND ne.thematiclayer_id = (
+                SELECT t.id FROM thematiclayer t
+                WHERE t.id_str = %s
+                AND t.indoorfeature_id = (SELECT id FROM indoorfeature WHERE id_str = %s)
+                AND t.collection_id = (SELECT id FROM collection WHERE id_str = %s)
+            )
+    """
+    
+    try:
+        with self.conn.cursor(cursor_factory=RealDictCursor) as cur:
+            cur.execute(query, (member_id, layer_str, item_str, collection_str))
+            return cur.fetchone()
+    except Exception as e:
+        print(f"Get Dual Member Error: {e}")
+        return None
+
+def update_dual_member(self, collection_str, item_str, layer_str, member_id, data):
+    """
+    Updates an Edge's weight.
+    Strictly prevents updates to Nodes.
+    """
+    # 1. Resolve Layer (Standard)
+    lookup_sql = """
+        SELECT t.id FROM thematiclayer t
+        WHERE t.id_str = %s
+            AND t.indoorfeature_id = (SELECT id FROM indoorfeature WHERE id_str = %s)
+            AND t.collection_id = (SELECT id FROM collection WHERE id_str = %s)
+    """
+    
+    with self.conn.cursor(cursor_factory=RealDictCursor) as cur:
+        cur.execute(lookup_sql, (layer_str, item_str, collection_str))
+        layer_row = cur.fetchone()
+        if not layer_row: return False
+
+        # 2. Check Member Type
+        check_sql = "SELECT id, type FROM node_n_edge WHERE id_str = %s AND thematiclayer_id = %s"
+        cur.execute(check_sql, (member_id, layer_row['id']))
+        row = cur.fetchone()
+        
+        if not row: return False # Not found
+        
+        # CONSTRAINT: Only 'edge' can be updated
+        if row['type'] != 'edge':
+            # Cannot update a Node
+            return False 
+
+        # 3. Update Weight
+        if 'weight' in data:
+            update_sql = "UPDATE node_n_edge SET weight = %s WHERE id = %s"
+            cur.execute(update_sql, (data['weight'], row['id']))
+            self.conn.commit()
+            return True
+        
+        return True # Successful no-op
+
+
+def delete_dual_member(self, collection_str, item_str, layer_str, member_id):
+        """
+        Deletes a Node or Edge.
+        Explicitly handles cleanup of 'connects' table and reverse 'duality' references.
+        """
+        # 1. Resolve Layer
+        lookup_sql = """
+            SELECT t.id FROM thematiclayer t
+            WHERE t.id_str = %s
+              AND t.indoorfeature_id = (SELECT id FROM indoorfeature WHERE id_str = %s)
+              AND t.collection_id = (SELECT id FROM collection WHERE id_str = %s)
+        """
+        
+        with self.conn.cursor(cursor_factory=RealDictCursor) as cur:
+            cur.execute(lookup_sql, (layer_str, item_str, collection_str))
+            layer_row = cur.fetchone()
+            if not layer_row: return False
+            
+            # 2. Identify the Member to be deleted
+            check_sql = "SELECT id, type, duality_id FROM node_n_edge WHERE id_str = %s AND thematiclayer_id = %s"
+            cur.execute(check_sql, (member_id, layer_row['id']))
+            target = cur.fetchone()
+            
+            if not target: return False # Member not found
+
+            try:
+                # --- STEP A: Clean up 'connects' Table ---
+                if target['type'] == 'edge':
+                    # Simple: Remove the link for this edge
+                    cur.execute("DELETE FROM connects WHERE edge_id = %s", (target['id'],))
+                
+                elif target['type'] == 'node':
+                    # Complex: A Node might be part of many Edges.
+                    # DECISION: Delete edges connected to this node?
+                    # Yes, because an Edge cannot exist with only 1 Node.
+                    
+                    # 1. Find edges connected to this node
+                    find_edges_sql = """
+                        SELECT edge_id FROM connects 
+                        WHERE node_source_id = %s OR node_target_id = %s
+                    """
+                    cur.execute(find_edges_sql, (target['id'], target['id']))
+                    edges_to_remove = [row['edge_id'] for row in cur.fetchall()]
+                    
+                    if edges_to_remove:
+                        # 2. Remove from 'connects'
+                        cur.execute("DELETE FROM connects WHERE edge_id = ANY(%s)", (edges_to_remove,))
+                        
+                        # 3. Remove the Edge objects themselves (Cleanup)
+                        # Optional: If you want to delete the Edge rows entirely
+                        cur.execute("DELETE FROM node_n_edge WHERE id = ANY(%s)", (edges_to_remove,))
+
+                # --- STEP B: Clean up Reverse Duality (Primal Space) ---
+                # If this Node/Edge was dual to a Room/Wall, set that Room/Wall's pointer to NULL
+                if target['duality_id']:
+                    # We don't need to know if it's a Space or Boundary; ID is unique in the primal table
+                    clear_duality_sql = "UPDATE cell_space_n_boundary SET duality_id = NULL WHERE id = %s"
+                    cur.execute(clear_duality_sql, (target['duality_id'],))
+
+                # --- STEP C: Final Delete ---
+                delete_sql = "DELETE FROM node_n_edge WHERE id = %s"
+                cur.execute(delete_sql, (target['id'],))
+                
+                self.conn.commit()
+                return True
+
+            except Exception as e:
+                self.conn.rollback()
+                print(f"Delete Error: {e}")
+                return False

@@ -1246,3 +1246,164 @@ def get_primal_member(api: API, request: APIRequest, collection_id: str, item_id
         return api.get_exception(HTTPStatus.INTERNAL_SERVER_ERROR, headers, request.format, 'ServerError', str(e))
     finally:
         provider.disconnect()
+
+# api/indoorgml.py
+
+def get_dual(api: API, request: APIRequest, collection_id: str, item_id: str, layer_id: str) -> Tuple[dict, int, str]:
+    """
+    GET /collections/.../layers/{layerId}/dual
+    Returns all States (Nodes) and Transitions (Edges) in the layer.
+    """
+    headers = request.get_response_headers(SYSTEM_LOCALE)
+    provider = PostgresIndoorDB()
+
+    try:
+        # Fetch all members
+        members = provider.get_dual_layer(collection_id, item_id, layer_id)
+        
+        # Helper to format a single member
+        def format_member(m):
+            base = {
+                "id": m['id_str'],
+                "featureType": "State" if m['type'] == 'node' else "Transition",
+                "geometry": json.loads(m['geometry']) if m['geometry'] else None,
+                "duality": f"#{m['duality_ref']}" if m['duality_ref'] else None,
+                "externalReference": m.get('external_reference')
+            }
+            if m['type'] == 'edge':
+                # Edges have 'weight' and 'connects'
+                base["weight"] = m['weight']
+                if m['source_ref'] and m['target_ref']:
+                    base["connects"] = [f"#{m['source_ref']}", f"#{m['target_ref']}"]
+            return base
+
+        response = {
+            "type": "FeatureCollection",
+            "features": [format_member(m) for m in members],
+            "links": [
+                {
+                    "href": f"{api.config['server']['url']}/collections/{collection_id}/items/{item_id}/layers/{layer_id}/dual",
+                    "rel": "self",
+                    "type": "application/json",
+                    "title": "Dual Space Layer"
+                }
+            ]
+        }
+        
+        return headers, HTTPStatus.OK, to_json(response, api.pretty_print)
+
+    except Exception as e:
+        return api.get_exception(HTTPStatus.INTERNAL_SERVER_ERROR, headers, request.format, 'ServerError', str(e))
+    finally:
+        provider.disconnect()
+
+
+def get_dual_member(api: API, request: APIRequest, collection_id: str, item_id: str, layer_id: str, member_id: str) -> Tuple[dict, int, str]:
+    """
+    GET /collections/.../layers/{layerId}/dual/{memberId}
+    Returns a single State or Transition.
+    """
+    headers = request.get_response_headers(SYSTEM_LOCALE)
+    provider = PostgresIndoorDB()
+
+    try:
+        member = provider.get_dual_member(collection_id, item_id, layer_id, member_id)
+        
+        if not member:
+            return api.get_exception(HTTPStatus.NOT_FOUND, headers, request.format, 'NotFound', 'Member not found')
+
+        # Format Response
+        response = {
+            "id": member['id_str'],
+            "featureType": "State" if member['type'] == 'node' else "Transition",
+            "geometry": json.loads(member['geometry']) if member['geometry'] else None,
+            "duality": f"#{member['duality_ref']}" if member['duality_ref'] else None,
+            "externalReference": member.get('external_reference')
+        }
+
+        if member['type'] == 'edge':
+             response["weight"] = member['weight']
+             if member['source_ref'] and member['target_ref']:
+                 response["connects"] = [f"#{member['source_ref']}", f"#{member['target_ref']}"]
+
+        response["links"] = [
+            {
+                "href": f"{api.config['server']['url']}/collections/{collection_id}/items/{item_id}/layers/{layer_id}/dual/{member_id}",
+                "rel": "self",
+                "type": "application/json",
+                "title": "Dual Member"
+            }
+        ]
+        
+        return headers, HTTPStatus.OK, to_json(response, api.pretty_print)
+
+    except Exception as e:
+        return api.get_exception(HTTPStatus.INTERNAL_SERVER_ERROR, headers, request.format, 'ServerError', str(e))
+    finally:
+        provider.disconnect()
+
+def manage_dual(api: API, request: APIRequest, action: str, collection_id: str, item_id: str, layer_id: str, member_id: str = None) -> Tuple[dict, int, str]:
+    headers = request.get_response_headers(SYSTEM_LOCALE)
+    provider = PostgresIndoorDB()
+
+    try:
+        # --- CREATE (POST) ---
+        if action == 'create':
+            try:
+                data = request.data
+                if isinstance(data, bytes):
+                    data = json.loads(data.decode('utf-8'))
+            except Exception:
+                return api.get_exception(HTTPStatus.BAD_REQUEST, headers, request.format, 'InvalidParameterValue', 'Invalid JSON')
+
+            feature_type = data.get('featureType')
+            if feature_type not in ['State', 'Transition']: # OGC terminology
+                return api.get_exception(HTTPStatus.BAD_REQUEST, headers, request.format, 'InvalidParameterValue', 'featureType must be State or Transition')
+
+            try:
+                new_id = provider.post_dual_member(collection_id, item_id, layer_id, data)
+                if new_id:
+                    headers['Location'] = f"{api.config['server']['url']}/collections/{collection_id}/items/{item_id}/layers/{layer_id}/dual/{new_id}"
+                    return headers, HTTPStatus.CREATED, to_json({"status": "Created", "id": new_id}, api.pretty_print)
+                else:
+                    return api.get_exception(HTTPStatus.NOT_FOUND, headers, request.format, 'NotFound', 'Layer invalid')
+            except ValueError as ve:
+                return api.get_exception(HTTPStatus.BAD_REQUEST, headers, request.format, 'InvalidParameterValue', str(ve))
+
+        # --- UPDATE (PATCH) ---
+        elif action == 'update':
+            if not member_id:
+                return api.get_exception(HTTPStatus.BAD_REQUEST, headers, request.format, 'MissingParameterValue', 'ID required')
+
+            try:
+                data = request.data
+                if isinstance(data, bytes):
+                    data = json.loads(data.decode('utf-8'))
+                
+                # Check for empty update
+                if 'weight' not in data:
+                     return api.get_exception(HTTPStatus.BAD_REQUEST, headers, request.format, 'InvalidParameterValue', 'Only "weight" can be updated')
+
+                success = provider.update_dual_member(collection_id, item_id, layer_id, member_id, data)
+                
+                if success:
+                    return headers, HTTPStatus.NO_CONTENT, ''
+                else:
+                    return api.get_exception(HTTPStatus.BAD_REQUEST, headers, request.format, 'InvalidParameterValue', 'Update failed: Item is not a Transition, or ID not found')
+
+            except Exception:
+                 return api.get_exception(HTTPStatus.BAD_REQUEST, headers, request.format, 'InvalidParameterValue', 'Invalid JSON')
+
+        # --- DELETE (DELETE) ---
+        elif action == 'delete':
+            # Assuming you allow deleting both Nodes and Edges
+            success = provider.delete_dual_member(collection_id, item_id, layer_id, member_id)
+            if success:
+                return headers, HTTPStatus.NO_CONTENT, ''
+            else:
+                return api.get_exception(HTTPStatus.NOT_FOUND, headers, request.format, 'NotFound', 'Member not found')
+
+    except Exception as e:
+        return api.get_exception(HTTPStatus.INTERNAL_SERVER_ERROR, headers, request.format, 'ServerError', str(e))
+    finally:
+        provider.disconnect()
