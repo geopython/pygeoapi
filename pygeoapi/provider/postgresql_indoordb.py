@@ -391,7 +391,8 @@ class PostgresIndoorDB:
                     "featureType": "IndoorFeatures",
                     "layers": [],
                     "layerConnections": []
-                }
+                },
+                "links": []
             }
             cur.execute("""
                 SELECT id, id_str, primalspace_id_str, dualspace_id_str, semantic_extension, theme
@@ -415,6 +416,257 @@ class PostgresIndoorDB:
                 result_feature["IndoorFeatures"]["layers"].append(thematic_layer)
         return result_feature
     
+    def get_layers(self, collection_id, feature_id, theme = None, level = None, limit=10, offset=0):
+        response = {
+            "levels": [],
+            "layers": [],
+            "links": []
+        }
+        with self.connection.cursor() as cur:
+            sql_levels = """
+                SELECT DISTINCT cs.level
+                FROM cell_space_n_boundary cs
+                JOIN thematiclayer tl ON cs.thematiclayer_id = tl.id
+                JOIN indoorfeature i ON tl.indoorfeature_id = i.id
+                JOIN collection c ON i.collection_id = c.id
+                WHERE c.id_str = %s AND cs.level IS NOT NULL
+            """
+            params_levels = [collection_id]
+
+            if theme:
+                sql_levels += " AND tl.theme = %s"
+                params_levels.append(theme)
+            if level:
+                sql_levels += " AND cs.level = %s"
+                params_levels.append(levels)
+            
+            sql_levels += " ORDER BY cs.level"
+            cur.execute(sql_levels, tuple(params_levels))
+            response["levels"] = [row[0] for row in cur.fetchall()]
+
+            # 2. Get Layer Summaries (Optionally filtered)
+            sql_layers = """
+                SELECT tl.id_str, tl.theme, tl.semantic_extension, i.id_str AS feature_id,
+                       ST_XMin(ST_Extent(cs."3D_geometry")) as minx,
+                       ST_YMin(ST_Extent(cs."3D_geometry")) as miny,
+                       ST_XMax(ST_Extent(cs."3D_geometry")) as maxx,
+                       ST_YMax(ST_Extent(cs."3D_geometry")) as maxy
+                FROM thematiclayer tl
+                JOIN indoorfeature i ON tl.indoorfeature_id = i.id
+                JOIN collection c ON i.collection_id = c.id
+                LEFT JOIN cell_space_n_boundary cs ON cs.thematiclayer_id = tl.id
+                WHERE c.id_str = %s
+            """
+            params_layers = [collection_id]
+
+            if theme:
+                sql_layers += " AND tl.theme = %s"
+                params_layers.append(theme)
+            
+            # For filtering layers by level, we need to ensure the layer HAS cells on that level
+            if level:
+                sql_layers += " AND cs.level = %s"
+                params_layers.append(level)
+
+            sql_layers += " GROUP BY tl.id, tl.id_str, tl.theme, i.id_str"
+
+            cur.execute(sql_layers, tuple(params_layers))
+
+            rows = cur.fetchall()
+            for row in rows:
+                l_id, l_theme, semantic_extension, feature_id, minx, miny, maxx, maxy = row
+                
+                bbox = [-180, -90, 180, 90]
+                if minx is not None:
+                    bbox = [float(minx), float(miny), float(maxx), float(maxy)]
+
+                layer_summary = {
+                    "id": l_id,
+                    "semanticExtension": semantic_extension,
+                    "theme": l_theme if l_theme else "Unknown",
+                    "bbox": bbox,
+                    "links": []
+                }
+                response["layers"].append(layer_summary)
+
+        return response
+    
+    def get_layer(self, collection_id, feature_id, layer_id, level=None, bbox=''):
+        """
+        Retrieves the complete thematic layer.
+        Returns a single Dictionary representing the layer or None if not found.
+        """
+        result_layer = None
+        with self.connection.cursor() as cur:
+            # 1. Fetch Layer Metadata
+            # We join tables to ensure the layer belongs to the correct Feature and Collection
+            query = """
+                SELECT tl.id, tl.id_str, tl.theme, tl.is_logical, tl.is_directed, tl.primalspace_id_str, tl.dualspace_id_str, tl.p_creation_datetime, tl.d_creation_datetime
+                FROM thematiclayer tl
+                JOIN indoorfeature i ON tl.indoorfeature_id = i.id
+                JOIN collection c ON i.collection_id = c.id
+                WHERE c.id_str = %s AND i.id_str = %s AND tl.id_str = %s
+            """
+            cur.execute(query, (collection_id, feature_id, layer_id))
+           
+            row = cur.fetchone()
+            
+            if not row:
+                return None
+            l_pk, l_id, l_theme, l_logical, l_directed, p_id, d_id, p_create, d_create = row
+            # 2. Fetch Primal and Dual Spaces
+            primal = self._get_primal_space(cur, l_pk, p_id, p_create, level=level)
+            dual = self._get_dual_space(cur, l_pk, d_id, d_create, l_logical, l_directed)
+            result_layer = {
+                "id": l_id,
+                "featureType": "ThematicLayer",
+                "theme": l_theme if l_theme else "Unknown",
+                "semanticExtension": False,
+                "primalSpace": primal,
+                "dualSpace": dual
+            }
+
+        return result_layer
+
+    def _get_primal_space(self, cur, layer_pk, primalspace_id, p_create, level=None):
+        """
+        Helper to build PrimalSpaceLayer. 
+        Supports optional filtering by 'level'.
+        """
+        import json
+        
+        primal_space = {
+            "id": primalspace_id, 
+            "featureType": "PrimalSpaceLayer",
+            "creationDatetime": p_create,
+            "cellSpaceMember": [],
+            "cellBoundaryMember": []
+        }
+
+        # --- Fetch Cells ---
+        sql_cells = """
+            SELECT id_str, cell_name, level, external_reference, 
+                   ST_AsGeoJSON("2D_geometry"), duality_id, poi
+            FROM cell_space_n_boundary
+            WHERE thematiclayer_id = %s AND type = 'space'
+        """
+        params_cells = [layer_pk]
+
+        if level is not None:
+            sql_cells += " AND level = %s"
+            params_cells.append(level)
+            
+        cur.execute(sql_cells, tuple(params_cells))
+        
+        for row in cur.fetchall():
+            cid, cname, clevel, cext, geom_str, duality, poi = row
+            geom = json.loads(geom_str) if geom_str else None
+            
+            cell = {
+                "id": cid,
+                "featureType": "CellSpace",
+                "duality": duality,
+                "cellSpaceName": cname,
+                "level": clevel,
+                "poi": poi,
+                "cellSpaceGeom": {
+                    "geometry2D": geom
+                },
+                "boundedBy": None
+
+            }
+            if cext: cell["externalReference"] = {"uri": cext}
+            primal_space["cellSpaceMember"].append(cell)
+
+        # --- Fetch Boundaries ---
+        # Note: We usually don't filter boundaries by level directly unless they have a level attribute.
+        # For now, we return all boundaries for the layer to ensure geometry validity.
+        cur.execute("""
+            SELECT id_str, external_reference, ST_AsGeoJSON("2D_geometry"), duality_id, is_virtual
+            FROM cell_space_n_boundary
+            WHERE thematiclayer_id = %s AND type = 'boundary'
+        """, (layer_pk,))
+
+        for row in cur.fetchall():
+            bid, bext, geom_str, duality, is_virtual = row
+            geom = json.loads(geom_str) if geom_str else None
+            
+            boundary = {
+                "id": bid,
+                "featureType": "CellBoundary",
+                "duality": duality,
+                "isVirtual": is_virtual,
+                "cellBoundaryGeom": {
+                    "geometry2D": geom
+                }
+            }
+            primal_space["cellBoundaryMember"].append(boundary)
+
+        if not primal_space["cellSpaceMember"]:
+            return None
+            
+        return primal_space
+    
+    def _get_dual_space(self, cur, layer_pk, dualspace_id, d_creat,is_logical, is_directed):
+        dual_space = {
+            "id": dualspace_id,
+            "featureType": "DualSpaceLayer",
+            "isLogical": is_logical,
+            "isDirected": is_directed,
+            "nodeMember": [],
+            "edgeMember": [],
+            "creationDatetime": d_creat
+        }
+    # --- Fetch Cells ---
+        sql_nodes = """
+            SELECT id_str, duality_id,
+                   ST_AsGeoJSON("geometry_val")
+            FROM node_n_edge
+            WHERE thematiclayer_id = %s AND type = 'node'
+        """
+        params_nodes = [layer_pk]
+            
+        cur.execute(sql_nodes, tuple(params_nodes))
+        
+        for row in cur.fetchall():
+            nid, n_duality, geom_str = row
+            geom = json.loads(geom_str) if geom_str else None
+            
+            node = {
+                "id": nid,
+                "featureType": "Node",
+                "gemetry": geom,
+                "duality": n_duality,
+                "connects": None
+            }
+        
+            dual_space["nodeMember"].append(node)
+        sql_edges = """
+            SELECT id_str, duality_id,
+                   ST_AsGeoJSON("geometry_val"), weight
+            FROM node_n_edge
+            WHERE thematiclayer_id = %s AND type = 'edge'
+        """
+        params_edges = [layer_pk]
+            
+        cur.execute(sql_edges, tuple(params_edges))
+        
+        for row in cur.fetchall():
+            eid, e_duality, geom_str, weight = row
+            geom = json.loads(geom_str) if geom_str else None
+            
+            edge = {
+                "id": eid,
+                "featureType": "Edge",
+                "gemetry": geom,
+                "duality": e_duality,
+                "weight": weight,
+                "connects": None
+            }
+        
+            dual_space["edgeMember"].append(edge)
+        return dual_space
+
     def post_indoorfeature(self, collection_str_id, indoorfeature):
         """
         Insert a indoor feature into a collection
@@ -497,13 +749,15 @@ class PostgresIndoorDB:
                 dual.get('terminationDatetime')
             )
         )
+       
         layer_pk = cur.fetchone()[0]
-
+        LOGGER.debug(layer_pk)
         # Insert Primal Members (Cells/Boundaries)
         self._post_primal_members(cur, coll_pk, feature_pk, layer_pk, primal)
         
         # Insert Dual Members (Nodes/Edges)
         self._post_dual_members(cur, coll_pk, feature_pk, layer_pk, dual)
+        
 
     def _post_primal_members(self, cur, coll_pk, feat_pk, layer_pk, primal_data):
         """
@@ -591,7 +845,58 @@ class PostgresIndoorDB:
                 json.dumps(geom_json) if geom_json else None,
                 edge.get('weight', 1.0)
             ))
+    def str_to_pk(self, collection_id_str, feature_id_str):
+        """
+        Converts string IDs (slugs) to Database Integer Primary Keys.
         
+        Args:
+            collection_id_str (str): The unique string ID of the collection.
+            feature_id_str (str): The unique string ID of the indoor feature.
+            
+        Returns:
+            tuple: (collection_pk, feature_pk) or (None, None) if not found.
+        """
+        if not self.connection or self.connection.closed:
+            self.connect()
+
+        with self.connection.cursor() as cur:
+            # We join the tables to ensure the feature actually belongs 
+            # to the specified collection, providing a validity check.
+            query = """
+                SELECT c.id AS collection_pk, i.id AS feature_pk
+                FROM indoorfeature i
+                JOIN collection c ON i.collection_id = c.id
+                WHERE c.id_str = %s AND i.id_str = %s
+            """
+            cur.execute(query, (collection_id_str, feature_id_str))
+            row = cur.fetchone()
+            
+            if row:
+                return row[0], row[1]
+            else:
+                # Log warning or handle error depending on your preference
+                return None, None
+            
+    def post_thematic_layer(self, collection_pk, feature_pk, layer_data):
+        """
+        Public wrapper: Manages connection/cursor lifecycle and commits data.
+        """
+        # Ensure we are connected
+        if self.connection is None or self.connection.closed:
+            self.connect()
+
+        try:
+            with self.connection.cursor() as cur:
+                # Call the internal logic
+                self._post_thematic_layer(cur, collection_pk, feature_pk, layer_data)
+                
+            # Commit the transaction if successful
+            self.connection.commit()
+           
+            
+        except Exception as e:
+            self.connection.rollback()
+            raise e
 
     def get_interlayer_connections(self, collection_str_id, feature_str_id):
         """

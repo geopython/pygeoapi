@@ -388,14 +388,23 @@ def get_collection_item(api: API, request: APIRequest, dataset, identifier) -> T
     :returns: tuple of headers, status code, content
     """    
     pidb_provider = PostgresIndoorDB()
-    collection_id_str = str(dataset)
-    ifeature_id_str = str(identifier)
+    collection_str_id = str(dataset)
+    ifeature_str_id = str(identifier)
     if not request.is_valid():
         return api.get_format_exception(request)
     headers = request.get_response_headers()
     try:
         pidb_provider.connect()
-        result = pidb_provider.get_feature(collection_id_str, ifeature_id_str)
+        result = pidb_provider.get_feature(collection_str_id, ifeature_str_id)
+
+        base_url = f"{api.config['server']['url']}/collections/{collection_str_id}/items/{ifeature_str_id}"
+
+        result['links'].append({
+            "href": base_url,
+            "rel": "self",
+            "type": "application/geo+json",
+            "title": "Indoorfeature metadata"
+        })
 
     except (Exception, psycopg2.Error) as error:
         msg = str(error)
@@ -405,368 +414,254 @@ def get_collection_item(api: API, request: APIRequest, dataset, identifier) -> T
     
     return headers, HTTPStatus.OK, to_json(result, api.pretty_print)
 
-# def manage_collection_item_layer(api: API, request: APIRequest, action, dataset, identifier, layer=None) -> Tuple[dict, int, str]:
-#     collection_str_id = str(dataset)
-#     feature_str_id = str(identifier)
-#     layer_str_id = str(layer) if layer else None
+def manage_collection_item_layer(api: API, request: APIRequest, action, dataset, identifier, layer=None) -> Tuple[dict, int, str]:
     
-#     headers = request.get_response_headers(api.api_headers)
-#     db = next(get_db())
-
-#     try:
-#         # 1. Resolve Parent IDs and Validate Existence
-#         coll_pk = resolve_db_id(db, Collection, collection_str_id)
-#         feat_pk = resolve_db_id(db, IndoorFeature, feature_str_id)
-
-#         if not coll_pk:
-#             return api.get_exception(404, headers, request.format, 'NotFound', 'Collection not found')
-        
-#         if not feat_pk:
-#             return api.get_exception(404, headers, request.format, 'NotFound', 'Feature not found')
-
-#         # 2. Strict Hierarchy Check: Feature MUST belong to this Collection
-#         feature = db.query(IndoorFeature).filter(
-#             IndoorFeature.id == feat_pk,
-#             IndoorFeature.collection_id == coll_pk
-#         ).first()
-
-#         if not feature:
-#             return api.get_exception(404, headers, request.format, 'NotFound', 
-#                                    f'Feature {feature_str_id} not found in collection {collection_str_id}')
-
-#         # =====================================================================
-#         # ACTION: CREATE (POST)
-#         # =====================================================================
-#         if action == 'create':
-#             try:
-#                 data = json.loads(request.data.decode('utf-8'))
-                
-#                 # Schema Validation
-#                 layer_schema = {
-#                     "$schema": INDOOR_SCHEMA.get("$schema"),
-#                     "$defs": INDOOR_SCHEMA.get("$defs"), 
-#                     "$ref": "#/$defs/ThematicLayer"      
-#                 }
-#                 validate(instance=data, schema=layer_schema)
-
-#                 # Check for ID conflict
-#                 new_layer_id = data.get('id')
-#                 existing = db.query(ThematicLayer).filter(
-#                     ThematicLayer.indoorfeature_id == feature.id,
-#                     ThematicLayer.id_str == new_layer_id
-#                 ).first()
-                
-#                 if existing:
-#                     return api.get_exception(409, headers, request.format, 'Conflict', f"Layer {new_layer_id} already exists")
-
-#                 # Determine Space Type (Primal vs Dual)
-#                 # Note: Schema usually enforces one or the other, or we check keys
-#                 space_type_enum = None
-#                 if 'primalSpace' in data:
-#                     space_type_enum = SpaceType.primal
-#                 elif 'dualSpace' in data:
-#                     space_type_enum = SpaceType.dual
-#                 else:
-#                     # Fallback or error if neither (though schema validation should catch this)
-#                     space_type_enum = SpaceType.primal 
-
-#                 # A. Insert ThematicLayer Record
-#                 new_layer = ThematicLayer(
-#                     id_str=new_layer_id,
-#                     indoorfeature_id=feature.id,
-#                     class_name="ThematicLayer",
-#                     semantic_extension=data.get('semanticExtension', False),
-#                     space_type=space_type_enum,
-#                     # Map other fields like 'doc' if present in your model
-#                 )
-#                 db.add(new_layer)
-#                 db.flush() # Flush to get new_layer.id (PK) for children
-
-#                 # B. Insert Primal Members (CellSpace)
-#                 if space_type_enum == SpaceType.primal and 'primalSpace' in data:
-#                     primal_data = data['primalSpace']
-#                     # Assuming 'cellSpaceMember' is a list of objects
-#                     for cell in primal_data.get('cellSpaceMember', []):
-                        
-#                         # Geometry Conversion: GeoJSON -> DB Format
-#                         geom_db = None
-#                         if 'cellSpaceGeom' in cell and 'geometry3D' in cell['cellSpaceGeom']:
-#                             geojson_geom = cell['cellSpaceGeom']['geometry3D']
-#                             geom_db = from_shape(shape(geojson_geom))
-
-#                         new_cell = CellSpaceBoundary(
-#                             id_str=cell.get('id'),
-#                             thematiclayer_id=new_layer.id,
-#                             cell_name=cell.get('cellSpaceName'),
-#                             geometry_3d=geom_db,
-#                             external_reference=None # Fill if schema has it
-#                         )
-#                         db.add(new_cell)
-
-#                 # C. Insert Dual Members (Nodes/Edges)
-#                 elif space_type_enum == SpaceType.dual and 'dualSpace' in data:
-#                     dual_data = data['dualSpace']
-                    
-#                     # Nodes
-#                     for node in dual_data.get('nodeMember', []):
-#                         geom_db = None
-#                         if 'geometry' in node and node['geometry']:
-#                             geom_db = from_shape(shape(node['geometry']))
-                        
-#                         new_node = NodeEdge(
-#                             id_str=node.get('id'),
-#                             thematiclayer_id=new_layer.id,
-#                             type=NodeEdgeType.node,
-#                             geometry_val=geom_db,
-#                             duality=node.get('duality')
-#                         )
-#                         db.add(new_node)
-
-#                     # Edges
-#                     for edge in dual_data.get('edgeMember', []):
-#                         geom_db = None
-#                         if 'geometry' in edge and edge['geometry']:
-#                             geom_db = from_shape(shape(edge['geometry']))
-
-#                         new_edge = NodeEdge(
-#                             id_str=edge.get('id'),
-#                             thematiclayer_id=new_layer.id,
-#                             type=NodeEdgeType.edge,
-#                             geometry_val=geom_db,
-#                             duality=edge.get('duality'),
-#                             weight=edge.get('weight', 1.0)
-#                         )
-#                         db.add(new_edge)
-
-#                 db.commit()
-#                 return headers, 201, to_json({"status": "Layer Added", "id": new_layer_id}, api.pretty_print)
-
-#             except ValidationError as v_err:
-#                 db.rollback()
-#                 return api.get_exception(400, headers, request.format, 'InvalidRequest', f"Schema Error: {v_err.message}")
-#             except Exception as e:
-#                 db.rollback()
-#                 LOGGER.error(f"Error creating layer: {e}")
-#                 return api.get_exception(500, headers, request.format, 'ServerError', str(e))
-
-#         # =====================================================================
-#         # ACTION: DELETE (DELETE)
-#         # =====================================================================
-#         elif action == 'delete':
-#             # Find the layer by its String ID and Parent Feature
-#             target_layer = db.query(ThematicLayer).filter(
-#                 ThematicLayer.id_str == layer_str_id,
-#                 ThematicLayer.indoorfeature_id == feature.id
-#             ).first()
-
-#             if not target_layer:
-#                 return api.get_exception(404, headers, request.format, 'NotFound', f'Layer {layer_str_id} not found')
-
-#             try:
-#                 # SQLAlchemy cascade should handle children (Cells/Nodes) if configured in models.
-#                 # Otherwise, you might need to manually delete children here.
-#                 # Assuming standard Cascade delete:
-#                 db.delete(target_layer)
-#                 db.commit()
-
-#                 return headers, 204, '' # No Content
-#             except Exception as e:
-#                 db.rollback()
-#                 return api.get_exception(500, headers, request.format, 'ServerError', str(e))
-
-#         else:
-#             return api.get_exception(405, headers, request.format, 'MethodNotAllowed', "Action not yet implemented")
-
-#     except Exception as e:
-#         LOGGER.error(f"Global error in manage_layer: {e}")
-#         return api.get_exception(500, headers, request.format, 'ServerError', str(e))
-
-#     finally:
-#         db.close()
-
-# def get_collection_item_layers(api: API, request: APIRequest, dataset, identifier) -> Tuple[dict, int, str]:
-#     """
-#     Get summary of layers for a collection item (IndoorFeature)
-#     """
-#     if not request.is_valid():
-#         return api.get_format_exception(request)
+    if not request.is_valid(PLUGINS['formatter'].keys()):
+        return api.get_format_exception(request)
     
-#     headers = request.get_response_headers(api.api_headers)
-#     collection_str_id = str(dataset)
-#     feature_str_id = str(identifier)
+    executed, collections = get_list_of_collections_id()
+    if executed is False:
+        msg = str(collections)
+        return api.get_exception(
+            HTTPStatus.BAD_REQUEST,
+            headers, request.format, 'ConnectingError', msg)
     
-#     db = next(get_db())
+    if dataset not in collections:
+        msg = 'Collection not found'
+        LOGGER.error(msg)
+        return api.get_exception(
+            HTTPStatus.NOT_FOUND,
+            headers, request.format, 'NotFound', msg)
+    headers = request.get_response_headers(api.api_headers)
+    pidb_provider = PostgresIndoorDB()
+    collection_str_id = str(dataset)
+    feature_str_id = str(identifier)
+    layer_str_id = str(layer) if layer else None
+    try:
+        pidb_provider.connect()
+        # =====================================================================
+        # ACTION: CREATE (POST)
+        # =====================================================================
+        if action == 'create':
+            if not request.data:
+                msg = 'No data found'
+                LOGGER.error(msg)
+                return api.get_exception(
+                    HTTPStatus.BAD_REQUEST,
+                    headers, request.format, 'InvalidParameterValue', msg) 
+            data = request.data
+            try:
+                # Parse bytes data, if applicable
+                data = data.decode()
+            except (UnicodeDecodeError, AttributeError):
+                pass
 
-#     try:
-#         # 1. Resolve IDs and Validate Existence
-#         coll_pk = resolve_db_id(db, Collection, collection_str_id)
-#         feat_pk = resolve_db_id(db, IndoorFeature, feature_str_id)
+            try:
+                data = json.loads(data)
+            except (json.decoder.JSONDecodeError, TypeError) as err:
+                # Input does not appear to be valid JSON
+                LOGGER.error(err)
+                msg = 'invalid request data'
+                return api.get_exception(
+                    HTTPStatus.BAD_REQUEST,
+                    headers, request.format, 'InvalidParameterValue', msg)
+            LOGGER.debug('Creating item')  
+            try:
+                pidb_provider.connect()
+                # Schema Validation
+                layer_schema = {
+                    "$schema": INDOOR_SCHEMA.get("$schema"),
+                    "$defs": INDOOR_SCHEMA.get("$defs"), 
+                    "$ref": "#/$defs/ThematicLayer"      
+                }
+                validate(instance=data, schema=layer_schema)
+                collection_pk, feature_pk = pidb_provider.str_to_pk(collection_str_id, feature_str_id)
+                pidb_provider.post_thematic_layer(
+                    collection_pk, 
+                    feature_pk,
+                    data
+                )
+                layer_str_id = data.get("id")
+            except (Exception, psycopg2.Error) as error:
+                msg = str(error)
+                return api.get_exception(
+                    HTTPStatus.BAD_REQUEST,
+                    headers, request.format, 'ConnectingError', msg)
+            finally:
+                pidb_provider.disconnect()
+            headers['Location'] = '{}/{}/items/{}'.format(
+                api.get_collections_url(), dataset, layer_str_id)
 
-#         if not coll_pk:
-#             return api.get_exception(404, headers, request.format, 'NotFound', 'Collection not found')
-        
-#         if not feat_pk:
-#             return api.get_exception(404, headers, request.format, 'NotFound', 'Feature not found')
-
-#         # 2. Strict Check: Feature MUST belong to this Collection
-#         feature = db.query(IndoorFeature).filter(
-#             IndoorFeature.id == feat_pk,
-#             IndoorFeature.collection_id == coll_pk
-#         ).first()
-
-#         if not feature:
-#             return api.get_exception(404, headers, request.format, 'NotFound', 
-#                                    f'Feature {feature_str_id} not found in collection {collection_str_id}')
-
-#         # 3. Query DB for Layers
-#         db_layers = db.query(ThematicLayer).filter(
-#             ThematicLayer.indoorfeature_id == feature.id
-#         ).all()
-
-#         # 4. Construct Lightweight Summary
-#         layers_summary = []
-#         base_url = api.config['server']['url']
-
-#         for layer in db_layers:
-#             # Map SpaceType Enum to "Theme" string for readability
-#             # You can adjust this mapping based on your preference (e.g. 'Primal' vs 'Physical')
-#             theme_val = "Physical" if layer.space_type == SpaceType.primal else "Virtual"
-
-#             layers_summary.append({
-#                 "id": layer.id_str,
-#                 "theme": theme_val,
-#                 "semanticExtension": layer.semantic_extension or False,
-#                 "links": [
-#                     {
-#                         "href": f"{base_url}/collections/{collection_str_id}/items/{feature_str_id}/layers/{layer.id_str}",
-#                         "rel": "item",
-#                         "type": "application/json",
-#                         "title": "Layer Detail"
-#                     }
-#                 ]
-#             })
-
-#         response = {
-#             "layers": layers_summary,
-#             "links": [
-#                 {
-#                     "href": f"{base_url}/collections/{collection_str_id}/items/{feature_str_id}/layers",
-#                     "rel": "self",
-#                     "type": "application/json"
-#                 },
-#                 {
-#                     "href": f"{base_url}/collections/{collection_str_id}/items/{feature_str_id}",
-#                     "rel": "up",
-#                     "type": "application/geo+json",
-#                     "title": "Parent Feature"
-#                 }
-#             ]
-#         }
-
-#         return headers, 200, to_json(response, api.pretty_print)
-
-#     except Exception as e:
-#         LOGGER.error(f"Error fetching layers: {e}")
-#         return api.get_exception(500, headers, request.format, 'ServerError', str(e))
-
-#     finally:
-#         db.close()
-
-# def get_collection_item_layer(api: API, request: APIRequest, dataset, identifier, layer) -> Tuple[dict, int, str]:
-#     """
-#     Get metadata, stats, and bbox for a specific layer.
-#     """
-#     if not request.is_valid():
-#         return api.get_format_exception(request)
-    
-#     headers = request.get_response_headers(api.api_headers)
-#     collection_str_id = str(dataset)
-#     feature_str_id = str(identifier)
-#     layer_str_id = str(layer)
-    
-#     db = next(get_db())
-
-#     try:
-#         # 1. Resolve IDs and Validate Hierarchy
-#         coll_pk = resolve_db_id(db, Collection, collection_str_id)
-#         feat_pk = resolve_db_id(db, IndoorFeature, feature_str_id)
-
-#         if not coll_pk:
-#             return api.get_exception(404, headers, request.format, 'NotFound', 'Collection not found')
-        
-#         if not feat_pk:
-#             return api.get_exception(404, headers, request.format, 'NotFound', 'Feature not found')
-
-#         # Feature must belong to Collection
-#         feature = db.query(IndoorFeature).filter(
-#             IndoorFeature.id == feat_pk,
-#             IndoorFeature.collection_id == coll_pk
-#         ).first()
-
-#         if not feature:
-#             return api.get_exception(404, headers, request.format, 'NotFound', 
-#                                    f'Feature {feature_str_id} not found in collection {collection_str_id}')
-
-#         # 2. Find the Specific Layer
-#         target_layer = db.query(ThematicLayer).filter(
-#             ThematicLayer.id_str == layer_str_id,
-#             ThematicLayer.indoorfeature_id == feature.id
-#         ).first()
-
-#         if not target_layer:
-#             return api.get_exception(404, headers, request.format, 'NotFound', f'Layer {layer_str_id} not found')
-
-#         # 3. Calculate Stats & BBOX using DB helpers
-#         stats = _calculate_layer_stats_db(db, target_layer)
-#         bbox = _calculate_layer_bbox_db(db, target_layer)
-
-#         # 4. Construct Response
-#         response = {
-#             "id": target_layer.id_str,
-#             "featureType": "ThematicLayer",
-#             "theme": "Physical" if target_layer.space_type == SpaceType.primal else "Virtual",
-#             "semanticExtension": target_layer.semantic_extension or False,
+            return headers, 201, to_json({"status": "Created", "id": layer_str_id}, api.pretty_print)  
+        # =====================================================================
+        # ACTION: DELETE (DELETE)
+        # =====================================================================
+        elif action == 'delete':
+            # Find the layer by its String ID and Parent Feature
             
-#             "summary": stats, # Injected from helper
-#             "bbox": bbox,     # Injected from helper
-#             "links": []
-#         }
+            try:
+                # SQLAlchemy cascade should handle children (Cells/Nodes) if configured in models.
+                # Otherwise, you might need to manually delete children here.
+                # Assuming standard Cascade delete:
+               
 
-#         # 5. Generate Dynamic HATEOAS Links
-#         base_url = f"{api.config['server']['url']}/collections/{collection_str_id}/items/{feature_str_id}/layers/{layer_str_id}"
+                return headers, 204, '' # No Content
+            except Exception as e:
+               
+                return api.get_exception(500, headers, request.format, 'ServerError', str(e))
 
-#         response['links'].append({
-#             "href": base_url,
-#             "rel": "self",
-#             "type": "application/json",
-#             "title": "Layer Metadata"
-#         })
+        else:
+            return api.get_exception(405, headers, request.format, 'MethodNotAllowed', "Action not yet implemented")
 
-#         # Check stats to decide which links to show
-#         if stats['primalSpace']['cellSpaceCount'] > 0:
-#             response['links'].append({
-#                 "href": f"{base_url}/primal",
-#                 "rel": "data",
-#                 "type": "application/json",
-#                 "title": "Primal Space (Geometry)"
-#             })
+    except Exception as e:
+        LOGGER.error(f"Global error in manage_layer: {e}")
+        return api.get_exception(500, headers, request.format, 'ServerError', str(e))
 
-#         if stats['dualSpace']['nodeCount'] > 0 or stats['dualSpace']['edgeCount'] > 0:
-#             response['links'].append({
-#                 "href": f"{base_url}/dual",
-#                 "rel": "data",
-#                 "type": "application/json",
-#                 "title": "Dual Space (Topology)"
-#             })
+    finally:
+        pidb_provider.disconnect()
 
-#         return headers, 200, to_json(response, api.pretty_print)
+def get_collection_item_layers(api: API, request: APIRequest, dataset, identifier) -> Tuple[dict, int, str]:
+    """
+    Get summary of layers for a collection item (IndoorFeature)
+    """
+    if not request.is_valid():
+        return api.get_format_exception(request)
+    
+    headers = request.get_response_headers(api.api_headers)
+    executed, collections = get_list_of_collections_id()
+    collection_str_id = str(dataset)
+    ifeature_str_id = str(identifier)
+    
+    if executed is False:
+        msg = str(collections)
+        return api.get_exception(
+            HTTPStatus.BAD_REQUEST,
+            headers, request.format, 'ConnectingError', msg)
 
-#     except Exception as e:
-#         LOGGER.error(f"Error fetching layer detail: {e}")
-#         return api.get_exception(500, headers, request.format, 'ServerError', str(e))
+    if collection_str_id not in collections:
+        msg = 'Collection not found'
+        LOGGER.error(msg)
+        return api.get_exception(
+            HTTPStatus.NOT_FOUND,
+            headers, request.format, 'NotFound', msg)
+    LOGGER.debug('Processing query parameters')
 
-#     finally:
-#         db.close()
+    LOGGER.debug('Processing offset parameter')
+    try:
+        offset = int(request.params.get('offset'))
+        if offset < 0:
+            msg = 'offset value should be positive or zero'
+            return api.get_exception(
+                HTTPStatus.BAD_REQUEST,
+                headers, request.format, 'InvalidParameterValue', msg)
+    except TypeError as err:
+        LOGGER.warning(err)
+        offset = 0
+    except ValueError:
+        msg = 'offset value should be an integer'
+        return api.get_exception(
+            HTTPStatus.BAD_REQUEST,
+            headers, request.format, 'InvalidParameterValue', msg)
+
+    LOGGER.debug('Processing limit parameter')
+    try:
+        limit = int(request.params.get('limit'))
+        if limit <= 0:
+            msg = 'limit value should be strictly positive'
+            return api.get_exception(
+                HTTPStatus.BAD_REQUEST,
+                headers, request.format, 'InvalidParameterValue', msg)
+        if limit > 100:
+            msg = 'limit value should be less than or equal to 100'
+            return api.get_exception(
+                HTTPStatus.BAD_REQUEST,
+                headers, request.format, 'InvalidParameterValue', msg)
+    except TypeError as err:
+        LOGGER.warning(err)
+        limit = int(api.config['server']['limit'])
+    except ValueError:
+        msg = 'limit value should be an integer'
+        return api.get_exception(
+            HTTPStatus.BAD_REQUEST,
+            headers, request.format, 'InvalidParameterValue', msg)
+    pidb_provider = PostgresIndoorDB()
+    LOGGER.debug('Processing theme parameter')
+
+    LOGGER.debug('Processing level parameter')
+    theme = request.params.get('theme')
+    level = request.params.get('level')
+    try:
+        pidb_provider.connect()
+        data = \
+            pidb_provider.get_layers(collection_id=collection_str_id, feature_id=ifeature_str_id, theme=theme, level=level
+                                        ,limit=limit, offset=offset)
+
+        # 4. Construct Lightweight Summary
+        
+        for layer in data["layers"]:
+
+            base_url = api.config['server']['url']
+            layer['links']= [
+                {
+                    "href": f"{base_url}/collections/{collection_str_id}/items/{ifeature_str_id}/layers/{layer.get("id")}",
+                    "rel": "item",
+                    "type": "application/json",
+                    "title": "Layer Detail"
+                }
+            ]
+
+        data['links'].append(
+                {
+                    "href": f"{base_url}/collections/{collection_str_id}/items/{ifeature_str_id}/layers",
+                    "rel": "self",
+                    "type": "application/json"
+                }
+        )  
+
+        return headers, 200, to_json(data, api.pretty_print)
+
+    except Exception as e:
+        LOGGER.error(f"Error fetching layers: {e}")
+        return api.get_exception(500, headers, request.format, 'ServerError', str(e))
+
+    finally:
+        pidb_provider.disconnect()
+
+def get_collection_item_layer(api: API, request: APIRequest, dataset, identifier, layer) -> Tuple[dict, int, str]:
+    """
+    Get a single thematic layer
+
+    :param request: A request object
+    :param dataset: dataset name
+    :param identifier: item identifier
+    :param layer: layer identifier
+
+    :returns: tuple of headers, status code, content
+    """    
+    if not request.is_valid():
+        return api.get_format_exception(request)
+    
+    headers = request.get_response_headers(api.api_headers)
+    collection_str_id = str(dataset)
+    ifeature_str_id = str(identifier)
+    layer_str_id = str(layer)
+    pidb_provider = PostgresIndoorDB()
+    level = request.params.get('level')
+    if not request.is_valid():
+        return api.get_format_exception(request)
+    try:
+        pidb_provider.connect()
+        result = pidb_provider.get_layer(collection_str_id, ifeature_str_id, layer_str_id)
+
+    except (Exception, psycopg2.Error) as error:
+        msg = str(error)
+        return api.get_exception(
+            HTTPStatus.BAD_REQUEST,
+            headers, request.format, 'ConnectingError', msg)
+    finally:
+        pidb_provider.disconnect()
+    
+    return headers, HTTPStatus.OK, to_json(result, api.pretty_print)
 
 
 # def _calculate_layer_stats_db(db, layer_row):
