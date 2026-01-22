@@ -857,78 +857,80 @@ def get_collection_item(api: API, request: APIRequest, dataset, identifier) -> T
 
 #     return bbox_result
 
-# def get_collection_item_interlayerconnections(api: API, request: APIRequest, collection_id: str, item_id: str) -> Tuple[dict, int, str]:
-#     """
-#     GET /collections/{id}/items/{featureId}/interlayerconnections
-#     Retrieves the connections for a specific feature.
-#     """
-#     headers = request.get_response_headers(SYSTEM_LOCALE)
-#     provider = PostgresIndoorDB()
+def get_collection_item_interlayerconnections(api: API, request: APIRequest, collection_id: str, item_id: str) -> Tuple[dict, int, str]:
+    """
+    GET /collections/{id}/items/{featureId}/interlayerconnections
+    Retrieves the connections for a specific feature.
+    """
+    headers = request.get_response_headers(SYSTEM_LOCALE)
+    provider = PostgresIndoorDB()
 
-#     try:
-#         # Fetch connections (Clean name, no 'nested')
-#         connections_data = provider.get_interlayer_connections(item_id)
+    try:
+        # Fetch connections (Clean name, no 'nested')
+        connections_data = provider.get_interlayer_connections(collection_id, item_id)
+
+        response = {
+            "layerConnections": connections_data,
+            "links": [
+                {
+                    "href": f"{api.config['server']['url']}/collections/{collection_id}/items/{item_id}/interlayerconnections",
+                    "rel": "self",
+                    "type": "application/json",
+                    "title": "InterLayer Connections"
+                }
+            ]
+        }
+        return headers, HTTPStatus.OK, to_json(response, api.pretty_print)
         
-#         response = {
-#             "layerConnections": connections_data,
-#             "links": [
-#                 {
-#                     "href": f"{api.config['server']['url']}/collections/{collection_id}/items/{item_id}/interlayerconnections",
-#                     "rel": "self",
-#                     "type": "application/json",
-#                     "title": "InterLayer Connections"
-#                 }
-#             ]
-#         }
-#         return headers, HTTPStatus.OK, to_json(response, api.pretty_print)
-        
-#     except Exception as e:
-#         return api.get_exception(HTTPStatus.INTERNAL_SERVER_ERROR, headers, request.format, 'ServerError', str(e))
-#     finally:
-#         provider.disconnect()
+    except Exception as e:
+        return api.get_exception(HTTPStatus.INTERNAL_SERVER_ERROR, headers, request.format, 'ServerError', str(e))
+    finally:
+        provider.disconnect()
 
 
-# def manage_collection_item_interlayerconnections(api: API, request: APIRequest, action: str, collection_id: str, item_id: str, connection_id: str = None) -> Tuple[dict, int, str]:
-#     """
-#     POST / DELETE for Interlayer Connections
-#     """
-#     headers = request.get_response_headers(SYSTEM_LOCALE)
-#     provider = PostgresIndoorDB()
+def manage_collection_item_interlayerconnections(api: API, request: APIRequest, action: str, collection_id: str, item_id: str, connection_id: str = None) -> Tuple[dict, int, str]:
+    """
+    POST / DELETE for Interlayer Connections
+    """
+    headers = request.get_response_headers(SYSTEM_LOCALE)
+    provider = PostgresIndoorDB()
 
-#     try:
-#         if action == 'create':
-#             try:
-#                 data = request.data
-#                 if isinstance(data, bytes):
-#                     data = json.loads(data.decode('utf-8'))
-#             except Exception:
-#                 return api.get_exception(HTTPStatus.BAD_REQUEST, headers, request.format, 'InvalidParameterValue', 'Invalid JSON')
+    try:
+        if action == 'create':
+            try:
+                data = request.data
+                if isinstance(data, bytes):
+                    data = json.loads(data.decode('utf-8'))
+            except Exception:
+                return api.get_exception(HTTPStatus.BAD_REQUEST, headers, request.format, 'InvalidParameterValue', 'Invalid JSON')
 
-#             # Pass collection_id and item_id (feature_id) to helper for ID resolution
-#             new_id = provider.create_interlayer_connection(collection_id, item_id, data)
+            # Pass collection_id and item_id (feature_id) to helper for ID resolution
+            new_id = provider.create_interlayer_connection(collection_id, item_id, data)
             
-#             if new_id:
-#                 headers['Location'] = f"{api.config['server']['url']}/collections/{collection_id}/items/{item_id}/interlayerconnections/{new_id}"
-#                 return headers, HTTPStatus.CREATED, to_json({"status": "Created", "id": new_id}, api.pretty_print)
-#             else:
-#                 return api.get_exception(HTTPStatus.INTERNAL_SERVER_ERROR, headers, request.format, 'ServerError', 'Creation failed (check logs)')
+            if new_id:
+                headers['Location'] = f"{api.config['server']['url']}/collections/{collection_id}/items/{item_id}/interlayerconnections/{new_id}"
+                return headers, HTTPStatus.CREATED, to_json({"status": "Created", "id": new_id}, api.pretty_print)
+            else:
+                return api.get_exception(HTTPStatus.INTERNAL_SERVER_ERROR, headers, request.format, 'ServerError', 'Creation failed (check logs)')
 
-#         elif action == 'delete':
-#             if not connection_id:
-#                 return api.get_exception(HTTPStatus.BAD_REQUEST, headers, request.format, 'MissingParameterValue', 'ID required')
+        elif action == 'delete':
+            if not connection_id:
+                return api.get_exception(HTTPStatus.BAD_REQUEST, headers, request.format, 'MissingParameterValue', 'ID required')
 
-#             success = provider.delete_interlayer_connection(connection_id)
-#             if success:
-#                 return headers, HTTPStatus.NO_CONTENT, ''
-#             else:
-#                 return api.get_exception(HTTPStatus.NOT_FOUND, headers, request.format, 'NotFound', 'Connection not found')
 
-#     except Exception as e:
-#         return api.get_exception(HTTPStatus.INTERNAL_SERVER_ERROR, headers, request.format, 'ServerError', str(e))
-#     finally:
-#         provider.disconnect()
+            success = provider.delete_interlayer_connection(collection_id, item_id, connection_id)
+            if success:
+                return headers, HTTPStatus.NO_CONTENT, ''
+            else:
+                return api.get_exception(HTTPStatus.NOT_FOUND, headers, request.format, 'NotFound', 'Connection not found')
 
-#     return headers, HTTPStatus.METHOD_NOT_ALLOWED, ''
+
+    except Exception as e:
+        return api.get_exception(HTTPStatus.INTERNAL_SERVER_ERROR, headers, request.format, 'ServerError', str(e))
+    finally:
+        provider.disconnect()
+
+    return headers, HTTPStatus.METHOD_NOT_ALLOWED, ''
 
 
 def get_list_of_collections_id():
@@ -1003,3 +1005,230 @@ def validate_bbox(value=None) -> list:
 
     return bbox
 
+def get_primal(api: API, request: APIRequest, collection_id: str, item_id: str, layer_id: str) -> Tuple[dict, int, str]:
+    """
+    GET /collections/{id}/items/{featureId}/layers/{layerId}/primal
+    Retrieves the PrimalSpaceLayer, populated with its CellSpaces and CellBoundaries.
+    """
+    headers = request.get_response_headers(SYSTEM_LOCALE)
+    provider = PostgresIndoorDB()
+
+    try:
+        # Fetch metadata AND members
+        layer_meta, raw_members = provider.get_primal_features_and_metadata(collection_id, item_id, layer_id)
+
+        # Handle 404 if layer doesn't exist
+        if layer_meta is None:
+            return api.get_exception(HTTPStatus.NOT_FOUND, headers, request.format, 'NotFound', 'Layer not found')
+        
+        # Construct response
+        response = {
+            "id": layer_id,
+            "featureType": "PrimalSpaceLayer",
+            "creationDatetime": layer_meta['p_creation_datetime'].isoformat() if layer_meta['p_creation_datetime'] else None,
+            "terminationDatetime": layer_meta['p_termination_datetime'].isoformat() if layer_meta['p_termination_datetime'] else None,
+            "cellSpaceMember": [],
+            "cellBoundaryMember": []
+        }
+
+        # Iterate through the raw DB rows and sort them into the correct list
+        for row in raw_members:
+            if row['type'] == 'space':
+                cell_space = {
+                    "id": row['id_str'],
+                    "featureType": "CellSpace",
+                    "cellSpaceName": row.get('cell_name'),
+                    "level": row.get('level'),
+                    "poi": row.get('poi', False),
+                    "duality": f"#{row.get('duality_id')}" if row.get('duality_id') else None,
+                    "cellSpaceGeom": {
+                        "geometry2D": json.loads(row['geometry_2d']) if row.get('geometry_2d') else None,
+                        "geometry3D": json.loads(row['geometry_3d']) if row.get('geometry_3d') else None
+                    },
+                    "externalReference": row.get('external_reference')
+                    # Note: 'boundedBy' would require a separate join/query or array_agg in SQL
+                }
+                # Remove keys that are None if you want a cleaner response (optional)
+                response["cellSpaceMember"].append(cell_space)
+            
+            elif row['type'] == 'boundary':
+                cell_boundary = {
+                    "id": row['id_str'],
+                    "featureType": "CellBoundary",
+                    "isVirtual": row.get('is_virtual', False),
+                    "duality": f"#{row.get('duality_id')}" if row.get('duality_id') else None,
+                    "cellBoundaryGeom": {
+                        "geometry2D": json.loads(row['geometry_2d']) if row.get('geometry_2d') else None,
+                        "geometry3D": json.loads(row['geometry_3d']) if row.get('geometry_3d') else None
+                    },
+                    "externalReference": row.get('external_reference')
+                }
+                response["cellBoundaryMember"].append(cell_boundary)
+
+        # Add HATEOAS links
+        response["links"] = [
+            {
+                "href": f"{api.config['server']['url']}/collections/{collection_id}/items/{item_id}/layers/{layer_id}/primal",
+                "rel": "self",
+                "type": "application/json",
+                "title": "Primal Space Layer"
+            }
+        ]
+        
+        return headers, HTTPStatus.OK, to_json(response, api.pretty_print)
+        
+    except Exception as e:
+        return api.get_exception(HTTPStatus.INTERNAL_SERVER_ERROR, headers, request.format, 'ServerError', str(e))
+    finally:
+        provider.disconnect()
+
+def manage_primal(api: API, request: APIRequest, action: str, collection_id: str, item_id: str, layer_id: str, member_id: str = None) -> Tuple[dict, int, str]:
+    headers = request.get_response_headers(SYSTEM_LOCALE)
+    provider = PostgresIndoorDB()
+
+    try:
+        if action == 'create':
+            # 1. Parse JSON Body
+            try:
+                data = request.data
+                if isinstance(data, bytes):
+                    data = json.loads(data.decode('utf-8'))
+            except Exception:
+                return api.get_exception(HTTPStatus.BAD_REQUEST, headers, request.format, 'InvalidParameterValue', 'Invalid JSON')
+
+            # 2. Check FeatureType (Space vs Boundary)
+            feature_type = data.get('featureType')
+            if feature_type not in ['CellSpace', 'CellBoundary']:
+                return api.get_exception(HTTPStatus.BAD_REQUEST, headers, request.format, 'InvalidParameterValue', 'featureType must be CellSpace or CellBoundary')
+
+            # 3. Create in DB with Error Handling
+            try:
+                new_id = provider.post_primal_member(collection_id, item_id, layer_id, data)
+                
+                if new_id:
+                    # Success: Return 201 Created and the Location header
+                    headers['Location'] = f"{api.config['server']['url']}/collections/{collection_id}/items/{item_id}/layers/{layer_id}/primal/{new_id}"
+                    return headers, HTTPStatus.CREATED, to_json({"status": "Created", "id": new_id}, api.pretty_print)
+                else:
+                    # Returns None if the parent Layer/Collection/Item IDs were invalid
+                    return api.get_exception(HTTPStatus.NOT_FOUND, headers, request.format, 'NotFound', 'Layer or Parent Feature not found')
+
+            except ValueError as ve:
+                # Catch the "Boundaries do not exist" validation error here
+                return api.get_exception(HTTPStatus.BAD_REQUEST, headers, request.format, 'InvalidParameterValue', str(ve))
+
+        # --- DELETE (DELETE) ---
+        elif action == 'delete':
+            if not member_id:
+                return api.get_exception(HTTPStatus.BAD_REQUEST, headers, request.format, 'MissingParameterValue', 'ID required for deletion')
+
+            # If you want to ONLY allow deleting CellSpaces (and protect Boundaries),
+            # the provider function will return False if the ID belongs to a Boundary.
+            success = provider.delete_primal_member(collection_id, item_id, layer_id, member_id)
+            
+            if success:
+                # 204 No Content is the standard success response for DELETE
+                return headers, HTTPStatus.NO_CONTENT, ''
+            else:
+                # If False, it means either the ID didn't exist OR it was a protected Boundary
+                return api.get_exception(HTTPStatus.NOT_FOUND, headers, request.format, 'NotFound', 'Member not found (or cannot be deleted)')
+
+        # --- UPDATE (PATCH) ---
+        elif action == 'update':
+            if not member_id:
+                return api.get_exception(HTTPStatus.BAD_REQUEST, headers, request.format, 'MissingParameterValue', 'ID required for update')
+
+            try:
+                data = request.data
+                if isinstance(data, bytes):
+                    data = json.loads(data.decode('utf-8'))
+                
+                # We don't check featureType strictness here because PATCH might be partial
+                # But the provider will enforce that the target is a CellSpace
+
+                success = provider.update_primal_member(collection_id, item_id, layer_id, member_id, data)
+                
+                if success:
+                    return headers, HTTPStatus.NO_CONTENT, ''
+                else:
+                    return api.get_exception(HTTPStatus.NOT_FOUND, headers, request.format, 'NotFound', 'Member not found, is not a CellSpace, or Layer invalid')
+
+            except Exception:
+                 return api.get_exception(HTTPStatus.BAD_REQUEST, headers, request.format, 'InvalidParameterValue', 'Invalid JSON')
+
+    except Exception as e:
+        # Catch unexpected server crashes
+        return api.get_exception(HTTPStatus.INTERNAL_SERVER_ERROR, headers, request.format, 'ServerError', str(e))
+    finally:
+        provider.disconnect()
+
+def get_primal_member(api: API, request: APIRequest, collection_id: str, item_id: str, layer_id: str, member_id: str) -> Tuple[dict, int, str]:
+    """
+    GET /collections/{id}/items/{featureId}/layers/{layerId}/primal/{memberId}
+    Retrieves a specific CellSpace or CellBoundary.
+    """
+    headers = request.get_response_headers(SYSTEM_LOCALE)
+    provider = PostgresIndoorDB()
+
+    try:
+        # Fetch member data (returns None if not found)
+        member_data = provider.get_primal_member(collection_id, item_id, layer_id, member_id)
+
+        if not member_data:
+            return api.get_exception(HTTPStatus.NOT_FOUND, headers, request.format, 'NotFound', 'Member not found')
+
+        # Format Response based on Type
+        response = {}
+        
+        if member_data['type'] == 'space':
+            response = {
+                "id": member_data['id_str'],
+                "featureType": "CellSpace",
+                "cellSpaceName": member_data.get('cell_name'),
+                "level": member_data.get('level'),
+                "poi": member_data.get('poi', False),
+                "duality": f"#{member_data['duality_id']}" if member_data.get('duality_id') else None,
+                "cellSpaceGeom": {
+                    "geometry2D": json.loads(member_data['geometry_2d']) if member_data.get('geometry_2d') else None,
+                    "geometry3D": json.loads(member_data['geometry_3d']) if member_data.get('geometry_3d') else None
+                },
+                "externalReference": member_data.get('external_reference'),
+                # Convert the list of IDs ["B1", "B2"] to URI refs ["#B1", "#B2"]
+                "boundedBy": [f"#{b_id}" for b_id in member_data['bounded_by_list']] if member_data.get('bounded_by_list') else []
+            }
+        
+        elif member_data['type'] == 'boundary':
+            response = {
+                "id": member_data['id_str'],
+                "featureType": "CellBoundary",
+                "isVirtual": member_data.get('is_virtual', False),
+                "duality": f"#{member_data['duality_id']}" if member_data.get('duality_id') else None,
+                "cellBoundaryGeom": {
+                    "geometry2D": json.loads(member_data['geometry_2d']) if member_data.get('geometry_2d') else None,
+                    "geometry3D": json.loads(member_data['geometry_3d']) if member_data.get('geometry_3d') else None
+                },
+                "externalReference": member_data.get('external_reference')
+            }
+
+        # Add HATEOAS Links
+        response["links"] = [
+            {
+                "href": f"{api.config['server']['url']}/collections/{collection_id}/items/{item_id}/layers/{layer_id}/primal/{member_id}",
+                "rel": "self",
+                "type": "application/json",
+                "title": "Primal Member"
+            },
+            {
+                "href": f"{api.config['server']['url']}/collections/{collection_id}/items/{item_id}/layers/{layer_id}/primal",
+                "rel": "collection",
+                "type": "application/json",
+                "title": "Primal Space Layer"
+            }
+        ]
+        
+        return headers, HTTPStatus.OK, to_json(response, api.pretty_print)
+        
+    except Exception as e:
+        return api.get_exception(HTTPStatus.INTERNAL_SERVER_ERROR, headers, request.format, 'ServerError', str(e))
+    finally:
+        provider.disconnect()
