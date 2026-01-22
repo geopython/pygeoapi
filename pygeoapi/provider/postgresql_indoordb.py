@@ -211,6 +211,38 @@ class PostgresIndoorDB:
             self.connection.commit()
         
         return True
+    
+    def is_indoor_collection(self, collection_id_str):
+        """
+        Checks if the collection exists and has itemType='indoorfeature'.
+        Returns True if it is an IndoorGML collection, False otherwise.
+        """
+        is_indoor = False
+        try:
+            # Re-use existing connection logic or ensure connected
+            if not self.connection or self.connection.closed:
+                self.connect()
+
+            with self.connection.cursor() as cur:
+                # Adjust column names 'id_str' and 'itemType' to match your schema
+                cur.execute("""
+                    SELECT collection_property 
+                    FROM collection 
+                    WHERE id_str = %s
+                """, (collection_id_str,))
+                props = cur.fetchone()
+                
+                if props:
+                    if props[0].get('itemType') == 'indoorfeature':
+                        is_indoor = True
+                    
+        except Exception as e:
+            LOGGER.error(f"Error checking collection type: {e}")
+        # Note: You might choose NOT to disconnect here if you plan 
+        # to reuse the connection immediately after.
+        # self.disconnect() 
+        
+        return is_indoor
 
     def get_features_list(self):
         """

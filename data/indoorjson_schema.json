@@ -69,7 +69,7 @@
       "properties": {
         "id": { "type": "string" },
         "featureType": { "enum": ["CellSpace"] },
-        "cellSpaceName:": { "type": "string" },
+        "cellSpaceName": { "type": "string" },
         "level": { "type": "string" },
         "poi": { "type":  "boolean" },
         "duality" : { "type": "string", "format": "uri-reference" },
