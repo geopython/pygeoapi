@@ -374,13 +374,13 @@ class PostgresIndoorDB:
             row = cur.fetchone()
             if not row:
                 return None
-            LOGGER.debug(row)
+            
             feature_pk, feature_id_str, geom_str, props = row
             import json
             geometry = json.loads(geom_str) if geom_str else None
             properties = props or {}
             cur.execute("""SELECT * FROM thematiclayer """)
-            LOGGER.debug(cur.fetchall())
+            
             result_feature = {
                 "type": "Feature",
                 "featureType": "IndoorFeatures",
@@ -401,7 +401,7 @@ class PostgresIndoorDB:
             """, (feature_pk,))
             
             layer_rows = cur.fetchall()
-            LOGGER.debug(layer_rows)
+           
             for l_row in layer_rows:
              
                 l_pk, l_id, l_p, l_d, l_se, l_t = l_row
@@ -414,6 +414,31 @@ class PostgresIndoorDB:
                         "dualSpace": l_d
                     }
                 result_feature["IndoorFeatures"]["layers"].append(thematic_layer)
+
+            cur.execute("""
+                SELECT id, id_str, connected_layer_a, connected_layer_b, connected_cell_a, connected_cell_b,connected_node_a,connected_node_b,topo_type,comment
+                FROM interlayerconnection
+                WHERE indoorfeature_id = %s
+            """, (feature_pk,))  
+            connection_rows = cur.fetchall()
+            for c_row in connection_rows:
+                c_pk, c_id, layer_a, layer_b, cell_a, cell_b, node_a, node_b, topo, comment = c_row
+                interlayer_connection = {
+                        "id": c_id,
+                        "featureType": "InterLayerConnection",
+                        "typeOfTopoExpression": topo,
+                        "comment": comment,
+                        "connectedLayers": [
+                            layer_a, layer_b
+                        ],
+                        "connectedNodes": [
+                            node_a, node_b
+                        ],
+                        "connectedCells": [
+                            cell_a, cell_b
+                        ]
+                    }
+                result_feature["IndoorFeatures"]["layerConnections"].append(interlayer_connection)
         return result_feature
     
     def get_layers(self, collection_id, feature_id, theme = None, level = None, limit=10, offset=0):
@@ -877,7 +902,7 @@ class PostgresIndoorDB:
                 # Log warning or handle error depending on your preference
                 return None, None
             
-    def post_thematic_layer(self, collection_pk, feature_pk, layer_data):
+    def post_thematic_layer(self, collection_id, feature_id, layer_data):
         """
         Public wrapper: Manages connection/cursor lifecycle and commits data.
         """
@@ -888,6 +913,7 @@ class PostgresIndoorDB:
         try:
             with self.connection.cursor() as cur:
                 # Call the internal logic
+                collection_pk, feature_pk = self.str_to_pk(collection_id, feature_id)
                 self._post_thematic_layer(cur, collection_pk, feature_pk, layer_data)
                 
             # Commit the transaction if successful
@@ -896,6 +922,54 @@ class PostgresIndoorDB:
             
         except Exception as e:
             self.connection.rollback()
+            raise e
+
+    def delete_thematic_layer(self, collection_id, feature_id, layer_id):
+        """
+        Deletes a ThematicLayer and all associated data (Cells, Nodes, Edges).
+        
+        Args:
+            collection_id (str): The collection ID.
+            feature_id (str): The indoor feature ID.
+            layer_id (str): The layer ID to delete.
+            
+        Returns:
+            bool: True if deleted, False if not found.
+        """        
+        if self.connection is None or self.connection.closed:
+            self.connect()
+
+        try:
+            with self.connection.cursor() as cur:
+                # 1. Verify existence and get Internal Primary Key (PK)
+                # We join tables to ensure strict hierarchy validation
+                cur.execute("""
+                    SELECT tl.id 
+                    FROM thematiclayer tl
+                    JOIN indoorfeature i ON tl.indoorfeature_id = i.id
+                    JOIN collection c ON i.collection_id = c.id
+                    WHERE c.id_str = %s AND i.id_str = %s AND tl.id_str = %s
+                """, (collection_id, feature_id, layer_id))
+                
+                row = cur.fetchone()
+                if not row:
+                    return False # Layer not found
+                
+                layer_pk = row[0]
+
+            
+                cur.execute("DELETE FROM node_n_edge WHERE thematiclayer_id = %s", (layer_pk,))
+                cur.execute("DELETE FROM cell_space_n_boundary WHERE thematiclayer_id = %s", (layer_pk,))
+                cur.execute("DELETE FROM interlayerconnection WHERE connected_layer_a = %s", (layer_pk,))
+                cur.execute("DELETE FROM interlayerconnection WHERE connected_layer_b = %s", (layer_pk,))
+                cur.execute("DELETE FROM thematiclayer WHERE id = %s", (layer_pk,))
+            
+            self.connection.commit()
+            return True
+
+        except Exception as e:
+            self.connection.rollback()
+            # Re-raise the exception to be handled by the API (returns 500 or 400)
             raise e
 
     def get_interlayer_connections(self, collection_str_id, feature_str_id):
