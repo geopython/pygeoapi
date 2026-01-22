@@ -100,6 +100,14 @@ components:
       schema:
         type: string
 
+    cnId:
+      name: cnId
+      in: path
+      description: Local identifier of a specific inter-layer connection (e.g., 'ILC-001').
+      required: true
+      schema:
+        type: string
+
     poi:
       name: poi
       in: query
@@ -1310,13 +1318,14 @@ paths:
           $ref: '#/components/responses/InternalServerError'
     get:
       summary: Retrive catalogs of indoor feature collections
-      tags: [Capabilities]
+      tags: 
+      - IndoorFeatureCollection
       operationId: getCollections
       responses:
         '200':
           $ref: '#/components/responses/Collections'
         '500':
-          $ref: '#/components/response/InternalServerError'
+          $ref: '#/components/responses/InternalServerError'
 
 
   /collections/{collectionId}:
@@ -1334,12 +1343,13 @@ paths:
         '404':
           description: A collection with the specified id was not found.
         '500':
-          $ref: '#/components/response/InternalServerError'
+          $ref: '#/components/responses/InternalServerError'
     delete:
       parameters:
         - $ref: '#/components/parameters/collectionId'
       summary: Delete a collection
-      tags: [Capabilities]
+      tags: 
+      - IndoorFeatureCollection
       operationId: deleteCollection
       responses:
         '204': { description: Successfully deleted. }
@@ -1352,7 +1362,8 @@ paths:
       - $ref: '#/components/parameters/collectionId'
     post:
       summary: Register a new building model
-      tags: [Data]
+      tags: 
+      - IndoorFeatures
       operationId: createItem
       requestBody:
         required: true
@@ -1388,7 +1399,7 @@ paths:
       - $ref: '#/components/parameters/fId'
     get:
       tags:
-        - Data
+        - IndoorFeatures
       summary: fetch a single indoor feature
       description: |-
         Retrieves a single IndoorFeature. 
@@ -1414,7 +1425,7 @@ paths:
 
     delete:
       tags:
-        - Data
+        - IndoorFeatures
       summary: delete an indoor feature
       description: |-
         Permanently removes the specified indoor feature. 
@@ -1518,7 +1529,27 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/InterLayerConnectionList'
-  
+
+  /collections/{collectionId}/items/{fId}/interlayerconnections/{cnId}:
+    parameters:
+      - $ref: '#/components/parameters/collectionId'
+      - $ref: '#/components/parameters/fId'
+      - $ref: '#/components/parameters/cnId'
+    
+    delete:
+      tags:
+        - InterLayerConnections
+      summary: delete a specific inter-layer connection
+      description: Deletes the specific inter-layer connection identified by connectionId.
+      operationId: deleteInterLayerConnection
+      responses:
+        '204':
+          description: No Content. The connection was successfully deleted.
+        '404':
+          description: Not Found. The specified connection, item, or collection does not exist.
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
   /collections/{collectionId}/items/{fId}/layers/{tId}:
     get:
       tags:
