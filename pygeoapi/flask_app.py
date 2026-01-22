@@ -383,53 +383,49 @@ def collection_items(collection_id: str, item_id: str | None = None):
                 itemtypes_api.get_collection_items, request, collection_id)
     
     
-    # 2. DECISION LOGIC
-    # It is IndoorGML if:
-    # A. It explicitly says 'indoorfeature' in YAML.
-    # B. OR It is missing from YAML (implies it's a dynamic DB collection).
 
 
-# @BLUEPRINT.route('/collections/<path:collection_id>/items/<path:item_id>/layers', methods=['GET', 'POST'])
-# @BLUEPRINT.route('/collections/<path:collection_id>/items/<path:item_id>/layers/<path:layer_id>', methods=['GET', 'DELETE'])
-# def collection_items_layers(collection_id, item_id, layer_id=None):
-#     """
-#     OGC Indoorfeatures collections items layers endpoint
+@BLUEPRINT.route('/collections/<path:collection_id>/items/<path:item_id>/layers', methods=['GET', 'POST'])
+@BLUEPRINT.route('/collections/<path:collection_id>/items/<path:item_id>/layers/<path:layer_id>', methods=['GET', 'DELETE'])
+def collection_items_layers(collection_id, item_id, layer_id=None):
+    """
+    OGC Indoorfeatures collections items layers endpoint
     
-#     :param collection_id: collection identifier
-#     :param item_id: item identifier
+    :param collection_id: collection identifier
+    :param item_id: item identifier
     
-#     :reaturns: HTTP response
-#     """
-#     if layer_id is None:
-#         if request.method == 'GET':  #list metadata of thematic layers.
-#             return execute_from_flask(
-#                 indoorgml.get_collection_item_layers, request, 
-#                 collection_id, 
-#                 item_id
-#             )
-#         elif request.method == 'POST':  # create new thematic layer
-#             return execute_from_flask(
-#                 indoorgml.manage_collection_item_layer, request, 
-#                 'create', 
-#                 collection_id, 
-#                 item_id
-#             )
-#     else:
-#         if request.method == 'GET':  # read data of specific thematic layer
-#             return execute_from_flask(
-#                 indoorgml.get_collection_item_layer, request, 
-#                 collection_id,
-#                 item_id,
-#                 layer_id
-#             )
-#         elif request.method == 'DELETE':  #delete specific thematic layer
-#             return execute_from_flask(
-#                 indoorgml.manage_collection_item_layer, request,
-#                 'delete',
-#                 collection_id,
-#                 item_id,
-#                 layer_id
-#             )
+    :reaturns: HTTP response
+    """
+    if layer_id is None:
+        if request.method == 'GET':  #list metadata of thematic layers.
+            return execute_from_flask(
+                indoorgml.get_collection_item_layers, request, 
+                collection_id, 
+                item_id
+            )
+        elif request.method == 'POST':  # create new thematic layer
+            return execute_from_flask(
+                indoorgml.manage_collection_item_layer, request, 
+                'create', 
+                collection_id, 
+                item_id
+            )
+    else:
+        if request.method == 'GET':  # read data of specific thematic layer
+            return execute_from_flask(
+                indoorgml.get_collection_item_layer, request, 
+                collection_id,
+                item_id,
+                layer_id
+            )
+        elif request.method == 'DELETE':  #delete specific thematic layer
+            return execute_from_flask(
+                indoorgml.manage_collection_item_layer, request,
+                'delete',
+                collection_id,
+                item_id,
+                layer_id
+            )
 
 @BLUEPRINT.route('/collections/<path:collection_id>/items/<path:item_id>/interlayerconnections', methods=['GET', 'POST'])
 @BLUEPRINT.route('/collections/<path:collection_id>/items/<path:item_id>/interlayerconnections/<path:connection_id>', methods=['DELETE'])
