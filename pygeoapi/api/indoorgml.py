@@ -475,10 +475,9 @@ def manage_collection_item_layer(api: API, request: APIRequest, action, dataset,
                     "$ref": "#/$defs/ThematicLayer"      
                 }
                 validate(instance=data, schema=layer_schema)
-                collection_pk, feature_pk = pidb_provider.str_to_pk(collection_str_id, feature_str_id)
                 pidb_provider.post_thematic_layer(
-                    collection_pk, 
-                    feature_pk,
+                    collection_str_id, 
+                    feature_str_id,
                     data
                 )
                 layer_str_id = data.get("id")
@@ -497,18 +496,20 @@ def manage_collection_item_layer(api: API, request: APIRequest, action, dataset,
         # ACTION: DELETE (DELETE)
         # =====================================================================
         elif action == 'delete':
-            # Find the layer by its String ID and Parent Feature
+            LOGGER.debug('Deleting layer')
             
             try:
-                # SQLAlchemy cascade should handle children (Cells/Nodes) if configured in models.
-                # Otherwise, you might need to manually delete children here.
-                # Assuming standard Cascade delete:
-               
-
+                pidb_provider.connect()
+                pidb_provider.delete_thematic_layer(collection_str_id, feature_str_id, layer_str_id)
+ 
+            except (Exception, psycopg2.Error) as error:
+                msg = str(error)
+                return api.get_exception(
+                    HTTPStatus.BAD_REQUEST,
+                    headers, request.format, 'ConnectingError', msg)
+            finally:
+                pidb_provider.disconnect()
                 return headers, 204, '' # No Content
-            except Exception as e:
-               
-                return api.get_exception(500, headers, request.format, 'ServerError', str(e))
 
         else:
             return api.get_exception(405, headers, request.format, 'MethodNotAllowed', "Action not yet implemented")
@@ -653,6 +654,13 @@ def get_collection_item_layer(api: API, request: APIRequest, dataset, identifier
         pidb_provider.connect()
         result = pidb_provider.get_layer(collection_str_id, ifeature_str_id, layer_str_id)
 
+
+        if result is None:
+            msg = f"Layer '{layer_str_id}' not found in feature '{ifeature_str_id}'"
+            return api.get_exception(
+                HTTPStatus.NOT_FOUND,
+                headers, request.format, 'NotFound', msg)
+        
     except (Exception, psycopg2.Error) as error:
         msg = str(error)
         return api.get_exception(
