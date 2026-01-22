@@ -146,6 +146,20 @@ def get_collection(api: API, request: APIRequest, dataset=None) -> Tuple[dict, i
     finally:
         provider.disconnect()
 
+def is_indoor_collection(collection_id: String) -> bool:
+    pidb_provider = PostgresIndoorDB()
+    try:
+        pidb_provider.connect()
+        if pidb_provider.is_indoor_collection(collection_id):
+            return True
+    
+    except Exception as e:
+            LOGGER.error(f"Error checking collection type: {e}")
+    finally:
+        pidb_provider.disconnect()
+
+    return False
+
 def manage_collection_item(api: API, request: APIRequest, action, 
                            dataset, identifier=None) -> Tuple[dict, int, str]:
     """

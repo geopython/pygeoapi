@@ -303,61 +303,10 @@ def collection_items(collection_id: str, item_id: str | None = None):
 
     :returns: HTTP response
     """
-    # 1. Lookup in Static Config (YAML)
-    resource = api_.config['resources'].get(collection_id)
-
     collections = filter_dict_by_key_value(api_.config['resources'],
                                            'type', 'collection')
-    # collection in config
-    if collection_id in collections:
-        if item_id is None:
-            if request.method == 'GET': # list items
-                return execute_from_flask(itemtypes_api.get_collection_items,
-                                          request, collection_id, skip_valid_check=True)
-            elif request.method == 'POST': # filter or manage items
-                if request.content_type is not None:
-                    if request.content_type == 'application/geo+json':
-                        return execute_from_flask(
-                            itemtypes_api.manage_collection_item,
-                            request, 'create', collection_id,
-                            skip_valid_check=True)
-                    else:
-                        return execute_from_flask(
-                            itemtypes_api.post_collection_items, request, 
-                            collection_id, skip_valid_check=True
-                        )
-                elif request.method == 'OPTIONS':
-                    return execute_from_flask(
-                        itemtypes_api.manage_collection_item, request,
-                        'options', collection_id, skip_valid_check=True)
-            elif request.method == 'DELETE':
-                return execute_from_flask(
-                    itemtypes_api.manage_collection_item,
-                    request,
-                    'delete',
-                    collection_id,
-                    item_id,
-                    skip_valid_check=True)
-        elif request.method == 'PUT':
-            return execute_from_flask(
-                itemtypes_api.manage_collection_item,
-                request,
-                'update',
-                collection_id,
-                item_id,
-                skip_valid_check=True)
-        elif request.method == 'OPTIONS':
-            return execute_from_flask(
-                itemtypes_api.manage_collection_item,
-                request,
-                'options',
-                collection_id,
-                item_id,
-                skip_valid_check=True)
-        else:
-            return execute_from_flask(itemtypes_api.get_collection_item,
-                                      request, collection_id, item_id)
-    else:
+    
+    if indoorgml.is_indoor_collection(collection_id):
         if item_id is None:
             if request.method == 'GET':  # list items
                 return execute_from_flask(
@@ -377,7 +326,63 @@ def collection_items(collection_id: str, item_id: str | None = None):
             return execute_from_flask(
                 indoorgml.get_collection_item, request,
                 collection_id, item_id)
-                        
+    else:
+        # collection in config
+        if collection_id in collections:
+            if item_id is None:
+                if request.method == 'GET': # list items
+                    return execute_from_flask(itemtypes_api.get_collection_items,
+                                            request, collection_id, skip_valid_check=True)
+                elif request.method == 'POST': # filter or manage items
+                    if request.content_type is not None:
+                        if request.content_type == 'application/geo+json':
+                            return execute_from_flask(
+                                itemtypes_api.manage_collection_item,
+                                request, 'create', collection_id,
+                                skip_valid_check=True)
+                        else:
+                            return execute_from_flask(
+                                itemtypes_api.post_collection_items, request, 
+                                collection_id, skip_valid_check=True
+                            )
+                    elif request.method == 'OPTIONS':
+                        return execute_from_flask(
+                            itemtypes_api.manage_collection_item, request,
+                            'options', collection_id, skip_valid_check=True)
+                elif request.method == 'DELETE':
+                    return execute_from_flask(
+                        itemtypes_api.manage_collection_item,
+                        request,
+                        'delete',
+                        collection_id,
+                        item_id,
+                        skip_valid_check=True)
+            elif request.method == 'PUT':
+                return execute_from_flask(
+                    itemtypes_api.manage_collection_item,
+                    request,
+                    'update',
+                    collection_id,
+                    item_id,
+                    skip_valid_check=True)
+            elif request.method == 'OPTIONS':
+                return execute_from_flask(
+                    itemtypes_api.manage_collection_item,
+                    request,
+                    'options',
+                    collection_id,
+                    item_id,
+                    skip_valid_check=True)
+            else:
+                return execute_from_flask(itemtypes_api.get_collection_item,
+                                        request, collection_id, item_id)
+        else:
+        # Return a standard 404 error using pygeoapi's exception handler
+        # or simply rely on the standard API to raise it.
+            return execute_from_flask(
+                itemtypes_api.get_collection_items, request, collection_id)
+    
+    
     # 2. DECISION LOGIC
     # It is IndoorGML if:
     # A. It explicitly says 'indoorfeature' in YAML.
