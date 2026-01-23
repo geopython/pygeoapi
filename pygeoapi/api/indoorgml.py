@@ -822,7 +822,7 @@ def manage_collection_item_interlayerconnections(api: API, request: APIRequest, 
                 return api.get_exception(HTTPStatus.BAD_REQUEST, headers, request.format, 'InvalidParameterValue', 'Invalid JSON')
 
             # Pass collection_id and item_id (feature_id) to helper for ID resolution
-            new_id = provider.create_interlayer_connection(collection_id, item_id, data)
+            new_id = provider.post_interlayer_connection(collection_id, item_id, data)
             
             if new_id:
                 headers['Location'] = f"{api.config['server']['url']}/collections/{collection_id}/items/{item_id}/interlayerconnections/{new_id}"
@@ -940,7 +940,7 @@ def get_primal(api: API, request: APIRequest, collection_id: str, item_id: str, 
         
         # Construct response
         response = {
-            "id": layer_id,
+            "id": layer_meta['primalspace_id_str'],
             "featureType": "PrimalSpaceLayer",
             "creationDatetime": layer_meta['p_creation_datetime'].isoformat() if layer_meta['p_creation_datetime'] else None,
             "terminationDatetime": layer_meta['p_termination_datetime'].isoformat() if layer_meta['p_termination_datetime'] else None,
