@@ -85,7 +85,8 @@ def config():
         },
         'id_field': 'osm_id',
         'table': 'hotosm_bdi_waterways',
-        'geom_field': 'foo_geom'
+        'geom_field': 'foo_geom',
+        'count': 'true'
     }
 
 
@@ -908,3 +909,70 @@ def test_transaction_create_handles_invalid_input_data(pg_api_, data):
     headers, code, content = manage_collection_item(
         pg_api_, req, action='create', dataset='hot_osm_waterways')
     assert 'generic error' in content
+
+
+def test_provider_count_default_value(config):
+    # Arrange
+    provider = PostgreSQLProvider(config)
+
+    # Act
+    results = provider.query()
+
+    # Assert
+    assert results['numberMatched'] == 14776
+
+
+@pytest.mark.parametrize("count_value", [
+    ('true'),
+    ('TRUE')
+])
+def test_provider_count_true(config, count_value):
+    # Arrange
+    config['count'] = count_value
+    provider = PostgreSQLProvider(config)
+
+    # Act
+    results = provider.query()
+
+    # Assert
+    assert results['numberMatched'] == 14776
+
+
+@pytest.mark.parametrize("count_value", [
+    ('false'),
+    ('FALSE')
+])
+def test_provider_count_false(config, count_value):
+    # Arrange
+    config['count'] = count_value
+    provider = PostgreSQLProvider(config)
+
+    # Act
+    results = provider.query()
+
+    # Assert
+    assert 'numberMatched' not in results
+
+
+def test_provider_count_false_with_resulttype_hits(config):
+    # Arrange
+    config['count'] = 'false'
+    provider = PostgreSQLProvider(config)
+
+    # Act
+    results = provider.query(resulttype="hits")
+
+    # Assert
+    assert results['numberMatched'] == 14776
+
+
+def test_provider_count_number_string(config):
+    # Arrange
+    config['count'] = '1'
+    provider = PostgreSQLProvider(config)
+
+    # Act
+    results = provider.query()
+
+    # Assert
+    assert 'numberMatched' not in results
