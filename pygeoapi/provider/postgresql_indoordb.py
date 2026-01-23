@@ -1080,14 +1080,14 @@ class PostgresIndoorDB:
                     WHERE connects.edge_id = node_n_edge.id 
                       AND node_n_edge.thematiclayer_id = %s
                 """, (layer_pk,))
-                cur.execute("DELETE FROM interlayoercnnection WHERE connected_layer_a = %s", (layer_pk,))
+                cur.execute("DELETE FROM interlayerconnection WHERE connected_layer_a = %s", (layer_pk,))
                 cur.execute("DELETE FROM interlayerconnection WHERE connected_layer_b = %s", (layer_pk,))
                 cur.execute("DELETE FROM node_n_edge WHERE thematiclayer_id = %s", (layer_pk,))
                 cur.execute("DELETE FROM cell_space_n_boundary WHERE thematiclayer_id = %s", (layer_pk,))
                 cur.execute("DELETE FROM thematiclayer WHERE id = %s", (layer_pk,))
             
             self.connection.commit()
-            return True
+            
 
         except Exception as e:
             self.connection.rollback()
