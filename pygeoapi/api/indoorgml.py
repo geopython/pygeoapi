@@ -957,7 +957,7 @@ def get_primal(api: API, request: APIRequest, collection_id: str, item_id: str, 
                     "cellSpaceName": row.get('cell_name'),
                     "level": row.get('level'),
                     "poi": row.get('poi', False),
-                    "duality": f"#{row.get('duality_id')}" if row.get('duality_id') else None,
+                    "duality": f"{row.get('duality_id')}" if row.get('duality_id') else None,
                     "cellSpaceGeom": {
                         "geometry2D": json.loads(row['geometry_2d']) if row.get('geometry_2d') else None,
                         "geometry3D": json.loads(row['geometry_3d']) if row.get('geometry_3d') else None
@@ -973,7 +973,7 @@ def get_primal(api: API, request: APIRequest, collection_id: str, item_id: str, 
                     "id": row['id_str'],
                     "featureType": "CellBoundary",
                     "isVirtual": row.get('is_virtual', False),
-                    "duality": f"#{row.get('duality_id')}" if row.get('duality_id') else None,
+                    "duality": f"{row.get('duality_id')}" if row.get('duality_id') else None,
                     "cellBoundaryGeom": {
                         "geometry2D": json.loads(row['geometry_2d']) if row.get('geometry_2d') else None,
                         "geometry3D": json.loads(row['geometry_3d']) if row.get('geometry_3d') else None
@@ -1104,7 +1104,7 @@ def get_primal_member(api: API, request: APIRequest, collection_id: str, item_id
                 "cellSpaceName": member_data.get('cell_name'),
                 "level": member_data.get('level'),
                 "poi": member_data.get('poi', False),
-                "duality": f"#{member_data['duality_id']}" if member_data.get('duality_id') else None,
+                "duality": f"{member_data['duality_id']}" if member_data.get('duality_id') else None,
                 "cellSpaceGeom": {
                     "geometry2D": json.loads(member_data['geometry_2d']) if member_data.get('geometry_2d') else None,
                     "geometry3D": json.loads(member_data['geometry_3d']) if member_data.get('geometry_3d') else None
@@ -1119,7 +1119,7 @@ def get_primal_member(api: API, request: APIRequest, collection_id: str, item_id
                 "id": member_data['id_str'],
                 "featureType": "CellBoundary",
                 "isVirtual": member_data.get('is_virtual', False),
-                "duality": f"#{member_data['duality_id']}" if member_data.get('duality_id') else None,
+                "duality": f"{member_data['duality_id']}" if member_data.get('duality_id') else None,
                 "cellBoundaryGeom": {
                     "geometry2D": json.loads(member_data['geometry_2d']) if member_data.get('geometry_2d') else None,
                     "geometry3D": json.loads(member_data['geometry_3d']) if member_data.get('geometry_3d') else None
@@ -1150,39 +1150,27 @@ def get_primal_member(api: API, request: APIRequest, collection_id: str, item_id
     finally:
         provider.disconnect()
 
-# api/indoorgml.py
 
 def get_dual(api: API, request: APIRequest, collection_id: str, item_id: str, layer_id: str) -> Tuple[dict, int, str]:
-    """
-    GET /collections/.../layers/{layerId}/dual
-    Returns all States (Nodes) and Transitions (Edges) in the layer.
-    """
     headers = request.get_response_headers(SYSTEM_LOCALE)
     provider = PostgresIndoorDB()
 
     try:
-        # Fetch all members
-        members = provider.get_dual_layer(collection_id, item_id, layer_id)
+        layer_meta, members = provider.get_dual_features_and_metadata(collection_id, item_id, layer_id)
         
-        # Helper to format a single member
-        def format_member(m):
-            base = {
-                "id": m['id_str'],
-                "featureType": "State" if m['type'] == 'node' else "Transition",
-                "geometry": json.loads(m['geometry']) if m['geometry'] else None,
-                "duality": f"#{m['duality_ref']}" if m['duality_ref'] else None,
-                "externalReference": m.get('external_reference')
-            }
-            if m['type'] == 'edge':
-                # Edges have 'weight' and 'connects'
-                base["weight"] = m['weight']
-                if m['source_ref'] and m['target_ref']:
-                    base["connects"] = [f"#{m['source_ref']}", f"#{m['target_ref']}"]
-            return base
+        if not layer_meta:
+             return api.get_exception(HTTPStatus.NOT_FOUND, headers, request.format, 'NotFound', 'Layer not found')
 
+        # 1. Initialize Response
         response = {
-            "type": "FeatureCollection",
-            "features": [format_member(m) for m in members],
+            "id": layer_meta['dualspace_id_str'] if layer_meta['dualspace_id_str'] else f"Dual_{layer_id}",
+            "featureType": "DualSpaceLayer",
+            "isLogical": layer_meta.get('is_logical', False),
+            "isDirected": layer_meta.get('is_directed', False),
+            "creationDatetime": layer_meta['d_creation_datetime'].isoformat() if layer_meta.get('d_creation_datetime') else None,
+            "terminationDatetime": layer_meta['d_termination_datetime'].isoformat() if layer_meta.get('d_termination_datetime') else None,
+            "nodeMember": [],
+            "edgeMember": [],
             "links": [
                 {
                     "href": f"{api.config['server']['url']}/collections/{collection_id}/items/{item_id}/layers/{layer_id}/dual",
@@ -1192,6 +1180,35 @@ def get_dual(api: API, request: APIRequest, collection_id: str, item_id: str, la
                 }
             ]
         }
+
+        # 2. Populate Members
+        for m in members:
+            base_geom = json.loads(m['geometry']) if m['geometry'] else None
+            duality_val = f"#{m['duality_ref']}" if m['duality_ref'] else None
+            
+            # --- NODE ---
+            if m['type'] == 'node':
+                response["nodeMember"].append({
+                    "id": m['id_str'],
+                    "featureType": "Node",
+                    "geometry": base_geom,
+                    "duality": duality_val
+                })
+
+            # --- EDGE ---
+            elif m['type'] == 'edge':
+                connects_list = []
+                if m['source_ref']: connects_list.append(f"{m['source_ref']}")
+                if m['target_ref']: connects_list.append(f"{m['target_ref']}")
+
+                response["edgeMember"].append({
+                    "id": m['id_str'],
+                    "featureType": "Edge",
+                    "geometry": base_geom,
+                    "duality": duality_val,
+                    "weight": float(m['weight']) if m['weight'] is not None else 1.0,
+                    "connects": connects_list
+                })
         
         return headers, HTTPStatus.OK, to_json(response, api.pretty_print)
 
@@ -1204,37 +1221,50 @@ def get_dual(api: API, request: APIRequest, collection_id: str, item_id: str, la
 def get_dual_member(api: API, request: APIRequest, collection_id: str, item_id: str, layer_id: str, member_id: str) -> Tuple[dict, int, str]:
     """
     GET /collections/.../layers/{layerId}/dual/{memberId}
-    Returns a single State or Transition.
+    Retrieves a single Node or Edge.
     """
     headers = request.get_response_headers(SYSTEM_LOCALE)
     provider = PostgresIndoorDB()
 
     try:
+        # Fetch the specific member data
         member = provider.get_dual_member(collection_id, item_id, layer_id, member_id)
         
         if not member:
             return api.get_exception(HTTPStatus.NOT_FOUND, headers, request.format, 'NotFound', 'Member not found')
 
-        # Format Response
+        # 1. Base Response
         response = {
             "id": member['id_str'],
-            "featureType": "State" if member['type'] == 'node' else "Transition",
+            # Map DB 'node'/'edge' -> Schema 'Node'/'Edge'
+            "featureType": "Node" if member['type'] == 'node' else "Edge",
             "geometry": json.loads(member['geometry']) if member['geometry'] else None,
-            "duality": f"#{member['duality_ref']}" if member['duality_ref'] else None,
-            "externalReference": member.get('external_reference')
+            "duality": f"{member['duality_ref']}" if member['duality_ref'] else None
         }
 
+        # 2. Add Edge-Specific Fields
         if member['type'] == 'edge':
-             response["weight"] = member['weight']
-             if member['source_ref'] and member['target_ref']:
-                 response["connects"] = [f"#{member['source_ref']}", f"#{member['target_ref']}"]
+             response["weight"] = float(member['weight']) if member['weight'] is not None else 1.0
+             
+             connects = []
+             if member['source_ref']: connects.append(f"#{member['source_ref']}")
+             if member['target_ref']: connects.append(f"#{member['target_ref']}")
+             
+             response["connects"] = connects
 
+        # 3. HATEOAS Links
         response["links"] = [
             {
                 "href": f"{api.config['server']['url']}/collections/{collection_id}/items/{item_id}/layers/{layer_id}/dual/{member_id}",
                 "rel": "self",
                 "type": "application/json",
                 "title": "Dual Member"
+            },
+            {
+                "href": f"{api.config['server']['url']}/collections/{collection_id}/items/{item_id}/layers/{layer_id}/dual",
+                "rel": "collection",
+                "type": "application/json",
+                "title": "Dual Space Layer"
             }
         ]
         
@@ -1246,6 +1276,13 @@ def get_dual_member(api: API, request: APIRequest, collection_id: str, item_id: 
         provider.disconnect()
 
 def manage_dual(api: API, request: APIRequest, action: str, collection_id: str, item_id: str, layer_id: str, member_id: str = None) -> Tuple[dict, int, str]:
+    """
+    POST /collections/.../layers/{tId}/dual
+    Manages dual members (Edges and Nodes) within a layer.
+    DELETE, PATCH /collections/.../layers/{tId}/dual/{mId}
+    Deletes or updates a specific dual member.
+    """
+    
     headers = request.get_response_headers(SYSTEM_LOCALE)
     provider = PostgresIndoorDB()
 
@@ -1260,8 +1297,8 @@ def manage_dual(api: API, request: APIRequest, action: str, collection_id: str, 
                 return api.get_exception(HTTPStatus.BAD_REQUEST, headers, request.format, 'InvalidParameterValue', 'Invalid JSON')
 
             feature_type = data.get('featureType')
-            if feature_type not in ['State', 'Transition']: # OGC terminology
-                return api.get_exception(HTTPStatus.BAD_REQUEST, headers, request.format, 'InvalidParameterValue', 'featureType must be State or Transition')
+            if feature_type not in ['Node', 'Edge']: 
+                return api.get_exception(HTTPStatus.BAD_REQUEST, headers, request.format, 'InvalidParameterValue', 'featureType must be Node or Edge')
 
             try:
                 new_id = provider.post_dual_member(collection_id, item_id, layer_id, data)
@@ -1296,6 +1333,9 @@ def manage_dual(api: API, request: APIRequest, action: str, collection_id: str, 
 
             except Exception:
                  return api.get_exception(HTTPStatus.BAD_REQUEST, headers, request.format, 'InvalidParameterValue', 'Invalid JSON')
+
+            finally:
+                provider.disconnect()
 
         # --- DELETE (DELETE) ---
         elif action == 'delete':
