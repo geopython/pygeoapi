@@ -463,7 +463,7 @@ class PostgresIndoorDB:
                 params_levels.append(theme)
             if level:
                 sql_levels += " AND cs.level = %s"
-                params_levels.append(levels)
+                params_levels.append(level)
             
             sql_levels += " ORDER BY cs.level"
             cur.execute(sql_levels, tuple(params_levels))
@@ -533,7 +533,7 @@ class PostgresIndoorDB:
                 WHERE c.id_str = %s AND i.id_str = %s AND tl.id_str = %s
             """
             cur.execute(query, (collection_id, feature_id, layer_id))
-           
+
             row = cur.fetchone()
             
             if not row:
@@ -776,18 +776,20 @@ class PostgresIndoorDB:
         )
        
         layer_pk = cur.fetchone()[0]
-        LOGGER.debug(layer_pk)
+     
         # Insert Primal Members (Cells/Boundaries)
-        self._post_primal_members(cur, coll_pk, feature_pk, layer_pk, primal)
+        d_c, d_b = self._post_primal_members(cur, coll_pk, feature_pk, layer_pk, primal)
         
         # Insert Dual Members (Nodes/Edges)
-        self._post_dual_members(cur, coll_pk, feature_pk, layer_pk, dual)
-        
+        self._post_dual_members(cur, coll_pk, feature_pk, layer_pk, dual, d_c, d_b)        
 
     def _post_primal_members(self, cur, coll_pk, feat_pk, layer_pk, primal_data):
         """
         Helper to insert CellSpace and CellSpaceBoundary
         """
+        dual_cell = {}
+        dual_boundary = {}
+        boundedBy = {}
         # 1. Cells
         for cell in primal_data.get('cellSpaceMember', []):
             geom_raw = cell.get('cellSpaceGeom', {})
@@ -800,6 +802,7 @@ class PostgresIndoorDB:
                 (id_str, type, collection_id, indoorfeature_id, thematiclayer_id, 
                  cell_name, level, "2D_geometry", poi)
                 VALUES (%s, 'space', %s, %s, %s, %s, %s, ST_SetSRID(ST_GeomFromGeoJSON(%s), 4326), %s)
+                RETURNING id
             """
             cur.execute(sql, (
                 cell.get('id'),
@@ -811,17 +814,29 @@ class PostgresIndoorDB:
                 json.dumps(geom_json) if geom_json else None,
                 cell.get('poi')
             ))
-
+            # Store cell pk for duality
+            cell_pk = cur.fetchone()[0]
+            duality_of_cell = cell.get('duality').split(":")[-1]
+            dual_cell[duality_of_cell] = cell_pk
+            # Store cell pk for boundedBy
+            bbs = cell.get('boundedBy')
+            if bbs:
+                for b in bbs:
+                    boundedBy[b.split(":")[-1]] = cell_pk
+    
         # 2. Boundaries
         for bound in primal_data.get('cellBoundaryMember', []):
             geom_raw = bound.get('cellBoundaryGeom', {})
             geom_json = geom_raw.get('geometry2D') or geom_raw.get('geometry3D') or geom_raw.get('geometry')
-
+            # get bounding cell primal key
+            boundingCell = boundedBy.get(bound.get('id'))
+            
             sql = """
                 INSERT INTO cell_space_n_boundary 
                 (id_str, type, collection_id, indoorfeature_id, thematiclayer_id, 
-                 is_virtual, "2D_geometry")
-                VALUES (%s, 'boundary', %s, %s, %s, %s, ST_SetSRID(ST_GeomFromGeoJSON(%s), 4326))
+                 is_virtual, "2D_geometry", bounded_by_cell_id)
+                VALUES (%s, 'boundary', %s, %s, %s, %s, ST_SetSRID(ST_GeomFromGeoJSON(%s), 4326), %s)
+                RETURNING id
             """
             cur.execute(sql, (
                 bound.get('id'),
@@ -829,38 +844,66 @@ class PostgresIndoorDB:
                 feat_pk,
                 layer_pk,
                 bound.get('isVirtual', False),
-                json.dumps(geom_json) if geom_json else None
+                json.dumps(geom_json) if geom_json else None,
+                boundingCell
             ))
 
-    def _post_dual_members(self, cur, coll_pk, feat_pk, layer_pk, dual_data):
+            # Store boundary pk for duality
+            boundary_pk = cur.fetchone()[0]
+            duality_of_boundary = bound.get('duality').split(":")[-1]
+            dual_boundary[duality_of_boundary] = boundary_pk
+
+        return dual_cell, dual_boundary
+            
+
+
+    def _post_dual_members(self, cur, coll_pk, feat_pk, layer_pk, dual_data, cell_dict, boundary_dict):
         """
         Helper to insert Nodes and Edges
         """
         # 1. Nodes
+        node_pk_dict = {}
         for node in dual_data.get('nodeMember', []):
             geom_json = node.get('geometry')
-            
+            dual_cell_pk = cell_dict.get(node.get('id'))
+            if not dual_cell_pk:
+                raise Exception("Duality cell not found")
+
             sql = """
                 INSERT INTO node_n_edge 
-                (id_str, type, collection_id, indoorfeature_id, thematiclayer_id, geometry_val)
-                VALUES (%s, 'node', %s, %s, %s, ST_SetSRID(ST_GeomFromGeoJSON(%s), 4326))
+                (id_str, type, collection_id, indoorfeature_id, thematiclayer_id, geometry_val, duality_id)
+                VALUES (%s, 'node', %s, %s, %s, ST_SetSRID(ST_GeomFromGeoJSON(%s), 4326), %s)
+                RETURNING id
             """
+            
             cur.execute(sql, (
                 node.get('id'),
                 coll_pk,
                 feat_pk,
                 layer_pk,
-                json.dumps(geom_json) if geom_json else None
+                json.dumps(geom_json) if geom_json else None,
+                dual_cell_pk
             ))
+            # update node's duality
+            node_pk = cur.fetchone()[0]
+            cur.execute("""
+                    UPDATE cell_space_n_boundary 
+                    SET duality_id = %s 
+                    WHERE id = %s
+                """, (node_pk, dual_cell_pk))
+            node_pk_dict[node.get('id')] = node_pk
 
         # 2. Edges
         for edge in dual_data.get('edgeMember', []):
             geom_json = edge.get('geometry')
-
+            dual_boundary_pk = boundary_dict.get(edge.get('id'))
+            if not dual_boundary_pk:
+                raise Exception("Duality boundary not found")
             sql = """
                 INSERT INTO node_n_edge 
-                (id_str, type, collection_id, indoorfeature_id, thematiclayer_id, geometry_val, weight)
-                VALUES (%s, 'edge', %s, %s, %s, ST_SetSRID(ST_GeomFromGeoJSON(%s), 4326), %s)
+                (id_str, type, collection_id, indoorfeature_id, thematiclayer_id, geometry_val, weight, duality_id)
+                VALUES (%s, 'edge', %s, %s, %s, ST_SetSRID(ST_GeomFromGeoJSON(%s), 4326), %s, %s)
+                RETURNING id
             """
             cur.execute(sql, (
                 edge.get('id'),
@@ -868,8 +911,37 @@ class PostgresIndoorDB:
                 feat_pk,
                 layer_pk,
                 json.dumps(geom_json) if geom_json else None,
-                edge.get('weight', 1.0)
+                edge.get('weight', 1.0),
+                dual_boundary_pk
             ))
+
+            # update edge's duality
+            edge_pk = cur.fetchone()[0]
+            cur.execute("""
+                    UPDATE cell_space_n_boundary 
+                    SET duality_id = %s 
+                    WHERE id = %s
+                """, (edge_pk, dual_boundary_pk))
+            
+
+            # Insert connects into connects table
+            sql = """
+                INSERT INTO connects 
+                (node_source_id, node_target_id, edge_id)
+                VALUES (%s, %s, %s)
+            """
+            
+            connects = edge.get('connects')
+            n_pk = []
+            for i in range(2):
+                n_pk.append(node_pk_dict.get(connects[i].split(":")[-1])) 
+            cur.execute(sql, (
+                n_pk[0],
+                n_pk[1],
+                edge_pk
+            ))    
+            
+
     def str_to_pk(self, collection_id_str, feature_id_str):
         """
         Converts string IDs (slugs) to Database Integer Primary Keys.
