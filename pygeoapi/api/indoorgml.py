@@ -661,6 +661,15 @@ def get_collection_item_layer(api: API, request: APIRequest, dataset, identifier
                 HTTPStatus.NOT_FOUND,
                 headers, request.format, 'NotFound', msg)
         
+        result["links"].append(
+                {
+                    "href": f"{api.config['server']['url']}/collections/{collection_str_id}/items/{ifeature_str_id}/layers/{layer_str_id}",
+                    "rel": "self",
+                    "type": "application/json",
+                    "title": "InterLayer Connections"
+                }
+            )
+        
     except (Exception, psycopg2.Error) as error:
         msg = str(error)
         return api.get_exception(
@@ -670,109 +679,6 @@ def get_collection_item_layer(api: API, request: APIRequest, dataset, identifier
         pidb_provider.disconnect()
     
     return headers, HTTPStatus.OK, to_json(result, api.pretty_print)
-
-
-# def _calculate_layer_stats_db(db, layer_row):
-#     """
-#     Counts rows in child tables (CellSpaceBoundary, NodeEdge) efficiently.
-#     """
-#     stats = {
-#         "primalSpace": {
-#             "cellSpaceCount": 0,
-#             "cellBoundaryCount": 0,
-#             "level": None
-#         },
-#         "dualSpace": {
-#             "nodeCount": 0,
-#             "edgeCount": 0,
-#             "isDirected": False, # Default
-#             "isLogical": True    # Default
-#         }
-#     }
-
-#     if layer_row.space_type == SpaceType.primal:
-#         # Count Cells
-#         cell_count = db.query(CellSpaceBoundary).filter(
-#             CellSpaceBoundary.thematiclayer_id == layer_row.id
-#         ).count()
-#         stats["primalSpace"]["cellSpaceCount"] = cell_count
-        
-#         # Note: If you separate Boundaries (Walls) from Spaces (Rooms) in the same table
-#         # you might need a 'type' filter here. For now, we assume this table holds Cells.
-        
-#         # Attempt to get Levels (if stored in external_reference or a specific column)
-#         # simplistic query for distinct levels if column exists:
-#         # levels = db.query(distinct(CellSpaceBoundary.level)).filter(...).all()
-#         pass
-
-#     elif layer_row.space_type == SpaceType.dual:
-#         # Count Nodes
-#         node_count = db.query(NodeEdge).filter(
-#             NodeEdge.thematiclayer_id == layer_row.id,
-#             NodeEdge.type == NodeEdgeType.node
-#         ).count()
-        
-#         # Count Edges
-#         edge_count = db.query(NodeEdge).filter(
-#             NodeEdge.thematiclayer_id == layer_row.id,
-#             NodeEdge.type == NodeEdgeType.edge
-#         ).count()
-
-#         stats["dualSpace"]["nodeCount"] = node_count
-#         stats["dualSpace"]["edgeCount"] = edge_count
-        
-#         # You can fetch these bools from the layer_row if you added columns for them
-#         # stats["dualSpace"]["isDirected"] = layer_row.is_directed 
-
-#     return stats
-
-
-# def _calculate_layer_bbox_db(db, layer_row):
-#     """
-#     Uses PostGIS ST_Extent to calculate the bounding box of the layer's children.
-#     Returns: [minx, miny, maxx, maxy] or None
-#     """
-#     bbox_result = None
-
-#     if layer_row.space_type == SpaceType.primal:
-#         # Aggregate extent of all Cell geometries
-#         # ST_Extent returns a bounding box (xmin, ymin, xmax, ymax)
-#         # To extract values, we can cast to geometry and ask for XMin, etc.
-#         # But a simpler way in raw SQL is ST_XMin(ST_Extent(geom)), etc.
-        
-#         # Query: SELECT ST_XMin(ext), ST_YMin(ext), ST_XMax(ext), ST_YMax(ext) 
-#         #        FROM (SELECT ST_Extent(geometry_3d) as ext FROM cellspaceboundary WHERE ...)
-        
-#         subq = db.query(func.ST_Extent(CellSpaceBoundary.geometry_3d).label("ext")).filter(
-#             CellSpaceBoundary.thematiclayer_id == layer_row.id
-#         ).subquery()
-        
-#         result = db.query(
-#             func.ST_XMin(subq.c.ext),
-#             func.ST_YMin(subq.c.ext),
-#             func.ST_XMax(subq.c.ext),
-#             func.ST_YMax(subq.c.ext)
-#         ).first()
-        
-#         if result and result[0] is not None:
-#             bbox_result = [result[0], result[1], result[2], result[3]]
-
-#     elif layer_row.space_type == SpaceType.dual:
-#         subq = db.query(func.ST_Extent(NodeEdge.geometry_val).label("ext")).filter(
-#             NodeEdge.thematiclayer_id == layer_row.id
-#         ).subquery()
-        
-#         result = db.query(
-#             func.ST_XMin(subq.c.ext),
-#             func.ST_YMin(subq.c.ext),
-#             func.ST_XMax(subq.c.ext),
-#             func.ST_YMax(subq.c.ext)
-#         ).first()
-
-#         if result and result[0] is not None:
-#             bbox_result = [result[0], result[1], result[2], result[3]]
-
-#     return bbox_result
 
 def get_collection_item_interlayerconnections(api: API, request: APIRequest, collection_id: str, item_id: str) -> Tuple[dict, int, str]:
     """

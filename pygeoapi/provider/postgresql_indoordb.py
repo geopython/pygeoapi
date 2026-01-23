@@ -548,7 +548,8 @@ class PostgresIndoorDB:
                 "theme": l_theme if l_theme else "Unknown",
                 "semanticExtension": False,
                 "primalSpace": primal,
-                "dualSpace": dual
+                "dualSpace": dual,
+                "links": []
             }
 
         return result_layer
@@ -729,12 +730,8 @@ class PostgresIndoorDB:
                 edge_map[eid]["connects"] = [
                     source_id, target_id
                 ]
-            
-            # 2. Update Node connects (Source Node)
             if source_id in node_map:
                 node_map[source_id]["connects"].append(eid)
-
-            # 3. Update Node connects (Target Node)
             if target_id in node_map:
                 node_map[target_id]["connects"].append(eid)
 
@@ -1077,12 +1074,16 @@ class PostgresIndoorDB:
                     return False # Layer not found
                 
                 layer_pk = row[0]
-
-            
+                cur.execute("""
+                    DELETE FROM connects 
+                    USING node_n_edge 
+                    WHERE connects.edge_id = node_n_edge.id 
+                      AND node_n_edge.thematiclayer_id = %s
+                """, (layer_pk,))
+                cur.execute("DELETE FROM interlayoercnnection WHERE connected_layer_a = %s", (layer_pk,))
+                cur.execute("DELETE FROM interlayerconnection WHERE connected_layer_b = %s", (layer_pk,))
                 cur.execute("DELETE FROM node_n_edge WHERE thematiclayer_id = %s", (layer_pk,))
                 cur.execute("DELETE FROM cell_space_n_boundary WHERE thematiclayer_id = %s", (layer_pk,))
-                cur.execute("DELETE FROM interlayerconnection WHERE connected_layer_a = %s", (layer_pk,))
-                cur.execute("DELETE FROM interlayerconnection WHERE connected_layer_b = %s", (layer_pk,))
                 cur.execute("DELETE FROM thematiclayer WHERE id = %s", (layer_pk,))
             
             self.connection.commit()
@@ -1169,7 +1170,7 @@ class PostgresIndoorDB:
         self.connect()
         
         new_id_str = data.get('id')
-        topo = data.get('typeOfTopoExpression', 'others')
+        topo = data.get('typeOfTopoExpression', 'others').lower()
         comment = data.get('comment', '')
         
         layers = data.get('connectedLayers', [])
