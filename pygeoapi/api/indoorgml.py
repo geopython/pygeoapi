@@ -217,7 +217,7 @@ def manage_collection_item(api: API, request: APIRequest, action,
         LOGGER.debug('Creating item')  
         try:
             pidb_provider.connect()
-            validate(instance=data, schema=INDOOR_SCHEMA)
+            #TODO: validate(instance=data, schema=INDOOR_SCHEMA)
             ifeature_id = pidb_provider.post_indoorfeature(
                 collection_str_id, data
             )

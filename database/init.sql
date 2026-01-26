@@ -66,7 +66,7 @@ CREATE TABLE "cell_space_n_boundary" (
   "indoorfeature_id" bigint NOT NULL,
   "thematiclayer_id" bigint NOT NULL,
   "2D_geometry" geometry,
-  "3D_geometry" geometry,
+  "3D_geometry" jsonb,
   "cell_name" varchar,
   "duality_id" bigint,
   "level" varchar,
