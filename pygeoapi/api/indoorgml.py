@@ -598,9 +598,7 @@ def get_collection_item_layers(api: API, request: APIRequest, dataset, identifie
                                         ,limit=limit, offset=offset)
 
         # 4. Construct Lightweight Summary
-        
         for layer in data["layers"]:
-
             base_url = api.config['server']['url']
             layer['links']= [
                 {
@@ -648,11 +646,13 @@ def get_collection_item_layer(api: API, request: APIRequest, dataset, identifier
     layer_str_id = str(layer)
     pidb_provider = PostgresIndoorDB()
     level = request.params.get('level')
+    bbox = request.params.get('bbox')
+    
     if not request.is_valid():
         return api.get_format_exception(request)
     try:
         pidb_provider.connect()
-        result = pidb_provider.get_layer(collection_str_id, ifeature_str_id, layer_str_id)
+        result = pidb_provider.get_layer(collection_str_id, ifeature_str_id, layer_str_id, bbox=bbox, level=level)
 
 
         if result is None:
@@ -1001,40 +1001,10 @@ def get_primal_member(api: API, request: APIRequest, collection_id: str, item_id
             return api.get_exception(HTTPStatus.NOT_FOUND, headers, request.format, 'NotFound', 'Member not found')
 
         # Format Response based on Type
-        response = {}
         
-        if member_data['type'] == 'space':
-            response = {
-                "id": member_data['id_str'],
-                "featureType": "CellSpace",
-                "cellSpaceName": member_data.get('cell_name'),
-                "level": member_data.get('level'),
-                "poi": member_data.get('poi', False),
-                "duality": f"{member_data['duality_id']}" if member_data.get('duality_id') else None,
-                "cellSpaceGeom": {
-                    "geometry2D": json.loads(member_data['geometry_2d']) if member_data.get('geometry_2d') else None,
-                    "geometry3D": json.loads(member_data['geometry_3d']) if member_data.get('geometry_3d') else None
-                },
-                "externalReference": member_data.get('external_reference'),
-                # Convert the list of IDs ["B1", "B2"] to URI refs ["#B1", "#B2"]
-                "boundedBy": [f"#{b_id}" for b_id in member_data['bounded_by_list']] if member_data.get('bounded_by_list') else []
-            }
-        
-        elif member_data['type'] == 'boundary':
-            response = {
-                "id": member_data['id_str'],
-                "featureType": "CellBoundary",
-                "isVirtual": member_data.get('is_virtual', False),
-                "duality": f"{member_data['duality_id']}" if member_data.get('duality_id') else None,
-                "cellBoundaryGeom": {
-                    "geometry2D": json.loads(member_data['geometry_2d']) if member_data.get('geometry_2d') else None,
-                    "geometry3D": json.loads(member_data['geometry_3d']) if member_data.get('geometry_3d') else None
-                },
-                "externalReference": member_data.get('external_reference')
-            }
 
         # Add HATEOAS Links
-        response["links"] = [
+        member_data["links"] = [
             {
                 "href": f"{api.config['server']['url']}/collections/{collection_id}/items/{item_id}/layers/{layer_id}/primal/{member_id}",
                 "rel": "self",
@@ -1049,7 +1019,7 @@ def get_primal_member(api: API, request: APIRequest, collection_id: str, item_id
             }
         ]
         
-        return headers, HTTPStatus.OK, to_json(response, api.pretty_print)
+        return headers, HTTPStatus.OK, to_json(member_data, api.pretty_print)
         
     except Exception as e:
         return api.get_exception(HTTPStatus.INTERNAL_SERVER_ERROR, headers, request.format, 'ServerError', str(e))
@@ -1139,27 +1109,10 @@ def get_dual_member(api: API, request: APIRequest, collection_id: str, item_id: 
         if not member:
             return api.get_exception(HTTPStatus.NOT_FOUND, headers, request.format, 'NotFound', 'Member not found')
 
-        # 1. Base Response
-        response = {
-            "id": member['id_str'],
-            # Map DB 'node'/'edge' -> Schema 'Node'/'Edge'
-            "featureType": "Node" if member['type'] == 'node' else "Edge",
-            "geometry": json.loads(member['geometry']) if member['geometry'] else None,
-            "duality": f"{member['duality_ref']}" if member['duality_ref'] else None
-        }
-
-        # 2. Add Edge-Specific Fields
-        if member['type'] == 'edge':
-             response["weight"] = float(member['weight']) if member['weight'] is not None else 1.0
-             
-             connects = []
-             if member['source_ref']: connects.append(f"#{member['source_ref']}")
-             if member['target_ref']: connects.append(f"#{member['target_ref']}")
-             
-             response["connects"] = connects
+        
 
         # 3. HATEOAS Links
-        response["links"] = [
+        member["links"] = [
             {
                 "href": f"{api.config['server']['url']}/collections/{collection_id}/items/{item_id}/layers/{layer_id}/dual/{member_id}",
                 "rel": "self",
@@ -1174,7 +1127,7 @@ def get_dual_member(api: API, request: APIRequest, collection_id: str, item_id: 
             }
         ]
         
-        return headers, HTTPStatus.OK, to_json(response, api.pretty_print)
+        return headers, HTTPStatus.OK, to_json(member, api.pretty_print)
 
     except Exception as e:
         return api.get_exception(HTTPStatus.INTERNAL_SERVER_ERROR, headers, request.format, 'ServerError', str(e))
