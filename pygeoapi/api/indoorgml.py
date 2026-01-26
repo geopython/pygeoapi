@@ -658,9 +658,7 @@ def get_collection_item_layers(api: API, request: APIRequest, dataset, identifie
                                         ,limit=limit, offset=offset)
 
         # 4. Construct Lightweight Summary
-        
         for layer in data["layers"]:
-
             base_url = api.config['server']['url']
             layer['links']= [
                 {
@@ -708,11 +706,13 @@ def get_collection_item_layer(api: API, request: APIRequest, dataset, identifier
     layer_str_id = str(layer)
     pidb_provider = PostgresIndoorDB()
     level = request.params.get('level')
+    bbox = request.params.get('bbox')
+    
     if not request.is_valid():
         return api.get_format_exception(request)
     try:
         pidb_provider.connect()
-        result = pidb_provider.get_layer(collection_str_id, ifeature_str_id, layer_str_id)
+        result = pidb_provider.get_layer(collection_str_id, ifeature_str_id, layer_str_id, bbox=bbox, level=level)
 
 
         if result is None:
@@ -1064,7 +1064,7 @@ def get_primal_member(api: API, request: APIRequest, collection_id: str, item_id
             }
 
         # Add HATEOAS Links
-        response["links"] = [
+        member_data["links"] = [
             {
                 "href": f"{api.config['server']['url']}/collections/{collection_id}/items/{item_id}/layers/{layer_id}/primal/{member_id}",
                 "rel": "self",
@@ -1079,7 +1079,7 @@ def get_primal_member(api: API, request: APIRequest, collection_id: str, item_id
             }
         ]
         
-        return headers, HTTPStatus.OK, to_json(response, api.pretty_print)
+        return headers, HTTPStatus.OK, to_json(member_data, api.pretty_print)
         
     except Exception as e:
         return api.get_exception(HTTPStatus.INTERNAL_SERVER_ERROR, headers, request.format, 'ServerError', str(e))
@@ -1153,37 +1153,10 @@ def get_dual_member(api: API, request: APIRequest, collection_id: str, item_id: 
         if not member:
             return api.get_exception(HTTPStatus.NOT_FOUND, headers, request.format, 'NotFound', 'Member not found')
 
-        # 1. Base Response
-        response = {
-            "id": member['id_str'],
-            "featureType": "Node" if member['type'] == 'node' else "Edge",
-            "geometry": json.loads(member['geometry']) if member.get('geometry') else None,
-            
-            # FIX 1: Match the SQL Alias 'duality' (not 'duality_ref')
-            "duality": member.get('duality') 
-        }
-
-        # 2. Type-Specific Logic
         
-        # --- NODE LOGIC (Added This) ---
-        if member['type'] == 'node':
-             # Use the list aggregated by the Provider's Subquery
-             # e.g., ["edge-1", "edge-5"]
-             response["connects"] = member.get('node_connects_list', [])
-
-        # --- EDGE LOGIC ---
-        elif member['type'] == 'edge':
-             response["weight"] = float(member['weight']) if member['weight'] is not None else 1.0
-             
-             # Construct list from Source/Target columns
-             connects = []
-             if member.get('source_ref'): connects.append(member['source_ref'])
-             if member.get('target_ref'): connects.append(member['target_ref'])
-             
-             response["connects"] = connects
 
         # 3. HATEOAS Links
-        response["links"] = [
+        member["links"] = [
             {
                 "href": f"{api.config['server']['url']}/collections/{collection_id}/items/{item_id}/layers/{layer_id}/dual/{member_id}",
                 "rel": "self",
@@ -1198,7 +1171,7 @@ def get_dual_member(api: API, request: APIRequest, collection_id: str, item_id: 
             }
         ]
         
-        return headers, HTTPStatus.OK, to_json(response, api.pretty_print)
+        return headers, HTTPStatus.OK, to_json(member, api.pretty_print)
 
     except Exception as e:
         return api.get_exception(HTTPStatus.INTERNAL_SERVER_ERROR, headers, request.format, 'ServerError', str(e))
