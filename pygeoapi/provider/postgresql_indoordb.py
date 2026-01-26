@@ -257,7 +257,7 @@ class PostgresIndoorDB:
             result = cur.fetchall()
         return result
 
-    def get_features(
+    def get_collection_items(
             self, collection_id, bbox='', limit=10, offset=0):
         """
         Retrieve the indoor feature collection to access
@@ -272,98 +272,103 @@ class PostgresIndoorDB:
 
         :returns: JSON IndoorFeatures
         """
-
-        
-        if bbox is None:
-            bbox = []
-            
-        # 1. Prepare Filter Strings
-        # We need to filter by collection_id_str (which is passed in)
-        # We assume collection_id here is the STRING ID (e.g., 'AIST_Building'), 
-        # so we join with the collection table.
-        
-        where_clauses = ["c.id_str = %s"]
-        params = [collection_id]
-
-        # 2. Handle BBOX (Bounding Box)
-        # bbox format: [minx, miny, maxx, maxy]
-        if bbox and len(bbox) == 4:
-            # PostGIS && operator checks if bounding boxes overlap
-            # ST_MakeEnvelope creates a rectangle from the 4 coordinates
-            where_clauses.append("i.geojson_geometry && ST_MakeEnvelope(%s, %s, %s, %s, 4326)")
-            params.extend(bbox)
-
-        # Join all where clauses
-        where_str = " AND ".join(where_clauses)
-
-        with self.connection.cursor() as cur:
-            # 3. Get Total Count (number_matched)
-            # This counts ALL items that match the filter (ignoring limit/offset)
-            count_sql = f"""
-                SELECT COUNT(*) 
-                FROM indoorfeature i
-                JOIN collection c ON i.collection_id = c.id
-                WHERE {where_str}
-            """
-            
-            # We must pass parameters safely to avoid SQL injection
-            # Note: params currently has [collection_id] + [bbox values]
-            cur.execute(count_sql, tuple(params))
-            number_matched = cur.fetchone()[0]
-
-            # 4. Get Data (Features) with Limit/Offset
-            # We select the necessary columns to build the GeoJSON
-            data_sql = f"""
-                SELECT 
-                    i.id_str, 
-                    ST_AsGeoJSON(i.geojson_geometry) as geom,
-                    i.geojson_properties
-                FROM indoorfeature i
-                JOIN collection c ON i.collection_id = c.id
-                WHERE {where_str}
-                ORDER BY i.id ASC
-                LIMIT %s OFFSET %s
-            """
-            
-            # Add limit/offset to the parameters list for the second query
-            query_params = list(params) # Copy existing params
-            query_params.extend([limit, offset])
-            
-            cur.execute(data_sql, tuple(query_params))
-            rows = cur.fetchall()
-
-            # 5. Format Rows into GeoJSON Feature Objects
-            features = []
-            import json
-            
-            for row in rows:
-                feature_id, geom_text, props = row
+        self.connect()
+        try:
+            if bbox is None:
+                bbox = []
                 
-                # Parse geometry string into JSON object (or None)
-                geometry = json.loads(geom_text) if geom_text else None
-                
-                # Construct the GeoJSON Feature dictionary
-                feature = {
-                    "type": "Feature",
-                    "id": feature_id,
-                    "geometry": geometry,
-                    "properties": props or {} 
-                }
-                features.append(feature)
-
-            number_returned = len(features)
+            # 1. Prepare Filter Strings
+            # We need to filter by collection_id_str (which is passed in)
+            # We assume collection_id here is the STRING ID (e.g., 'AIST_Building'), 
+            # so we join with the collection table.
             
-            return features, number_matched, number_returned
+            where_clauses = ["c.id_str = %s"]
+            params = [collection_id]
 
-    def get_feature(self, collection_id, feature_id):
+            # 2. Handle BBOX (Bounding Box)
+            # bbox format: [minx, miny, maxx, maxy]
+            if bbox and len(bbox) == 4:
+                # PostGIS && operator checks if bounding boxes overlap
+                # ST_MakeEnvelope creates a rectangle from the 4 coordinates
+                where_clauses.append("i.geojson_geometry && ST_MakeEnvelope(%s, %s, %s, %s, 4326)")
+                params.extend(bbox)
+
+            # Join all where clauses
+            where_str = " AND ".join(where_clauses)
+
+            with self.connection.cursor() as cur:
+                # 3. Get Total Count (number_matched)
+                # This counts ALL items that match the filter (ignoring limit/offset)
+                count_sql = f"""
+                    SELECT COUNT(*) 
+                    FROM indoorfeature i
+                    JOIN collection c ON i.collection_id = c.id
+                    WHERE {where_str}
+                """
+                
+                # We must pass parameters safely to avoid SQL injection
+                # Note: params currently has [collection_id] + [bbox values]
+                cur.execute(count_sql, tuple(params))
+                number_matched = cur.fetchone()[0]
+
+                # 4. Get Data (Features) with Limit/Offset
+                # We select the necessary columns to build the GeoJSON
+                data_sql = f"""
+                    SELECT 
+                        i.id_str, 
+                        ST_AsGeoJSON(i.geojson_geometry) as geom,
+                        i.geojson_properties
+                    FROM indoorfeature i
+                    JOIN collection c ON i.collection_id = c.id
+                    WHERE {where_str}
+                    ORDER BY i.id ASC
+                    LIMIT %s OFFSET %s
+                """
+                
+                # Append limit and offset to the parameters list
+                query_params = list(params) 
+                query_params.extend([limit, offset])
+                
+                cur.execute(data_sql, tuple(query_params))
+                rows = cur.fetchall()
+
+                # 5. Format Rows into GeoJSON Feature Objects
+                features = []
+                
+                for row in rows:
+                    feature_id, geom_text, props = row
+                    
+                    # Parse geometry string into JSON object (or None)
+                    geometry = json.loads(geom_text) if geom_text else None
+                    
+                    # Construct the GeoJSON Feature dictionary
+                    feature = {
+                        "type": "Feature",
+                        "id": feature_id,
+                        "geometry": geometry,
+                        "properties": props or {} 
+                    }
+                    features.append(feature)
+                
+                return features, number_matched
+        finally:
+            self.disconnect()
+            
+
+    def get_feature(self, collection_id, feature_id, level=None):
         """
-        Retrieves the complete IndoorFeature (Metadata + Full Hierarchy).
-        Returns a single Dictionary representing the Feature or None if not found.
+        Retrieves just the metadata when not filtered
+
+        Retrieves the actual IndoorFeature when filtered.
+        - Primal Space (Cells/Boundaries): Filtered by 'level' if provided.
+        - Dual Space (Nodes/Edges): ALWAYS returns all members (unfiltered).
         """
         result_feature = None
+
         with self.connection.cursor() as cur:
-            # 1. Fetch the Main IndoorFeature (Metadata)
-            # We need the Integer ID (pk) to query children tables
+            # ---------------------------------------------------------
+            # 1. Fetch Root Metadata
+            # ---------------------------------------------------------
             cur.execute("""
                 SELECT i.id, i.id_str, ST_AsGeoJSON(i.geojson_geometry), i.geojson_properties
                 FROM indoorfeature i
@@ -376,17 +381,18 @@ class PostgresIndoorDB:
                 return None
             
             feature_pk, feature_id_str, geom_str, props = row
-            import json
             geometry = json.loads(geom_str) if geom_str else None
             properties = props or {}
-            cur.execute("""SELECT * FROM thematiclayer """)
-            
+
+            # Initialize Skeleton
             result_feature = {
                 "type": "Feature",
-                "featureType": "IndoorFeatures",
+                "featureType": "IndoorFeatures", # Enum: IndoorFeatures
                 "id": feature_id_str,
                 "geometry": geometry,
-                "properties": properties,
+                "properties": properties, # Standard metadata properties
+                
+                # The core IndoorGML data structure
                 "IndoorFeatures": {
                     "featureType": "IndoorFeatures",
                     "layers": [],
@@ -394,6 +400,11 @@ class PostgresIndoorDB:
                 },
                 "links": []
             }
+
+            # ---------------------------------------------------------
+            # 2. Fetch Thematic Layers (Keep ID mapping for later)
+            # ---------------------------------------------------------
+            
             cur.execute("""
                 SELECT id, id_str, primalspace_id_str, dualspace_id_str, semantic_extension, theme
                 FROM thematiclayer
@@ -401,44 +412,222 @@ class PostgresIndoorDB:
             """, (feature_pk,))
             
             layer_rows = cur.fetchall()
-           
+            
+            # Map database ID (pk) to the layer object so we can inject content later
+            # keys: layer_pk (int), values: reference to the dict inside result_feature
+            layers_by_pk = {}
+
             for l_row in layer_rows:
-             
                 l_pk, l_id, l_p, l_d, l_se, l_t = l_row
                 thematic_layer = {
-                        "id": l_id,
-                        "featureType": "ThematicLayer",
-                        "theme": l_t if l_t else "Unknown",
-                        "semanticExtension": l_se if l_se else False, # Defaulting to False unless stored in DB
-                        "primalSpace": l_p,
-                        "dualSpace": l_d
+                    "id": l_id,
+                    "featureType": "ThematicLayer",
+                    "theme": l_t if l_t else "Unknown",
+                    "semanticExtension": l_se if l_se else False,
+                    
+                    # 1. Primal Space Object (ID + Members)
+                    "primalSpace": {
+                        "id": l_p,
+                        "featureType": "PrimalSpaceLayer",
+                        # Dates are optional/dummy here, strictly required by schema? 
+                        # usually DB has timestamps, adding placeholders if null
+                        "creationDatetime": "2026-01-01T00:00:00Z", 
+                        "terminationDatetime": "2099-12-31T23:59:59Z",
+                        "cellSpaceMember": [],
+                        "cellBoundaryMember": []
+                    },
+                    
+                    # 2. Dual Space Object (ID + Members)
+                    "dualSpace": {
+                        "id": l_d,
+                        "featureType": "DualSpaceLayer",
+                        "isLogical": True,   # Defaulting based on typical usage
+                        "isDirected": True,  # Defaulting based on typical usage
+                        "nodeMember": [],
+                        "edgeMember": []
                     }
+                }
                 result_feature["IndoorFeatures"]["layers"].append(thematic_layer)
+                layers_by_pk[l_pk] = thematic_layer
+            
+            # ---------------------------------------------------------
+            # 3. Fetch CellSpaces (with Level Filter)
+            # ---------------------------------------------------------
+            # We select 3D geometry by default, fallback to 2D if needed.
+            # Adjust ST_AsGeoJSON param as per your SRID requirements.
 
+            space_sql = """
+                SELECT 
+                    id, id_str, thematiclayer_id, 
+                    ST_AsGeoJSON(COALESCE("3D_geometry", "2D_geometry")), 
+                    cell_name, level, external_reference, duality_id, poi
+                FROM cell_space_n_boundary
+                WHERE indoorfeature_id = %s AND type = 'space'
+            """
+            space_params = [feature_pk]
+
+            if level:
+                space_sql += " AND level = %s"
+                space_params.append(str(level))
+
+            cur.execute(space_sql, tuple(space_params))
+            space_rows = cur.fetchall()
+
+            valid_space_ids = set() # To filter boundaries later
+
+            for s_row in space_rows:
+                s_pk, s_id, layer_pk, s_geom_str, s_name, s_lvl, s_ext, s_duality, s_poi = s_row
+                
+                valid_space_ids.add(s_pk) # Keep track of valid IDs
+
+                # Parse geometry
+                s_geom = json.loads(s_geom_str) if s_geom_str else None
+                
+                space_obj = {
+                    "type": "Feature", 
+                    "featureType": "CellSpace",
+                    "id": s_id,
+                    "geometry": s_geom, # Matches GeoJSON requirement
+                    "properties": {
+                        "cellSpaceName": s_name,
+                        "level": s_lvl,
+                        "poi": s_poi if s_poi is not None else False,
+                        "duality": s_duality,
+                        "externalReference": s_ext
+                    }
+                }
+
+                # Inject into the correct layer
+                if layer_pk in layers_by_pk:
+                    layers_by_pk[layer_pk]["primalSpace"]["cellSpaceMember"].append(space_obj)
+
+            # ---------------------------------------------------------
+            # 4. Fetch CellSpaceBoundaries (Filtered by Space IDs)
+            # ---------------------------------------------------------
+            # Logic: If level is set, we ONLY want boundaries connected to the spaces we found.
+            # If no spaces were found for this level, we shouldn't fetch any boundaries.
+            
+            should_fetch_boundaries = True
+            if level and not valid_space_ids:
+                should_fetch_boundaries = False
+
+            if should_fetch_boundaries:
+                bound_sql = """
+                    SELECT 
+                        id, id_str, thematiclayer_id, 
+                        ST_AsGeoJSON(COALESCE("3D_geometry", "2D_geometry")), 
+                        external_reference, is_virtual
+                    FROM cell_space_n_boundary
+                    WHERE indoorfeature_id = %s AND type = 'boundary'
+                """
+                bound_params = [feature_pk]
+
+                if level:
+                    # Filter boundaries to only those pointing to our valid spaces
+                    bound_sql += " AND bounded_by_cell_id = ANY(%s)"
+                    bound_params.append(list(valid_space_ids))
+
+                cur.execute(bound_sql, tuple(bound_params))
+                bound_rows = cur.fetchall()
+
+                for b_row in bound_rows:
+                    b_pk, b_id, layer_pk, b_geom_str, b_ext, b_virt = b_row
+                    
+                    b_geom = json.loads(b_geom_str) if b_geom_str else None
+
+                    bound_obj = {
+                        "type": "Feature",
+                        "featureType": "CellBoundary",
+                        "id": b_id,
+                        "geometry": b_geom,
+                        "properties": { 
+                            "isVirtual": b_virt if b_virt is not None else False,
+                            "externalReference": b_ext 
+                        }
+                    }
+
+                    if layer_pk in layers_by_pk:
+                        layers_by_pk[layer_pk]["primalSpace"]["cellBoundaryMember"].append(bound_obj)
+
+            # ---------------------------------------------------------
+            # 5 & 6. Fetch Dual Space (Nodes & Edges) from node_n_edge
+            # ---------------------------------------------------------
+            # We fetch ALL dual space items (no level filtering) in one query for efficiency.
+            
+            dual_sql = """
+                SELECT 
+                    id, id_str, type, thematiclayer_id, 
+                    ST_AsGeoJSON(geometry_val), 
+                    duality_id, weight
+                FROM node_n_edge
+                WHERE indoorfeature_id = %s
+            """
+            cur.execute(dual_sql, (feature_pk,))
+            dual_rows = cur.fetchall()
+
+            for d_row in dual_rows:
+                d_pk, d_id, d_type, layer_pk, d_geom_str, d_duality, d_weight = d_row
+                
+                d_geom = json.loads(d_geom_str) if d_geom_str else None
+                
+                # Check type to decide if it's a Node or Edge
+                # Assuming 'type' column returns string 'Node' or 'Edge'
+                
+                # Schema: Node
+                if d_type == 'node':
+                    node_obj = {
+                        "type": "Feature",
+                        "featureType": "Node",
+                        "id": d_id,
+                        "geometry": d_geom,
+                        "properties": {
+                            "duality": d_duality,
+                            "connects": [] # Populated if you have connection data
+                        }
+                    }
+                    if layer_pk in layers_by_pk:
+                        layers_by_pk[layer_pk]["dualSpace"]["nodeMember"].append(node_obj)
+                
+                # Schema: Edge
+                elif d_type == 'edge':
+                    edge_obj = {
+                        "type": "Feature",
+                        "featureType": "Edge",
+                        "id": d_id,
+                        "geometry": d_geom,
+                        "properties": {
+                            "weight": d_weight if d_weight is not None else 0.0,
+                            "duality": d_duality,
+                            "connects": [] # Populated if you have connection data
+                        }
+                    }
+                    if layer_pk in layers_by_pk:
+                        layers_by_pk[layer_pk]["dualSpace"]["edgeMember"].append(edge_obj)
+
+            # ---------------------------------------------------------
+            # 7. Fetch InterLayerConnections 
+            # ---------------------------------------------------------
             cur.execute("""
                 SELECT id, id_str, connected_layer_a, connected_layer_b, connected_cell_a, connected_cell_b,connected_node_a,connected_node_b,topo_type,comment
                 FROM interlayerconnection
                 WHERE indoorfeature_id = %s
             """, (feature_pk,))  
+
             connection_rows = cur.fetchall()
             for c_row in connection_rows:
                 c_pk, c_id, layer_a, layer_b, cell_a, cell_b, node_a, node_b, topo, comment = c_row
+                # Schema: InterLayerConnection
                 interlayer_connection = {
                         "id": c_id,
                         "featureType": "InterLayerConnection",
                         "typeOfTopoExpression": topo,
                         "comment": comment,
-                        "connectedLayers": [
-                            layer_a, layer_b
-                        ],
-                        "connectedNodes": [
-                            node_a, node_b
-                        ],
-                        "connectedCells": [
-                            cell_a, cell_b
-                        ]
+                        "connectedLayers": [layer_a, layer_b],
+                        "connectedNodes": [node_a, node_b],
+                        "connectedCells": [cell_a, cell_b]
                     }
                 result_feature["IndoorFeatures"]["layerConnections"].append(interlayer_connection)
+
         return result_feature
     
     def get_layers(self, collection_id, feature_id, theme = None, level = None, limit=10, offset=0):
@@ -2210,7 +2399,7 @@ class PostgresIndoorDB:
             print(f"Get Dual Member Error: {e}")
             return None
         finally:
-            self.disconnect()
+            self.disconnect() 
 
     def update_dual_member(self, collection_str, item_str, layer_str, member_id, data):
         """
