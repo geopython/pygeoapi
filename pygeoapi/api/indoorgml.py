@@ -262,6 +262,7 @@ def get_collection_items(api: API, request: APIRequest, dataset) -> Tuple[dict, 
     headers = request.get_response_headers(SYSTEM_LOCALE)
     executed, collections = get_list_of_collections_id()
     collection_str_id = str(dataset)
+
     if executed is False:
         msg = str(collections)
         return api.get_exception(
@@ -274,8 +275,10 @@ def get_collection_items(api: API, request: APIRequest, dataset) -> Tuple[dict, 
         return api.get_exception(
             HTTPStatus.NOT_FOUND,
             headers, request.format, 'NotFound', msg)
+    
     LOGGER.debug('Processing query parameters')
 
+    # --- OFFSET PARAMETER ---
     LOGGER.debug('Processing offset parameter')
     try:
         offset = int(request.params.get('offset'))
@@ -284,8 +287,8 @@ def get_collection_items(api: API, request: APIRequest, dataset) -> Tuple[dict, 
             return api.get_exception(
                 HTTPStatus.BAD_REQUEST,
                 headers, request.format, 'InvalidParameterValue', msg)
-    except TypeError as err:
-        LOGGER.warning(err)
+    except TypeError:
+        # DEFAULT is 0
         offset = 0
     except ValueError:
         msg = 'offset value should be an integer'
@@ -293,11 +296,10 @@ def get_collection_items(api: API, request: APIRequest, dataset) -> Tuple[dict, 
             HTTPStatus.BAD_REQUEST,
             headers, request.format, 'InvalidParameterValue', msg)
 
+    # --- LIMIT PARAMETER ---
     LOGGER.debug('Processing limit parameter')
     try:
         limit = int(request.params.get('limit'))
-        # TODO: We should do more validation, against the min and max
-        #       allowed by the server configuration
         if limit <= 0:
             msg = 'limit value should be strictly positive'
             return api.get_exception(
@@ -308,15 +310,15 @@ def get_collection_items(api: API, request: APIRequest, dataset) -> Tuple[dict, 
             return api.get_exception(
                 HTTPStatus.BAD_REQUEST,
                 headers, request.format, 'InvalidParameterValue', msg)
-    except TypeError as err:
-        LOGGER.warning(err)
-        limit = int(api.config['server']['limit'])
+    except TypeError:
+        limit=10
     except ValueError:
         msg = 'limit value should be an integer'
         return api.get_exception(
             HTTPStatus.BAD_REQUEST,
             headers, request.format, 'InvalidParameterValue', msg)
     
+    # --- BBOX PARAMETER ---
     LOGGER.debug('Processing bbox parameter')
     bbox = request.params.get('bbox')
 
@@ -330,52 +332,87 @@ def get_collection_items(api: API, request: APIRequest, dataset) -> Tuple[dict, 
             return api.get_exception(
                 HTTPStatus.BAD_REQUEST,
                 headers, request.format, 'InvalidParameterValue', msg)
-    LOGGER.debug('Querying provider')
-    LOGGER.debug('offset: {}'.format(offset))
-    LOGGER.debug('limit: {}'.format(limit))
-    LOGGER.debug('bbox: {}'.format(bbox))
-
-    pidb_provider = PostgresIndoorDB()
+        
+    # --- CALL PROVIDER ---
+    # We pass the cleaned params to the DB layer
+    LOGGER.debug(f'Querying provider with offset: {offset}, limit: {limit}, bbox: {bbox}')
+    provider = PostgresIndoorDB()
     try:
-        pidb_provider.connect()
-        features, number_matched, number_returned = \
-            pidb_provider.get_features(collection_id=collection_str_id,
-                                        bbox=bbox, limit=limit, offset=offset)
-        content = {
-            "type": "FeatureCollection",
-            "numberMatched": number_matched,
-            "numberReturned": number_returned,
-            "features": features,
-            "links": [
-                # Standard links usually go here (self, next, prev, etc.)
-                # You can use api.get_items_links() if pygeoapi provides it, 
-                # or build them manually.
-                 {
-                    "type": "application/geo+json",
-                    "rel": "self",
-                    "title": "This document",
-                    "href": f"{api.base_url}/collections/{collection_str_id}/items"
-                }
-            ],
-            "timeStamp": "" # Optional: add current timestamp
-        }
-        # Add "next" link for pagination if there are more results
-        if number_matched > (offset + limit):
-            next_offset = offset + limit
-            content["links"].append({
-                "rel": "next",
-                "title": "Next page",
-                "href": f"{api.base_url}/collections/{collection_str_id}/items?offset={next_offset}&limit={limit}"
-            })
-    except (Exception, psycopg2.Error) as error:
-        LOGGER.error(f"Database error: {error}")
-        msg = str(error)
+        content, number_matched = provider.get_collection_items(
+            collection_id=collection_str_id,
+            # bbox=bbox,
+            limit=limit,
+            offset=offset,
+        )
+    except Exception as err:
+        LOGGER.error(f"Provider error: {err}")
         return api.get_exception(
             HTTPStatus.INTERNAL_SERVER_ERROR,
-            headers, request.format, 'ConnectingError', msg)
-    finally:
-        pidb_provider.disconnect()
-    return headers, HTTPStatus.OK, content
+            headers, request.format, 'NoApplicableCode', 'Internal Server Error')
+
+    # --- GENERATE LINKS (Pagination) ---
+    links = []
+    
+    # 1. Self Link
+    # Reconstructs current URL with current params
+    self_href = f"{api.base_url}/collections/{collection_str_id}/items?offset={offset}&limit={limit}"
+    if bbox:
+        self_href += f"&bbox={','.join(map(str, bbox))}"
+    
+    links.append({
+        'rel': 'self',
+        'type': 'application/geo+json',
+        'title': 'This document',
+        'href': self_href
+    })
+
+    # 2. Next Link
+    # Only show if there are more items remaining
+    if (offset + limit) < number_matched:
+        next_offset = offset + limit
+        next_href = f"{api.base_url}/collections/{collection_str_id}/items?offset={next_offset}&limit={limit}"
+        if bbox:
+            next_href += f"&bbox={','.join(map(str, bbox))}"
+        
+        links.append({
+            'rel': 'next',
+            'type': 'application/geo+json',
+            'title': 'Next page',
+            'href': next_href
+        })
+
+    # 3. Previous Link
+    # Only show if we are not on the first page
+    if offset > 0:
+        prev_offset = max(0, offset - limit)
+        prev_href = f"{api.base_url}/collections/{collection_str_id}/items?offset={prev_offset}&limit={limit}"
+        if bbox:
+            prev_href += f"&bbox={','.join(map(str, bbox))}"
+            
+        links.append({
+            'rel': 'prev',
+            'type': 'application/geo+json',
+            'title': 'Previous page',
+            'href': prev_href
+        })
+
+    # --- CONSTRUCT RESPONSE ---
+    feature_collection = {
+        'type': 'FeatureCollection',
+        'numberMatched': number_matched,
+        'numberReturned': len(content),
+        'links': links,
+        'features': content
+    }
+    
+    # 1. Get Headers (Standard OGC headers)
+    headers = request.get_response_headers(SYSTEM_LOCALE)
+    
+    # 2. Serialize the content to a string
+    content_body = to_json(feature_collection, api.pretty_print)
+    
+    # 3. Return in the correct order: Headers, Status, Content
+    return headers, HTTPStatus.OK, content_body
     
 def get_collection_item(api: API, request: APIRequest, dataset, identifier) -> Tuple[dict, int, str]:
     """
@@ -390,13 +427,36 @@ def get_collection_item(api: API, request: APIRequest, dataset, identifier) -> T
     pidb_provider = PostgresIndoorDB()
     collection_str_id = str(dataset)
     ifeature_str_id = str(identifier)
+
     if not request.is_valid():
         return api.get_format_exception(request)
+    
     headers = request.get_response_headers()
+
+    # --- Extract Level Parameter ---
+    level = request.params.get('level')
+    # You might want to strip whitespace if it's a string
+    if level:
+        level = str(level).strip()
+
     try:
         pidb_provider.connect()
         result = pidb_provider.get_feature(collection_str_id, ifeature_str_id)
 
+        # --- Pass level to the provider ---
+        result = pidb_provider.get_feature(
+            collection_str_id, 
+            ifeature_str_id, 
+            level=level 
+        )
+        
+        # If the result is None (e.g., ID doesn't exist), handle 404
+        if not result:
+             msg = f'Item {identifier} not found'
+             return api.get_exception(
+                HTTPStatus.NOT_FOUND,
+                headers, request.format, 'NotFound', msg)
+        
         base_url = f"{api.config['server']['url']}/collections/{collection_str_id}/items/{ifeature_str_id}"
 
         result['links'].append({
@@ -831,16 +891,17 @@ def validate_bbox(value=None) -> list:
 def get_primal(api: API, request: APIRequest, collection_id: str, item_id: str, layer_id: str) -> Tuple[dict, int, str]:
     """
     GET /collections/{id}/items/{featureId}/layers/{layerId}/primal
-    Retrieves the PrimalSpaceLayer, populated with its CellSpaces and CellBoundaries.
+    Retrieves the PrimalSpaceLayer.
     """
     headers = request.get_response_headers(SYSTEM_LOCALE)
     provider = PostgresIndoorDB()
 
     try:
-        # Fetch metadata AND members
-        layer_meta, raw_members = provider.get_primal_features_and_metadata(collection_id, item_id, layer_id)
+        # Call the UPDATED provider function
+        # It now returns 3 values: Metadata, Spaces (processed), Boundaries (processed)
+        layer_meta, spaces, boundaries = provider.get_primal_features_and_metadata(collection_id, item_id, layer_id)
 
-        # Handle 404 if layer doesn't exist
+        # Handle 404
         if layer_meta is None:
             return api.get_exception(HTTPStatus.NOT_FOUND, headers, request.format, 'NotFound', 'Layer not found')
         
@@ -850,43 +911,9 @@ def get_primal(api: API, request: APIRequest, collection_id: str, item_id: str, 
             "featureType": "PrimalSpaceLayer",
             "creationDatetime": layer_meta['p_creation_datetime'].isoformat() if layer_meta['p_creation_datetime'] else None,
             "terminationDatetime": layer_meta['p_termination_datetime'].isoformat() if layer_meta['p_termination_datetime'] else None,
-            "cellSpaceMember": [],
-            "cellBoundaryMember": []
+            "cellSpaceMember": spaces,        # Already has 'boundedBy' and proper 'duality'
+            "cellBoundaryMember": boundaries  # Already formatted
         }
-
-        # Iterate through the raw DB rows and sort them into the correct list
-        for row in raw_members:
-            if row['type'] == 'space':
-                cell_space = {
-                    "id": row['id_str'],
-                    "featureType": "CellSpace",
-                    "cellSpaceName": row.get('cell_name'),
-                    "level": row.get('level'),
-                    "poi": row.get('poi', False),
-                    "duality": f"{row.get('duality_id')}" if row.get('duality_id') else None,
-                    "cellSpaceGeom": {
-                        "geometry2D": json.loads(row['geometry_2d']) if row.get('geometry_2d') else None,
-                        "geometry3D": json.loads(row['geometry_3d']) if row.get('geometry_3d') else None
-                    },
-                    "externalReference": row.get('external_reference')
-                    # Note: 'boundedBy' would require a separate join/query or array_agg in SQL
-                }
-                # Remove keys that are None if you want a cleaner response (optional)
-                response["cellSpaceMember"].append(cell_space)
-            
-            elif row['type'] == 'boundary':
-                cell_boundary = {
-                    "id": row['id_str'],
-                    "featureType": "CellBoundary",
-                    "isVirtual": row.get('is_virtual', False),
-                    "duality": f"{row.get('duality_id')}" if row.get('duality_id') else None,
-                    "cellBoundaryGeom": {
-                        "geometry2D": json.loads(row['geometry_2d']) if row.get('geometry_2d') else None,
-                        "geometry3D": json.loads(row['geometry_3d']) if row.get('geometry_3d') else None
-                    },
-                    "externalReference": row.get('external_reference')
-                }
-                response["cellBoundaryMember"].append(cell_boundary)
 
         # Add HATEOAS links
         response["links"] = [
@@ -1001,7 +1028,40 @@ def get_primal_member(api: API, request: APIRequest, collection_id: str, item_id
             return api.get_exception(HTTPStatus.NOT_FOUND, headers, request.format, 'NotFound', 'Member not found')
 
         # Format Response based on Type
+        response = {}
+
+        # We use .get('duality') because that is the alias in the Provider SQL.
+        # We do NOT use 'duality_id' (the integer).
+        final_duality = member_data.get('duality')
+
+        if member_data['type'] == 'space':
+            response = {
+                "id": member_data['id_str'],
+                "featureType": "CellSpace",
+                "cellSpaceName": member_data.get('cell_name'),
+                "level": member_data.get('level'),
+                "poi": member_data.get('poi', False),
+                "duality": final_duality,  
+                "cellSpaceGeom": {
+                    "geometry2D": json.loads(member_data['geometry_2d']) if member_data.get('geometry_2d') else None,
+                    "geometry3D": json.loads(member_data['geometry_3d']) if member_data.get('geometry_3d') else None
+                },
+                "externalReference": member_data.get('external_reference'),
+                "boundedBy": member_data.get('bounded_by_list', [])
+            }
         
+        elif member_data['type'] == 'boundary':
+            response = {
+                "id": member_data['id_str'],
+                "featureType": "CellBoundary",
+                "isVirtual": member_data.get('is_virtual', False),
+                "duality": final_duality,  # <--- FIXED
+                "cellBoundaryGeom": {
+                    "geometry2D": json.loads(member_data['geometry_2d']) if member_data.get('geometry_2d') else None,
+                    "geometry3D": json.loads(member_data['geometry_3d']) if member_data.get('geometry_3d') else None
+                },
+                "externalReference": member_data.get('external_reference')
+            }
 
         # Add HATEOAS Links
         member_data["links"] = [
@@ -1028,25 +1088,38 @@ def get_primal_member(api: API, request: APIRequest, collection_id: str, item_id
 
 
 def get_dual(api: API, request: APIRequest, collection_id: str, item_id: str, layer_id: str) -> Tuple[dict, int, str]:
+    """
+    GET /collections/{id}/items/{featureId}/layers/{layerId}/dual
+    Retrieves the DualSpaceLayer (MultiLayeredGraph).
+    """
     headers = request.get_response_headers(SYSTEM_LOCALE)
     provider = PostgresIndoorDB()
 
     try:
-        layer_meta, members = provider.get_dual_features_and_metadata(collection_id, item_id, layer_id)
-        
-        if not layer_meta:
+        # Call the new Provider function
+        # It returns 3 distinct objects: Metadata, Nodes List, Edges List
+        meta, nodes, edges = provider.get_dual_features_and_metadata(collection_id, item_id, layer_id)
+
+        # Handle 404
+        if not meta:
              return api.get_exception(HTTPStatus.NOT_FOUND, headers, request.format, 'NotFound', 'Layer not found')
 
-        # 1. Initialize Response
+        # Construct Response
         response = {
-            "id": layer_meta['dualspace_id_str'] if layer_meta['dualspace_id_str'] else f"Dual_{layer_id}",
+            "id": meta['dualspace_id_str'] if meta['dualspace_id_str'] else f"Dual_{layer_id}",
             "featureType": "DualSpaceLayer",
-            "isLogical": layer_meta.get('is_logical', False),
-            "isDirected": layer_meta.get('is_directed', False),
-            "creationDatetime": layer_meta['d_creation_datetime'].isoformat() if layer_meta.get('d_creation_datetime') else None,
-            "terminationDatetime": layer_meta['d_termination_datetime'].isoformat() if layer_meta.get('d_termination_datetime') else None,
-            "nodeMember": [],
-            "edgeMember": [],
+            "isLogical": meta.get('is_logical', False),
+            "isDirected": meta.get('is_directed', False),
+            "creationDatetime": meta['d_creation_datetime'].isoformat() if meta.get('d_creation_datetime') else None,
+            "terminationDatetime": meta['d_termination_datetime'].isoformat() if meta.get('d_termination_datetime') else None,
+            
+            # DIRECT ASSIGNMENT: The Provider has already formatted these correctly
+            # Nodes now include their "connects" array (edges sprouting from them)
+            "nodeMember": nodes, 
+            
+            # Edges now include their "connects" array (source and target)
+            "edgeMember": edges,
+            
             "links": [
                 {
                     "href": f"{api.config['server']['url']}/collections/{collection_id}/items/{item_id}/layers/{layer_id}/dual",
@@ -1056,35 +1129,6 @@ def get_dual(api: API, request: APIRequest, collection_id: str, item_id: str, la
                 }
             ]
         }
-
-        # 2. Populate Members
-        for m in members:
-            base_geom = json.loads(m['geometry']) if m['geometry'] else None
-            duality_val = f"#{m['duality_ref']}" if m['duality_ref'] else None
-            
-            # --- NODE ---
-            if m['type'] == 'node':
-                response["nodeMember"].append({
-                    "id": m['id_str'],
-                    "featureType": "Node",
-                    "geometry": base_geom,
-                    "duality": duality_val
-                })
-
-            # --- EDGE ---
-            elif m['type'] == 'edge':
-                connects_list = []
-                if m['source_ref']: connects_list.append(f"{m['source_ref']}")
-                if m['target_ref']: connects_list.append(f"{m['target_ref']}")
-
-                response["edgeMember"].append({
-                    "id": m['id_str'],
-                    "featureType": "Edge",
-                    "geometry": base_geom,
-                    "duality": duality_val,
-                    "weight": float(m['weight']) if m['weight'] is not None else 1.0,
-                    "connects": connects_list
-                })
         
         return headers, HTTPStatus.OK, to_json(response, api.pretty_print)
 
