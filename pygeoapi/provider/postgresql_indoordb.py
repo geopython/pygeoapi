@@ -460,7 +460,7 @@ class PostgresIndoorDB:
             space_sql = """
                 SELECT 
                     id, id_str, thematiclayer_id, 
-                    ST_AsGeoJSON(COALESCE("3D_geometry", "2D_geometry")), 
+                    ST_AsText("2D_geometry"),"3D_geometry", ,
                     cell_name, level, external_reference, duality_id, poi
                 FROM cell_space_n_boundary
                 WHERE indoorfeature_id = %s AND type = 'space'
@@ -477,18 +477,21 @@ class PostgresIndoorDB:
             valid_space_ids = set() # To filter boundaries later
 
             for s_row in space_rows:
-                s_pk, s_id, layer_pk, s_geom_str, s_name, s_lvl, s_ext, s_duality, s_poi = s_row
+                s_pk, s_id, layer_pk, s_geom_2d_wkt, s_geom_3d, s_name, s_lvl, s_ext, s_duality, s_poi = s_row
                 
                 valid_space_ids.add(s_pk) # Keep track of valid IDs
 
                 # Parse geometry
-                s_geom = json.loads(s_geom_str) if s_geom_str else None
+                s_geom_2d = self.wkt_to_json(s_geom_2d_wkt)
                 
                 space_obj = {
                     "type": "Feature", 
                     "featureType": "CellSpace",
                     "id": s_id,
-                    "geometry": s_geom, # Matches GeoJSON requirement
+                    "geometry": {
+                        "geometry2D": s_geom_2d, 
+                        "geometry3D": s_geom_3d
+                    },
                     "properties": {
                         "cellSpaceName": s_name,
                         "level": s_lvl,
@@ -516,7 +519,7 @@ class PostgresIndoorDB:
                 bound_sql = """
                     SELECT 
                         id, id_str, thematiclayer_id, 
-                        ST_AsGeoJSON(COALESCE("3D_geometry", "2D_geometry")), 
+                        ST_AsText("2D_geometry"),"3D_geometry", 
                         external_reference, is_virtual
                     FROM cell_space_n_boundary
                     WHERE indoorfeature_id = %s AND type = 'boundary'
@@ -662,10 +665,10 @@ class PostgresIndoorDB:
             # 2. Get Layer Summaries (Optionally filtered)
             sql_layers = """
                 SELECT tl.id_str, tl.theme, tl.semantic_extension, i.id_str AS feature_id,
-                       ST_XMin(ST_Extent(cs."3D_geometry")) as minx,
-                       ST_YMin(ST_Extent(cs."3D_geometry")) as miny,
-                       ST_XMax(ST_Extent(cs."3D_geometry")) as maxx,
-                       ST_YMax(ST_Extent(cs."3D_geometry")) as maxy
+                       ST_XMin(ST_Extent(cs."2D_geometry")) as minx,
+                       ST_YMin(ST_Extent(cs."2D_geometry")) as miny,
+                       ST_XMax(ST_Extent(cs."2D_geometry")) as maxx,
+                       ST_YMax(ST_Extent(cs."2D_geometry")) as maxy
                 FROM thematiclayer tl
                 JOIN indoorfeature i ON tl.indoorfeature_id = i.id
                 JOIN collection c ON i.collection_id = c.id
@@ -707,7 +710,7 @@ class PostgresIndoorDB:
 
         return response
     
-    def get_layer(self, collection_id, feature_id, layer_id, level=None, bbox=''):
+    def get_layer(self, collection_id, feature_id, layer_id, level=None, bbox=None):
         """
         Retrieves the complete thematic layer.
         Returns a single Dictionary representing the layer or None if not found.
@@ -750,9 +753,6 @@ class PostgresIndoorDB:
         Helper to build PrimalSpaceLayer. 
         Supports optional filtering by 'level'.
         """
-        # cell_map = {}
-        # bound_map = {}
-        
 
         primal_space = {
             "id": primalspace_id, 
@@ -763,8 +763,8 @@ class PostgresIndoorDB:
         }
         # --- Fetch Cells ---
         sql_cells = """
-            SELECT c.id, c.id_str, c.cell_name, c.level, c.external_reference, 
-                   ST_AsText("2D_geometry"), ST_AsText("3D_geometry"), c.poi, n.id_str,
+            SELECT c.id, c.id_str, c.type, c.cell_name, c.level, c.external_reference, 
+                   ST_AsText("2D_geometry"), c."3D_geometry", c.poi, n.id_str, c.is_virtual,
                    (
                     SELECT array_agg(child.id_str)s
                     FROM cell_space_n_boundary child
@@ -772,7 +772,7 @@ class PostgresIndoorDB:
                     ) as bounded_by_list
             FROM cell_space_n_boundary c
             LEFT JOIN node_n_edge n ON c.duality_id = n.id
-            WHERE c.thematiclayer_id = %s AND c.type = 'space'
+            WHERE c.thematiclayer_id = %s
         """
         params_cells = [layer_pk]
 
@@ -787,74 +787,77 @@ class PostgresIndoorDB:
                 raise ValueError("Invalid bbox format. Expected: minx,miny,maxx,maxy")
             minx, miny, maxx, maxy = map(float, parts)
             sql_cells += """
-                AND COALESCE(c."3D_geometry", c."2D_geometry")
+                AND c."2D_geometry"
                 && ST_MakeEnvelope(%s, %s, %s, %s, 0)
             """
             params_cells.extend([minx, miny, maxx, maxy])
             
         cur.execute(sql_cells, tuple(params_cells))
-        
-        for row in cur.fetchall():
-            c_pk, cid, cname, clevel, cext, geom_2d_wkt, geom_3d_wkt, poi, duality, boundedBylist = row
-            geom_2d = self.wkt_to_json(geom_2d_wkt)
-            geom_3d = self.wkt_to_json(geom_3d_wkt)
-            # bounded_by_dict.get(c_pk)
-            cell = {
-                "id": cid,
-                "featureType": "CellSpace",
-                "duality": duality,
-                "cellSpaceName": cname,
-                "level": clevel,
-                "poi": poi,
-                "cellSpaceGeom": {
-                    "geometry2D": geom_2d,
-                    "geometry3D": geom_3d
-                },
-                "boundedBy": boundedBylist
-
-            }
-            if cext: cell["externalReference"] = {"uri": cext}
-            primal_space["cellSpaceMember"].append(cell)
-
-        
-        # --- Fetch Boundaries ---
-        query = """
-            SELECT c.id, c.id_str, c.external_reference, ST_AsText("2D_geometry"), ST_AsText("3D_geometry"), c.is_virtual, n.id_str
-            FROM cell_space_n_boundary c
-            LEFT JOIN node_n_edge n ON c.duality_id = n.id
-            WHERE c.thematiclayer_id = %s AND c.type = 'boundary'
-        """
-        if bbox:
-            parts = bbox.split(',')
-            if len(parts) != 4:
-                raise ValueError("Invalid bbox format. Expected: minx,miny,maxx,maxy")
-            minx, miny, maxx, maxy = map(float, parts)
-            query += """ AND COALESCE("3D_geometry", "2D_geometry") && ST_MakeEnvelope(%s, %s, %s, %s, 0) """
-            cur.execute(query, (layer_pk, minx, miny, maxx, maxy))
-        else:
-            cur.execute(query, (layer_pk, ))
-
+        all_referenced_boundaries = set()
 
         for row in cur.fetchall():
-            b_pk, bid, bext, geom_2d_wkt, geom_3d_wkt, is_virtual, duality = row
+            pk, id, type, name, level, ext, geom_2d_wkt, geom_3d_json, poi, duality, is_virtual, boundedBylist = row
             geom_2d = self.wkt_to_json(geom_2d_wkt)
-            geom_3d = self.wkt_to_json(geom_3d_wkt)
-            
-            boundary = {
-                "id": bid,
-                "featureType": "CellBoundary",
-                "duality": duality,
-                "isVirtual": is_virtual,
-                "cellBoundaryGeom": {
-                    "geometry2D": geom_2d,
-                    "geometry3D": geom_3d
-
+           # geom_3d = self.wkt_to_json(geom_3d_wkt)
+            if boundedBylist:
+                all_referenced_boundaries.update(boundedBylist)
+            if type == 'space':
+                cell = {
+                    "id": id,
+                    "featureType": "CellSpace",
+                    "duality": duality,
+                    "cellSpaceName": name,
+                    "level": level,
+                    "poi": poi,
+                    "cellSpaceGeom": {
+                        "geometry2D": geom_2d,
+                        "geometry3D": geom_3d_json
+                    },
+                    "boundedBy": boundedBylist
                 }
-            }
-            primal_space["cellBoundaryMember"].append(boundary)
-            #bound_map[bid] = b_pk
-            #cell_map[cid] = c_pk
-        
+                if ext: cell["externalReference"] = {"uri": ext}
+                primal_space["cellSpaceMember"].append(cell)
+            else:
+                boundary = {
+                        "id": id,
+                        "featureType": "CellBoundary",
+                        "duality": duality,
+                        "isVirtual": is_virtual,
+                        "cellBoundaryGeom": {
+                            "geometry2D": geom_2d,
+                            "geometry3D": geom_3d_json
+                    }
+                }
+                if ext: boundary["externalReference"] = {"uri": ext}
+                primal_space["cellBoundaryMember"].append(boundary)
+            
+            if bbox:
+            # Convert set to list for the query
+                boundary_id_list = list(all_referenced_boundaries)
+            
+                sql_bounds = """
+                    SELECT c.id, c.id_str, c.external_reference, 
+                    ST_AsText(c."2D_geometry"), c."3D_geometry", n.id_str, c.is_virtual
+                    FROM cell_space_n_boundary c
+                    LEFT JOIN node_n_edge n ON c.duality_id = n.id
+                    WHERE c.id_str = ANY(%s) AND c.thematiclayer_id = %s
+                """
+                cur.execute(sql_bounds, (boundary_id_list, layer_pk))
+                
+                for b_row in cur.fetchall():
+                    b_pk, b_id, ext, b_geom2d, b_geom3d, duality, is_virtual = b_row
+                    boundary = {
+                        "id": b_id,
+                        "featureType": "CellBoundary",
+                        "duality": duality,
+                        "isVirtual": is_virtual,
+                        "cellBoundaryGeom": {
+                            "geometry2D": self.wkt_to_json(b_geom2d),
+                            "geometry3D": b_geom3d
+                        }
+                    }
+                    if ext: boundary["externalReference"] = {"uri": ext}
+                    primal_space["cellBoundaryMember"].append(boundary)
 
         if not primal_space["cellSpaceMember"]:
             return None
@@ -983,6 +986,7 @@ class PostgresIndoorDB:
                 if res:
                     raise Exception(f"IndoorFeature {feature_id_str} already exist.")
                 # 3. Insert Main IndoorFeature
+                LOGGER.debug("Insert indoorfeature")
                 cur.execute(
                     """
                     INSERT INTO indoorfeature (id_str, collection_id, geojson_properties)
@@ -1010,10 +1014,9 @@ class PostgresIndoorDB:
         """
         Helper to insert a ThematicLayer and trigger its content insertion.
         """
-        # Extract Primal/Dual logical blocks
         primal = layer_data.get('primalSpace', {})
         dual = layer_data.get('dualSpace', {})
-
+        LOGGER.debug("Insert thematicLayer")
         # Insert ThematicLayer
         cur.execute(
             """
@@ -1062,14 +1065,14 @@ class PostgresIndoorDB:
         for cell in primal_data.get('cellSpaceMember', []):
             geom_raw = cell.get('cellSpaceGeom', {})
             geom_2d = geom_raw.get('geometry2D', None) 
-            geom_3d = geom_raw.get('geometry3D', None)
-            
+            geom_3d = geom_raw.get('geometry3D') if geom_raw.get('geometry3D') else []
+            LOGGER.debug(geom_3d)
             # Insert Cell
             sql = """
                 INSERT INTO cell_space_n_boundary 
                 (id_str, type, collection_id, indoorfeature_id, thematiclayer_id, 
                  cell_name, level, "2D_geometry","3D_geometry", poi)
-                VALUES (%s, 'space', %s, %s, %s, %s, %s, ST_GeomFromText(%s, 0), ST_GeomFromText(%s, 0), %s)
+                VALUES (%s, 'space', %s, %s, %s, %s, %s, ST_GeomFromText(%s, 0), %s, %s)
                 RETURNING id
             """
             cur.execute(sql, (
@@ -1080,7 +1083,7 @@ class PostgresIndoorDB:
                 cell.get('cellSpaceName'),
                 str(cell.get('level')),
                 self.json_to_wkt(geom_2d),
-                self.json_to_wkt(geom_3d),
+                json.dumps(geom_3d),
                 cell.get('poi')
             ))
             # Store cell pk for duality
@@ -1097,7 +1100,7 @@ class PostgresIndoorDB:
         for bound in primal_data.get('cellBoundaryMember', []):
             geom_raw = bound.get('cellBoundaryGeom', {})
             geom_2d = geom_raw.get('geometry2D', None) 
-            geom_3d = geom_raw._('geometry3D', None)
+            geom_3d = json.dumps(geom_raw.get('geometry3D')) if geom_raw.get('geometry3D') else []
             # get bounding cell primal key
             boundingCell = boundedBy.get(bound.get('id'))
             
@@ -1105,7 +1108,7 @@ class PostgresIndoorDB:
                 INSERT INTO cell_space_n_boundary 
                 (id_str, type, collection_id, indoorfeature_id, thematiclayer_id, 
                  is_virtual, "2D_geometry", "3D_geometry", bounded_by_cell_id)
-                VALUES (%s, 'boundary', %s, %s, %s, %s, ST_GeomFromText(%s, 0), ST_GeomFromText(%s, 0), %s)
+                VALUES (%s, 'boundary', %s, %s, %s, %s, ST_GeomFromText(%s, 0), %s, %s)
                 RETURNING id
             """
             cur.execute(sql, (
@@ -1115,7 +1118,7 @@ class PostgresIndoorDB:
                 layer_pk,
                 bound.get('isVirtual', False),
                 self.json_to_wkt(geom_2d),
-                self.json_to_wkt(geom_3d),
+                geom_3d,
                 boundingCell
             ))
 
@@ -1137,8 +1140,11 @@ class PostgresIndoorDB:
         for node in dual_data.get('nodeMember', []):
             geom_node = node.get('geometry')
             dual_cell_pk = cell_dict.get(node.get('id'))
+        
             if not dual_cell_pk:
+                LOGGER.debug(node.get('id'))
                 raise Exception("Duality cell not found")
+            
 
             sql = """
                 INSERT INTO node_n_edge 
@@ -1168,8 +1174,9 @@ class PostgresIndoorDB:
         for edge in dual_data.get('edgeMember', []):
             geom_edge = edge.get('geometry')
             dual_boundary_pk = boundary_dict.get(edge.get('id'))
-            if not dual_boundary_pk:
-                raise Exception("Duality boundary not found")
+            LOGGER.debug(edge.get('id'))
+            # if not dual_boundary_pk:
+            #     raise Exception("Duality boundary not found")
             sql = """
                 INSERT INTO node_n_edge 
                 (id_str, type, collection_id, indoorfeature_id, thematiclayer_id, geometry_val, weight, duality_id)

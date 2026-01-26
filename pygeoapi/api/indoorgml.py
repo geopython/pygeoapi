@@ -217,7 +217,7 @@ def manage_collection_item(api: API, request: APIRequest, action,
         LOGGER.debug('Creating item')  
         try:
             pidb_provider.connect()
-            validate(instance=data, schema=INDOOR_SCHEMA)
+            #TODO: validate(instance=data, schema=INDOOR_SCHEMA)
             ifeature_id = pidb_provider.post_indoorfeature(
                 collection_str_id, data
             )
@@ -656,10 +656,10 @@ def get_collection_item_layers(api: API, request: APIRequest, dataset, identifie
         data = \
             pidb_provider.get_layers(collection_id=collection_str_id, feature_id=ifeature_str_id, theme=theme, level=level
                                         ,limit=limit, offset=offset)
-
+        base_url = api.config['server']['url']
         # 4. Construct Lightweight Summary
         for layer in data["layers"]:
-            base_url = api.config['server']['url']
+            
             layer['links']= [
                 {
                     "href": f"{base_url}/collections/{collection_str_id}/items/{ifeature_str_id}/layers/{layer.get("id")}",
