@@ -425,7 +425,7 @@ class PostgresIndoorDB:
                     "id": l_id,
                     "featureType": "ThematicLayer",
                     "theme": l_t if l_t else "Unknown",
-                    "semanticExtension": l_se if l_se is not None else False,
+                    "semanticExtension": l_se if l_se else False,
                     
                     # 1. Primal Space Object (ID + Members)
                     "primalSpace": {
@@ -465,7 +465,7 @@ class PostgresIndoorDB:
             space_sql = """
                 SELECT 
                     s.id, s.id_str, s.thematiclayer_id, 
-                    ST_AsGeoJSON(COALESCE(s."3D_geometry", s."2D_geometry")), 
+                    ST_AsText(s."2D_geometry"), s."3D_geometry",
                     s.cell_name, s.level, s.external_reference, 
                     s.poi, 
                     d.id_str as duality_str
@@ -486,15 +486,17 @@ class PostgresIndoorDB:
             spaces_by_pk = {} # Temporary map: { db_pk : space_object_reference }
 
             for s_row in space_rows:
-                s_pk, s_id, layer_pk, s_geom_str, s_name, s_lvl, s_ext, s_poi, s_duality_str = s_row
+                s_pk, s_id, layer_pk, s_geom_2d, s_geom_3d, s_name, s_lvl, s_ext, s_poi, s_duality_str = s_row
                 
                 valid_space_ids.add(s_pk)
-                s_geom = json.loads(s_geom_str) if s_geom_str else None
                 
                 space_obj = {
                     "featureType": "CellSpace",
                     "id": s_id,
-                    "cellSpacegeom": s_geom, 
+                    "cellSpacegeom": {
+                        "geometry2D": self.wkt_to_json(s_geom_2d),
+                        "geometry3D": s_geom_3d
+                    }, 
                     "cellSpaceName": s_name,
                     "level": s_lvl,
                     "poi": s_poi if s_poi is not None else False,
@@ -524,7 +526,7 @@ class PostgresIndoorDB:
                 bound_sql = """
                     SELECT 
                         b.id, b.id_str, b.thematiclayer_id, 
-                        ST_AsGeoJSON(COALESCE(b."3D_geometry", b."2D_geometry")), 
+                        ST_AsText(s."2D_geometry"), s."3D_geometry",
                         b.external_reference, b.is_virtual,
                         b.bounded_by_cell_id,
                         d.id_str as duality_str
@@ -542,14 +544,14 @@ class PostgresIndoorDB:
                 bound_rows = cur.fetchall()
 
                 for b_row in bound_rows:
-                    b_pk, b_id, layer_pk, b_geom_str, b_ext, b_virt, parent_space_pk, b_duality_str = b_row
-                    
-                    b_geom = json.loads(b_geom_str) if b_geom_str else None
-
+                    b_pk, b_id, layer_pk, b_geom_2d, b_geom_3d, b_ext, b_virt, parent_space_pk, b_duality_str = b_row
                     bound_obj = {
                         "featureType": "CellBoundary",
                         "id": b_id,
-                        "CellBoundaryGeom": b_geom,
+                        "CellBoundaryGeom": {
+                            "geometry2D": self.wkt_to_json(b_geom_2d),
+                            "geometry3D": b_geom_3d
+                        },
                         "isVirtual": b_virt if b_virt is not None else False,
                         "duality": b_duality_str, # Now a string
                         "externalReference": b_ext 
@@ -569,7 +571,7 @@ class PostgresIndoorDB:
             dual_sql = """
                 SELECT 
                     n.id, n.id_str, n.type, n.thematiclayer_id, 
-                    ST_AsGeoJSON(n.geometry_val), 
+                    ST_AsText(n.geometry_val), 
                     n.weight,
                     p.id_str as duality_str
                 FROM node_n_edge n
@@ -593,7 +595,7 @@ class PostgresIndoorDB:
                     node_obj = {
                         "featureType": "Node",
                         "id": d_id,
-                        "geometry": d_geom,
+                        "geometry": self.wkt_to_json(d_geom_str),
                         "duality": d_duality_str, 
                         "connects": [] # Will be populated in the next block
                     }
@@ -608,7 +610,7 @@ class PostgresIndoorDB:
                     edge_obj = {
                         "featureType": "Edge",
                         "id": d_id,
-                        "geometry": d_geom,
+                        "geometry": self.wkt_to_json(d_geom_str),
                         "weight": d_weight if d_weight is not None else 0.0,
                         "duality": d_duality_str, 
                         "connects": [] # Will be populated in the next block
@@ -1158,7 +1160,7 @@ class PostgresIndoorDB:
         """        
         feature_id_str = indoorfeature.get('id')
         properties = indoorfeature.get('properties', {})
-        
+        geometries = indoorfeature.get('geometry', {})
         layers = indoorfeature.get('layers', [])
 
         with self.connection.cursor() as cur:
@@ -1178,11 +1180,11 @@ class PostgresIndoorDB:
                 LOGGER.debug("Insert indoorfeature")
                 cur.execute(
                     """
-                    INSERT INTO indoorfeature (id_str, collection_id, geojson_properties)
-                    VALUES (%s, %s, %s)
+                    INSERT INTO indoorfeature (id_str, collection_id, geojson_geometry ,geojson_properties)
+                    VALUES (%s, %s, ST_SetSRID(ST_GeomFromGeoJSON(%s), 4326),%s)
                     RETURNING id
                     """,
-                    (feature_id_str, collection_pk, Json(properties))
+                    (feature_id_str, collection_pk, json.dumps(geometries), Json(properties))
                 )
                 indoorfeature_pk = cur.fetchone()[0]
                 
