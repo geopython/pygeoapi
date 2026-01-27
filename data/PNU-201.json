@@ -38086,7 +38086,7 @@
             "level": "1"
           }
         ],
-        "cellSpaceBoundaryMember": [
+        "cellBoundaryMember": [
           {
             "id": "B1",
             "featureType": "CellBoundary",
