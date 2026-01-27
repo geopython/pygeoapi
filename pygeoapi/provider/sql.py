@@ -91,7 +91,6 @@ from pygeoapi.provider.base import (
     ProviderQueryError,
     ProviderItemNotFoundError
 )
-from pygeoapi.util import str2bool
 
 LOGGER = logging.getLogger(__name__)
 
@@ -128,7 +127,6 @@ class GenericSQLProvider(BaseProvider):
         self.id_field = provider_def['id_field']
         self.geom = provider_def.get('geom_field', 'geom')
         self.driver_name = driver_name
-        self.count = str(provider_def.get('count', 'true')).lower() == 'true'
 
         LOGGER.debug(f'Name: {self.name}')
         LOGGER.debug(f'Table: {self.table}')
@@ -225,6 +223,8 @@ class GenericSQLProvider(BaseProvider):
                 matched = results.count()
                 response['numberMatched'] = matched
                 LOGGER.debug(f'Found {matched} result(s)')
+            else:
+                LOGGER.debug('Count disabled')
 
             if resulttype == 'hits' or not results:
                 return response

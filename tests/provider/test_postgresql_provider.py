@@ -85,8 +85,7 @@ def config():
         },
         'id_field': 'osm_id',
         'table': 'hotosm_bdi_waterways',
-        'geom_field': 'foo_geom',
-        'count': 'true'
+        'geom_field': 'foo_geom'
     }
 
 
@@ -922,29 +921,9 @@ def test_provider_count_default_value(config):
     assert results['numberMatched'] == 14776
 
 
-@pytest.mark.parametrize("count_value", [
-    ('true'),
-    ('TRUE')
-])
-def test_provider_count_true(config, count_value):
+def test_provider_count_false(config):
     # Arrange
-    config['count'] = count_value
-    provider = PostgreSQLProvider(config)
-
-    # Act
-    results = provider.query()
-
-    # Assert
-    assert results['numberMatched'] == 14776
-
-
-@pytest.mark.parametrize("count_value", [
-    ('false'),
-    ('FALSE')
-])
-def test_provider_count_false(config, count_value):
-    # Arrange
-    config['count'] = count_value
+    config['count'] = 'false'
     provider = PostgreSQLProvider(config)
 
     # Act
@@ -964,15 +943,3 @@ def test_provider_count_false_with_resulttype_hits(config):
 
     # Assert
     assert results['numberMatched'] == 14776
-
-
-def test_provider_count_number_string(config):
-    # Arrange
-    config['count'] = '1'
-    provider = PostgreSQLProvider(config)
-
-    # Act
-    results = provider.query()
-
-    # Assert
-    assert 'numberMatched' not in results

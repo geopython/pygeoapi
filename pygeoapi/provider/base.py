@@ -57,6 +57,8 @@ class BaseProvider:
         :returns: pygeoapi.provider.base.BaseProvider
         """
 
+        from pygeoapi.util import str2bool
+
         try:
             self.name = provider_def['name']
             self.type = provider_def['type']
@@ -65,6 +67,7 @@ class BaseProvider:
             raise RuntimeError('name/type/data are required')
 
         self.editable = provider_def.get('editable', False)
+        self.count = str2bool(provider_def.get('count', 'true'))
         self.options = provider_def.get('options')
         self.id_field = provider_def.get('id_field')
         self.uri_field = provider_def.get('uri_field')
