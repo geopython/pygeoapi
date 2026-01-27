@@ -670,75 +670,52 @@ def get_collection_item_layers(api: API, request: APIRequest, dataset, identifie
             offset=offset
         )
 
-<<<<<<< HEAD
-        # 4. Construct Lightweight Summary
-        base_url = api.config['server']['url']
-        for layer in data["layers"]:
-            layer['links'] = [
-                {
-                    "href": f"{base_url}/collections/{collection_str_id}/items/{ifeature_str_id}/layers/{layer.get('id')}",
-=======
-        # 1. Define base_url OUTSIDE the loop (Fixes the crash bug)
+        # 4. Construct Lightweight Summary & Base URL
+        # We define the full endpoint path here to avoid repetition
         base_url = f"{api.config['server']['url']}/collections/{collection_str_id}/items/{ifeature_str_id}/layers"
 
-        # 2. Add Detail Links to each Layer
+        # 1. Add Detail Links to each Layer
         for layer in data["layers"]:
             layer['links'] = [
                 {
                     "href": f"{base_url}/{layer.get('id')}",
->>>>>>> 3c48949cef52d5eff7938059d261b4e3b0d288d6
                     "rel": "item",
                     "type": "application/json",
                     "title": "Layer Detail"
                 }
             ]
 
-<<<<<<< HEAD
-        # 5. Construct Self Link (With Query Params)
-        self_href = f"{base_url}/collections/{collection_str_id}/items/{ifeature_str_id}/layers"
-        
-        # Build dictionary of active parameters
-        query_params = {
-            'offset': offset,
+        # 2. Prepare Query Parameters (Robust Construction)
+        # We build a base dictionary for params that stay constant (theme, level, limit)
+        base_params = {
             'limit': limit
         }
         if theme:
-            query_params['theme'] = theme
+            base_params['theme'] = theme
         if level:
-            query_params['level'] = level
+            base_params['level'] = level
+
+        # Helper to generate URL with specific offset
+        def make_link(target_offset):
+            params = base_params.copy()
+            params['offset'] = target_offset
+            return f"{base_url}?{urllib.parse.urlencode(params)}"
+
+        # 3. Add Pagination Links (Self, Next, Prev)
         
-        # Append query string
-        if query_params:
-            self_href += "?" + urllib.parse.urlencode(query_params)
-
-        data['links'].append(
-                {
-                    "href": self_href,
-                    "rel": "self",
-                    "type": "application/json",
-                    "title": "Thematic Layers"
-                }
-        )  
-=======
-        # 3. Add Pagination Links (Next / Prev / Self)
-        # Reconstruct current query params for links
-        query_params = f"?limit={limit}"
-        if theme: query_params += f"&theme={theme}"
-        if level: query_params += f"&level={level}"
-
         # SELF Link
         data['links'].append({
-            "href": f"{base_url}{query_params}&offset={offset}",
+            "href": make_link(offset),
             "rel": "self",
-            "type": "application/json"
+            "type": "application/json",
+            "title": "Thematic Layers"
         })
 
         # NEXT Link
         number_matched = data.get('numberMatched', 0)
         if (offset + limit) < number_matched:
-            next_offset = offset + limit
             data['links'].append({
-                "href": f"{base_url}{query_params}&offset={next_offset}",
+                "href": make_link(offset + limit),
                 "rel": "next",
                 "type": "application/json",
                 "title": "Next page"
@@ -748,12 +725,11 @@ def get_collection_item_layers(api: API, request: APIRequest, dataset, identifie
         if offset > 0:
             prev_offset = max(0, offset - limit)
             data['links'].append({
-                "href": f"{base_url}{query_params}&offset={prev_offset}",
+                "href": make_link(prev_offset),
                 "rel": "prev",
                 "type": "application/json",
                 "title": "Previous page"
-            })
->>>>>>> 3c48949cef52d5eff7938059d261b4e3b0d288d6
+            })  
 
         return headers, HTTPStatus.OK, to_json(data, api.pretty_print)
 
@@ -933,7 +909,7 @@ def manage_collection_item_interlayerconnections(api: API, request: APIRequest, 
 
     try:
         if action == 'create':
-            try:git 
+            try:
                 data = request.data
                 if isinstance(data, bytes):
                     data = json.loads(data.decode('utf-8'))
@@ -1291,92 +1267,55 @@ def get_dual(api: API, request: APIRequest, collection_id: str, item_id: str, la
     headers = request.get_response_headers(SYSTEM_LOCALE)
     provider = PostgresIndoorDB()
 
-<<<<<<< HEAD
-    # 1. Extract and Validate Query Parameters (minWeight, maxWeight)
+    # 1. Extract and Parse Query Parameters
     min_weight_param = request.params.get('minWeight')
     max_weight_param = request.params.get('maxWeight')
 
     try:
-        min_w = float(min_weight_param) if min_weight_param is not None else None
-        max_w = float(max_weight_param) if max_weight_param is not None else None
+        min_weight = float(min_weight_param) if min_weight_param is not None else None
+        max_weight = float(max_weight_param) if max_weight_param is not None else None
     except ValueError:
         return api.get_exception(
             HTTPStatus.BAD_REQUEST,
             headers, request.format, 'InvalidParameter', "Weights must be valid numbers")
 
     try:
-        # 2. Call the Provider function with the extracted weights
+        # 2. Call the Provider function
         meta, nodes, edges = provider.get_dual_features_and_metadata(
             collection_id, 
             item_id, 
             layer_id, 
-            min_weight=min_w, 
-            max_weight=max_w
-=======
-    #1. Parse Weight Parameters
-    min_weight = None
-    max_weight = None
-
-    try:
-        if request.params.get('minWeight'):
-            min_weight = float(request.params.get('minWeight'))
-        if request.params.get('maxWeight'):
-            max_weight = float(request.params.get('maxWeight'))
-    except ValueError:
-        return api.get_exception(
-            HTTPStatus.BAD_REQUEST, headers, request.format, 
-            'InvalidParameterValue', 'Weight parameters must be numbers'
-        )
-
-    try:
-        # ---------------------------------------------------------
-        # 2. Call Provider with Filters
-        # ---------------------------------------------------------
-        meta, nodes, edges = provider.get_dual_features_and_metadata(
-            collection_id, 
-            item_id, 
-            layer_id,
-            min_weight=min_weight,
+            min_weight=min_weight, 
             max_weight=max_weight
->>>>>>> 3c48949cef52d5eff7938059d261b4e3b0d288d6
         )
 
         if not meta:
              return api.get_exception(HTTPStatus.NOT_FOUND, headers, request.format, 'NotFound', 'Layer not found')
-<<<<<<< HEAD
 
-        # Construct Self Link with Query Params
+        # 3. Construct Self Link with Query Params (Robust Method)
         base_url = f"{api.config['server']['url']}/collections/{collection_id}/items/{item_id}/layers/{layer_id}/dual"
 
-        # Build query params dictionary
         query_params = {}
-        if min_w is not None:
-            query_params['minWeight'] = min_w
-        if max_w is not None:
-            query_params['maxWeight'] = max_w
+        if min_weight is not None:
+            query_params['minWeight'] = min_weight
+        if max_weight is not None:
+            query_params['maxWeight'] = max_weight
             
-        # Append query string if params exist
         self_href = base_url
         if query_params:
             self_href += "?" + urllib.parse.urlencode(query_params)
 
-=======
-        
->>>>>>> 3c48949cef52d5eff7938059d261b4e3b0d288d6
-        # Construct Response
+        # 4. Construct Response
         response = {
             "id": meta['dualspace_id_str'] if meta['dualspace_id_str'] else f"Dual_{layer_id}",
             "featureType": "DualSpaceLayer",
-            # Ensure keys match your DB columns (e.g. is_logical vs isLogical)
             "isLogical": meta.get('is_logical', True), 
             "isDirected": meta.get('is_directed', True),
             "creationDatetime": meta['d_creation_datetime'].isoformat() if meta.get('d_creation_datetime') else None,
             "terminationDatetime": meta['d_termination_datetime'].isoformat() if meta.get('d_termination_datetime') else None,
             
-            # DIRECT ASSIGNMENT: The Provider has filtered these and injected 'connects'
             "nodeMember": nodes, 
             "edgeMember": edges,
-<<<<<<< HEAD
             
             "links": [
                 {
@@ -1386,31 +1325,10 @@ def get_dual(api: API, request: APIRequest, collection_id: str, item_id: str, la
                     "title": "Dual Space Layer"
                 }
             ]
-=======
->>>>>>> 3c48949cef52d5eff7938059d261b4e3b0d288d6
         }
-        # ---------------------------------------------------------
-        # 4. Generate Links with Query Params
-        # ---------------------------------------------------------
-        base_url = f"{api.config['server']['url']}/collections/{collection_id}/items/{item_id}/layers/{layer_id}/dual"
         
-        # Persist the filters in the 'self' link
-        params_list = []
-        if min_weight is not None: params_list.append(f"minWeight={min_weight}")
-        if max_weight is not None: params_list.append(f"maxWeight={max_weight}")
-        
-        query_string = "?" + "&".join(params_list) if params_list else ""
-
-        response["links"] = [
-            {
-                "href": f"{base_url}{query_string}",
-                "rel": "self",
-                "type": "application/json",
-                "title": "Dual Space Layer"
-            }
-        ]
-
         return headers, HTTPStatus.OK, to_json(response, api.pretty_print)
+
     except Exception as e:
         return api.get_exception(HTTPStatus.INTERNAL_SERVER_ERROR, headers, request.format, 'ServerError', str(e))
     finally:
