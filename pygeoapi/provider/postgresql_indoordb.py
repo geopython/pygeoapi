@@ -374,7 +374,7 @@ class PostgresIndoorDB:
 
             # Initialize Skeleton
             result_feature = {
-                "featureType": "IndoorFeatures", # Enum: IndoorFeatures
+                "featureType": "Feature",
                 "id": feature_id_str,
                 "geometry": geometry,
                 "properties": properties, # Standard metadata properties
