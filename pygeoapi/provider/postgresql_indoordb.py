@@ -526,7 +526,7 @@ class PostgresIndoorDB:
                 bound_sql = """
                     SELECT 
                         b.id, b.id_str, b.thematiclayer_id, 
-                        ST_AsText(s."2D_geometry"), s."3D_geometry",
+                        ST_AsText(b."2D_geometry"), b."3D_geometry",
                         b.external_reference, b.is_virtual,
                         b.bounded_by_cell_id,
                         d.id_str as duality_str
@@ -587,8 +587,6 @@ class PostgresIndoorDB:
 
             for d_row in dual_rows:
                 d_pk, d_id, d_type, layer_pk, d_geom_str, d_weight, d_duality_str = d_row
-                
-                d_geom = json.loads(d_geom_str) if d_geom_str else None
                 
                 # --- NODE ---
                 if d_type == 'node':
