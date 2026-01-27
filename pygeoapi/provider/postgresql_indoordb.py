@@ -729,8 +729,7 @@ class PostgresIndoorDB:
             # -----------------------------------------------------
             # 1. Get Available Levels (Global Context)
             # -----------------------------------------------------
-            # We usually want to show ALL levels for the building here, 
-            # even if the user is currently looking at just one floor.
+
             sql_levels = """
                 SELECT DISTINCT cs.level
                 FROM cell_space_n_boundary cs
@@ -762,25 +761,6 @@ class PostgresIndoorDB:
                 SELECT tl.id_str, tl.theme, tl.semantic_extension, i.id_str,
                        array_agg(DISTINCT cs.level) as layer_levels
             """
-            
-            if level:
-                # Add BBOX calculation filtered by level
-                select_clause += """,
-                       ST_XMin(ST_Extent(cs."3D_geometry") FILTER (WHERE cs.level = %s)) as minx,
-                       ST_YMin(ST_Extent(cs."3D_geometry") FILTER (WHERE cs.level = %s)) as miny,
-                       ST_XMax(ST_Extent(cs."3D_geometry") FILTER (WHERE cs.level = %s)) as maxx,
-                       ST_YMax(ST_Extent(cs."3D_geometry") FILTER (WHERE cs.level = %s)) as maxy
-                """
-                # These parameters appear FIRST in the query
-                select_params.extend([level, level, level, level])
-            else:
-                # Standard BBOX calculation
-                select_clause += """,
-                       ST_XMin(ST_Extent(cs."3D_geometry")) as minx,
-                       ST_YMin(ST_Extent(cs."3D_geometry")) as miny,
-                       ST_XMax(ST_Extent(cs."3D_geometry")) as maxx,
-                       ST_YMax(ST_Extent(cs."3D_geometry")) as maxy
-                """
 
             # B. Build FROM/WHERE Clause
             from_clause = """
@@ -820,12 +800,9 @@ class PostgresIndoorDB:
             
             # E. Process Results
             for row in rows:
-                l_id, l_theme, semantic_extension, feature_id, layer_levels, minx, miny, maxx, maxy = row
+                l_id, l_theme, semantic_extension, feature_id, layer_levels = row
                 
-                bbox = [-180.0, -90.0, 180.0, 90.0]
-                if minx is not None:
-                    bbox = [float(minx), float(miny), float(maxx), float(maxy)]
-
+                
                 found_levels = layer_levels if layer_levels is not None else []
                 # Clean up None values and sort
                 found_levels = [l for l in found_levels if l is not None]
@@ -836,7 +813,6 @@ class PostgresIndoorDB:
                     "featureType": "ThematicLayer",
                     "semanticExtension": semantic_extension,
                     "theme": l_theme if l_theme else "Unknown",
-                    "bbox": bbox,
                     "levels": found_levels,
                     "links": []
                 }
@@ -961,9 +937,6 @@ class PostgresIndoorDB:
         Helper to build PrimalSpaceLayer. 
         Supports optional filtering by 'level'.
         """
-        bounded_by_dict = {}
-        cell_map = {}
-
         primal_space = {
             "id": primalspace_id, 
             "featureType": "PrimalSpaceLayer",
@@ -971,44 +944,6 @@ class PostgresIndoorDB:
             "cellSpaceMember": [],
             "cellBoundaryMember": []
         }
-        # --- Fetch Boundaries ---
-        # Note: We fetch all to ensure we don't miss links, but we will filter the OUTPUT list later.
-        cur.execute("""
-            SELECT c.id, c.id_str, c.external_reference, ST_AsGeoJSON(COALESCE("3D_geometry", "2D_geometry")), 
-                   c.is_virtual, c.bounded_by_cell_id, n.id_str
-            FROM cell_space_n_boundary c
-            LEFT JOIN node_n_edge n ON c.duality_id = n.id
-            WHERE c.thematiclayer_id = %s AND c.type = 'boundary'
-        """, (layer_pk,))
-
-        all_boundaries = []
-
-        for row in cur.fetchall():
-            b_pk, bid, bext, geom_str, is_virtual, bounded_by_c_id, duality = row
-            geom = json.loads(geom_str) if geom_str else None
-            
-            boundary = {
-                "id": bid,
-                "featureType": "CellBoundary",
-                "duality": duality,
-                "isVirtual": is_virtual if is_virtual is not None else False,
-                "cellBoundaryGeom": {
-                    "geometry2D": geom # Or 3D depending on your preference
-                }
-            }
-            if bext: boundary["externalReference"] = {"uri": bext}
-
-            # Save for response filtering
-            all_boundaries.append(boundary)
-
-            # Build Dictionary: Cell_ID -> [Boundary_IDs]
-            if bounded_by_c_id:
-                if bounded_by_c_id in bounded_by_dict:
-                    bounded_by_dict[bounded_by_c_id].append(bid)
-                else:
-                    bounded_by_dict[bounded_by_c_id] = [bid]
-        
-        # --- B. Fetch Cells (FILTERED by Level) ---
         sql_cells = """
             SELECT c.id, c.id_str, c.type, c.cell_name, c.level, c.external_reference, 
                    ST_AsText("2D_geometry"), c."3D_geometry", c.poi, n.id_str, c.is_virtual,
