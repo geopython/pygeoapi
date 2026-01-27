@@ -3,6 +3,8 @@ import json
 import random
 from http import HTTPStatus
 from typing import Tuple
+
+import urllib
 from pygeoapi.plugin import PLUGINS
 from pygeoapi.api import API, APIRequest, SYSTEM_LOCALE, F_HTML, F_JSON 
 import pygeoapi.api as core_api
@@ -441,7 +443,6 @@ def get_collection_item(api: API, request: APIRequest, dataset, identifier) -> T
 
     try:
         pidb_provider.connect()
-        result = pidb_provider.get_feature(collection_str_id, ifeature_str_id)
 
         # --- Pass level to the provider ---
         result = pidb_provider.get_feature(
@@ -457,13 +458,21 @@ def get_collection_item(api: API, request: APIRequest, dataset, identifier) -> T
                 HTTPStatus.NOT_FOUND,
                 headers, request.format, 'NotFound', msg)
         
+       # --- Construct Self Link with Query Params ---
         base_url = f"{api.config['server']['url']}/collections/{collection_str_id}/items/{ifeature_str_id}"
+        
+        self_href = base_url
+        
+        # If level parameter exists, append it to the URL
+        if level:
+            query_params = {'level': level}
+            self_href += "?" + urllib.parse.urlencode(query_params)
 
         result['links'].append({
-            "href": base_url,
+            "href": self_href,
             "rel": "self",
             "type": "application/geo+json",
-            "title": "Indoorfeature metadata"
+            "title": "IndoorFeature Metadata"
         })
 
     except (Exception, psycopg2.Error) as error:
@@ -588,7 +597,7 @@ def get_collection_item_layers(api: API, request: APIRequest, dataset, identifie
     if not request.is_valid():
         return api.get_format_exception(request)
     
-    headers = request.get_response_headers(api.api_headers)
+    headers = request.get_response_headers(SYSTEM_LOCALE) # Use standard locale if api_headers not avail
     executed, collections = get_list_of_collections_id()
     collection_str_id = str(dataset)
     ifeature_str_id = str(identifier)
@@ -605,9 +614,8 @@ def get_collection_item_layers(api: API, request: APIRequest, dataset, identifie
         return api.get_exception(
             HTTPStatus.NOT_FOUND,
             headers, request.format, 'NotFound', msg)
-    LOGGER.debug('Processing query parameters')
-
-    LOGGER.debug('Processing offset parameter')
+            
+    # --- OFFSET VALIDATION ---
     try:
         offset = int(request.params.get('offset'))
         if offset < 0:
@@ -615,8 +623,7 @@ def get_collection_item_layers(api: API, request: APIRequest, dataset, identifie
             return api.get_exception(
                 HTTPStatus.BAD_REQUEST,
                 headers, request.format, 'InvalidParameterValue', msg)
-    except TypeError as err:
-        LOGGER.warning(err)
+    except TypeError:
         offset = 0
     except ValueError:
         msg = 'offset value should be an integer'
@@ -624,7 +631,7 @@ def get_collection_item_layers(api: API, request: APIRequest, dataset, identifie
             HTTPStatus.BAD_REQUEST,
             headers, request.format, 'InvalidParameterValue', msg)
 
-    LOGGER.debug('Processing limit parameter')
+    # --- LIMIT VALIDATION ---
     try:
         limit = int(request.params.get('limit'))
         if limit <= 0:
@@ -637,47 +644,118 @@ def get_collection_item_layers(api: API, request: APIRequest, dataset, identifie
             return api.get_exception(
                 HTTPStatus.BAD_REQUEST,
                 headers, request.format, 'InvalidParameterValue', msg)
-    except TypeError as err:
-        LOGGER.warning(err)
-        limit = int(api.config['server']['limit'])
+    except TypeError:
+        # Default to 10 if not provided
+        limit = 10 
     except ValueError:
         msg = 'limit value should be an integer'
         return api.get_exception(
             HTTPStatus.BAD_REQUEST,
             headers, request.format, 'InvalidParameterValue', msg)
-    pidb_provider = PostgresIndoorDB()
-    LOGGER.debug('Processing theme parameter')
 
-    LOGGER.debug('Processing level parameter')
+    # --- THEME & LEVEL ---
     theme = request.params.get('theme')
     level = request.params.get('level')
+
+    pidb_provider = PostgresIndoorDB()
+
     try:
         pidb_provider.connect()
-        data = \
-            pidb_provider.get_layers(collection_id=collection_str_id, feature_id=ifeature_str_id, theme=theme, level=level
-                                        ,limit=limit, offset=offset)
-        base_url = api.config['server']['url']
+        data = pidb_provider.get_layers(
+            collection_id=collection_str_id, 
+            feature_id=ifeature_str_id, 
+            theme=theme, 
+            level=level,
+            limit=limit, 
+            offset=offset
+        )
+
+<<<<<<< HEAD
         # 4. Construct Lightweight Summary
+        base_url = api.config['server']['url']
         for layer in data["layers"]:
-            
-            layer['links']= [
+            layer['links'] = [
                 {
-                    "href": f"{base_url}/collections/{collection_str_id}/items/{ifeature_str_id}/layers/{layer.get("id")}",
+                    "href": f"{base_url}/collections/{collection_str_id}/items/{ifeature_str_id}/layers/{layer.get('id')}",
+=======
+        # 1. Define base_url OUTSIDE the loop (Fixes the crash bug)
+        base_url = f"{api.config['server']['url']}/collections/{collection_str_id}/items/{ifeature_str_id}/layers"
+
+        # 2. Add Detail Links to each Layer
+        for layer in data["layers"]:
+            layer['links'] = [
+                {
+                    "href": f"{base_url}/{layer.get('id')}",
+>>>>>>> 3c48949cef52d5eff7938059d261b4e3b0d288d6
                     "rel": "item",
                     "type": "application/json",
                     "title": "Layer Detail"
                 }
             ]
 
+<<<<<<< HEAD
+        # 5. Construct Self Link (With Query Params)
+        self_href = f"{base_url}/collections/{collection_str_id}/items/{ifeature_str_id}/layers"
+        
+        # Build dictionary of active parameters
+        query_params = {
+            'offset': offset,
+            'limit': limit
+        }
+        if theme:
+            query_params['theme'] = theme
+        if level:
+            query_params['level'] = level
+        
+        # Append query string
+        if query_params:
+            self_href += "?" + urllib.parse.urlencode(query_params)
+
         data['links'].append(
                 {
-                    "href": f"{base_url}/collections/{collection_str_id}/items/{ifeature_str_id}/layers",
+                    "href": self_href,
                     "rel": "self",
-                    "type": "application/json"
+                    "type": "application/json",
+                    "title": "Thematic Layers"
                 }
         )  
+=======
+        # 3. Add Pagination Links (Next / Prev / Self)
+        # Reconstruct current query params for links
+        query_params = f"?limit={limit}"
+        if theme: query_params += f"&theme={theme}"
+        if level: query_params += f"&level={level}"
 
-        return headers, 200, to_json(data, api.pretty_print)
+        # SELF Link
+        data['links'].append({
+            "href": f"{base_url}{query_params}&offset={offset}",
+            "rel": "self",
+            "type": "application/json"
+        })
+
+        # NEXT Link
+        number_matched = data.get('numberMatched', 0)
+        if (offset + limit) < number_matched:
+            next_offset = offset + limit
+            data['links'].append({
+                "href": f"{base_url}{query_params}&offset={next_offset}",
+                "rel": "next",
+                "type": "application/json",
+                "title": "Next page"
+            })
+
+        # PREV Link
+        if offset > 0:
+            prev_offset = max(0, offset - limit)
+            data['links'].append({
+                "href": f"{base_url}{query_params}&offset={prev_offset}",
+                "rel": "prev",
+                "type": "application/json",
+                "title": "Previous page"
+            })
+>>>>>>> 3c48949cef52d5eff7938059d261b4e3b0d288d6
+
+        return headers, HTTPStatus.OK, to_json(data, api.pretty_print)
 
     except Exception as e:
         LOGGER.error(f"Error fetching layers: {e}")
@@ -721,12 +799,19 @@ def get_collection_item_layer(api: API, request: APIRequest, dataset, identifier
                 HTTPStatus.NOT_FOUND,
                 headers, request.format, 'NotFound', msg)
         
+        base_url = f"{api.config['server']['url']}/collections/{collection_str_id}/items/{ifeature_str_id}/layers/{layer_str_id}"
+        self_href = base_url
+
+        if level:
+            query_params = {'level': level}
+            self_href += "?" + urllib.parse.urlencode(query_params)
+
         result["links"].append(
                 {
-                    "href": f"{api.config['server']['url']}/collections/{collection_str_id}/items/{ifeature_str_id}/layers/{layer_str_id}",
+                    "href": self_href,
                     "rel": "self",
                     "type": "application/json",
-                    "title": "InterLayer Connections"
+                    "title": "Thematic Layer"
                 }
             )
         
@@ -740,30 +825,98 @@ def get_collection_item_layer(api: API, request: APIRequest, dataset, identifier
     
     return headers, HTTPStatus.OK, to_json(result, api.pretty_print)
 
-def get_collection_item_interlayerconnections(api: API, request: APIRequest, collection_id: str, item_id: str) -> Tuple[dict, int, str]:
+def get_collection_item_interlayerconnections(api: API, request: APIRequest, dataset, identifier) -> Tuple[dict, int, str]:
     """
     GET /collections/{id}/items/{featureId}/interlayerconnections
     Retrieves the connections for a specific feature.
     """
+    if not request.is_valid():
+        return api.get_format_exception(request)
+    
     headers = request.get_response_headers(SYSTEM_LOCALE)
+    collection_id = str(dataset)
+    item_id = str(identifier)
+    
+    # ---------------------------------------------------------
+    # 1. Parse & Validate Pagination (Limit/Offset)
+    # ---------------------------------------------------------
+    try:
+        offset = int(request.params.get('offset'))
+        if offset < 0: raise ValueError
+    except (TypeError, ValueError):
+        offset = 0
+
+    try:
+        limit = int(request.params.get('limit'))
+        if limit <= 0 or limit > 10000: raise ValueError
+    except (TypeError, ValueError):
+        limit = 10 
+
+    # ---------------------------------------------------------
+    # 2. Parse Filters
+    # ---------------------------------------------------------
+    # Map API parameter names to Provider arguments
+    connected_layer_param = request.params.get('connectedLayerId')
+    topo_type_param = request.params.get('typeOfTopoExpression')
+
     provider = PostgresIndoorDB()
 
     try:
-        # Fetch connections (Clean name, no 'nested')
-        connections_data = provider.get_interlayer_connections(collection_id, item_id)
+        provider.connect()
+        
+        # 3. Call Provider
+        # Returns: {'connections': [...], 'numberMatched': X, 'numberReturned': Y}
+        data = provider.get_interlayer_connections(
+            collection_id, 
+            item_id,
+            connected_layer_id=connected_layer_param,
+            topo_type=topo_type_param,
+            limit=limit,
+            offset=offset
+        )
 
-        response = {
-            "layerConnections": connections_data,
-            "links": [
-                {
-                    "href": f"{api.config['server']['url']}/collections/{collection_id}/items/{item_id}/interlayerconnections",
-                    "rel": "self",
-                    "type": "application/json",
-                    "title": "InterLayer Connections"
-                }
-            ]
-        }
-        return headers, HTTPStatus.OK, to_json(response, api.pretty_print)
+        # 4. Construct Links
+        base_url = f"{api.config['server']['url']}/collections/{collection_id}/items/{item_id}/interlayerconnections"
+        
+        # Build query string for links to persist filters
+        query_params = f"?limit={limit}"
+        if connected_layer_param: query_params += f"&connectedLayerId={connected_layer_param}"
+        if topo_type_param: query_params += f"&typeOfTopoExpression={topo_type_param}"
+
+        links = []
+
+        # SELF Link
+        links.append({
+            "href": f"{base_url}{query_params}&offset={offset}",
+            "rel": "self",
+            "type": "application/json",
+            "title": "Current Page"
+        })
+
+        # NEXT Link
+        number_matched = data.get('numberMatched', 0)
+        if (offset + limit) < number_matched:
+            next_offset = offset + limit
+            links.append({
+                "href": f"{base_url}{query_params}&offset={next_offset}",
+                "rel": "next",
+                "type": "application/json",
+                "title": "Next Page"
+            })
+
+        # PREV Link
+        if offset > 0:
+            prev_offset = max(0, offset - limit)
+            links.append({
+                "href": f"{base_url}{query_params}&offset={prev_offset}",
+                "rel": "prev",
+                "type": "application/json",
+                "title": "Previous Page"
+            })
+
+        data['links'] = links
+
+        return headers, HTTPStatus.OK, to_json(data, api.pretty_print)
         
     except Exception as e:
         return api.get_exception(HTTPStatus.INTERNAL_SERVER_ERROR, headers, request.format, 'ServerError', str(e))
@@ -780,7 +933,7 @@ def manage_collection_item_interlayerconnections(api: API, request: APIRequest, 
 
     try:
         if action == 'create':
-            try:
+            try:git 
                 data = request.data
                 if isinstance(data, bytes):
                     data = json.loads(data.decode('utf-8'))
@@ -893,32 +1046,72 @@ def get_primal(api: API, request: APIRequest, collection_id: str, item_id: str, 
     GET /collections/{id}/items/{featureId}/layers/{layerId}/primal
     Retrieves the PrimalSpaceLayer.
     """
+    if not request.is_valid():
+        return api.get_format_exception(request)
+    
     headers = request.get_response_headers(SYSTEM_LOCALE)
     provider = PostgresIndoorDB()
 
-    try:
-        # Call the UPDATED provider function
-        # It now returns 3 values: Metadata, Spaces (processed), Boundaries (processed)
-        layer_meta, spaces, boundaries = provider.get_primal_features_and_metadata(collection_id, item_id, layer_id)
+    # ---------------------------------------------------------
+    # 1. Parse Query Parameters
+    # ---------------------------------------------------------
+    level = request.params.get('level')
+    cell_space_name = request.params.get('cellSpaceName')
+    
+    # Handle Boolean: poi
+    poi = None
+    poi_param = request.params.get('poi')
+    if poi_param is not None:
+        poi = str(poi_param).lower() == 'true'
 
-        # Handle 404
+    # Handle Boolean: isVirtual
+    is_virtual = None
+    virt_param = request.params.get('isVirtual')
+    if virt_param is not None:
+        is_virtual = str(virt_param).lower() == 'true'
+
+    try:
+        # ---------------------------------------------------------
+        # 2. Call Provider with Filters
+        # ---------------------------------------------------------
+        layer_meta, spaces, boundaries = provider.get_primal_features_and_metadata(
+            collection_id, 
+            item_id, 
+            layer_id,
+            level=level,
+            poi=poi,
+            is_virtual=is_virtual,
+            cell_space_name=cell_space_name
+        )
+
         if layer_meta is None:
             return api.get_exception(HTTPStatus.NOT_FOUND, headers, request.format, 'NotFound', 'Layer not found')
         
-        # Construct response
+        # 3. Construct Response
         response = {
             "id": layer_meta['primalspace_id_str'],
             "featureType": "PrimalSpaceLayer",
             "creationDatetime": layer_meta['p_creation_datetime'].isoformat() if layer_meta['p_creation_datetime'] else None,
             "terminationDatetime": layer_meta['p_termination_datetime'].isoformat() if layer_meta['p_termination_datetime'] else None,
-            "cellSpaceMember": spaces,        # Already has 'boundedBy' and proper 'duality'
-            "cellBoundaryMember": boundaries  # Already formatted
+            "cellSpaceMember": spaces,
+            "cellBoundaryMember": boundaries
         }
 
-        # Add HATEOAS links
+        # 4. Construct Self Link (Persisting filters is good practice)
+        base_url = f"{api.config['server']['url']}/collections/{collection_id}/items/{item_id}/layers/{layer_id}/primal"
+        
+        # Rebuild query string
+        params_list = []
+        if level: params_list.append(f"level={level}")
+        if cell_space_name: params_list.append(f"cellSpaceName={cell_space_name}")
+        if poi is not None: params_list.append(f"poi={str(poi).lower()}")
+        if is_virtual is not None: params_list.append(f"isVirtual={str(is_virtual).lower()}")
+        
+        query_string = "?" + "&".join(params_list) if params_list else ""
+
         response["links"] = [
             {
-                "href": f"{api.config['server']['url']}/collections/{collection_id}/items/{item_id}/layers/{layer_id}/primal",
+                "href": f"{base_url}{query_string}",
                 "rel": "self",
                 "type": "application/json",
                 "title": "Primal Space Layer"
@@ -1092,46 +1285,132 @@ def get_dual(api: API, request: APIRequest, collection_id: str, item_id: str, la
     GET /collections/{id}/items/{featureId}/layers/{layerId}/dual
     Retrieves the DualSpaceLayer (MultiLayeredGraph).
     """
+    if not request.is_valid():
+        return api.get_format_exception(request)
+    
     headers = request.get_response_headers(SYSTEM_LOCALE)
     provider = PostgresIndoorDB()
 
-    try:
-        # Call the new Provider function
-        # It returns 3 distinct objects: Metadata, Nodes List, Edges List
-        meta, nodes, edges = provider.get_dual_features_and_metadata(collection_id, item_id, layer_id)
+<<<<<<< HEAD
+    # 1. Extract and Validate Query Parameters (minWeight, maxWeight)
+    min_weight_param = request.params.get('minWeight')
+    max_weight_param = request.params.get('maxWeight')
 
-        # Handle 404
+    try:
+        min_w = float(min_weight_param) if min_weight_param is not None else None
+        max_w = float(max_weight_param) if max_weight_param is not None else None
+    except ValueError:
+        return api.get_exception(
+            HTTPStatus.BAD_REQUEST,
+            headers, request.format, 'InvalidParameter', "Weights must be valid numbers")
+
+    try:
+        # 2. Call the Provider function with the extracted weights
+        meta, nodes, edges = provider.get_dual_features_and_metadata(
+            collection_id, 
+            item_id, 
+            layer_id, 
+            min_weight=min_w, 
+            max_weight=max_w
+=======
+    #1. Parse Weight Parameters
+    min_weight = None
+    max_weight = None
+
+    try:
+        if request.params.get('minWeight'):
+            min_weight = float(request.params.get('minWeight'))
+        if request.params.get('maxWeight'):
+            max_weight = float(request.params.get('maxWeight'))
+    except ValueError:
+        return api.get_exception(
+            HTTPStatus.BAD_REQUEST, headers, request.format, 
+            'InvalidParameterValue', 'Weight parameters must be numbers'
+        )
+
+    try:
+        # ---------------------------------------------------------
+        # 2. Call Provider with Filters
+        # ---------------------------------------------------------
+        meta, nodes, edges = provider.get_dual_features_and_metadata(
+            collection_id, 
+            item_id, 
+            layer_id,
+            min_weight=min_weight,
+            max_weight=max_weight
+>>>>>>> 3c48949cef52d5eff7938059d261b4e3b0d288d6
+        )
+
         if not meta:
              return api.get_exception(HTTPStatus.NOT_FOUND, headers, request.format, 'NotFound', 'Layer not found')
+<<<<<<< HEAD
 
+        # Construct Self Link with Query Params
+        base_url = f"{api.config['server']['url']}/collections/{collection_id}/items/{item_id}/layers/{layer_id}/dual"
+
+        # Build query params dictionary
+        query_params = {}
+        if min_w is not None:
+            query_params['minWeight'] = min_w
+        if max_w is not None:
+            query_params['maxWeight'] = max_w
+            
+        # Append query string if params exist
+        self_href = base_url
+        if query_params:
+            self_href += "?" + urllib.parse.urlencode(query_params)
+
+=======
+        
+>>>>>>> 3c48949cef52d5eff7938059d261b4e3b0d288d6
         # Construct Response
         response = {
             "id": meta['dualspace_id_str'] if meta['dualspace_id_str'] else f"Dual_{layer_id}",
             "featureType": "DualSpaceLayer",
-            "isLogical": meta.get('is_logical', False),
-            "isDirected": meta.get('is_directed', False),
+            # Ensure keys match your DB columns (e.g. is_logical vs isLogical)
+            "isLogical": meta.get('is_logical', True), 
+            "isDirected": meta.get('is_directed', True),
             "creationDatetime": meta['d_creation_datetime'].isoformat() if meta.get('d_creation_datetime') else None,
             "terminationDatetime": meta['d_termination_datetime'].isoformat() if meta.get('d_termination_datetime') else None,
             
-            # DIRECT ASSIGNMENT: The Provider has already formatted these correctly
-            # Nodes now include their "connects" array (edges sprouting from them)
+            # DIRECT ASSIGNMENT: The Provider has filtered these and injected 'connects'
             "nodeMember": nodes, 
-            
-            # Edges now include their "connects" array (source and target)
             "edgeMember": edges,
+<<<<<<< HEAD
             
             "links": [
                 {
-                    "href": f"{api.config['server']['url']}/collections/{collection_id}/items/{item_id}/layers/{layer_id}/dual",
+                    "href": self_href,
                     "rel": "self",
                     "type": "application/json",
                     "title": "Dual Space Layer"
                 }
             ]
+=======
+>>>>>>> 3c48949cef52d5eff7938059d261b4e3b0d288d6
         }
+        # ---------------------------------------------------------
+        # 4. Generate Links with Query Params
+        # ---------------------------------------------------------
+        base_url = f"{api.config['server']['url']}/collections/{collection_id}/items/{item_id}/layers/{layer_id}/dual"
         
-        return headers, HTTPStatus.OK, to_json(response, api.pretty_print)
+        # Persist the filters in the 'self' link
+        params_list = []
+        if min_weight is not None: params_list.append(f"minWeight={min_weight}")
+        if max_weight is not None: params_list.append(f"maxWeight={max_weight}")
+        
+        query_string = "?" + "&".join(params_list) if params_list else ""
 
+        response["links"] = [
+            {
+                "href": f"{base_url}{query_string}",
+                "rel": "self",
+                "type": "application/json",
+                "title": "Dual Space Layer"
+            }
+        ]
+
+        return headers, HTTPStatus.OK, to_json(response, api.pretty_print)
     except Exception as e:
         return api.get_exception(HTTPStatus.INTERNAL_SERVER_ERROR, headers, request.format, 'ServerError', str(e))
     finally:
