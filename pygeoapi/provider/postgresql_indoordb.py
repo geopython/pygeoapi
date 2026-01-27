@@ -1218,8 +1218,6 @@ class PostgresIndoorDB:
         Insert a indoor feature into a collection
 
         :param collection_id: local identifier of a collection
-        :param movingfeature: IndoorFeature object or
-                           
 
         :returns: IndoorFeature ID
         """        
