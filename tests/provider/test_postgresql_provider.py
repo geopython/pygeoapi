@@ -892,6 +892,13 @@ def test_transaction_basic_workflow(pg_api_, data):
         identifier=123)
     assert code == HTTPStatus.OK
 
+    # delete again (item should not be in backend)
+    req = mock_api_request(data=data)
+    headers, code, content = manage_collection_item(
+        pg_api_, req, action='delete', dataset='hot_osm_waterways',
+        identifier=123)
+    assert code == HTTPStatus.BAD_REQUEST
+
 
 def test_transaction_create_handles_invalid_input_data(pg_api_, data):
     data_parsed = json.loads(data)

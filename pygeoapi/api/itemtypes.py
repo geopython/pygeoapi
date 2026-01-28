@@ -59,7 +59,8 @@ from pygeoapi.linked_data import geojson2jsonld
 from pygeoapi.openapi import get_oas_30_parameters
 from pygeoapi.plugin import load_plugin, PLUGINS
 from pygeoapi.provider.base import (
-    ProviderGenericError, ProviderTypeError, SchemaType)
+    ProviderGenericError, ProviderItemNotFoundError,
+    ProviderTypeError, SchemaType)
 
 from pygeoapi.util import (filter_providers_by_type, to_json,
                            filter_dict_by_key_value, str2bool,
@@ -834,6 +835,13 @@ def manage_collection_item(
 
     if action == 'delete':
         LOGGER.debug('Deleting item')
+        try:
+            _ = p.get(identifier)
+        except ProviderItemNotFoundError as err:
+            return api.get_exception(
+                err.http_status_code, headers, request.format,
+                err.ogc_exception_code, err.message)
+
         try:
             _ = p.delete(identifier)
         except ProviderGenericError as err:
