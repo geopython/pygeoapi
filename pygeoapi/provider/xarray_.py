@@ -126,7 +126,7 @@ class XarrayProvider(BaseProvider):
                     elif dtype.name.startswith('str'):
                         dtype = 'string'
 
-                    if not value.attrs.get('units'):
+                    if value.attrs.get('units') is None:
                         msg = f'Field {key} missing units, will be skipped'
                         LOGGER.warning(msg)
                         continue
