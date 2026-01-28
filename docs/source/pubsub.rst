@@ -27,8 +27,8 @@ Example directive:
 .. code-block:: yaml
 
    pubsub:
+       name: MQTT
        broker:
-           type: mqtt
            url: mqtt://localhost:1883
            channel: messages/a/data  # optional
            show_link: false  # default true
@@ -41,8 +41,8 @@ Example directive:
 .. code-block:: yaml
 
    pubsub:
+       name: HTTP
        broker:
-           type: http
            url: https://ntfy.sh
            channel: messages-a-data  # optional
            show_link: true  # default
