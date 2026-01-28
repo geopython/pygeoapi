@@ -897,7 +897,7 @@ def test_transaction_basic_workflow(pg_api_, data):
     headers, code, content = manage_collection_item(
         pg_api_, req, action='delete', dataset='hot_osm_waterways',
         identifier=123)
-    assert code == HTTPStatus.BAD_REQUEST
+    assert code == HTTPStatus.NOT_FOUND
 
 
 def test_transaction_create_handles_invalid_input_data(pg_api_, data):
