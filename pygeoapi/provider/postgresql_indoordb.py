@@ -32,6 +32,7 @@ class PostgresIndoorDB:
             self.dbname = datasource.get('dbname', self.dbname) 
             self.user = datasource.get('user', self.user)
             self.password = datasource.get('password', self.password)
+            
 # region server
     def connect(self):
         if self.connection is not None and self.connection.closed == 0:
@@ -66,12 +67,11 @@ class PostgresIndoorDB:
             self.connection = None
 # endregion
 
-# region IndoorFeatureCollections 
+# region IndoorFeatureCollections +
 
     def get_collections_list(self):
         """
         Query indoor features collection list with metadata.
-        Returns: [{'id': 'campus_1', 'title': 'My Campus', 'itemType': 'indoorfeature'}, ...]
         """
         self.connect()
 
@@ -133,7 +133,7 @@ class PostgresIndoorDB:
     def create_collection(self, id_str, title, description, item_type='indoorfeature'):
         """
         Creates a new collection.
-        Refactored for 2026 Schema: Relies on DB to auto-generate the Integer ID.
+        Relies on DB to auto-generate the Integer ID.
         """
         self.connect()
         
@@ -167,7 +167,7 @@ class PostgresIndoorDB:
     def delete_collection(self, id_str):
         """
         Deletes a collection and CASCADES valid deletions down to all child tables.
-        Matches the "Deep Clean" logic of your SQLAlchemy code.
+        Performs the "Deep Clean" logic 
         """
         self.connect()
 
@@ -251,61 +251,39 @@ class PostgresIndoorDB:
     def get_collection_items(
             self, collection_id, bbox='', limit=10, offset=0):
         """
-        Retrieve the indoor feature collection to access
-        the static information of the indoor feature
+        Retrieve the indoor feature collection /collections/{collectionId}/items
+        Optimized to fetch data and total count in a single query.
         /collections/{collectionId}/items
-
-        :param collection_id: local identifier of a collection
-        :param bbox: bounding box [lowleft1,lowleft2,min(optional),
-                                   upright1,upright2,max(optional)]
-        :param limit: number of items (default 10) [optional]
-        :param offset: starting record to return (default 0)
-
-        :returns: JSON IndoorFeatures
         """
         self.connect()
-        try:
-            if bbox is None:
-                bbox = []
-                
+        try:    
             # 1. Prepare Filter Strings
-            # We need to filter by collection_id_str (which is passed in)
-            # We assume collection_id here is the STRING ID (e.g., 'AIST_Building'), 
-            # so we join with the collection table.
-            
             where_clauses = ["c.id_str = %s"]
             params = [collection_id]
 
-            # 2. Handle BBOX (Bounding Box)
-            # bbox format: [minx, miny, maxx, maxy]
-            if bbox and len(bbox) == 4:
-                # PostGIS && operator checks if bounding boxes overlap
-                # ST_MakeEnvelope creates a rectangle from the 4 coordinates
-                where_clauses.append("i.geojson_geometry && ST_MakeEnvelope(%s, %s, %s, %s, 4326)")
-                params.extend(bbox)
+            # 2. Handle BBOX (Same logic as before)
+            if bbox:
+                if len(bbox) == 4: # OGC 2D
+                    where_clauses.append("""
+                        i.geojson_geometry && 
+                        ST_Transform(ST_MakeEnvelope(%s, %s, %s, %s, 4326), ST_SRID(i.geojson_geometry))
+                    """)
+                    params.extend(bbox)
+                elif len(bbox) == 6: # OGC 3D
+                    where_clauses.append("""
+                        i.geojson_geometry && 
+                        ST_Transform(ST_MakeEnvelope(%s, %s, %s, %s, 4326), ST_SRID(i.geojson_geometry))
+                    """)
+                    params.extend([bbox[0], bbox[1], bbox[3], bbox[4]])
 
-            # Join all where clauses
             where_str = " AND ".join(where_clauses)
 
             with self.connection.cursor() as cur:
-                # 3. Get Total Count (number_matched)
-                # This counts ALL items that match the filter (ignoring limit/offset)
-                count_sql = f"""
-                    SELECT COUNT(*) 
-                    FROM indoorfeature i
-                    JOIN collection c ON i.collection_id = c.id
-                    WHERE {where_str}
-                """
-                
-                # We must pass parameters safely to avoid SQL injection
-                # Note: params currently has [collection_id] + [bbox values]
-                cur.execute(count_sql, tuple(params))
-                number_matched = cur.fetchone()[0]
-
-                # 4. Get Data (Features) with Limit/Offset
-                # We select the necessary columns to build the GeoJSON
-                data_sql = f"""
+                # 3. Combined Query: Get Data + Total Count
+                # COUNT(*) OVER() calculates the total count BEFORE Limit/Offset are applied
+                sql = f"""
                     SELECT 
+                        count(*) OVER() as full_count,
                         i.id_str, 
                         ST_AsGeoJSON(i.geojson_geometry) as geom,
                         i.geojson_properties
@@ -316,41 +294,47 @@ class PostgresIndoorDB:
                     LIMIT %s OFFSET %s
                 """
                 
-                # Append limit and offset to the parameters list
+                # Append limit and offset
                 query_params = list(params) 
                 query_params.extend([limit, offset])
                 
-                cur.execute(data_sql, tuple(query_params))
+                cur.execute(sql, tuple(query_params))
                 rows = cur.fetchall()
 
-                # 5. Format Rows into GeoJSON Feature Objects
                 features = []
-                
-                for row in rows:
-                    feature_id, geom_text, props = row
-                    
-                    # Parse geometry string into JSON object (or None)
-                    geometry = json.loads(geom_text) if geom_text else None
-                    
-                    # Construct the GeoJSON Feature dictionary
-                    feature = {
-                        "type": "Feature",
-                        "id": feature_id,
-                        "geometry": geometry,
-                        "properties": props or {} 
-                    }
-                    features.append(feature)
+                number_matched = 0
+
+                if rows:
+                    # Get the total count from the first column of the first row
+                    number_matched = rows[0][0]
+
+                    # 4. Format Rows
+                    for row in rows:
+                        # Unpack 4 columns now (full_count is index 0)
+                        _, feature_id, geom_text, props = row
+                        
+                        geometry = json.loads(geom_text) if geom_text else None
+                        
+                        feature = {
+                            "type": "Feature",
+                            "id": feature_id,
+                            "geometry": geometry,
+                            "properties": props or {} 
+                        }
+                        features.append(feature)
                 
                 return features, number_matched
+
         finally:
             self.disconnect()
             
 
     def get_feature(self, collection_id, feature_id, level=None):
         """
-        TODO: Retrieve just the metadata when not filtered
+        TODO: bbox filtering
 
         Retrieves the actual IndoorFeature when filtered.
+        - If 'level' is None: Returns only metadata (Lightweight).
         - Primal Space (Cells/Boundaries): Filtered by 'level' if provided.
         - Dual Space (Nodes/Edges): ALWAYS returns all members (unfiltered).
         """
@@ -390,6 +374,13 @@ class PostgresIndoorDB:
                 },
                 "links": []
             }
+
+            # ---------------------------------------------------------
+                # CHECK: If no level provided, return Metadata only
+                # TODO: for bbox too
+            # ---------------------------------------------------------
+            if level is None:
+                return result_feature
 
             # ---------------------------------------------------------
             # 2. Fetch Thematic Layers (Keep ID mapping for later)
@@ -781,7 +772,6 @@ class PostgresIndoorDB:
     def get_layers(self, collection_id, feature_id, theme = None, level = None, limit=10, offset=0):
         """
         Retrieves a list of Thematic Layers.
-        - TODO:BBOX: If level is filtered, BBOX is calculated ONLY for that level.
         - Levels: Always returns ALL levels available in that layer (so client knows what else exists).
         - Filtering: Only returns layers that actually contain the requested level.
         """
@@ -889,6 +879,7 @@ class PostgresIndoorDB:
     def get_layer(self, collection_id, feature_id, layer_id, level=None, bbox=None):
         """
         Retrieves a single Thematic Layer.
+        If not filtered, just the meta data is given.
         - PrimalSpace: Filtered by 'level' if provided.
         - DualSpace: Returns the ENTIRE network (unfiltered) for connectivity.
         """

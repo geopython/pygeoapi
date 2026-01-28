@@ -325,13 +325,12 @@ def get_collection_items(api: API, request: APIRequest, dataset) -> Tuple[dict, 
     
     # --- BBOX PARAMETER ---
     LOGGER.debug('Processing bbox parameter')
-    bbox = request.params.get('bbox')
+    bbox_param = request.params.get('bbox')
+    bbox = None
 
-    if bbox is None: 
-        bbox = []
-    else:
+    if bbox_param:
         try:
-            bbox = validate_bbox(bbox)
+            bbox = validate_bbox(bbox_param)
         except ValueError as err:
             msg = str(err)
             return api.get_exception(
@@ -345,7 +344,7 @@ def get_collection_items(api: API, request: APIRequest, dataset) -> Tuple[dict, 
     try:
         content, number_matched = provider.get_collection_items(
             collection_id=collection_str_id,
-            # bbox=bbox,
+            bbox=bbox,
             limit=limit,
             offset=offset,
         )
