@@ -2029,6 +2029,18 @@ class PostgresIndoorDB:
                     LOGGER.debug(f"Layer context not found for {layer_str_id}")
                     return None
 
+                duplicate_sql = """
+                    SELECT id, id_str 
+                    FROM cell_space_n_boundary
+                    WHERE thematiclayer_id = %s, id_str = %s
+                """
+                cur.execute(duplicate_sql, (layer_row['id'], data.get('id')))
+                row = cur.fetchone()
+                if row:
+                    LOGGER.debug(f"Invalid data value: {data.get('id')} is already exist.")
+                    return None
+
+
                 # --- B. Parse Data ---
                 f_type = data.get('featureType')
                 id_str = data.get('id')
@@ -2158,6 +2170,36 @@ class PostgresIndoorDB:
                     """
                     cur.execute(update_edgeDuality_sql, (new_internal_id, duality_edge_pk))
 
+                # project cellspace's 3D geometry to 2D if it has no 2D geometry.
+                LOGGER.debug("Project geometry 3D to 2D ")
+                sql_projection = """
+                    UPDATE cell_space_n_boundary c
+                    SET "2D_geometry" = sub.footprint
+                    FROM (
+                        SELECT 
+                            id, 
+                            ST_AsText(
+                                ST_UnaryUnion(
+                                    ST_Collect(
+                                        ST_Force2D(
+                                            ST_GeomFromGeoJSON(
+                                                jsonb_build_object(
+                                                    'type', 'Polygon',
+                                                    'coordinates', jsonb_build_array(face_element) 
+                                                )
+                                            )
+                                        )
+                                    )
+                                )
+                            ) AS footprint
+                        FROM cell_space_n_boundary,
+                            jsonb_array_elements("3D_geometry"->'coordinates'->0) AS face_element
+                        WHERE "3D_geometry" IS NOT NULL AND type='space' AND "2D_geometry" IS NULL AND id = %s
+                        GROUP BY id
+                    ) sub
+                    WHERE c.id = sub.id;
+                """
+                cur.execute(sql_projection,(new_internal_id,))
                 # 4. FIX: Commit only if we get here successfully
                 self.connection.commit()
                 return new_str_id
@@ -2357,17 +2399,14 @@ class PostgresIndoorDB:
                 return None
 
 
-    def update_primal_member(self, collection_str, item_str, layer_str, member_id, data):
+    def update_primal_member(self, collection_str, item_str, layer_str, member_str, data):
         """
         Updates a CellSpace. 
-        Strictly ignores Geometry updates.
-        Allows updating: cell_name, level, poi, is_virtual, duality, external_reference, and boundedBy relationships.
+        Strictly ignores Geometry and external_reference updates. duality
+        Allows updating: cell_name, level, poi, and boundedBy.
         """
-        self.connect()
-        
-        try:
-            with self.connection.cursor(cursor_factory=RealDictCursor) as cur:
-                
+        with self.connection.cursor(cursor_factory=RealDictCursor) as cur:
+            try:
                 # --- A. Resolve Parent Layer IDs ---
                 lookup_sql = """
                     SELECT t.id 
@@ -2380,15 +2419,17 @@ class PostgresIndoorDB:
                 layer_row = cur.fetchone()
                 
                 if not layer_row:
+                    LOGGER.debug(f"Not found {layer_str}")
                     return False 
 
                 # --- B. Check Member Existence ---
                 # We also verify it is a 'space' here
                 check_sql = "SELECT id, type FROM cell_space_n_boundary WHERE id_str = %s AND thematiclayer_id = %s"
-                cur.execute(check_sql, (member_id, layer_row['id']))
+                cur.execute(check_sql, (member_str, layer_row['id']))
                 target_row = cur.fetchone()
 
                 if not target_row or target_row['type'] != 'space':
+                    LOGGER.debug(f"{member_str} is not found or not cell space.")
                     return False 
 
                 internal_id = target_row['id']
@@ -2397,10 +2438,14 @@ class PostgresIndoorDB:
                 fields = []
                 values = []
                 
+                if 'cellSpaceGeom' in data or 'duality' in data or 'external_reference' in data:
+                    LOGGER.debug("Invalid body value.")
+                    return False
+
                 # Handle client typo/legacy support
-                if 'cellSpaceName:' in data: 
+                if 'cellSpaceName' in data: 
                     fields.append("cell_name = %s")
-                    values.append(data['cellSpaceName:'])
+                    values.append(data['cellSpaceName'])
                 
                 if 'level' in data:
                     fields.append("level = %s")
@@ -2409,20 +2454,6 @@ class PostgresIndoorDB:
                 if 'poi' in data:
                     fields.append("poi = %s")
                     values.append(data['poi'])
-                    
-                if 'isVirtual' in data:
-                    fields.append("is_virtual = %s")
-                    values.append(data['isVirtual'])
-
-                if 'externalReference' in data:
-                    fields.append("external_reference = %s")
-                    values.append(json.dumps(data['externalReference']))
-                
-                if 'duality' in data:
-                    d_str = str(data['duality']).replace('#', '')
-                    d_val = int(d_str) if d_str.isdigit() else None
-                    fields.append("duality_id = %s")
-                    values.append(d_val)
 
                 # execute Update if we have fields
                 if fields:
@@ -2432,46 +2463,42 @@ class PostgresIndoorDB:
 
                 # --- D. Handle 'boundedBy' Relationship ---
                 if 'boundedBy' in data:
-                    raw_bounds = data['boundedBy'] # e.g., ["#B1", "#B2"]
-                    new_boundary_ids = [str(b).replace('#', '') for b in raw_bounds]
+                    raw_bounds = data['boundedBy'].split[':'][-1] # e.g., ["a:b:c"]
                     
                     # 1. Validation: Ensure all new boundaries exist
-                    if new_boundary_ids:
-                        check_refs = list(set(new_boundary_ids))
-                        count_sql = """
-                            SELECT COUNT(*) as cnt FROM cell_space_n_boundary 
+                    if raw_bounds:
+                        check_refs = list(set(raw_bounds))
+                        bounded_sql = """
+                            SELECT  id, bounded_by_cell_id, id_str FROM cell_space_n_boundary 
                             WHERE id_str = ANY(%s) AND thematiclayer_id = %s AND type = 'boundary'
                         """
-                        cur.execute(count_sql, (check_refs, layer_row['id']))
-                        if cur.fetchone()['cnt'] != len(check_refs):
+                        cur.execute(bounded_sql, (check_refs, layer_row['id']))
+                        rows = cur.fetchall()
+                        if len(rows) != len(check_refs):
                             # Rollback is handled by the except block below
                             print("Validation Failed: One or more boundaries do not exist.")
                             raise ValueError("Invalid Boundary References")
-
-                    # 2. Strategy: Unlink ALL, then Link NEW (Simpler & Safer)
-                    
-                    # Step 2a: Unlink everything this space currently owns
-                    unlink_all_sql = "UPDATE cell_space_n_boundary SET bounded_by_cell_id = NULL WHERE bounded_by_cell_id = %s"
-                    cur.execute(unlink_all_sql, (internal_id,))
-
-                    # Step 2b: Link the new list (if any)
-                    # WARNING: Again, this steals the wall if it belonged to another room.
-                    if new_boundary_ids:
+                        else:
+                            for row in rows:  # if boundary already bounds another cell space, error is occured.
+                                if row['bounded_by_cell_id'] and row['bounded_by_cell_id']!=internal_id:
+                                    LOGGER.debug(f"{row['id_str']} already bounds another cell space.")
+                                    raise ValueError(f"Invalid boundedBy data: {row['id_str']}")
+                        # update new bounded by cell id
                         link_new_sql = """
                             UPDATE cell_space_n_boundary
                             SET bounded_by_cell_id = %s
                             WHERE id_str = ANY(%s) AND thematiclayer_id = %s
                         """
-                        cur.execute(link_new_sql, (internal_id, new_boundary_ids, layer_row['id']))
+                        cur.execute(link_new_sql, (internal_id, raw_bounds, layer_row['id']))
 
                 self.connection.commit()
                 return True
 
-        except Exception as e:
-            if self.connection:
-                self.connection.rollback()
-            print(f"Update failed: {e}")
-            return False
+            except Exception as e:
+                if self.connection:
+                    self.connection.rollback()
+                print(f"Update failed: {e}")
+                return False
 
 # endregion
 

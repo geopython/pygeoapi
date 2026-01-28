@@ -1204,7 +1204,7 @@ def manage_primal(api: API, request: APIRequest, action: str, collection_id: str
             success = pidb_provider.update_primal_member(collection_id, item_id, layer_id, member_id, data)
             
             if success:
-                return headers, HTTPStatus.NO_CONTENT, ''
+                return headers, HTTPStatus.NO_CONTENT, 'update success'
             else:
                 return api.get_exception(HTTPStatus.NOT_FOUND, headers, request.format, 'NotFound', 'Member not found, is not a CellSpace, or Layer invalid')
 
