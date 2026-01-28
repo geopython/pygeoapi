@@ -32,7 +32,7 @@ class PostgresIndoorDB:
             self.dbname = datasource.get('dbname', self.dbname) 
             self.user = datasource.get('user', self.user)
             self.password = datasource.get('password', self.password)
-    
+# region server
     def connect(self):
         if self.connection is not None and self.connection.closed == 0:
             return
@@ -64,7 +64,9 @@ class PostgresIndoorDB:
         if self.connection is not None:
             self.connection.close()
             self.connection = None
+# endregion
 
+# region IndoorFeatureCollections 
 
     def get_collections_list(self):
         """
@@ -134,8 +136,6 @@ class PostgresIndoorDB:
         Refactored for 2026 Schema: Relies on DB to auto-generate the Integer ID.
         """
         self.connect()
-        
-        # REMOVED: new_pk_id = random.randint(...) <- No longer needed!
         
         properties = {
             'title': title,
@@ -213,6 +213,9 @@ class PostgresIndoorDB:
         
         return True
     
+# endregion
+
+# region IndoorFeatures 
     def is_indoor_collection(self, collection_id_str):
         """
         Checks if the collection exists and has itemType='indoorfeature'.
@@ -711,7 +714,70 @@ class PostgresIndoorDB:
                 result_feature["IndoorFeatures"]["layerConnections"].append(interlayer_connection)
         
         return result_feature
+    
+    def delete_indoorfeature(self, collection_str_id, feature_id_str):
+        """
+        Deletes an IndoorFeature and all its associated layers, cells, nodes, and connections.
+        
+        :param collection_str_id: The String ID of the Collection (e.g., 'IndoorGML_DataSet_1')
+        :param feature_id_str: The String ID of the Feature to delete (e.g., 'AIST_Waterfront')
+        """
+        LOGGER.debug(f"Deleting IndoorFeature: {feature_id_str} in {collection_str_id}")
 
+        with self.connection.cursor() as cur:
+            try:
+                # 1. Resolve IDs (We need the Integer IDs to delete efficiently)
+                cur.execute(
+                    "SELECT c.id, i.id FROM collection c "
+                    "JOIN indoorfeature i ON c.id = i.collection_id "
+                    "WHERE c.id_str = %s AND i.id_str = %s",
+                    (collection_str_id, feature_id_str)
+                )
+                res = cur.fetchone()
+                
+                if not res:
+                    # Item not found, usually returns 404 in API, but here we can just return
+                    LOGGER.warning(f"Feature {feature_id_str} not found.")
+                    return
+
+                coll_pk, feature_pk = res
+
+                # 2. DELETE CHILDREN FIRST (Because we don't have CASCADE in SQL)
+                
+                # A. Delete Connections (Edges between nodes)
+                # We must delete rows in 'connects' where the nodes belong to this feature
+                cur.execute("""
+                    DELETE FROM connects 
+                    WHERE node_source_id IN (
+                        SELECT id FROM node_n_edge WHERE indoorfeature_id = %s
+                    )
+                """, (feature_pk,))
+
+                # B. Delete InterLayerConnections
+                cur.execute("DELETE FROM interlayerconnection WHERE indoorfeature_id = %s", (feature_pk,))
+
+                # C. Delete Nodes and Edges
+                cur.execute("DELETE FROM node_n_edge WHERE indoorfeature_id = %s", (feature_pk,))
+
+                # D. Delete Cells and Boundaries
+                cur.execute("DELETE FROM cell_space_n_boundary WHERE indoorfeature_id = %s", (feature_pk,))
+
+                # E. Delete Thematic Layers
+                cur.execute("DELETE FROM thematiclayer WHERE indoorfeature_id = %s", (feature_pk,))
+
+                # 3. DELETE PARENT (The IndoorFeature itself)
+                cur.execute("DELETE FROM indoorfeature WHERE id = %s", (feature_pk,))
+
+                # Commit is handled by the context manager
+                self.connection.commit()
+                
+            except Exception as e:
+                self.connection.rollback()
+                LOGGER.error(f"Error deleting indoorfeature: {e}")
+                raise e
+# endregion 
+    
+# region ThematicLayers
     def get_layers(self, collection_id, feature_id, theme = None, level = None, limit=10, offset=0):
         """
         Retrieves a list of Thematic Layers.
@@ -1561,6 +1627,9 @@ class PostgresIndoorDB:
             self.connection.rollback()
             # Re-raise the exception to be handled by the API (returns 500 or 400)
             raise e
+# endregion
+
+# region InterlayerConnections
 
     def get_interlayer_connections(self, collection_str_id, feature_str_id, 
                                  connected_layer_id=None, topo_type=None, 
@@ -1786,68 +1855,10 @@ class PostgresIndoorDB:
                 self.connection.rollback()
             print(f"Delete Connection Error: {e}")
             return False
+# endregion
 
-    def delete_indoorfeature(self, collection_str_id, feature_id_str):
-        """
-        Deletes an IndoorFeature and all its associated layers, cells, nodes, and connections.
-        
-        :param collection_str_id: The String ID of the Collection (e.g., 'IndoorGML_DataSet_1')
-        :param feature_id_str: The String ID of the Feature to delete (e.g., 'AIST_Waterfront')
-        """
-        LOGGER.debug(f"Deleting IndoorFeature: {feature_id_str} in {collection_str_id}")
+# region PrimalSpaceLayer
 
-        with self.connection.cursor() as cur:
-            try:
-                # 1. Resolve IDs (We need the Integer IDs to delete efficiently)
-                cur.execute(
-                    "SELECT c.id, i.id FROM collection c "
-                    "JOIN indoorfeature i ON c.id = i.collection_id "
-                    "WHERE c.id_str = %s AND i.id_str = %s",
-                    (collection_str_id, feature_id_str)
-                )
-                res = cur.fetchone()
-                
-                if not res:
-                    # Item not found, usually returns 404 in API, but here we can just return
-                    LOGGER.warning(f"Feature {feature_id_str} not found.")
-                    return
-
-                coll_pk, feature_pk = res
-
-                # 2. DELETE CHILDREN FIRST (Because we don't have CASCADE in SQL)
-                
-                # A. Delete Connections (Edges between nodes)
-                # We must delete rows in 'connects' where the nodes belong to this feature
-                cur.execute("""
-                    DELETE FROM connects 
-                    WHERE node_source_id IN (
-                        SELECT id FROM node_n_edge WHERE indoorfeature_id = %s
-                    )
-                """, (feature_pk,))
-
-                # B. Delete InterLayerConnections
-                cur.execute("DELETE FROM interlayerconnection WHERE indoorfeature_id = %s", (feature_pk,))
-
-                # C. Delete Nodes and Edges
-                cur.execute("DELETE FROM node_n_edge WHERE indoorfeature_id = %s", (feature_pk,))
-
-                # D. Delete Cells and Boundaries
-                cur.execute("DELETE FROM cell_space_n_boundary WHERE indoorfeature_id = %s", (feature_pk,))
-
-                # E. Delete Thematic Layers
-                cur.execute("DELETE FROM thematiclayer WHERE indoorfeature_id = %s", (feature_pk,))
-
-                # 3. DELETE PARENT (The IndoorFeature itself)
-                cur.execute("DELETE FROM indoorfeature WHERE id = %s", (feature_pk,))
-
-                # Commit is handled by the context manager
-                self.connection.commit()
-                
-            except Exception as e:
-                self.connection.rollback()
-                LOGGER.error(f"Error deleting indoorfeature: {e}")
-                raise e
-            
     def get_primal_features_and_metadata(self, collection_id, item_id, layer_str_id, 
                                          level=None, poi=None, is_virtual=None, cell_space_name=None):
         """
@@ -2440,6 +2451,10 @@ class PostgresIndoorDB:
                 self.connection.rollback()
             print(f"Update failed: {e}")
             return False
+
+# endregion
+
+# region DualSpaceLayer
 
     def post_dual_member(self, collection_str, item_str, layer_str, data):
         self.connect()
@@ -3152,4 +3167,4 @@ class PostgresIndoorDB:
             return {"type": "MultiPolygon", "coordinates": coords}
 
         return None
-        
+# endregion      

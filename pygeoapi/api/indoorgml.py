@@ -30,6 +30,7 @@ with open(SCHEMA_PATH, 'r') as f:
 
 LOGGER = logging.getLogger(__name__)
 
+# region IndoorFeatureCollections
 def manage_collection(api: API, request: APIRequest, action: str, dataset: str = None) -> Tuple[dict, int, str]:
     """
     PNU STEMLab: Manages IndoorGML Collections via Provider
@@ -161,7 +162,9 @@ def is_indoor_collection(collection_id: String) -> bool:
         pidb_provider.disconnect()
 
     return False
+# endregion
 
+# region IndoorFeatures
 def manage_collection_item(api: API, request: APIRequest, action, 
                            dataset, identifier=None) -> Tuple[dict, int, str]:
     """
@@ -482,7 +485,9 @@ def get_collection_item(api: API, request: APIRequest, dataset, identifier) -> T
             headers, request.format, 'ConnectingError', msg)
     
     return headers, HTTPStatus.OK, to_json(result, api.pretty_print)
+#endregion
 
+# region ThematicLayers
 def manage_collection_item_layer(api: API, request: APIRequest, action, dataset, identifier, layer=None) -> Tuple[dict, int, str]:
     
     if not request.is_valid(PLUGINS['formatter'].keys()):
@@ -800,7 +805,9 @@ def get_collection_item_layer(api: API, request: APIRequest, dataset, identifier
         pidb_provider.disconnect()
     
     return headers, HTTPStatus.OK, to_json(result, api.pretty_print)
+# endregion
 
+# region InterLayerConnections
 def get_collection_item_interlayerconnections(api: API, request: APIRequest, dataset, identifier) -> Tuple[dict, int, str]:
     """
     GET /collections/{id}/items/{featureId}/interlayerconnections
@@ -944,7 +951,9 @@ def manage_collection_item_interlayerconnections(api: API, request: APIRequest, 
 
     return headers, HTTPStatus.METHOD_NOT_ALLOWED, ''
 
+# endregion
 
+# region PrimalSpace
 def get_list_of_collections_id():
     pidb_provider = PostgresIndoorDB()
     try:
@@ -1254,8 +1263,9 @@ def get_primal_member(api: API, request: APIRequest, collection_id: str, item_id
         return api.get_exception(HTTPStatus.INTERNAL_SERVER_ERROR, headers, request.format, 'ServerError', str(e))
     finally:
         provider.disconnect()
+# endregion
 
-
+# region dualSpace
 def get_dual(api: API, request: APIRequest, collection_id: str, item_id: str, layer_id: str) -> Tuple[dict, int, str]:
     """
     GET /collections/{id}/items/{featureId}/layers/{layerId}/dual
@@ -1450,3 +1460,4 @@ def manage_dual(api: API, request: APIRequest, action: str, collection_id: str, 
         return api.get_exception(HTTPStatus.INTERNAL_SERVER_ERROR, headers, request.format, 'ServerError', str(e))
     finally:
         provider.disconnect()
+# endregion
