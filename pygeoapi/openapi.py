@@ -538,6 +538,11 @@ def get_oas_30(cfg: dict, fail_on_invalid_collection: bool = True) -> dict:
 
         try:
             sub_tags, sub_paths = api_module.get_oas_30(cfg, locale_)
+
+            if not sub_tags and not sub_paths:
+                LOGGER.debug('Empty content from {api_name}; skipping')
+                continue
+
             oas['paths'].update(sub_paths['paths'])
             oas['tags'].extend(sub_tags)
         except Exception as err:

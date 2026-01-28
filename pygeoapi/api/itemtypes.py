@@ -49,6 +49,7 @@ from pyproj.exceptions import CRSError
 
 from pygeoapi import l10n
 from pygeoapi.api import evaluate_limit
+from pygeoapi.api.pubsub import publish_message
 from pygeoapi.crs import (DEFAULT_CRS, DEFAULT_STORAGE_CRS,
                           create_crs_transform_spec, get_supported_crs_list,
                           modify_pygeofilter, transform_bbox,
@@ -750,6 +751,9 @@ def manage_collection_item(
     collections = filter_dict_by_key_value(api.config['resources'],
                                            'type', 'collection')
 
+    http_status = HTTPStatus.OK
+    payload = None
+
     if dataset not in collections.keys():
         msg = 'Collection not found'
         return api.get_exception(
@@ -795,7 +799,8 @@ def manage_collection_item(
     if action == 'create':
         LOGGER.debug('Creating item')
         try:
-            identifier = p.create(request.data)
+            payload = request.data
+            identifier = p.create(payload)
         except TypeError as err:
             msg = str(err)
             return api.get_exception(
@@ -808,12 +813,13 @@ def manage_collection_item(
 
         headers['Location'] = f'{api.get_collections_url()}/{dataset}/items/{identifier}'  # noqa
 
-        return headers, HTTPStatus.CREATED, ''
+        http_status = HTTPStatus.CREATED
 
     if action == 'update':
         LOGGER.debug('Updating item')
         try:
-            _ = p.update(identifier, request.data)
+            payload = request.data
+            _ = p.update(identifier, payload)
         except TypeError as err:
             msg = str(err)
             return api.get_exception(
@@ -824,7 +830,7 @@ def manage_collection_item(
                 err.http_status_code, headers, request.format,
                 err.ogc_exception_code, err.message)
 
-        return headers, HTTPStatus.NO_CONTENT, ''
+        http_status = HTTPStatus.NO_CONTENT
 
     if action == 'delete':
         LOGGER.debug('Deleting item')
@@ -835,7 +841,14 @@ def manage_collection_item(
                 err.http_status_code, headers, request.format,
                 err.ogc_exception_code, err.message)
 
-        return headers, HTTPStatus.OK, ''
+        http_status = HTTPStatus.OK
+
+    if api.pubsub_client is not None:
+        LOGGER.debug('Publishing message')
+        publish_message(api.pubsub_client, api.base_url, action, dataset,
+                        identifier, payload)
+
+    return headers, http_status, ''
 
 
 def get_collection_item(api: API, request: APIRequest,

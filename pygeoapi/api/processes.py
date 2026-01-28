@@ -9,7 +9,7 @@
 #          Bernhard Mallinger <bernhard.mallinger@eox.at>
 #          Francesco Martinelli <francesco.martinelli@ingv.it>
 #
-# Copyright (c) 2024 Tom Kralidis
+# Copyright (c) 2026 Tom Kralidis
 # Copyright (c) 2025 Francesco Bartoli
 # Copyright (c) 2022 John A Stevenson and Colin Blackburn
 # Copyright (c) 2023 Ricardo Garcia Silva
@@ -50,6 +50,7 @@ from typing import Tuple
 
 from pygeoapi import l10n
 from pygeoapi.api import evaluate_limit
+from pygeoapi.api.pubsub import publish_message
 from pygeoapi.process.base import (
     JobNotFoundError,
     JobResultNotFoundError,
@@ -530,6 +531,11 @@ def execute_process(api: API, request: APIRequest,
             'type': 'process',
             'status': status.value
         }
+
+    if api.pubsub_client is not None:
+        LOGGER.debug('Publishing message')
+        publish_message(api.pubsub_client, api.base_url, 'process', process_id,
+                        job_id, response2)
 
     return headers, http_status, response2
 

@@ -81,7 +81,22 @@
         <a title="Browse jobs" href="{{config.server.url}}/jobs">{% trans %}Browse jobs{% endtrans %}</a>
       </p>
   </section>
- {% endif %}
+  {% endif %}
+  {% if data['tile'] %}
+  <section id="tilematrixsets">
+      <h2>{% trans %}Tile Matrix Sets{% endtrans %}</h2>
+      <p>
+        <a href="{{ config['server']['url'] }}/TileMatrixSets?f=html">{% trans %}View the Tile Matrix Sets available on this service{% endtrans %}</a>
+      </p>
+  {% endif %}
+  {% if data['pubsub'] %}
+  <section id="pubsub">
+      <h2>{% trans %}Pub/Sub Notifications{% endtrans %} ({{ data['pubsub']['name'] }})</h2>
+      <p>
+        <a href="{{ data['pubsub']['url'] }}">{% trans %}Subscribe to notifications from this service{% endtrans %}</a>{% if data['pubsub']['channel'] %} (Topic/channel: <code>{{ data['pubsub']['channel'] }}</code>) {% endif %}
+      </p>
+  </section>
+  {% endif %}
   <section id="openapi">
       <h2>{% trans %}API Definition{% endtrans %}</h2>
       <p>
@@ -97,14 +112,6 @@
         <a href="{{ config['server']['url'] }}/conformance?f=html">{% trans %}View the conformance classes of this service{% endtrans %}</a>
       </p>
   </section>
-  {% if data['tile'] %}
-  <section id="tilematrixsets">
-      <h2>{% trans %}Tile Matrix Sets{% endtrans %}</h2>
-      <p>
-        <a href="{{ config['server']['url'] }}/TileMatrixSets?f=html">{% trans %}View the Tile Matrix Sets available on this service{% endtrans %}</a>
-      </p>
-  </section>
-  {% endif %}
   </div>
   <div class="col-md-4 col-sm-12">
     <div class="card mb-3">

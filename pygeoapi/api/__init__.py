@@ -127,7 +127,7 @@ def all_apis() -> dict:
     """
 
     from . import (coverages, environmental_data_retrieval, itemtypes, maps,
-                   processes, tiles, stac)
+                   processes, pubsub, tiles, stac)
 
     return {
         'coverage': coverages,
@@ -135,6 +135,7 @@ def all_apis() -> dict:
         'itemtypes': itemtypes,
         'map': maps,
         'process': processes,
+        'pubsub': pubsub,
         'tile': tiles,
         'stac': stac
     }
@@ -546,6 +547,7 @@ class API:
         self.api_headers = get_api_rules(self.config).response_headers
         self.base_url = get_base_url(self.config)
         self.prefetcher = UrlPrefetcher()
+        self.pubsub_client = None
 
         CHARSET[0] = config['server'].get('encoding', 'utf-8')
         if config['server'].get('gzip'):
@@ -572,6 +574,10 @@ class API:
 
         self.manager = get_manager(self.config)
         LOGGER.info('Process manager plugin loaded')
+
+        if self.config.get('pubsub') is not None:
+            LOGGER.debug('Loading PubSub client')
+            self.pubsub_client = load_plugin('pubsub', self.config['pubsub'])
 
     def get_exception(self, status: int, headers: dict, format_: str | None,
                       code: str, description: str) -> Tuple[dict, int, str]:
@@ -731,6 +737,19 @@ def landing_page(api: API,
         'href': f"{api.base_url}/TileMatrixSets?f=html"
     }]
 
+    if api.pubsub_client is not None and api.pubsub_client.show_link:
+        LOGGER.debug('Adding PubSub broker link')
+        pubsub_link = {
+            'rel': 'hub',
+            'type': 'application/json',
+            'title': 'Pub/Sub broker',
+            'href': api.pubsub_client.broker_safe_url
+        }
+        if api.pubsub_client.channel is not None:
+            pubsub_link['channel'] = api.pubsub_client.channel
+
+        fcm['links'].append(pubsub_link)
+
     headers = request.get_response_headers(**api.api_headers)
     if request.format == F_HTML:  # render
 
@@ -746,6 +765,13 @@ def landing_page(api: API,
                         if filter_providers_by_type(value['providers'],
                                                     'tile'):
                             fcm['tile'] = True
+
+        if api.pubsub_client is not None and api.pubsub_client.show_link:
+            fcm['pubsub'] = {
+                'name': api.pubsub_client.name,
+                'url': api.pubsub_client.broker_safe_url,
+                'channel': api.pubsub_client.channel
+            }
 
         content = render_j2_template(
             api.tpl_config, api.config['server']['templates'],
@@ -823,6 +849,9 @@ def conformance(api: API, request: APIRequest) -> Tuple[dict, int, str]:
                 if provider['type'] == 'record':
                     conformance_list.extend(
                         apis_dict['itemtypes'].CONFORMANCE_CLASSES_RECORDS)
+
+    if api.pubsub_client is not None:
+        conformance_list.extend(apis_dict['pubsub'].CONFORMANCE_CLASSES)
 
     conformance = {
         'conformsTo': sorted(list(set(conformance_list)))

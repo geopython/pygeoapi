@@ -39,6 +39,7 @@ reference documentation on all aspects of the project.
    openapi
    publishing/index
    transactions
+   pubsub
    admin-api
    security
    plugins
