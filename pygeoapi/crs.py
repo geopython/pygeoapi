@@ -70,7 +70,7 @@ class CrsTransformSpec:
 
 def get_srid(crs: Union[str, pyproj.CRS]) -> Union[int, None]:
     """
-    Helper function to attempt to exctract an ESPG SRID from
+    Helper function to attempt to extract an EPSG SRID from
     a `pyproj.CRS` object.
 
     :param crs: `pyproj.CRS` object
