@@ -1101,48 +1101,86 @@ def get_primal(api: API, request: APIRequest, collection_id: str, item_id: str, 
         pidb_provider.disconnect()
 
 def manage_primal(api: API, request: APIRequest, action: str, collection_id: str, item_id: str, layer_id: str, member_id: str = None) -> Tuple[dict, int, str]:
+    if not request.is_valid(PLUGINS['formatter'].keys()):
+        return api.get_format_exception(request)
     headers = request.get_response_headers(SYSTEM_LOCALE)
-    provider = PostgresIndoorDB()
+    executed, collections = get_list_of_collections_id()
+    if executed is False:
+        msg = str(collections)
+        return api.get_exception(
+            HTTPStatus.BAD_REQUEST,
+            headers, request.format, 'ConnectingError', msg)
+    
+    if collection_id not in collections:
+        msg = 'Collection not found'
+        LOGGER.error(msg)
+        return api.get_exception(
+            HTTPStatus.NOT_FOUND,
+            headers, request.format, 'NotFound', msg)
+        
+    pidb_provider = PostgresIndoorDB()
 
-    try:
-        if action == 'create':
-            # 1. Parse JSON Body
-            try:
-                data = request.data
-                if isinstance(data, bytes):
-                    data = json.loads(data.decode('utf-8'))
-            except Exception:
-                return api.get_exception(HTTPStatus.BAD_REQUEST, headers, request.format, 'InvalidParameterValue', 'Invalid JSON')
+    if action in ['create', 'update']:
+        data = request.data
+        # 1. Parse JSON Body
+        if not data:
+            msg = 'No data found'
+            LOGGER.error(msg)
+            return api.get_exception(
+                HTTPStatus.BAD_REQUEST,
+                headers, request.format, 'InvalidParameterValue', msg) 
+        try:
+            # Parse bytes data, if applicable
+            data = data.decode()
+        except (UnicodeDecodeError, AttributeError):
+            pass
 
-            # 2. Check FeatureType (Space vs Boundary)
-            feature_type = data.get('featureType')
-            if feature_type not in ['CellSpace', 'CellBoundary']:
-                return api.get_exception(HTTPStatus.BAD_REQUEST, headers, request.format, 'InvalidParameterValue', 'featureType must be CellSpace or CellBoundary')
+        try:
+            data = json.loads(data)
+        except (json.decoder.JSONDecodeError, TypeError) as err:
+            # Input does not appear to be valid JSON
+            LOGGER.error(err)
+            msg = 'invalid request data'
+            return api.get_exception(
+                HTTPStatus.BAD_REQUEST,
+                headers, request.format, 'InvalidParameterValue', msg)
+        
+    if action == 'create':
+        # 2. Check FeatureType (Space vs Boundary)
+        feature_type = data.get('featureType')
+        if feature_type not in ['CellSpace', 'CellBoundary']:
+            return api.get_exception(HTTPStatus.BAD_REQUEST, headers, request.format, 'InvalidParameterValue', 'featureType must be CellSpace or CellBoundary')
 
-            # 3. Create in DB with Error Handling
-            try:
-                new_id = provider.post_primal_member(collection_id, item_id, layer_id, data)
-                
-                if new_id:
-                    # Success: Return 201 Created and the Location header
-                    headers['Location'] = f"{api.config['server']['url']}/collections/{collection_id}/items/{item_id}/layers/{layer_id}/primal/{new_id}"
-                    return headers, HTTPStatus.CREATED, to_json({"status": "Created", "id": new_id}, api.pretty_print)
-                else:
-                    # Returns None if the parent Layer/Collection/Item IDs were invalid
-                    return api.get_exception(HTTPStatus.NOT_FOUND, headers, request.format, 'NotFound', 'Layer or Parent Feature not found')
+        # 3. Create in DB with Error Handling
+        try:
+            pidb_provider.connect()
+            new_id = pidb_provider.post_primal_member(collection_id, item_id, layer_id, data)
+            
+            if new_id:
+                # Success: Return 201 Created and the Location header
+                headers['Location'] = f"{api.config['server']['url']}/collections/{collection_id}/items/{item_id}/layers/{layer_id}/primal/{new_id}"
+                return headers, HTTPStatus.CREATED, to_json({"status": "Created", "id": new_id}, api.pretty_print)
+            else:
+                # Returns None if the parent Layer/Collection/Item IDs were invalid
+                return api.get_exception(HTTPStatus.NOT_FOUND, headers, request.format, 'NotFound', 'Layer or Parent Feature not found')
 
-            except ValueError as ve:
-                # Catch the "Boundaries do not exist" validation error here
-                return api.get_exception(HTTPStatus.BAD_REQUEST, headers, request.format, 'InvalidParameterValue', str(ve))
+        except (Exception, psycopg2.Error) as error:
+            msg = str(error)
+            return api.get_exception(
+                HTTPStatus.BAD_REQUEST,
+                headers, request.format, 'ConnectingError', msg)
+        finally:
+            pidb_provider.disconnect()
 
-        # --- DELETE (DELETE) ---
-        elif action == 'delete':
-            if not member_id:
-                return api.get_exception(HTTPStatus.BAD_REQUEST, headers, request.format, 'MissingParameterValue', 'ID required for deletion')
-
+    # --- DELETE (DELETE) ---
+    elif action == 'delete':
+        if not member_id:
+            return api.get_exception(HTTPStatus.BAD_REQUEST, headers, request.format, 'MissingParameterValue', 'ID required for deletion')
+        try:
+            pidb_provider.connect()
             # If you want to ONLY allow deleting CellSpaces (and protect Boundaries),
             # the provider function will return False if the ID belongs to a Boundary.
-            success = provider.delete_primal_member(collection_id, item_id, layer_id, member_id)
+            success = pidb_provider.delete_primal_member(collection_id, item_id, layer_id, member_id)
             
             if success:
                 # 204 No Content is the standard success response for DELETE
@@ -1150,35 +1188,37 @@ def manage_primal(api: API, request: APIRequest, action: str, collection_id: str
             else:
                 # If False, it means either the ID didn't exist OR it was a protected Boundary
                 return api.get_exception(HTTPStatus.NOT_FOUND, headers, request.format, 'NotFound', 'Member not found (or cannot be deleted)')
+            
+        except (Exception, psycopg2.Error) as error:
+            msg = str(error)
+            return api.get_exception(
+                HTTPStatus.BAD_REQUEST,
+                headers, request.format, 'ConnectingError', msg)
+        finally:
+            pidb_provider.disconnect()
 
-        # --- UPDATE (PATCH) ---
-        elif action == 'update':
-            if not member_id:
-                return api.get_exception(HTTPStatus.BAD_REQUEST, headers, request.format, 'MissingParameterValue', 'ID required for update')
+    # --- UPDATE (PATCH) ---
+    elif action == 'update':
+        if not member_id:
+            return api.get_exception(HTTPStatus.BAD_REQUEST, headers, request.format, 'MissingParameterValue', 'ID required for update')
 
-            try:
-                data = request.data
-                if isinstance(data, bytes):
-                    data = json.loads(data.decode('utf-8'))
-                
-                # We don't check featureType strictness here because PATCH might be partial
-                # But the provider will enforce that the target is a CellSpace
+        try:
+            pidb_provider.connect()
+            success = pidb_provider.update_primal_member(collection_id, item_id, layer_id, member_id, data)
+            
+            if success:
+                return headers, HTTPStatus.NO_CONTENT, ''
+            else:
+                return api.get_exception(HTTPStatus.NOT_FOUND, headers, request.format, 'NotFound', 'Member not found, is not a CellSpace, or Layer invalid')
 
-                success = provider.update_primal_member(collection_id, item_id, layer_id, member_id, data)
-                
-                if success:
-                    return headers, HTTPStatus.NO_CONTENT, ''
-                else:
-                    return api.get_exception(HTTPStatus.NOT_FOUND, headers, request.format, 'NotFound', 'Member not found, is not a CellSpace, or Layer invalid')
+        except (Exception, psycopg2.Error) as error:
+            msg = str(error)
+            return api.get_exception(
+                HTTPStatus.BAD_REQUEST,
+                headers, request.format, 'ConnectingError', msg)
+        finally:
+            pidb_provider.disconnect()
 
-            except Exception:
-                 return api.get_exception(HTTPStatus.BAD_REQUEST, headers, request.format, 'InvalidParameterValue', 'Invalid JSON')
-
-    except Exception as e:
-        # Catch unexpected server crashes
-        return api.get_exception(HTTPStatus.INTERNAL_SERVER_ERROR, headers, request.format, 'ServerError', str(e))
-    finally:
-        provider.disconnect()
 
 def get_primal_member(api: API, request: APIRequest, collection_id: str, item_id: str, layer_id: str, member_id: str) -> Tuple[dict, int, str]:
     """
