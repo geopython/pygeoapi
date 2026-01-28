@@ -11,7 +11,7 @@ publish notifications on given topics using CloudEvents (as per the specificatio
 
 When enabled, core functionality of Pub/Sub includes:
 
-- displaying the broker link in the OGC API - Records landing (using the ``rel=hub`` link relation)
+- displaying the broker link in the OGC API landing page (using the ``rel=hub`` link relation)
 - sending a notification message on the following events:
 
   - feature or record transactions (create, replace, update, delete)
