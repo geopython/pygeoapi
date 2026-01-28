@@ -126,6 +126,11 @@ class XarrayProvider(BaseProvider):
                     elif dtype.name.startswith('str'):
                         dtype = 'string'
 
+                    if not value.attrs.get('units'):
+                        msg = f'Field {key} missing units, will be skipped'
+                        LOGGER.warning(msg)
+                        continue
+
                     self._fields[key] = {
                         'type': dtype,
                         'title': value.attrs.get('long_name'),
@@ -249,19 +254,21 @@ class XarrayProvider(BaseProvider):
                 data.coords[self.x_field].values[-1],
                 data.coords[self.y_field].values[-1]
             ],
-            "driver": "xarray",
-            "height": data.sizes[self.y_field],
-            "width": data.sizes[self.x_field],
-            "variables": {var_name: var.attrs
-                          for var_name, var in data.variables.items()}
+            'driver': 'xarray',
+            'height': data.sizes[self.y_field],
+            'width': data.sizes[self.x_field],
+            'variables': {
+                var_name: var.attrs
+                for var_name, var in data.variables.items()
+            }
         }
 
         if self.time_field is not None:
             out_meta['time'] = [
                 _to_datetime_string(data.coords[self.time_field].values[0]),
-                _to_datetime_string(data.coords[self.time_field].values[-1]),
+                _to_datetime_string(data.coords[self.time_field].values[-1])
             ]
-            out_meta["time_steps"] = data.sizes[self.time_field]
+            out_meta['time_steps'] = data.sizes[self.time_field]
 
         LOGGER.debug('Serializing data in memory')
         if format_ == 'json':
@@ -395,25 +402,30 @@ class XarrayProvider(BaseProvider):
         try:
             for key, value in selected_fields.items():
                 LOGGER.debug(f'Adding range {key}')
-                cj['ranges'][key] = {
+                range = {
                     'type': 'NdArray',
                     'dataType': value['type'],
                     'axisNames': [
                         'y', 'x'
                     ],
-                    'shape': [metadata['height'],
-                              metadata['width']]
+                    'shape': [
+                        metadata['height'], metadata['width']
+                    ],
+                    'values': [
+                        None if np.isnan(v) else v
+                        for v in data[key].values.flatten()
+                    ]
                 }
-                cj['ranges'][key]['values'] = [
-                    None if np.isnan(v) else v
-                    for v in data[key].values.flatten()
-                ]
 
                 if self.time_field is not None:
-                    cj['ranges'][key]['axisNames'].append('t')
-                    cj['ranges'][key]['shape'].append(metadata['time_steps'])
+                    LOGGER.debug(f'Adding time axis to range {key}')
+                    range['axisNames'].insert(0, 't')
+                    range['shape'].insert(0, metadata['time_steps'])
+
+                cj['ranges'][key] = range
+
         except IndexError as err:
-            LOGGER.warning(err)
+            LOGGER.error(err)
             raise ProviderQueryError('Invalid query parameter')
 
         LOGGER.debug('Returning data')
@@ -684,11 +696,11 @@ def _get_zarr_data(data):
 
 def _convert_float32_to_float64(data):
     """
-        Converts DataArray values of float32 to float64
-        :param data: Xarray dataset of coverage data
+    Converts DataArray values of float32 to float64
+    :param data: Xarray dataset of coverage data
 
-        :returns: Xarray dataset of coverage data
-        """
+    :returns: Xarray dataset of coverage data
+    """
 
     for var_name in data.variables:
         if data[var_name].dtype == 'float32':
