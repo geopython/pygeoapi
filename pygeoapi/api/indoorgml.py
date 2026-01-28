@@ -1035,31 +1035,21 @@ def get_primal(api: API, request: APIRequest, collection_id: str, item_id: str, 
         return api.get_format_exception(request)
     
     headers = request.get_response_headers(SYSTEM_LOCALE)
-    provider = PostgresIndoorDB()
+    pidb_provider = PostgresIndoorDB()
 
     # ---------------------------------------------------------
     # 1. Parse Query Parameters
     # ---------------------------------------------------------
     level = request.params.get('level')
     cell_space_name = request.params.get('cellSpaceName')
-    
-    # Handle Boolean: poi
-    poi = None
-    poi_param = request.params.get('poi')
-    if poi_param is not None:
-        poi = str(poi_param).lower() == 'true'
-
-    # Handle Boolean: isVirtual
-    is_virtual = None
-    virt_param = request.params.get('isVirtual')
-    if virt_param is not None:
-        is_virtual = str(virt_param).lower() == 'true'
-
+    poi = request.params.get('poi')
+    is_virtual = request.params.get('isVirtual')
     try:
         # ---------------------------------------------------------
         # 2. Call Provider with Filters
         # ---------------------------------------------------------
-        layer_meta, spaces, boundaries = provider.get_primal_features_and_metadata(
+        pidb_provider.connect()
+        layer_meta, spaces, boundaries = pidb_provider.get_primal_features(
             collection_id, 
             item_id, 
             layer_id,
@@ -1108,7 +1098,7 @@ def get_primal(api: API, request: APIRequest, collection_id: str, item_id: str, 
     except Exception as e:
         return api.get_exception(HTTPStatus.INTERNAL_SERVER_ERROR, headers, request.format, 'ServerError', str(e))
     finally:
-        provider.disconnect()
+        pidb_provider.disconnect()
 
 def manage_primal(api: API, request: APIRequest, action: str, collection_id: str, item_id: str, layer_id: str, member_id: str = None) -> Tuple[dict, int, str]:
     headers = request.get_response_headers(SYSTEM_LOCALE)
