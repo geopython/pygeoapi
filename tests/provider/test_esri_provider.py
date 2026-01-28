@@ -35,17 +35,31 @@ from pygeoapi.util import DATETIME_FORMAT
 
 TIME_FIELD = 'Date_Time'
 
+BASE_URL = 'https://sampleserver6.arcgisonline.com/arcgis/rest/services'
+
 
 @pytest.fixture()
 def config():
-    #  National Hurricane Center ()
+    # National Hurricane Center
     # source: ESRI, NOAA/National Weather Service
     return {
         'name': 'ESRI',
         'type': 'feature',
-        'data': 'https://sampleserver6.arcgisonline.com/arcgis/rest/services/Hurricanes/MapServer/0', # noqa
+        'data': f'{BASE_URL}/Hurricanes/MapServer/0',
         'id_field': 'OBJECTID',
         'time_field': TIME_FIELD
+    }
+
+
+@pytest.fixture()
+def config_alt_id():
+    # Emergency Facilities
+    # source: ESRI
+    return {
+        'name': 'ESRI',
+        'type': 'feature',
+        'data': f'{BASE_URL}/EmergencyFacilities/FeatureServer/0',
+        'id_field': 'facilityid'
     }
 
 
@@ -179,3 +193,11 @@ def test_get(config):
     result = p.get(6)
     assert result['id'] == 6
     assert result['properties']['EVENTID'] == 'Alberto'
+
+
+def test_alternative_id_field(config_alt_id):
+    p = ESRIServiceProvider(config_alt_id)
+
+    result = p.get('F0234')
+    assert result['id'] == 'F0234'
+    assert result['properties']['facname'] == 'Redlands Community Hospital'
