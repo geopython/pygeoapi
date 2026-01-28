@@ -32,7 +32,7 @@ import json
 import logging
 from requests import Session, codes
 
-from pygeoapi.crs import crs_transform, get_srid
+from pygeoapi.crs import get_srid
 from pygeoapi.provider.base import (BaseProvider, ProviderConnectionError,
                                     ProviderTypeError, ProviderQueryError)
 from pygeoapi.util import format_datetime
@@ -60,13 +60,18 @@ class ESRIServiceProvider(BaseProvider):
         super().__init__(provider_def)
 
         self.url = f'{self.data}/query'
-        self.crs = get_srid(self.storage_crs)
+        self.srid = get_srid(self.storage_crs)
         self.username = provider_def.get('username')
         self.password = provider_def.get('password')
         self.token_url = provider_def.get('token_service', ARCGIS_URL)
         self.token_referer = provider_def.get('referer', GENERATE_TOKEN_URL)
         self.token = None
         self.session = Session()
+
+        self.using_deafult_id = any(
+            kw == self.id_field
+            for kw in ['OBJECTID', 'objectid', 'fid']
+        )
 
         self.login()
         self.get_fields()
@@ -80,13 +85,17 @@ class ESRIServiceProvider(BaseProvider):
 
         if not self._fields:
             # Load fields
-            params = {'f': 'pjson'}
-            resp = self.get_response(self.data, params=params)
+            try:
+                resp = self.get_response(self.data, params={'f': 'pjson'})
+            except ProviderConnectionError as err:
+                msg = f'Could not access resource {self.data}: {err}'
+                LOGGER.error(msg)
+                return {}
 
             if resp.get('error') is not None:
                 msg = f"Connection error: {resp['error']['message']}"
                 LOGGER.error(msg)
-                raise ProviderConnectionError(msg)
+                return {}
 
             try:
                 # Verify Feature/Map Service supports required capabilities
@@ -108,10 +117,10 @@ class ESRIServiceProvider(BaseProvider):
 
         return self._fields
 
-    @crs_transform
     def query(self, offset=0, limit=10, resulttype='results',
               bbox=[], datetime_=None, properties=[], sortby=[],
-              select_properties=[], skip_geometry=False, q=None, **kwargs):
+              select_properties=[], skip_geometry=False,
+              crs_transform_spec=None, **kwargs):
         """
         ESRI query
 
@@ -124,7 +133,7 @@ class ESRIServiceProvider(BaseProvider):
         :param sortby: list of dicts (property, order)
         :param select_properties: list of property names
         :param skip_geometry: bool of whether to skip geometry (default False)
-        :param q: full-text search term(s)
+        :param crs_transform_spec: `CrsTransformSpec` instance, optional
 
         :returns: `dict` of GeoJSON FeatureCollection
         """
@@ -133,7 +142,7 @@ class ESRIServiceProvider(BaseProvider):
 
         params = {
             'f': 'geoJSON',
-            'outSR': self.crs,
+            'outSR': self._get_srid(crs_transform_spec),
             'outFields': self._make_fields(select_properties),
             'where': self._make_where(properties, datetime_)
             }
@@ -166,12 +175,12 @@ class ESRIServiceProvider(BaseProvider):
 
         return fc
 
-    @crs_transform
-    def get(self, identifier, **kwargs):
+    def get(self, identifier, crs_transform_spec=None, **kwargs):
         """
         Query ESRI by id
 
         :param identifier: feature id
+        :param crs_transform_spec: `CrsTransformSpec` instance, optional
 
         :returns: dict of single GeoJSON feature
         """
@@ -179,17 +188,28 @@ class ESRIServiceProvider(BaseProvider):
         LOGGER.debug(f'Fetching item: {identifier}')
         params = {
             'f': 'geoJSON',
-            'outSR': self.crs,
-            'objectIds': identifier,
+            'outSR': self._get_srid(crs_transform_spec),
             'outFields': self._make_fields()
         }
 
-        resp = self.get_response(self.url, params=params)
+        if self.using_deafult_id:
+            params['objectIds'] = identifier
+        else:
+            params['where'] = self._make_where(
+                [(self.id_field, identifier)]
+            )
+
         LOGGER.debug('Returning item')
-        return resp['features'].pop()
+        [feature] = self._make_features(
+            self.get_response(params=params)
+        )
+
+        return feature
 
     def login(self):
-        # Generate token from username and password
+        """
+        Generate login token from username and password
+        """
         if self.token is None:
 
             if None in [self.username, self.password]:
@@ -211,7 +231,17 @@ class ESRIServiceProvider(BaseProvider):
                     'X-Esri-Authorization': f'Bearer {self.token}'
                 })
 
-    def get_response(self, url, **kwargs):
+    def get_response(self, url: str = None, **kwargs):
+        """
+        Get response from ESRI service
+
+        :param url: `str` of ESRI service URL if not using default
+
+        :returns: `dict` of ESRI response
+        """
+        if url is None:
+            url = self.url
+
         # Form URL for GET request
         LOGGER.debug('Sending query')
         with self.session.get(url, **kwargs) as r:
@@ -314,8 +344,21 @@ class ESRIServiceProvider(BaseProvider):
         params['returnCountOnly'] = 'true'
         params['f'] = 'pjson'
 
-        response = self.get_response(self.url, params=params)
+        response = self.get_response(params=params)
         return response.get('count', 0)
+
+    def _get_srid(self, crs_transform_spec):
+        """
+        Get SRID from CrsTransformSpec
+
+        :param crs_transform_spec: `CrsTransformSpec` instance
+
+        :returns: `int` of SRID
+        """
+        if crs_transform_spec is not None:
+            return get_srid(crs_transform_spec.target_crs)
+
+        return self.srid
 
     def _get_all(self, params, hits_):
         """
@@ -329,7 +372,9 @@ class ESRIServiceProvider(BaseProvider):
         params = deepcopy(params)
 
         # Return feature collection
-        features = self.get_response(self.url, params=params).get('features')
+        features = self._make_features(
+            self.get_response(params=params)
+        )
         step = len(features)
 
         # Query if values are less than expected
@@ -338,7 +383,9 @@ class ESRIServiceProvider(BaseProvider):
             params['resultOffset'] += step
             params['resultRecordCount'] += step
 
-            fs = self.get_response(self.url, params=params).get('features')
+            fs = self._make_features(
+                self.get_response(params=params)
+            )
             if len(fs) != 0:
                 features.extend(fs)
             else:
@@ -346,7 +393,27 @@ class ESRIServiceProvider(BaseProvider):
 
         return features
 
+    def _make_features(self, feature_collection: dict = {}):
+        """
+        Make a feature from features list
+
+        :param features: `dict` of features
+
+        :returns: `dict` of single feature
+        """
+        features = feature_collection.get('features', [])
+
+        for feature in features:
+            if not self.using_deafult_id:
+                feature['id'] = \
+                    feature['properties'][self.id_field]
+
+        return features
+
     def __exit__(self, **kwargs):
+        """
+        Exit and close session
+        """
         self.session.close()
 
     def __repr__(self):
