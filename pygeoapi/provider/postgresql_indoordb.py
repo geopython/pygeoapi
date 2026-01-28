@@ -2079,7 +2079,7 @@ class PostgresIndoorDB:
                                     LOGGER.debug(f"Validation Failed: Bounding boundary {row['id_str']} already bound another cellSpace.")
                                     return None
                                 else:
-                                    update_bounded_by.append(row)
+                                    update_bounded_by.append(row['id'])
 
                     geom_root = data.get('cellSpaceGeom', {})
                     geom_2d_wkt = self.json_to_wkt(geom_root['geometry2D'])
@@ -2092,10 +2092,10 @@ class PostgresIndoorDB:
                     geom_2d_wkt = self.json_to_wkt(geom_root.get('geometry2D'))
                     geom_3d_json = json.dumps(geom_root.get('geometry3D'))
 
-                    if not duality_raw:  # validation check: CellBoundary can have duality to edge which has no duality
+                    if duality_raw:  # validation check: CellBoundary can have duality to edge which has no duality
                         duality_id = duality_raw.split(':')[-1]
                         sql_duality = """
-                            SELETE id, duality_id 
+                            SELECT id, duality_id 
                             FROM node_n_edge
                             WHERE thematiclayer_id=%s AND id_str=%s
                         """
@@ -2105,7 +2105,7 @@ class PostgresIndoorDB:
                         if not row:
                             LOGGER.debug(f"Validation Failed: Duality edge {duality_id} is not found")
                             return None
-                        elif row['dualit_id']:
+                        elif row['duality_id']:
                             LOGGER.debug(f"Validation Failed: Duality edge {duality_id} already has a duality")
                             return None
                         duality_edge_pk = row['id']        
@@ -2118,19 +2118,19 @@ class PostgresIndoorDB:
                     INSERT INTO cell_space_n_boundary (
                         id_str, type, collection_id, indoorfeature_id, thematiclayer_id,
                         "2D_geometry", "3D_geometry", 
-                        cell_name, duality_id, level, poi, is_virtual, external_reference, duality_id
+                        cell_name, level, poi, is_virtual, external_reference, duality_id
                     ) VALUES (
                         %s, %s, %s, %s, %s,
                         ST_GeomFromText(%s, 0), 
                         %s,
-                        %s, %s, %s, %s, %s, %s, %s
+                        %s, %s, %s, %s, %s, %s
                     ) RETURNING id, id_str
                 """
                 
                 cur.execute(insert_query, (
                     id_str, db_type, layer_row['collection_id'], layer_row['indoorfeature_id'], layer_row['id'],
                     geom_2d_wkt, geom_3d_json,
-                    cell_name, duality_id, level, poi, is_virtual, external_ref, duality_edge_pk
+                    cell_name, level, poi, is_virtual, external_ref, duality_edge_pk
                 ))
                 
                 new_row = cur.fetchone()
@@ -2147,8 +2147,16 @@ class PostgresIndoorDB:
                     """
                     cur.execute(update_boundaries_sql, (
                         new_internal_id, 
-                        update_bounded_by
+                        update_bounded_by,
+                        layer_row['id']
                     ))
+                if f_type == 'CellBoundary' and duality_edge_pk:
+                    update_edgeDuality_sql = """
+                        UPDATE node_n_edge
+                        SET duality_id = %s
+                        WHERE id = %s
+                    """
+                    cur.execute(update_edgeDuality_sql, (new_internal_id, duality_edge_pk))
 
                 # 4. FIX: Commit only if we get here successfully
                 self.connection.commit()
@@ -2160,7 +2168,7 @@ class PostgresIndoorDB:
                 LOGGER.debug(f"Insert Error: {e}")
                 raise e
             
-    def delete_primal_member(self, collection_str, item_str, layer_str, member_id):
+    def delete_primal_member(self, collection_str, item_str, layer_str, member_str):
         """
         Deletes a CellSpace.
         1. Finds the Dual Node.
@@ -2168,18 +2176,13 @@ class PostgresIndoorDB:
         3. KEEPS the Edge features (Geometric Preservation).
         4. Deletes the Node and CellSpace.
         """
-        self.connect()
-
-        try:
-            with self.connection.cursor(cursor_factory=RealDictCursor) as cur:
-                # 1. START ATOMIC TRANSACTION
-                cur.execute("BEGIN;")
-
-                # --- STEP A: Verify Space Existence ---
+        
+        with self.connection.cursor(cursor_factory=RealDictCursor) as cur:
+            try:
+                # --- STEP A: Verify member Existence ---
                 check_sql = """
-                    SELECT id FROM cell_space_n_boundary
+                    SELECT id, type FROM cell_space_n_boundary
                     WHERE id_str = %s 
-                    AND type = 'space'
                     AND thematiclayer_id = (
                         SELECT t.id FROM thematiclayer t
                         JOIN collection col ON t.collection_id = col.id
@@ -2187,67 +2190,96 @@ class PostgresIndoorDB:
                         WHERE t.id_str = %s AND col.id_str = %s AND i.id_str = %s
                     )
                 """
-                cur.execute(check_sql, (member_id, layer_str, collection_str, item_str))
+                cur.execute(check_sql, (member_str, layer_str, collection_str, item_str))
                 row = cur.fetchone()
                 
                 if not row:
-                    cur.execute("ROLLBACK;")
+                    LOGGER.debug(f"Not Found error: {member_str} is not found or not cell space.")
                     return False
                 
-                space_id = row['id']
-
-                # --- STEP B: Find the Dual Node (State) ---
-                dual_sql = "SELECT id FROM node_n_edge WHERE duality_id = %s"
-                cur.execute(dual_sql, (space_id,))
-                node_rows = cur.fetchall()
+                if row['type'] == 'space': # if member type is space..
                 
-                for node_row in node_rows:
-                    node_id = node_row['id']
+                    space_id = row['id']
 
-                    # 1. Delete Interlayer Connections
-                    # These are purely logical links, so we delete them.
+                    # --- STEP B: Find the Dual Node ---  
+                    # When cell space is deleted, its duality node is also deleted.
+                    dual_sql = "SELECT id FROM node_n_edge WHERE duality_id = %s"
+                    cur.execute(dual_sql, (space_id,))
+                    node_row = cur.fetchone()
+                    node_id = node_row['id'] if node_row else None
+                    if node_id:
+                        # 1. Delete Interlayer Connections
+                        cur.execute("""
+                            DELETE FROM interlayerconnection 
+                            WHERE connected_node_a = %s OR connected_node_b = %s
+                        """, (node_id, node_id))
+
+                        # 2. Find Connected Edges
+                        cur.execute("""
+                            SELECT edge_id FROM connects 
+                            WHERE node_source_id = %s OR node_target_id = %s
+                        """, (node_id, node_id))
+                        rows = cur.fetchall()
+                        if rows:
+                            LOGGER.debug(rows)
+                            edge_ids = [r['edge_id'] for r in rows]
+
+                        if edge_ids:
+                            # 3. Delete connects, node and edges
+                            # We delete the row from 'connects' because it references the node we are about to kill.
+                            cur.execute("DELETE FROM connects WHERE edge_id = ANY(%s)", (edge_ids,))
+                            # update boudaries duality before delete edges
+                            cur.execute("""
+                                UPDATE cell_space_n_boundary 
+                                SET duality_id = NULL 
+                                WHERE duality_id = ANY(%s)
+                            """, (edge_ids,))
+                            # Delete edges connected with target node
+                            cur.execute("DELETE FROM node_n_edge WHERE id=ANY(%s)", (edge_ids,))
+
+                        # update duality before delete node.
+                        cur.execute("""
+                                UPDATE cell_space_n_boundary 
+                                SET duality_id = NULL 
+                                WHERE id = %s
+                            """, (space_id,))   
+                        # 4. Delete the Node
+                        cur.execute("DELETE FROM node_n_edge WHERE id = %s", (node_id,))
+
+                    # --- STEP C: Unlink Boundaries ---
+                    cur.execute("""
+                        UPDATE cell_space_n_boundary 
+                        SET bounded_by_cell_id = NULL 
+                        WHERE bounded_by_cell_id = %s
+                    """, (space_id,))
+
+                    # Delete connected interlayerconnection
                     cur.execute("""
                         DELETE FROM interlayerconnection 
-                        WHERE state_id_1 = %s OR state_id_2 = %s
-                    """, (node_id, node_id))
+                        WHERE connected_cell_a = %s OR connected_cell_b = %s
+                    """, (space_id, space_id))  
 
-                    # 2. Find Connected Edges
-                    cur.execute("""
-                        SELECT edge_id FROM connects 
-                        WHERE node_source_id = %s OR node_target_id = %s
-                    """, (node_id, node_id))
-                    edge_ids = [r['edge_id'] for r in cur.fetchall()]
-
-                    if edge_ids:
-                        # 3. Delete ONLY the connection logic
-                        # We delete the row from 'connects' because it references the node we are about to kill.
-                        # This leaves the Edge Feature (node_n_edge) alive but disconnected.
-                        cur.execute("DELETE FROM connects WHERE edge_id = ANY(%s)", (edge_ids,))
+                    # --- STEP D: Delete the Space ---
+                    cur.execute("DELETE FROM cell_space_n_boundary WHERE id = %s", (space_id,))
+                else:  # if member type is boundary...
+                    boundary_id = row['id']
                     
-                    # 4. Delete the Node (State)
-                    # Now safe to delete because 'connects' no longer references it.
-                    cur.execute("DELETE FROM node_n_edge WHERE id = %s", (node_id,))
+                    # update edge duality before delete boundary
+                    cur.execute("""
+                        UPDATE node_n_edge
+                        SET duality_id = NULL
+                        WHERE duality_id = %s
+                        """, (boundary_id,))
+                    # delete boundary
+                    cur.execute("DELETE FROM cell_space_n_boundary WHERE id = %s", (boundary_id,))
 
-                # --- STEP C: Unlink Boundaries ---
-                cur.execute("""
-                    UPDATE cell_space_n_boundary 
-                    SET bounded_by_cell_id = NULL 
-                    WHERE bounded_by_cell_id = %s
-                """, (space_id,))
-
-                # --- STEP D: Delete the Space ---
-                cur.execute("DELETE FROM cell_space_n_boundary WHERE id = %s", (space_id,))
-
-                cur.execute("COMMIT;")
+                self.connection.commit()
                 return True
 
-        except Exception as e:
-            if self.connection:
+            except Exception as e:
                 self.connection.rollback()
-            print(f"Delete Primal Error: {e}")
-            return False
-        finally:
-            self.disconnect()
+                LOGGER.debug(f"Delete Primal Error: {e}")
+                return False
         
     def get_primal_member(self, collection_str, item_str, layer_str, member_id):
         """

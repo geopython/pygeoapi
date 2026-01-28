@@ -1161,7 +1161,7 @@ def manage_primal(api: API, request: APIRequest, action: str, collection_id: str
                 return headers, HTTPStatus.CREATED, to_json({"status": "Created", "id": new_id}, api.pretty_print)
             else:
                 # Returns None if the parent Layer/Collection/Item IDs were invalid
-                return api.get_exception(HTTPStatus.NOT_FOUND, headers, request.format, 'NotFound', 'Layer or Parent Feature not found')
+                return api.get_exception(HTTPStatus.NOT_FOUND, headers, request.format, 'NotFound', 'Query parameters or data body error')
 
         except (Exception, psycopg2.Error) as error:
             msg = str(error)
@@ -1177,8 +1177,6 @@ def manage_primal(api: API, request: APIRequest, action: str, collection_id: str
             return api.get_exception(HTTPStatus.BAD_REQUEST, headers, request.format, 'MissingParameterValue', 'ID required for deletion')
         try:
             pidb_provider.connect()
-            # If you want to ONLY allow deleting CellSpaces (and protect Boundaries),
-            # the provider function will return False if the ID belongs to a Boundary.
             success = pidb_provider.delete_primal_member(collection_id, item_id, layer_id, member_id)
             
             if success:
