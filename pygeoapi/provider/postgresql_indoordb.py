@@ -32,6 +32,7 @@ class PostgresIndoorDB:
             self.dbname = datasource.get('dbname', self.dbname) 
             self.user = datasource.get('user', self.user)
             self.password = datasource.get('password', self.password)
+            
 # region server
     def connect(self):
         if self.connection is not None and self.connection.closed == 0:
