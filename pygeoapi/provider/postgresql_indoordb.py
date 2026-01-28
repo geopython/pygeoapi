@@ -2281,62 +2281,46 @@ class PostgresIndoorDB:
                 LOGGER.debug(f"Delete Primal Error: {e}")
                 return False
         
-    def get_primal_member(self, collection_str, item_str, layer_str, member_id):
+    def get_primal_member(self, collection_str, item_str, layer_str, member_str):
         """
         Fetches a single Primal Member.
         Ensures SQL alias 'duality' matches API handler expectations.
         """
-        self.connect()
-
-        query = """
-            SELECT 
-                parent.id_str, 
-                parent.type, 
-                parent.cell_name, 
-                parent.level, 
-                parent.poi, 
-                parent.is_virtual, 
-                parent.external_reference,
-                ST_AsText(parent."2D_geometry") as geometry_2d, 
-                ST_AsText(parent."3D_geometry") as geometry_3d,
-                
-                parent.duality_id as debug_duality_int,
-
-                dual.id_str as duality, 
-
+        sql = """
+            SELECT c.id, c.id_str, c.type, c.cell_name, c.level, c.poi, c.is_virtual, 
+                c.external_reference,
+                ST_AsText(c."2D_geometry") as geometry_2d, 
+                c."3D_geometry" as geometry_3d,
+                n.id_str as duality_id, 
                 (
                     SELECT array_agg(child.id_str)
                     FROM cell_space_n_boundary child
-                    WHERE child.bounded_by_cell_id = parent.id
+                    WHERE child.bounded_by_cell_id = c.id
                 ) as bounded_by_list
-
-            FROM cell_space_n_boundary parent
-            LEFT JOIN node_n_edge dual ON parent.duality_id = dual.id
-            
-            WHERE parent.id_str = %s 
-            AND parent.thematiclayer_id = (
+            FROM cell_space_n_boundary c
+            LEFT JOIN node_n_edge n ON c.duality_id = n.id
+            WHERE c.id_str = %s 
+            AND c.thematiclayer_id = (
                 SELECT t.id FROM thematiclayer t
                 WHERE t.id_str = %s
                     AND t.indoorfeature_id = (SELECT id FROM indoorfeature WHERE id_str = %s)
                     AND t.collection_id = (SELECT id FROM collection WHERE id_str = %s)
             )
         """
-        
-        try:
-            with self.connection.cursor(cursor_factory=RealDictCursor) as cur:
+        with self.connection.cursor(cursor_factory=RealDictCursor) as cur:
+            try:
                 # Ensure params match SQL order: member, layer, item, collection
-                cur.execute(query, (member_id, layer_str, item_str, collection_str))
+                cur.execute(sql, (member_str, layer_str, item_str, collection_str))
                 result = cur.fetchone()
                 
                 if not result:
+                    LOGGER.debug(f"Not Found {member_str}")
                     return None
-
-                if result.get('bounded_by_list') is None:
+                if not result.get('bounded_by_list'):
                     result['bounded_by_list'] = []
-                
-
+            
                 response = {}
-        
+                # if member type is cell space
                 if result['type'] == 'space':
                     response = {
                         "id": result['id_str'],
@@ -2344,14 +2328,14 @@ class PostgresIndoorDB:
                         "cellSpaceName": result.get('cell_name'),
                         "level": result.get('level'),
                         "poi": result.get('poi', False),
-                        "duality": f"{result['duality_id']}" if result.get('duality_id') else None,
+                        "duality": result.get('duality_id'),
                         "cellSpaceGeom": {
-                            "geometry2D": json.loads(result['geometry_2d']) if result.get('geometry_2d') else None,
-                            "geometry3D": json.loads(result['geometry_3d']) if result.get('geometry_3d') else None
+                            "geometry2D": self.wkt_to_json(result['geometry_2d']),
+                            "geometry3D": result.get('geometry_3d')
                         },
                         "externalReference": result.get('external_reference'),
                         # Convert the list of IDs ["B1", "B2"] to URI refs ["#B1", "#B2"]
-                        "boundedBy": [f"#{b_id}" for b_id in result['bounded_by_list']] if result.get('bounded_by_list') else []
+                        "boundedBy": result.get('bounded_by_list', [])
                     }
                 
                 elif result['type'] == 'boundary':
@@ -2359,20 +2343,19 @@ class PostgresIndoorDB:
                         "id": result['id_str'],
                         "featureType": "CellBoundary",
                         "isVirtual": result.get('is_virtual', False),
-                        "duality": f"{result['duality_id']}" if result.get('duality_id') else None,
+                        "duality": result.get('duality_id'),
                         "cellBoundaryGeom": {
                             "geometry2D": self.wkt_to_json(result.get('geometry_2d')),
-                            "geometry3D": self.wkt_to_json(result.get('geometry_3d'))
+                            "geometry3D": result.get('geometry_3d')
                         },
                         "externalReference": result.get('external_reference')
                     }
                 return response 
                 
-        except Exception as e:
-            print(f"Get Member Error: {e}")
-            return None
-        finally:
-            self.disconnect()
+            except Exception as e:
+                LOGGER.debug(f"Get Member Error: {e}")
+                return None
+
 
     def update_primal_member(self, collection_str, item_str, layer_str, member_id, data):
         """
