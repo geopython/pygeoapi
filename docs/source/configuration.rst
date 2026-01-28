@@ -100,8 +100,8 @@ The ``pubsub`` section provides directives for enabling publication of CloudEven
 .. code-block:: yaml
 
   pubsub:
+      name: MQTT
       broker:
-          type: mqtt
           url: mqtt://localhost:1883
           channel: my/service/topic
 
