@@ -331,9 +331,10 @@ class PostgresIndoorDB:
 
     def get_feature(self, collection_id, feature_id, level=None):
         """
-        TODO: Retrieve just the metadata when not filtered
+        TODO: bbox filtering
 
         Retrieves the actual IndoorFeature when filtered.
+        - If 'level' is None: Returns only metadata (Lightweight).
         - Primal Space (Cells/Boundaries): Filtered by 'level' if provided.
         - Dual Space (Nodes/Edges): ALWAYS returns all members (unfiltered).
         """
@@ -373,6 +374,13 @@ class PostgresIndoorDB:
                 },
                 "links": []
             }
+
+            # ---------------------------------------------------------
+                # CHECK: If no level provided, return Metadata only
+                # TODO: for bbox too
+            # ---------------------------------------------------------
+            if level is None:
+                return result_feature
 
             # ---------------------------------------------------------
             # 2. Fetch Thematic Layers (Keep ID mapping for later)
@@ -764,7 +772,6 @@ class PostgresIndoorDB:
     def get_layers(self, collection_id, feature_id, theme = None, level = None, limit=10, offset=0):
         """
         Retrieves a list of Thematic Layers.
-        - TODO:BBOX: If level is filtered, BBOX is calculated ONLY for that level.
         - Levels: Always returns ALL levels available in that layer (so client knows what else exists).
         - Filtering: Only returns layers that actually contain the requested level.
         """
@@ -872,6 +879,7 @@ class PostgresIndoorDB:
     def get_layer(self, collection_id, feature_id, layer_id, level=None, bbox=None):
         """
         Retrieves a single Thematic Layer.
+        If not filtered, just the meta data is given.
         - PrimalSpace: Filtered by 'level' if provided.
         - DualSpace: Returns the ENTIRE network (unfiltered) for connectivity.
         """
