@@ -32,6 +32,7 @@ class PostgresIndoorDB:
             self.dbname = datasource.get('dbname', self.dbname) 
             self.user = datasource.get('user', self.user)
             self.password = datasource.get('password', self.password)
+            
 # region server
     def connect(self):
         if self.connection is not None and self.connection.closed == 0:
@@ -66,12 +67,11 @@ class PostgresIndoorDB:
             self.connection = None
 # endregion
 
-# region IndoorFeatureCollections 
+# region IndoorFeatureCollections +
 
     def get_collections_list(self):
         """
         Query indoor features collection list with metadata.
-        Returns: [{'id': 'campus_1', 'title': 'My Campus', 'itemType': 'indoorfeature'}, ...]
         """
         self.connect()
 
@@ -133,7 +133,7 @@ class PostgresIndoorDB:
     def create_collection(self, id_str, title, description, item_type='indoorfeature'):
         """
         Creates a new collection.
-        Refactored for 2026 Schema: Relies on DB to auto-generate the Integer ID.
+        Relies on DB to auto-generate the Integer ID.
         """
         self.connect()
         
@@ -167,7 +167,7 @@ class PostgresIndoorDB:
     def delete_collection(self, id_str):
         """
         Deletes a collection and CASCADES valid deletions down to all child tables.
-        Matches the "Deep Clean" logic of your SQLAlchemy code.
+        Performs the "Deep Clean" logic 
         """
         self.connect()
 
