@@ -1222,51 +1222,17 @@ def get_primal_member(api: API, request: APIRequest, collection_id: str, item_id
     GET /collections/{id}/items/{featureId}/layers/{layerId}/primal/{memberId}
     Retrieves a specific CellSpace or CellBoundary.
     """
+    if not request.is_valid():
+        return api.get_format_exception(request)
     headers = request.get_response_headers(SYSTEM_LOCALE)
-    provider = PostgresIndoorDB()
+    pidb_provider = PostgresIndoorDB()
 
     try:
-        # Fetch member data (returns None if not found)
-        member_data = provider.get_primal_member(collection_id, item_id, layer_id, member_id)
+        pidb_provider.connect()
+        member_data = pidb_provider.get_primal_member(collection_id, item_id, layer_id, member_id)
 
         if not member_data:
             return api.get_exception(HTTPStatus.NOT_FOUND, headers, request.format, 'NotFound', 'Member not found')
-
-        # Format Response based on Type
-        response = {}
-
-        # We use .get('duality') because that is the alias in the Provider SQL.
-        # We do NOT use 'duality_id' (the integer).
-        final_duality = member_data.get('duality')
-
-        if member_data['type'] == 'space':
-            response = {
-                "id": member_data['id_str'],
-                "featureType": "CellSpace",
-                "cellSpaceName": member_data.get('cell_name'),
-                "level": member_data.get('level'),
-                "poi": member_data.get('poi', False),
-                "duality": final_duality,  
-                "cellSpaceGeom": {
-                    "geometry2D": json.loads(member_data['geometry_2d']) if member_data.get('geometry_2d') else None,
-                    "geometry3D": json.loads(member_data['geometry_3d']) if member_data.get('geometry_3d') else None
-                },
-                "externalReference": member_data.get('external_reference'),
-                "boundedBy": member_data.get('bounded_by_list', [])
-            }
-        
-        elif member_data['type'] == 'boundary':
-            response = {
-                "id": member_data['id_str'],
-                "featureType": "CellBoundary",
-                "isVirtual": member_data.get('is_virtual', False),
-                "duality": final_duality,  # <--- FIXED
-                "cellBoundaryGeom": {
-                    "geometry2D": json.loads(member_data['geometry_2d']) if member_data.get('geometry_2d') else None,
-                    "geometry3D": json.loads(member_data['geometry_3d']) if member_data.get('geometry_3d') else None
-                },
-                "externalReference": member_data.get('external_reference')
-            }
 
         # Add HATEOAS Links
         member_data["links"] = [
@@ -1276,12 +1242,6 @@ def get_primal_member(api: API, request: APIRequest, collection_id: str, item_id
                 "type": "application/json",
                 "title": "Primal Member"
             },
-            {
-                "href": f"{api.config['server']['url']}/collections/{collection_id}/items/{item_id}/layers/{layer_id}/primal",
-                "rel": "collection",
-                "type": "application/json",
-                "title": "Primal Space Layer"
-            }
         ]
         
         return headers, HTTPStatus.OK, to_json(member_data, api.pretty_print)
@@ -1289,7 +1249,7 @@ def get_primal_member(api: API, request: APIRequest, collection_id: str, item_id
     except Exception as e:
         return api.get_exception(HTTPStatus.INTERNAL_SERVER_ERROR, headers, request.format, 'ServerError', str(e))
     finally:
-        provider.disconnect()
+        pidb_provider.disconnect()
 # endregion
 
 # region dualSpace
