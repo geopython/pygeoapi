@@ -2021,12 +2021,8 @@ class PostgresIndoorDB:
         
     # Creates a CellSpace or CellBoundary member in the specified layer.
     def post_primal_member(self, collection_str_id, item_str_id, layer_str_id, data):
-        self.connect()
-
-        try: 
-            
-            with self.connection.cursor(cursor_factory=RealDictCursor) as cur:
-                
+        with self.connection.cursor(cursor_factory=RealDictCursor) as cur:
+            try:  
                 # --- A. Lookup Context ---
                 lookup_sql = """
                     SELECT t.id, t.collection_id, t.indoorfeature_id 
@@ -2039,7 +2035,7 @@ class PostgresIndoorDB:
                 layer_row = cur.fetchone()
                 
                 if not layer_row:
-                    print(f"Layer context not found for {layer_str_id}")
+                    LOGGER.debug(f"Layer context not found for {layer_str_id}")
                     return None
 
                 # --- B. Parse Data ---
@@ -2048,57 +2044,82 @@ class PostgresIndoorDB:
                 external_ref = json.dumps(data.get('externalReference')) if data.get('externalReference') else None
                 
                 # Safe integer conversion for duality
-                duality_raw = str(data.get('duality', ''))
-                duality_id = int(duality_raw.replace('#', '')) if duality_raw.replace('#', '').isdigit() else None
+                duality_raw = data.get('duality')
 
                 db_type = None
                 cell_name = None
                 level = None
-                poi = False
-                is_virtual = False
-                geom_2d_json = None
-                geom_3d_json = None
-                bounded_by_refs = [] 
+                poi = None
+                is_virtual = None
+                geom_2d_wkt = None
+                geom_3d_json = None 
+                update_bounded_by = []
+                duality_edge_pk = None   # Cellspace can't create new duality to exsiting node, because existing node with no duality is invalid.
 
                 if f_type == 'CellSpace':
                     db_type = 'space'
-                    cell_name = data.get('cellSpaceName') or data.get('cellSpaceName:')
+                    cell_name = data.get('cellSpaceName')
                     level = data.get('level')
                     poi = data.get('poi', False)
-                    
+                    bounded_by_refs = []
                     raw_bounds = data.get('boundedBy', [])
                     for b_ref in raw_bounds:
-                        bounded_by_refs.append(b_ref.replace('#', ''))
+                        bounded_by_refs.append(b_ref.split(':')[-1])  # if the form is 'a:b:c'
 
                     # --- C. Validation ---
                     if bounded_by_refs:
                         unique_refs = list(set(bounded_by_refs))
                         check_sql = """
-                            SELECT COUNT(*) as cnt 
+                            SELECT id, id_str, bounded_by_cell_id
                             FROM cell_space_n_boundary 
                             WHERE id_str = ANY(%s) 
                               AND thematiclayer_id = %s
                               AND type = 'boundary'
                         """
                         cur.execute(check_sql, (unique_refs, layer_row['id']))
-                        res = cur.fetchone()
+                        rows = cur.fetchall()
                         
-                        if res['cnt'] != len(unique_refs):
-                            print(f"Validation Failed: Missing boundaries in layer {layer_str_id}")
+                        if len(rows) != len(unique_refs):
+                            LOGGER.debug(f"Validation Failed: Missing boundaries in layer {layer_str_id}")
                             return None 
+                        else: # validation check: CellBoundary can bound only if it bounds nothing
+                            for row in rows:
+                                if row['bounded_by_cell_id']:
+                                    LOGGER.debug(f"Validation Failed: Bounding boundary {row['id_str']} already bound another cellSpace.")
+                                    return None
+                                else:
+                                    update_bounded_by.append(row)
 
                     geom_root = data.get('cellSpaceGeom', {})
-                    if geom_root.get('geometry2D'): geom_2d_json = json.dumps(geom_root['geometry2D'])
-                    if geom_root.get('geometry3D'): geom_3d_json = json.dumps(geom_root['geometry3D'])
-
+                    geom_2d_wkt = self.json_to_wkt(geom_root['geometry2D'])
+                    geom_3d_json = json.dumps(geom_root['geometry3D'])
+                
                 elif f_type == 'CellBoundary':
                     db_type = 'boundary'
                     is_virtual = data.get('isVirtual', False)
                     geom_root = data.get('cellBoundaryGeom', {})
                     geom_2d_wkt = self.json_to_wkt(geom_root.get('geometry2D'))
-                    geom_3d_wkt = self.json_to_wkt(geom_root.get('geometry3D'))
-                
+                    geom_3d_json = json.dumps(geom_root.get('geometry3D'))
+
+                    if not duality_raw:  # validation check: CellBoundary can have duality to edge which has no duality
+                        duality_id = duality_raw.split(':')[-1]
+                        sql_duality = """
+                            SELETE id, duality_id 
+                            FROM node_n_edge
+                            WHERE thematiclayer_id=%s AND id_str=%s
+                        """
+                        cur.execute(sql_duality, (layer_row['id'], duality_id))
+                        row = cur.fetchone()
+
+                        if not row:
+                            LOGGER.debug(f"Validation Failed: Duality edge {duality_id} is not found")
+                            return None
+                        elif row['dualit_id']:
+                            LOGGER.debug(f"Validation Failed: Duality edge {duality_id} already has a duality")
+                            return None
+                        duality_edge_pk = row['id']        
                 else:
+                    LOGGER.debug(f"Invalid member type: {f_type}")
                     return None 
 
                 # --- D. Insert ---
@@ -2106,19 +2127,19 @@ class PostgresIndoorDB:
                     INSERT INTO cell_space_n_boundary (
                         id_str, type, collection_id, indoorfeature_id, thematiclayer_id,
                         "2D_geometry", "3D_geometry", 
-                        cell_name, duality_id, level, poi, is_virtual, external_reference
+                        cell_name, duality_id, level, poi, is_virtual, external_reference, duality_id
                     ) VALUES (
                         %s, %s, %s, %s, %s,
                         ST_GeomFromText(%s, 0), 
-                        ST_GeomFromText(%s, 0), 4326),
-                        %s, %s, %s, %s, %s, %s
+                        %s,
+                        %s, %s, %s, %s, %s, %s, %s
                     ) RETURNING id, id_str
                 """
                 
                 cur.execute(insert_query, (
                     id_str, db_type, layer_row['collection_id'], layer_row['indoorfeature_id'], layer_row['id'],
-                    geom_2d_wkt, geom_3d_wkt,
-                    cell_name, duality_id, level, poi, is_virtual, external_ref
+                    geom_2d_wkt, geom_3d_json,
+                    cell_name, duality_id, level, poi, is_virtual, external_ref, duality_edge_pk
                 ))
                 
                 new_row = cur.fetchone()
@@ -2126,31 +2147,27 @@ class PostgresIndoorDB:
                 new_str_id = new_row['id_str']
 
                 # --- E. Link Boundaries ---
-                # WARNING: This overwrites the boundary's parent. 
-                # If this boundary is shared between two rooms, the first room loses the link.
-                if f_type == 'CellSpace' and bounded_by_refs:
+                if f_type == 'CellSpace' and update_bounded_by:
                     update_boundaries_sql = """
                         UPDATE cell_space_n_boundary
                         SET bounded_by_cell_id = %s
-                        WHERE id_str = ANY(%s) 
+                        WHERE id = ANY(%s) 
                           AND thematiclayer_id = %s
                     """
                     cur.execute(update_boundaries_sql, (
                         new_internal_id, 
-                        bounded_by_refs, 
-                        layer_row['id']
+                        update_bounded_by
                     ))
 
                 # 4. FIX: Commit only if we get here successfully
                 self.connection.commit()
                 return new_str_id
 
-        except Exception as e:
-            # 5. FIX: Rollback on any error (lookup, validation, or insert)
-            if self.connection:
+            except Exception as e:
+                # 5. FIX: Rollback on any error (lookup, validation, or insert)
                 self.connection.rollback()
-            print(f"Insert Error: {e}")
-            return None
+                LOGGER.debug(f"Insert Error: {e}")
+                raise e
             
     def delete_primal_member(self, collection_str, item_str, layer_str, member_id):
         """
