@@ -1035,19 +1035,21 @@ def generate_openapi_document(cfg_file: Union[Path, io.TextIOWrapper],
     return content
 
 
-def load_openapi_document() -> dict:
+def load_openapi_document(pygeoapi_openapi: str = None) -> dict:
     """
     Open OpenAPI document from `PYGEOAPI_OPENAPI` environment variable
 
+    :param pygeoapi_openapi: `str` of OpenAPI document filepath, if `None` will
+                            attempt to read from `PYGEOAPI_OPENAPI` environment
+
     :returns: `dict` of OpenAPI document
     """
-
-    pygeoapi_openapi = os.environ.get('PYGEOAPI_OPENAPI')
-
     if pygeoapi_openapi is None:
-        msg = 'PYGEOAPI_OPENAPI environment not set'
-        LOGGER.error(msg)
-        raise RuntimeError(msg)
+        pygeoapi_openapi = os.getenv('PYGEOAPI_OPENAPI')
+        if pygeoapi_openapi is None:
+            msg = 'PYGEOAPI_OPENAPI environment not set'
+            LOGGER.error(msg)
+            raise RuntimeError(msg)
 
     if not os.path.exists(pygeoapi_openapi):
         msg = (f'OpenAPI document {pygeoapi_openapi} does not exist.  '
