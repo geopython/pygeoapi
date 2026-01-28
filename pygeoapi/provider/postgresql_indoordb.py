@@ -896,8 +896,7 @@ class PostgresIndoorDB:
         result_layer = None
         with self.connection.cursor() as cur:
             if level or bbox:
-                # 1. Fetch Layer Metadata
-                # We join tables to ensure the layer belongs to the correct Feature and Collection
+               # 1. Fetch layer filtered by level or bbox
                 query = """
                     SELECT tl.id, tl.id_str, tl.theme, tl.is_logical, tl.is_directed, tl.primalspace_id_str, tl.dualspace_id_str, tl.p_creation_datetime, tl.d_creation_datetime
                     FROM thematiclayer tl
@@ -925,7 +924,7 @@ class PostgresIndoorDB:
                     "links": []
                 }
             else:
-                
+                # 1. Fetch Layer Metadata
                 sql_meta = """
                     SELECT tl.id, tl.id_str, tl.theme, tl.is_logical, tl.is_directed, tl.semantic_extension,
                        ST_XMin(ST_Extent(cs."2D_geometry")) as minx,
@@ -956,7 +955,7 @@ class PostgresIndoorDB:
                 """
                 cur.execute(sql_levels, (l_pk,))
                 levels = [row[0] for row in cur.fetchall()]
-
+                # select counts of members
                 sql_counts = """
                     SELECT 
                         (SELECT COUNT(*) FROM cell_space_n_boundary 
@@ -1046,7 +1045,7 @@ class PostgresIndoorDB:
         for row in cur.fetchall():
             pk, id, type, name, level, ext, geom_2d_wkt, geom_3d_json, poi, duality, is_virtual, boundedBylist = row
             geom_2d = self.wkt_to_json(geom_2d_wkt)
-           # geom_3d = self.wkt_to_json(geom_3d_wkt)
+ 
             if boundedBylist:
                 all_referenced_boundaries.update(boundedBylist)
             if type == 'space':
@@ -1113,7 +1112,7 @@ class PostgresIndoorDB:
             
         return primal_space
     
-    def _get_dual_space(self, cur, layer_pk, dualspace_id, d_creat,is_logical, is_directed):
+    def _get_dual_space(self, cur, layer_pk, dualspace_id, d_creat, is_logical, is_directed):
         """
         Helper: Fetches Nodes, Edges, and resolves 'connects' relationships.
         """
@@ -1130,7 +1129,7 @@ class PostgresIndoorDB:
         node_map = {}
         edge_map = {}
 
-        # --- A. Fetch Nodes ---
+        # Fetch nodes
         sql_nodes = """
             SELECT n.id_str,
                    ST_AsText(n.geometry_val), c.id_str
@@ -1155,7 +1154,7 @@ class PostgresIndoorDB:
             dual_space["nodeMember"].append(node)
             node_map[nid] = node
 
-        # --- B. Fetch Edges ---
+        # Fetch Edges
         sql_edges = """
 
             SELECT n.id_str,
@@ -1180,8 +1179,8 @@ class PostgresIndoorDB:
             dual_space["edgeMember"].append(edge)
             edge_map[eid] = edge
 
-        # --- C. Populate Connectivity (The 'connects' Table) ---
-        # 
+        # Populate Connectivity
+        #
         # We join node_n_edge 3 times: for the edge itself, the source node, and the target node
         sql_links = """
             SELECT 
@@ -1230,18 +1229,18 @@ class PostgresIndoorDB:
 
         with self.connection.cursor() as cur:
             try:
-                # 2. Resolve Collection DB ID (Integer) from String ID
+                # Resolve Collection DB ID (Integer) from String ID
                 cur.execute("SELECT id FROM collection WHERE id_str = %s", (collection_str_id,))
                 res = cur.fetchone()
                 if not res:
                     raise Exception(f"Collection {collection_str_id} not found.")
                 collection_pk = res[0]
-
+                # Avoid same str id
                 cur.execute("SELECT id_str FROM indoorfeature WHERE collection_id = %s AND id_str = %s", (collection_pk, feature_id_str))
                 res = cur.fetchone()
                 if res:
                     raise Exception(f"IndoorFeature {feature_id_str} already exist.")
-                # 3. Insert Main IndoorFeature
+                # Insert IndoorFeature
                 LOGGER.debug("Insert indoorfeature")
                 cur.execute(
                     """
@@ -1253,11 +1252,11 @@ class PostgresIndoorDB:
                 )
                 indoorfeature_pk = cur.fetchone()[0]
                 
-                # 4. Iterate and Insert Layers
+                # Iterate and Insert Layers
                 for layer in layers:
                     self._post_thematic_layer(cur, collection_pk, indoorfeature_pk, layer)
 
-                # Commit is handled automatically by the context manager if no error is raised
+                # autocommit is False
                 self.connection.commit()
             
                 return feature_id_str
@@ -1305,7 +1304,7 @@ class PostgresIndoorDB:
        
         layer_pk = cur.fetchone()[0]
      
-        # Insert Primal Members (Cells/Boundaries)
+        # Insert Primal Members (Cells/Boundaries) - returns duality dict 
         d_c, d_b = self._post_primal_members(cur, coll_pk, feature_pk, layer_pk, primal)
         
         # Insert Dual Members (Nodes/Edges)
@@ -1384,7 +1383,8 @@ class PostgresIndoorDB:
             if bound.get('duality'):
                 duality_of_boundary = bound.get('duality').split(":")[-1]
                 dual_boundary[duality_of_boundary] = boundary_pk
-            
+        
+        # If there is no 2D geometry but 3D, project 3D to 2D geometry
         LOGGER.debug("Project geometry 3D to 2D ")
         sql_projection = """
             UPDATE cell_space_n_boundary c
@@ -1408,7 +1408,7 @@ class PostgresIndoorDB:
                     ) AS footprint
                 FROM cell_space_n_boundary,
                     jsonb_array_elements("3D_geometry"->'coordinates'->0) AS face_element
-                WHERE "3D_geometry" IS NOT NULL AND type='space' AND thematiclayer_id = %s
+                WHERE "3D_geometry" IS NOT NULL AND type='space' AND "2D_geometry" IS NULL AND thematiclayer_id = %s
                 GROUP BY id
             ) sub
             WHERE c.id = sub.id AND thematiclayer_id = %s;
@@ -1417,8 +1417,6 @@ class PostgresIndoorDB:
 
         return dual_cell, dual_boundary
             
-
-
     def _post_dual_members(self, cur, coll_pk, feat_pk, layer_pk, dual_data, cell_dict, boundary_dict):
         """
         Helper to insert Nodes and Edges
@@ -1731,7 +1729,6 @@ class PostgresIndoorDB:
                 
         return response
 
-
     def post_interlayer_connection(self, collection_str_id, feature_str_id, data):
         """
         Creates a connection.
@@ -1859,8 +1856,8 @@ class PostgresIndoorDB:
 # endregion
 
 # region PrimalSpaceLayer
-
-    def get_primal_features_and_metadata(self, collection_id, item_id, layer_str_id, 
+            
+    def get_primal_features(self, collection_id, item_id, layer_str_id, 
                                          level=None, poi=None, is_virtual=None, cell_space_name=None):
         """
         1. Resolves layer metadata.
@@ -1868,7 +1865,6 @@ class PostgresIndoorDB:
         3. Fetches Boundaries (Filtered by is_virtual AND parent Spaces).
         Returns: layer_row, spaces_list, boundaries_list
         """
-        self.connect()
         
         with self.connection.cursor(cursor_factory=RealDictCursor) as cur:
             # STEP 1: Fetch Layer Metadata
@@ -1898,10 +1894,10 @@ class PostgresIndoorDB:
                 SELECT 
                     cs.id, cs.id_str, cs.cell_name, cs.level, cs.poi, 
                     cs.external_reference,
-                    cs.bounded_by_cell_id,  -- Need this to map children to parents
+                    cs.bounded_by_cell_id,
                     ST_AsText("2D_geometry") as geometry_2d, 
-                    ST_AsText("3D_geometry") as geometry_3d,
-                    ne.id_str as duality_ref -- Get the String ID, not the Integer
+                    "3D_geometry" as geometry_3d,
+                    ne.id_str as duality_ref 
                 FROM cell_space_n_boundary cs
                 LEFT JOIN node_n_edge ne ON cs.duality_id = ne.id
                 WHERE cs.thematiclayer_id = %s AND cs.type = 'space'
@@ -1930,8 +1926,8 @@ class PostgresIndoorDB:
 
             for row in space_rows:
                 geom = {
-                    "geometry2D": json.loads(row['geometry_2d']) if row['geometry_2d'] else None,
-                    "geometry3D": json.loads(row['geometry_3d']) if row['geometry_3d'] else None
+                    "geometry2D": self.wkt_to_json(row['geometry_2d']),
+                    "geometry3D": row['geometry_3d']
                 }
                 spaces.append({
                     "internal_id": row['id'], 
@@ -1956,19 +1952,20 @@ class PostgresIndoorDB:
             
             should_fetch_boundaries = True
             # Logic: If we applied space filters (level/poi/name) and found nothing, stop.
-            if (level or poi is not None or cell_space_name) and not found_space_ids:
+            if (level or poi or cell_space_name) and not found_space_ids:
                 should_fetch_boundaries = False
-
+            
             boundaries = []
             boundaries_map = {} 
 
             if should_fetch_boundaries:
+                LOGGER.debug("Fetch Cell boundaries")
                 bound_query = """
                     SELECT 
                         cs.id_str, cs.is_virtual, cs.external_reference,
                         cs.bounded_by_cell_id,
-                        ST_AsGeoJSON(cs."2D_geometry") as geometry_2d, 
-                        ST_AsGeoJSON(cs."3D_geometry") as geometry_3d,
+                        ST_AsText(cs."2D_geometry") as geometry_2d, 
+                        cs."3D_geometry" as geometry_3d,
                         ne.id_str as duality_ref
                     FROM cell_space_n_boundary cs
                     LEFT JOIN node_n_edge ne ON cs.duality_id = ne.id
@@ -1977,12 +1974,13 @@ class PostgresIndoorDB:
                 bound_params = [layer_internal_id]
 
                 # Filter A: Only boundaries relevant to the spaces we found
-                if found_space_ids:
+                if level or poi or cell_space_name:
+                    LOGGER.debug(found_space_ids)
                     bound_query += " AND cs.bounded_by_cell_id = ANY(%s)"
                     bound_params.append(found_space_ids)
                 
                 # Filter B: Virtual Status
-                if is_virtual is not None:
+                if is_virtual:
                     bound_query += " AND cs.is_virtual = %s"
                     bound_params.append(is_virtual)
 
@@ -1991,8 +1989,8 @@ class PostgresIndoorDB:
 
                 for row in bound_rows:
                     geom = {
-                        "geometry2D": json.loads(row['geometry_2d']) if row['geometry_2d'] else None,
-                        "geometry3D": json.loads(row['geometry_3d']) if row['geometry_3d'] else None
+                        "geometry2D": self.wkt_to_json(row['geometry_2d']),
+                        "geometry3D": row['geometry_3d']
                     }
                     boundary_ref = f"{row['id_str']}"
                     
