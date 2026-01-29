@@ -2502,7 +2502,7 @@ class PostgresIndoorDB:
 
 # endregion
 
-# region DualSpaceLayer
+# region DualSpaceLayer 
 
     def post_dual_member(self, collection_str, item_str, layer_str, data): 
         # Use self.connection instead of self.conn
@@ -3196,3 +3196,38 @@ class PostgresIndoorDB:
 
         return None
 # endregion      
+
+# region Services
+
+def get_indoor_route(self, collection_id, item_id, layer_id, sn, dn):
+    # This query gets the full sequence from pgRouting and joins it with your tables
+    sql = """
+    WITH path AS (
+        SELECT * FROM pgr_dijkstra(
+            'SELECT edge_id as id, node_source_id as source, node_target_id as target, weight as cost 
+             FROM connects 
+             JOIN node_n_edge ON connects.edge_id = node_n_edge.id
+             WHERE thematiclayer_id = (SELECT id FROM thematiclayer WHERE id_str = %s)',
+            (SELECT id FROM node_n_edge WHERE id_str = %s),
+            (SELECT id FROM node_n_edge WHERE id_str = %s),
+            FALSE
+        )
+    )
+    SELECT 
+        -- Collect the actual geometries of the EDGES in the path
+        ST_AsGeoJSON(ST_Collect(e.geometry_val ORDER BY p.seq))::jsonb AS geometry,
+        SUM(p.cost) AS total_weight,
+        -- Ordered lists for your RouteResult
+        array_agg(n.id_str ORDER BY p.seq) AS route_nodes,
+        array_remove(array_agg(e.id_str ORDER BY p.seq), NULL) AS route_edges,
+        (SELECT p_creation_datetime FROM thematiclayer WHERE id_str = %s) as creation_date
+    FROM path p
+    LEFT JOIN node_n_edge n ON p.node = n.id
+    LEFT JOIN node_n_edge e ON p.edge = e.id;
+    """
+    with self.connection.cursor(cursor_factory=RealDictCursor) as cur:
+        cur.execute(sql, (layer_id, sn, dn, layer_id))
+        return cur.fetchone()
+
+
+# endregion

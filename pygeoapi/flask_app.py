@@ -567,6 +567,21 @@ def collection_items_layers_dual(collection_id, item_id, layer_id, member_id=Non
         else:
             pass
 
+@BLUEPRINT.route('/collections/<collectionId>/items/<fId>/layers/<tId>/dual/route')
+def compute_indoor_route(collectionId, fId, tId):
+    # Get start node (sn) and destination node (dn) from query parameters
+    sn = request.args.get('sn')
+    dn = request.args.get('dn')
+    
+    if not sn or not dn:
+        return jsonify({"error": "Missing 'sn' (start node) or 'dn' (destination node) parameters"}), 400
+    
+    # Call the API layer
+    try:
+        result = indoorgml.get_route(collectionId, fId, tId, sn, dn)
+        return jsonify(result)
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
 
 @BLUEPRINT.route('/collections/<path:collection_id>/coverage')
 def collection_coverage(collection_id: str):

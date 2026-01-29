@@ -1443,3 +1443,81 @@ def manage_dual(api: API, request: APIRequest, action: str, collection_id: str, 
     finally:
         provider.disconnect()
 # endregion
+
+# region Services
+
+def get_route(api: API, request: APIRequest, collection_id: str, item_id: str, layer_id: str) -> Tuple[dict, int, str]:
+    """
+    GET /collections/{id}/items/{featureId}/layers/{layerId}/dual/route
+    Computes an indoor route using the dual graph.
+
+    :param collection_id: Collection ID
+    :param item_id: Item ID
+    :param layer_id: Layer ID
+    :param start_node: Start node ID
+    :param end_node: End node ID
+
+    :return: Route information
+    """
+    if not request.is_valid():
+        return api.get_format_exception(request)
+    
+    headers = request.get_response_headers(SYSTEM_LOCALE)
+    provider = PostgresIndoorDB()
+
+    # 1. Extract Start (sn) and Destination (dn) nodes from query parameters
+    sn = request.params.get('sn')
+    dn = request.params.get('dn')
+
+    if not sn or not dn:
+        return api.get_exception(
+            HTTPStatus.BAD_REQUEST,
+            headers, request.format, 'MissingParameter', "Both 'sn' and 'dn' are required")
+
+    try:
+        # 2. Call the Provider (The logic we discussed earlier)
+        # Expecting a list of nodes/edges or a GeoJSON LineString
+        route_data = provider.get_indoor_route(collection_id, item_id, layer_id, sn, dn)
+
+        if not route_data or not route_data.get('geometry'):
+             return api.get_exception(
+                 HTTPStatus.NOT_FOUND, 
+                 headers, request.format, 'NotFound', 'No path found between the specified nodes')
+
+        # 3. Construct Self Link
+        base_url = f"{api.config['server']['url']}/collections/{collection_id}/items/{item_id}/layers/{layer_id}/dual/route"
+        self_href = f"{base_url}?sn={urllib.parse.quote(sn)}&dn={urllib.parse.quote(dn)}"
+
+        # 4. Construct the RouteResults Response
+        response = {
+            "type": "RouteResult",
+            "inputs": {
+                "sn": sn,
+                "dn": dn
+            },
+            "cost": {
+                "totalWeight": route_data.get('total_weight')
+            },
+            "route": {
+                "creationDate": route_data['creation_date'].isoformat() if route_data.get('creation_date') else None,
+                "routeNodes": route_data.get('route_nodes', []),
+                "routeEdges": route_data.get('route_edges', [])
+            },
+            "links": [
+                {
+                    "href": self_href,
+                    "rel": "self",
+                    "type": "application/json",
+                    "title": "Indoor Route Result"
+                }
+            ]
+        }
+        
+        return headers, HTTPStatus.OK, to_json(response, api.pretty_print)
+
+    except Exception as e:
+        return api.get_exception(HTTPStatus.INTERNAL_SERVER_ERROR, headers, request.format, 'ServerError', str(e))
+    finally:
+        provider.disconnect()
+
+# endregion
