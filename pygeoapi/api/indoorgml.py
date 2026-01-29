@@ -1374,72 +1374,103 @@ def manage_dual(api: API, request: APIRequest, action: str, collection_id: str, 
     DELETE, PATCH /collections/.../layers/{tId}/dual/{mId}
     Deletes or updates a specific dual member.
     """
-    
+    if not request.is_valid(PLUGINS['formatter'].keys()):
+        return api.get_format_exception(request)
     headers = request.get_response_headers(SYSTEM_LOCALE)
-    provider = PostgresIndoorDB()
+    executed, collections = get_list_of_collections_id()
+    if executed is False:
+        msg = str(collections)
+        return api.get_exception(
+            HTTPStatus.BAD_REQUEST,
+            headers, request.format, 'ConnectingError', msg)
+    
+    if collection_id not in collections:
+        msg = 'Collection not found'
+        LOGGER.error(msg)
+        return api.get_exception(
+            HTTPStatus.NOT_FOUND,
+            headers, request.format, 'NotFound', msg)
+    
+    pidb_provider = PostgresIndoorDB()
 
-    try:
-        # --- CREATE (POST) ---
-        if action == 'create':
-            try:
-                data = request.data
-                if isinstance(data, bytes):
-                    data = json.loads(data.decode('utf-8'))
-            except Exception:
-                return api.get_exception(HTTPStatus.BAD_REQUEST, headers, request.format, 'InvalidParameterValue', 'Invalid JSON')
+    if action in ['create', 'update']:
+        data = request.data
+        # 1. Parse JSON Body
+        if not data:
+            msg = 'No data found'
+            LOGGER.error(msg)
+            return api.get_exception(
+                HTTPStatus.BAD_REQUEST,
+                headers, request.format, 'InvalidParameterValue', msg) 
+        try:
+            # Parse bytes data, if applicable
+            data = data.decode()
+        except (UnicodeDecodeError, AttributeError):
+            pass
 
-            feature_type = data.get('featureType')
-            if feature_type not in ['Node', 'Edge']: 
-                return api.get_exception(HTTPStatus.BAD_REQUEST, headers, request.format, 'InvalidParameterValue', 'featureType must be Node or Edge')
+        try:
+            data = json.loads(data)
+        except (json.decoder.JSONDecodeError, TypeError) as err:
+            # Input does not appear to be valid JSON
+            LOGGER.error(err)
+            msg = 'invalid request data'
+            return api.get_exception(
+                HTTPStatus.BAD_REQUEST,
+                headers, request.format, 'InvalidParameterValue', msg)
 
-            try:
-                new_id = provider.post_dual_member(collection_id, item_id, layer_id, data)
-                if new_id:
-                    headers['Location'] = f"{api.config['server']['url']}/collections/{collection_id}/items/{item_id}/layers/{layer_id}/dual/{new_id}"
-                    return headers, HTTPStatus.CREATED, to_json({"status": "Created", "id": new_id}, api.pretty_print)
-                else:
-                    return api.get_exception(HTTPStatus.NOT_FOUND, headers, request.format, 'NotFound', 'Layer invalid')
-            except ValueError as ve:
-                return api.get_exception(HTTPStatus.BAD_REQUEST, headers, request.format, 'InvalidParameterValue', str(ve))
+   
+    # --- CREATE (POST) ---
+    if action == 'create':
+        feature_type = data.get('featureType')
+        if feature_type not in ['Node', 'Edge']: 
+            return api.get_exception(HTTPStatus.BAD_REQUEST, headers, request.format, 'InvalidParameterValue', 'featureType must be Node or Edge')
 
-        # --- UPDATE (PATCH) ---
-        elif action == 'update':
-            if not member_id:
-                return api.get_exception(HTTPStatus.BAD_REQUEST, headers, request.format, 'MissingParameterValue', 'ID required')
+        try:
+            pidb_provider.connect()
+            new_id = pidb_provider.post_dual_member(collection_id, item_id, layer_id, data)
+            if new_id:
+                headers['Location'] = f"{api.config['server']['url']}/collections/{collection_id}/items/{item_id}/layers/{layer_id}/dual/{new_id}"
+                return headers, HTTPStatus.CREATED, to_json({"status": "Created", "id": new_id}, api.pretty_print)
+            else:
+                return api.get_exception(HTTPStatus.NOT_FOUND, headers, request.format, 'NotFound', 'Layer invalid')
+        except Exception as e:
+            return api.get_exception(HTTPStatus.INTERNAL_SERVER_ERROR, headers, request.format, 'ServerError', str(e))
+        finally:
+            pidb_provider.disconnect()
 
-            try:
-                data = request.data
-                if isinstance(data, bytes):
-                    data = json.loads(data.decode('utf-8'))
-                
-                # Check for empty update
-                if 'weight' not in data:
-                     return api.get_exception(HTTPStatus.BAD_REQUEST, headers, request.format, 'InvalidParameterValue', 'Only "weight" can be updated')
+    # --- UPDATE (PATCH) ---
+    elif action == 'update':
+        if not member_id:
+            return api.get_exception(HTTPStatus.BAD_REQUEST, headers, request.format, 'MissingParameterValue', 'ID required')
 
-                success = provider.update_dual_member(collection_id, item_id, layer_id, member_id, data)
-                
-                if success:
-                    return headers, HTTPStatus.NO_CONTENT, ''
-                else:
-                    return api.get_exception(HTTPStatus.BAD_REQUEST, headers, request.format, 'InvalidParameterValue', 'Update failed: Item is not a Transition, or ID not found')
+        # Check for empty update
+        if 'weight' not in data:
+                return api.get_exception(HTTPStatus.BAD_REQUEST, headers, request.format, 'InvalidParameterValue', 'Only "weight" can be updated')
+        try:
+            pidb_provider.connect()
+            success = pidb_provider.update_dual_member(collection_id, item_id, layer_id, member_id, data)
+            
+            if success:
+                return headers, HTTPStatus.NO_CONTENT, ''
+            else:
+                return api.get_exception(HTTPStatus.BAD_REQUEST, headers, request.format, 'InvalidParameterValue', 'Update failed: Item is not a Transition, or ID not found')
+        except Exception as e:
+            return api.get_exception(HTTPStatus.INTERNAL_SERVER_ERROR, headers, request.format, 'ServerError', str(e))
+        finally:
+            pidb_provider.disconnect()
 
-            except Exception:
-                 return api.get_exception(HTTPStatus.BAD_REQUEST, headers, request.format, 'InvalidParameterValue', 'Invalid JSON')
-
-            finally:
-                provider.disconnect()
-
-        # --- DELETE (DELETE) ---
-        elif action == 'delete':
-            # Assuming you allow deleting both Nodes and Edges
-            success = provider.delete_dual_member(collection_id, item_id, layer_id, member_id)
+    # --- DELETE (DELETE) ---
+    elif action == 'delete':
+        try:
+            pidb_provider.connect()
+        # Assuming you allow deleting both Nodes and Edges
+            success = pidb_provider.delete_dual_member(collection_id, item_id, layer_id, member_id)
             if success:
                 return headers, HTTPStatus.NO_CONTENT, ''
             else:
                 return api.get_exception(HTTPStatus.NOT_FOUND, headers, request.format, 'NotFound', 'Member not found')
-
-    except Exception as e:
-        return api.get_exception(HTTPStatus.INTERNAL_SERVER_ERROR, headers, request.format, 'ServerError', str(e))
-    finally:
-        provider.disconnect()
+        except Exception as e:
+            return api.get_exception(HTTPStatus.INTERNAL_SERVER_ERROR, headers, request.format, 'ServerError', str(e))
+        finally:
+            pidb_provider.disconnect()
 # endregion
