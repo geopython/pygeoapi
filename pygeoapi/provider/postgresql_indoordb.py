@@ -2504,13 +2504,10 @@ class PostgresIndoorDB:
 
 # region DualSpaceLayer 
 
-    def post_dual_member(self, collection_str, item_str, layer_str, data):
-        self.connect()
-
-        try:
-            # Use self.connection instead of self.conn
-            with self.connection.cursor(cursor_factory=RealDictCursor) as cur:
-                
+    def post_dual_member(self, collection_str, item_str, layer_str, data): 
+        # Use self.connection instead of self.conn
+        with self.connection.cursor(cursor_factory=RealDictCursor) as cur:
+            try:    
                 # --- Resolve Layer Context ---
                 lookup_sql = """
                     SELECT t.id, t.collection_id, t.indoorfeature_id 
@@ -2652,32 +2649,29 @@ class PostgresIndoorDB:
                 
                 return None
 
-        except Exception as e:
-            if self.connection:
+            except Exception as e:
                 self.connection.rollback()
-            print(f"Dual Member Creation Error: {e}")
-            # Re-raise so the API knows to return 400/500
-            raise ValueError(f"Failed to create member: {str(e)}")
+                print(f"Dual Member Creation Error: {e}")
+                # Re-raise so the API knows to return 400/500
+                raise ValueError(f"Failed to create member: {str(e)}")
 
-    def get_dual_features_and_metadata(self, collection_str, item_str, layer_str, min_weight=None, max_weight=None):
+    def get_dual_features(self, collection_str, item_str, layer_str, min_weight=None, max_weight=None):
         """
         1. Fetches Layer Metadata.
         2. Fetches Members (Nodes & Edges).
            - EDGES are filtered by min_weight/max_weight.
-           - TODO: Only Nodes connected to Edges when filtered.
+           - Only Nodes connected to Edges when filtered.
                 All Nodes when Edges are not filtered.
         3. Fetches Topology (Connections) and maps them.
         Returns: meta_row, nodes_list, edges_list
         """
-        self.connect()
-        try:
-            with self.connection.cursor(cursor_factory=RealDictCursor) as cur:
-                
+        with self.connection.cursor(cursor_factory=RealDictCursor) as cur:
+            try:    
                 # STEP 1: Layer Metadata
                 meta_query = """
                     SELECT 
                         t.id, t.id_str, t.dualspace_id_str,
-                        t.d_creation_datetime, t.d_termination_datetime
+                        t.d_creation_datetime, t.d_termination_datetime, t.is_logical, t.is_directed
                     FROM thematiclayer t
                     JOIN collection c ON t.collection_id = c.id
                     JOIN indoorfeature i ON t.indoorfeature_id = i.id
@@ -2698,7 +2692,7 @@ class PostgresIndoorDB:
                         ne.id_str, 
                         ne.type, 
                         ne.weight, 
-                        ST_AsGeoJSON(ne.geometry_val) as geometry,
+                        ST_AsText(ne.geometry_val) as geometry,
                         cs.id_str as duality
                     FROM node_n_edge ne
                     LEFT JOIN cell_space_n_boundary cs ON ne.duality_id = cs.id
@@ -2710,11 +2704,11 @@ class PostgresIndoorDB:
                 # We use (type = 'node' OR ...) to ensure we don't hide the nodes 
                 # even if they have no weight.
                 
-                if min_weight is not None:
+                if min_weight:
                     members_query += " AND (ne.type = 'node' OR ne.weight > %s)"
                     params.append(min_weight)
 
-                if max_weight is not None:
+                if max_weight:
                     members_query += " AND (ne.type = 'node' OR ne.weight < %s)"
                     params.append(max_weight)
 
@@ -2769,12 +2763,12 @@ class PostgresIndoorDB:
                             touched_node_ids.update(edge_connections[e_id])
 
                 # B. Determine if we are in "Filtering Mode"
-                filtering_active = (min_weight is not None) or (max_weight is not None)
+                filtering_active = (min_weight) or (max_weight)
 
                 # C. Build Final Lists
                 for row in member_rows:
                     mid = row['id_str']
-                    geom = json.loads(row['geometry']) if row['geometry'] else None
+                    geom = self.wkt_to_json(row['geometry'])
                     
                     # --- PROCESSING EDGE ---
                     if row['type'] == 'edge':
@@ -2784,7 +2778,7 @@ class PostgresIndoorDB:
                             "featureType": "Edge",
                             "duality": row['duality'],
                             "geometry": geom,
-                            "weight": row['weight'] if row['weight'] is not None else 0.0,
+                            "weight": row['weight'] if row['weight'] else 0.0,
                             "connects": edge_connections.get(mid, [])
                         }
                         edges.append(obj)
@@ -2812,55 +2806,40 @@ class PostgresIndoorDB:
 
                 return meta_row, nodes, edges
 
-        except Exception as e:
-            print(f"Dual Layer Error: {e}")
-            return None, [], []
-        finally:
-            self.disconnect()
+            except Exception as e:
+                print(f"Dual Layer Error: {e}")
+                return None, [], []
 
-    def get_dual_member(self, collection_str, item_str, layer_str, member_id):
+    def get_dual_member(self, collection_str, item_str, layer_str, member_str):
         """
         Fetches a SINGLE Node or Edge.
         1. Resolves Duality String.
         2. IF EDGE: Fetches Source/Target via JOIN.
         3. IF NODE: Fetches Connected Edges via SUBQUERY.
         """
-        self.connect()
-        try:
-            with self.connection.cursor(cursor_factory=RealDictCursor) as cur:
+        with self.connection.cursor(cursor_factory=RealDictCursor) as cur:
+            try:    
                 query = """
                     SELECT 
                         ne.id_str, 
                         ne.type, 
                         ne.weight, 
-                        ST_AsGeoJSON(ne.geometry_val) as geometry,
-                        
-                        -- 1. Duality String (Alias 'duality' for API)
+                        ST_AsText(ne.geometry_val) as geometry,
                         cs.id_str as duality,
-
-                        -- 2. EDGE TOPOLOGY (If this member is an Edge)
                         n_source.id_str as source_ref,
                         n_target.id_str as target_ref,
-
-                        -- 3. NODE TOPOLOGY (If this member is a Node)
-                        -- We aggregate all edges where this node is Source OR Target
+                        -- aggregate all edges where this node is Source OR Target
                         (
                             SELECT array_agg(e.id_str)
                             FROM connects c
                             JOIN node_n_edge e ON c.edge_id = e.id
                             WHERE c.node_source_id = ne.id OR c.node_target_id = ne.id
                         ) as node_connects_list
-
                     FROM node_n_edge ne
-                    
-                    -- Join Duality
                     LEFT JOIN cell_space_n_boundary cs ON ne.duality_id = cs.id
-                    
-                    -- Join Topology (Works ONLY if 'ne' is an Edge)
                     LEFT JOIN connects c ON ne.id = c.edge_id
                     LEFT JOIN node_n_edge n_source ON c.node_source_id = n_source.id
                     LEFT JOIN node_n_edge n_target ON c.node_target_id = n_target.id
-                    
                     WHERE ne.id_str = %s
                     AND ne.thematiclayer_id = (
                         SELECT t.id FROM thematiclayer t
@@ -2869,36 +2848,37 @@ class PostgresIndoorDB:
                         WHERE t.id_str = %s AND col.id_str = %s AND i.id_str = %s
                     )
                 """
-                cur.execute(query, (member_id, layer_str, collection_str, item_str))
+                cur.execute(query, (member_str, layer_str, collection_str, item_str))
                 result = cur.fetchone()
-
 
                 # 1. Base Response
                 response = {
                     "id": result['id_str'],
-                    # Map DB 'node'/'edge' -> Schema 'Node'/'Edge'
                     "featureType": "Node" if result['type'] == 'node' else "Edge",
                     "geometry": self.wkt_to_json(result.get('geometry')),
-                    "duality": f"{result['duality_ref']}" if result['duality_ref'] else None
+                    "duality": result['duality']
                 }
 
+                connects = []
                 # 2. Add Edge-Specific Fields
                 if result['type'] == 'edge':
-                    response["weight"] = float(result['weight']) if result['weight'] is not None else 1.0
+                    response["weight"] = float(result['weight']) if result['weight'] else 0.0
                     
-                    connects = []
+                    
                     if result['source_ref']: connects.append(f"{result['source_ref']}")
                     if result['target_ref']: connects.append(f"{result['target_ref']}")
                     
                     response["connects"] = connects
+                else:
+                    if result["node_connects_list"]: connects.append(result["node_connects_list"])
+                    response["connects"] = connects
                 
                 return response
 
-        except Exception as e:
-            print(f"Get Dual Member Error: {e}")
-            return None
-        finally:
-            self.disconnect() 
+            except Exception as e:
+                LOGGER.debug(f"Get Dual Member Error: {e}")
+                raise e
+
 
     def update_dual_member(self, collection_str, item_str, layer_str, member_id, data):
         """
