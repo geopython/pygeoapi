@@ -23,10 +23,70 @@ When enabled, core functionality of Pub/Sub includes:
   - feature or record transactions (create, replace, update, delete)
   - process executions/job creation
 
-The following message queuing protocols are supported:
+AsyncAPI
+--------
+
+`AsyncAPI`_ is the event-driven equivalent to :ref:`openapi`
+
+The official AsyncAPI specification can be found on the `AsyncAPI`_ website.  pygeoapi supports AsyncAPI version 3.0.0.
+
+AsyncAPI is an optional capability in pygeoapi.  To enable AsyncAPI, the following steps are required:
+
+- defining a ``pubsub`` section in configuration (see :ref:`configuration` and :ref:`brokers` for more information)
+- generating an AsyncAPI document
+- setting the ``PYGEOAPI_ASYNCAPI`` environment variable
+
+Creating the AsyncAPI document
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+The AsyncAPI document is a YAML or JSON configuration which is generated from the pygeoapi configuration, and describes the server information, channels and the message payloads structures.
+
+To generate the AsyncAPI document, run the following:
+
+.. code-block:: bash
+
+   pygeoapi asyncapi generate /path/to/my-pygeoapi-config.yml
+
+This will dump the AsyncAPI document as YAML to your system's ``stdout``.  To save to a file on disk, run:
+
+.. code-block:: bash
+
+   pygeoapi asyncapi generate /path/to/my-pygeoapi-config.yml --output-file /path/to/my-pygeoapi-asyncapi.yml
+
+To generate the AsyncAPI document as JSON, run:
+
+.. code-block:: bash
+
+   pygeoapi asyncapi generate /path/to/my-pygeoapi-config.yml --format json --output-file /path/to/my-pygeoapi-asyncapi.json
+
+.. note::
+   Generate as YAML or JSON?  If your AsyncAPI YAML definition is slow to render as JSON,
+   saving as JSON to disk will help with performance at run-time.
+
+.. note::
+   The AsyncAPI document provides detailed information on query parameters, and dataset
+   property names and their data types.  Whenever you make changes to your pygeoapi configuration,
+   always refresh the accompanying AsyncAPI document.
+
+Validating the AsyncAPI document
+--------------------------------
+
+To ensure your AsyncAPI document is valid, pygeoapi provides a validation
+utility that can be run as follows:
+
+.. code-block:: bash
+
+   pygeoapi asyncapi validate /path/to/my-pygeoapi-asyncapi.yml
+
+.. _brokers:
+
+Brokers
+-------
+
+The following protocols are supported:
 
 MQTT
-----
+^^^^
 
 Example directive:
 
@@ -40,7 +100,7 @@ Example directive:
            hidden: false # default
 
 HTTP
-----
+^^^^
 
 Example directive:
 
@@ -72,3 +132,4 @@ Example directive:
    If a ``channel`` is not defined, only the relevant OGC API endpoint is used.
 
 .. _`OGC API Publish-Subscribe Workflow - Part 1: Core`: https://docs.ogc.org/DRAFTS/25-030.html
+.. _`AsyncAPI`: https://www.asyncapi.com

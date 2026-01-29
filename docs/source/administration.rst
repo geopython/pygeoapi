@@ -26,19 +26,13 @@ This will dump the OpenAPI document as YAML to your system's ``stdout``.  To sav
 
 .. code-block:: bash
 
-   pygeoapi openapi generate /path/to/my-pygeoapi-config.yml > /path/to/my-pygeoapi-openapi.yml
-
-You can also write to a file explicitly via the ``--output-file`` option:
-
-.. code-block:: bash
-
    pygeoapi openapi generate /path/to/my-pygeoapi-config.yml --output-file /path/to/my-pygeoapi-openapi.yml
 
 To generate the OpenAPI document as JSON, run:
 
 .. code-block:: bash
 
-   pygeoapi openapi generate /path/to/my-pygeoapi-config.yml -f json > /path/to/my-pygeoapi-openapi.json
+   pygeoapi openapi generate /path/to/my-pygeoapi-config.yml --format json --output-file /path/to/my-pygeoapi-openapi.yml
 
 .. note::
    Generate as YAML or JSON?  If your OpenAPI YAML definition is slow to render as JSON,
@@ -83,6 +77,11 @@ In UNIX:
     # or if OpenAPI JSON
     export PYGEOAPI_OPENAPI=/path/to/my-pygeoapi-openapi.json
 
+    # if your server supports AsyncAPI and Pub/Sub
+    export PYGEOAPI_ASYNCAPI=/path/to/my-pygeoapi-asyncapi.yml
+    # or if AsyncAPI JSON
+    export PYGEOAPI_ASYNCAPI=/path/to/my-pygeoapi-asyncapi.json
+
 In Windows:
 
 .. code-block:: bat
@@ -92,6 +91,14 @@ In Windows:
     # or if OpenAPI JSON
     set PYGEOAPI_OPENAPI=/path/to/my-pygeoapi-openapi.json
 
+    # if your server supports AsyncAPI and Pub/Sub
+    set PYGEOAPI_ASYNCAPI=/path/to/my-pygeoapi-asyncapi.yml
+    # or if AsyncAPI JSON
+    set PYGEOAPI_ASYNCAPI=/path/to/my-pygeoapi-asyncapi.json
+
+.. note::
+
+    More information on AsyncAPI and Pub/Sub can be found at :ref:`pubsub`.
 
 Summary
 -------
