@@ -533,7 +533,7 @@ class API:
     """API object"""
 
     def __init__(self, config: dict, openapi: dict,
-                 asyncapi: dict = None) -> Self | None:
+                 asyncapi: dict = {}) -> Self | None:
         """
         constructor
 
@@ -753,7 +753,7 @@ def landing_page(api: API,
 
         fcm['links'].append(pubsub_link)
 
-    if api.asyncapi is not None:
+    if api.asyncapi:
         fcm['links'].append({
             'rel': 'service-doc',
             'type': 'text/html',

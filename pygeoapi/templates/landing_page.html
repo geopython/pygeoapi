@@ -106,7 +106,7 @@
         <a href="{{ config['server']['url'] }}/openapi?f=json">{% trans %}OpenAPI Document{% endtrans %}</a>
       </p>
   </section>
-  {% if data['pubsub']['asyncapi'] %}
+  {% if data['pubsub'] and data['pubsub']['asyncapi'] %}
   <section id="asyncapi">
       <h2>{% trans %}AsyncAPI Definition{% endtrans %}</h2>
       <p>
