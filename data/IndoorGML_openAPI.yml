@@ -89,7 +89,7 @@ components:
       name: level
       in: query
       description: |
-        Filters the indoor feature content by a specific floor level.
+        Filters the indoorFeatures, thematicLayer, and primalSpace content by a specific floor level.
         
         **Filtering Logic:**
         * **Primal Space:** The filter is explicitly applied to `CellSpace` geometries on the specified level (e.g., '1F', 'B1').
@@ -1307,13 +1307,6 @@ components:
           schema:
             $ref: '#/components/schemas/ApiError'
 
-    NoRouteFound:
-      description: No route exists between the given nodes.
-      content:
-        application/json:
-          schema:
-            $ref: '#/components/schemas/ApiError'
-
     PayloadTooLarge:
       description: The request is too large for the server to process.
       content:
@@ -1596,7 +1589,9 @@ paths:
       tags:
         - InterLayerConnections
       summary: create an inter-layer connection
-      operationId: createInterLayerConnection
+      description: |-
+        Creates a new inter-layer connection between two thematic layers within the same IndoorFeature.
+        When connectedNodes and connectedCells are given simultaneously, the two cellSpaces and Nodes must have duality relationships.
       requestBody:
         description: The InterLayerConnection object to be created.
         required: true
@@ -1616,7 +1611,7 @@ paths:
       tags:
         - InterLayerConnections
       summary: retrieve inter-layer connections
-      description: Returns all inter-layer connections, with optional filtering by layer or topology.
+      description: Returns all inter-layer connections, with optional filtering by layer or topological Expression.
       operationId: getInterLayerConnections
       parameters:
         - $ref: '#/components/parameters/connectedLayerId'
@@ -1624,11 +1619,33 @@ paths:
         - $ref: '#/components/parameters/limit'
       responses:
         '200':
-          description: Successfully retrieved list of connections.
+          description: Successfully retrieved list of connection(s).
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/InterLayerConnectionList'
+        '400':
+          description: >-
+            Invalid parameter value. Used if `typeOfTopoExpression` or `limit` 
+            are malformed or out of range.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/responses/BadRequest'
+        '404':
+          description: >-
+            Not Found. The specified `connectedLayerId` does not exist 
+            within this collection.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/responses/NotFound'
+        '500':
+          description: Internal Server Error. Database connection or query failure.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/responses/InternalServerError'
 
   /collections/{collectionId}/items/{fId}/interlayerconnections/{cnId}:
     parameters:
