@@ -1,0 +1,56 @@
+asyncapi: 3.0.0
+channels:
+  notify-canada-metadata:
+    address: collections/canada-metadata
+    description: Open Canada sample data
+    messages:
+      DefaultMessage:
+        payload:
+          $ref: https://raw.githubusercontent.com/wmo-im/wis2-monitoring-events/refs/heads/main/schemas/cloudevents-v1.0.2.yaml
+  notify-heif-sample:
+    address: collections/heif-sample
+    description: HEIF sample
+    messages:
+      DefaultMessage:
+        payload:
+          $ref: https://raw.githubusercontent.com/wmo-im/wis2-monitoring-events/refs/heads/main/schemas/cloudevents-v1.0.2.yaml
+defaultContentType: application/json
+id: http://localhost:5000
+info:
+  contact:
+    email: you@example.org
+    name: Lastname, Firstname
+  description: pygeoapi provides an API to geospatial data https://github.com
+  externalDocs:
+    url: https://github.com/geopython/demo.pygeoapi.io/tree/master/services/pygeoapi_cite
+  license:
+    name: CC-BY 4.0 license
+    url: https://creativecommons.org/licenses/by/4.0/
+  tags:
+  - name: geospatial
+  - name: data
+  - name: api
+  title: pygeoapi default instance
+  version: 0.23.dev0
+operations:
+  consume-canada-metadata:
+    action: receive
+    channel:
+      $ref: '#/channels/notify-canada-metadata'
+  consume-heif-sample:
+    action: receive
+    channel:
+      $ref: '#/channels/notify-heif-sample'
+  publish-canada-metadata:
+    action: send
+    channel:
+      $ref: '#/channels/notify-canada-metadata'
+  publish-heif-sample:
+    action: send
+    channel:
+      $ref: '#/channels/notify-heif-sample'
+servers:
+  default:
+    description: pygeoapi provides an API to geospatial data https://github.com
+    host: localhost:1883
+    protocol: mqtt

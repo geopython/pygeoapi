@@ -999,6 +999,7 @@ def validate_openapi_document(instance_dict: dict) -> bool:
 
     schema_file = SCHEMASDIR / 'openapi' / 'openapi-3.0.x.json'
 
+    LOGGER.debug(f'Validating against {schema_file}')
     with schema_file.open() as fh2:
         schema_dict = json.load(fh2)
         jsonschema_validate(instance_dict, schema_dict)

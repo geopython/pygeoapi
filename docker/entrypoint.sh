@@ -46,6 +46,9 @@ fi
 if [[ -z "$PYGEOAPI_OPENAPI" ]]; then
     export PYGEOAPI_OPENAPI="${PYGEOAPI_HOME}/local.openapi.yml"
 fi
+if [[ -z "$PYGEOAPI_ASYNCAPI" ]]; then
+    export PYGEOAPI_ASYNCAPI="${PYGEOAPI_HOME}/local.asyncapi.yml"
+fi
 
 # gunicorn env settings with defaults
 SCRIPT_NAME=${SCRIPT_NAME:=/}
@@ -86,6 +89,12 @@ echo "Trying to generate openapi.yml"
 [[ $? -ne 0 ]] && error "openapi.yml could not be generated ERROR"
 
 echo "openapi.yml generated continue to pygeoapi"
+
+echo "Trying to generate asyncapi.yml"
+/venv/bin/pygeoapi asyncapi generate ${PYGEOAPI_CONFIG} --output-file ${PYGEOAPI_ASYNCAPI}
+
+[[ $? -ne 0 ]] && error "asyncapi.yml could not be generated ERROR"
+echo "asyncapi.yml generated continue to pygeoapi"
 
 start_gunicorn() {
     # SCRIPT_NAME should not have value '/'

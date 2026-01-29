@@ -185,10 +185,10 @@ properties:
                     channel:
                         type: string
                         description: channel to subscribe to
-                    show_link:
+                    hidden:
                         type: boolean
-                        default: true
-                        description: whether to display broker link on API responses
+                        default: false
+                        description: whether to hide broker link on API responses
                 required:
                     - url
         required:

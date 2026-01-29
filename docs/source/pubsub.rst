@@ -11,7 +11,13 @@ publish notifications on given topics using CloudEvents (as per the specificatio
 
 When enabled, core functionality of Pub/Sub includes:
 
-- displaying the broker link in the OGC API landing page (using the ``rel=hub`` link relation)
+- providing an AsyncAPI document (JSON and HTML)
+- providing the following links on the OGC API landing page:
+
+  - the broker link (``rel=hub`` link relation)
+  - the AsyncAPI JSON link (``rel=service-desc`` link relation and ``type=application/asyncapi+json`` media type)
+  - the AsyncAPI HTML link (``rel=service-doc`` link relation and ``type=text/html`` media type)
+
 - sending a notification message on the following events:
 
   - feature or record transactions (create, replace, update, delete)
@@ -31,7 +37,7 @@ Example directive:
        broker:
            url: mqtt://localhost:1883
            channel: messages/a/data  # optional
-           show_link: false  # default true
+           hidden: false # default
 
 HTTP
 ----
@@ -45,7 +51,7 @@ Example directive:
        broker:
            url: https://ntfy.sh
            channel: messages-a-data  # optional
-           show_link: true  # default
+           hidden: true  # default false
 
 .. note::
 
@@ -56,7 +62,7 @@ Example directive:
 
    As with any section of the pygeoapi configuration, environment variables may be used as needed, for example
    to set username/password information in a URL.  If ``pubsub.broker.url`` contains authentication, and
-   ``pubsub.broker.show_link`` is ``true``, the authentification inforation will be stripped from the URL
+   ``pubsub.broker.hidden`` is ``false``, the authentication information will be stripped from the URL
    before displaying it on the landing page.
 
 .. note::

@@ -736,3 +736,21 @@ msgstr ""
 
 msgid "Instances"
 msgstr ""
+
+msgid "Pub/Sub Notifications"
+msgstr ""
+
+msgid "Pub/Sub broker"
+msgstr ""
+
+msgid "Subscribe to notifications from this service"
+msgstr ""
+
+msgid "AsyncAPI Definition"
+msgstr ""
+
+msgid "The AsyncAPI document as HTML"
+msgstr ""
+
+msgid "The AsyncAPI document as JSON"
+msgstr ""

@@ -8,7 +8,7 @@
 # Copyright (c) 2025 Francesco Bartoli
 # Copyright (c) 2022 Luca Delucchi
 # Copyright (c) 2022 Krishna Lodha
-# Copyright (c) 2025 Tom Kralidis
+# Copyright (c) 2026 Tom Kralidis
 #
 # Permission is hereby granted, free of charge, to any person
 # obtaining a copy of this software and associated documentation
@@ -77,6 +77,18 @@ def openapi(request: HttpRequest) -> HttpResponse:
     """
 
     return execute_from_django(core_api.openapi_, request)
+
+
+def asyncapi(request: HttpRequest) -> HttpResponse:
+    """
+    AsyncAPI endpoint
+
+    :request Django HTTP Request
+
+    :returns: Django HTTP Response
+    """
+
+    return execute_from_django(core_api.asyncapi_, request)
 
 
 def conformance(request: HttpRequest) -> HttpResponse:

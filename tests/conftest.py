@@ -53,6 +53,12 @@ def openapi():
 
 
 @pytest.fixture()
+def asyncapi():
+    with open(get_test_file_path('pygeoapi-test-asyncapi.yml')) as fh:
+        return yaml_load(fh)
+
+
+@pytest.fixture()
 def api_(config, openapi):
     return API(config, openapi)
 

@@ -44,8 +44,8 @@ def config():
         return yaml_load(fh)
 
 
-def test_landing_page(config, openapi):
-    api_ = API(config, openapi)
+def test_landing_page(config, openapi, asyncapi):
+    api_ = API(config, openapi, asyncapi)
 
     broker_link = None
 
@@ -53,6 +53,8 @@ def test_landing_page(config, openapi):
     rsp_headers, code, response = landing_page(api_, req)
 
     content = json.loads(response)
+
+    assert len(content['links']) == 15
 
     for link in content['links']:
         if link.get('rel') == 'hub':
@@ -63,7 +65,7 @@ def test_landing_page(config, openapi):
     assert broker_link['channel'] == 'my/channel'
 
     config2 = deepcopy(config)
-    config2['pubsub']['broker']['show_link'] = False
+    config2['pubsub']['broker']['hidden'] = True
 
     api_ = API(config2, openapi)
 
@@ -73,6 +75,8 @@ def test_landing_page(config, openapi):
     rsp_headers, code, response = landing_page(api_, req)
 
     content = json.loads(response)
+
+    assert len(content['links']) == 12
 
     for link in content['links']:
         if link.get('rel') == 'hub':
@@ -83,7 +87,7 @@ def test_landing_page(config, openapi):
     config2 = deepcopy(config)
     config2['pubsub']['broker'].pop('channel', None)
 
-    api_ = API(config2, openapi)
+    api_ = API(config2, openapi, asyncapi)
 
     broker_link = None
 
@@ -91,6 +95,8 @@ def test_landing_page(config, openapi):
     rsp_headers, code, response = landing_page(api_, req)
 
     content = json.loads(response)
+
+    assert len(content['links']) == 15
 
     for link in content['links']:
         if link.get('rel') == 'hub':

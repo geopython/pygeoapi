@@ -60,7 +60,7 @@ class BasePubSubClient:
         self.broker_url = urlparse(self.broker)
         self.broker_safe_url = remove_url_auth(self.broker)
 
-        self.show_link = publisher_def['broker'].get('show_link', True)
+        self.hidden = publisher_def['broker'].get('hidden', False)
         self.channel = publisher_def['broker'].get('channel')
         self.client_id = f'pygeoapi-pubsub-{random.randint(0, 1000)}'
 

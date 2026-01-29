@@ -106,6 +106,17 @@
         <a href="{{ config['server']['url'] }}/openapi?f=json">{% trans %}OpenAPI Document{% endtrans %}</a>
       </p>
   </section>
+  {% if data['pubsub']['asyncapi'] %}
+  <section id="asyncapi">
+      <h2>{% trans %}AsyncAPI Definition{% endtrans %}</h2>
+      <p>
+        {% trans %}Documentation{% endtrans %}: <a href="{{ config['server']['url'] }}/asyncapi?f=html">{% trans %}UI{% endtrans %}</a>
+      </p>
+      <p>
+        <a href="{{ config['server']['url'] }}/asyncapi?f=json">{% trans %}AsyncAPI Document{% endtrans %}</a>
+      </p>
+  </section>
+  {% endif %}
   <section id="conformance">
       <h2>{% trans %}Conformance{% endtrans %}</h2>
       <p>
