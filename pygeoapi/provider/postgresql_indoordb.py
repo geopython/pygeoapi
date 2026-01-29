@@ -1790,6 +1790,8 @@ class PostgresIndoorDB:
                 if cur.fetchone():
                     LOGGER.warning(f"Duplicate Connection ID {new_id_str} rejected.")
                     return None # Or raise Exception("ID already exists in this feature")
+                
+                
 
                 # 3. Helper for Scoped Lookup (Same as before)
                 def get_scoped_id(table, id_str, parent_col_name, parent_pk):
@@ -1807,6 +1809,23 @@ class PostgresIndoorDB:
                 c1_pk = get_scoped_id('cell_space_n_boundary', c1_str, 'indoorfeature_id', feat_pk)
                 c2_pk = get_scoped_id('cell_space_n_boundary', c2_str, 'indoorfeature_id', feat_pk)
 
+                if (n1_pk and n2_pk) and (c1_pk and c2_pk):
+                    check_duality_sql = """
+                        SELECT (
+                            EXISTS(SELECT 1 FROM cell_space_n_boundary WHERE id = %s AND duality = %s)
+                            AND
+                            EXISTS(SELECT 1 FROM cell_space_n_boundary WHERE id = %s AND duality = %s)
+                        ) AS both_valid;
+                    """
+                    cur.execute(check_duality_sql, (c1_pk, n1_pk, c2_pk, n2_pk))
+                    is_valid = cur.fetchone()[0]  # Returns True or False
+
+                    if is_valid:
+                        LOGGER.debug("Both pairs are valid dualities.")
+                    else:
+                        msg = "Duality of one or both pairs is invalid"
+                        LOGGER.debug(msg)
+                        raise ValueError(msg)
                 # 5. Insert
                 insert_query = """
                     INSERT INTO interlayerconnection 
