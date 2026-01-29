@@ -1215,8 +1215,10 @@ class PostgresIndoorDB:
         feature_id_str = indoorfeature.get('id')
         properties = indoorfeature.get('properties', {})
         geometries = indoorfeature.get('geometry', {})
-        layers = indoorfeature.get('layers', [])
-
+        layers = indoorfeature.get('layers', None)
+        interlayerconnections = indoorfeature.get('layerConnection', None)
+        if not layers:
+            raise Exception(f"An indoorFeature must have at least one thematic layer.")
         with self.connection.cursor() as cur:
             try:
                 # Resolve Collection DB ID (Integer) from String ID
@@ -1226,12 +1228,12 @@ class PostgresIndoorDB:
                     raise Exception(f"Collection {collection_str_id} not found.")
                 collection_pk = res[0]
                 # Avoid same str id
-                cur.execute("SELECT id_str FROM indoorfeature WHERE collection_id = %s AND id_str = %s", (collection_pk, feature_id_str))
+                cur.execute("SELECT id_str FROM indoorFeature WHERE collection_id = %s AND id_str = %s", (collection_pk, feature_id_str))
                 res = cur.fetchone()
                 if res:
                     raise Exception(f"IndoorFeature {feature_id_str} already exist.")
                 # Insert IndoorFeature
-                LOGGER.debug("Insert indoorfeature")
+                LOGGER.debug("Insert indoorFeature")
                 cur.execute(
                     """
                     INSERT INTO indoorfeature (id_str, collection_id, geojson_geometry ,geojson_properties)
@@ -2505,7 +2507,10 @@ class PostgresIndoorDB:
 # region DualSpaceLayer 
 
     def post_dual_member(self, collection_str, item_str, layer_str, data): 
-        # Use self.connection instead of self.conn
+        """
+        Create a single Node or Edge. 
+        The created data id_str has to be unique in thematiclayer.
+        """
         with self.connection.cursor(cursor_factory=RealDictCursor) as cur:
             try:    
                 # --- Resolve Layer Context ---
@@ -2519,11 +2524,23 @@ class PostgresIndoorDB:
                 cur.execute(lookup_sql, (layer_str, item_str, collection_str))
                 layer_row = cur.fetchone()
                 if not layer_row: 
+                    LOGGER.debug("Layer not found.")
                     return None
-
+                
                 f_type = data.get('featureType')
                 id_str = data.get('id')
-                geom_json = json.dumps(data.get('geometry')) if data.get('geometry') else None
+                duplicate_sql = """
+                    SELECT n.id
+                    FROM node_n_edge n
+                    WHERE n.thematiclayer_id = %s AND n.id_str = %s
+                """
+                cur.execute(duplicate_sql, (layer_row['id'], id_str))
+                row = cur.fetchone()
+                if row:
+                    LOGGER.debug(f"{id_str} is already exist. id_str must be unique in layer.")
+                    return None
+                
+                geom_wkt = self.json_to_wkt(data.get('geometry'))
 
                 # ============================
                 # CASE A: NODE
@@ -2534,18 +2551,20 @@ class PostgresIndoorDB:
                     if not duality_ref:
                         raise ValueError("Node must have a 'duality' reference to a CellSpace.")
 
-                    clean_duality = str(duality_ref).replace('#', '')
+                    clean_duality = duality_ref.split(':')[-1]
 
                     # 1. Verify Duality Target (Must be a Space)
                     check_space_sql = """
-                        SELECT id FROM cell_space_n_boundary 
-                        WHERE id_str = %s AND indoorfeature_id = %s AND type = 'space'
+                        SELECT id, duality_id FROM cell_space_n_boundary 
+                        WHERE id_str = %s AND thematiclayer_id = %s AND type = 'space'
                     """
-                    cur.execute(check_space_sql, (clean_duality, layer_row['indoorfeature_id']))
+                    cur.execute(check_space_sql, (clean_duality, layer_row['id']))
                     space_row = cur.fetchone()
                     
                     if not space_row:
                         raise ValueError(f"Duality target '{clean_duality}' does not exist or is not a CellSpace.")
+                    elif space_row['duality_id'] != None:
+                        raise ValueError(f"Duality target '{clean_duality}' already has a duality.")
                     
                     primal_id = space_row['id']
 
@@ -2556,12 +2575,12 @@ class PostgresIndoorDB:
                             geometry_val, duality_id
                         ) VALUES (
                             %s, 'node', %s, %s, %s,
-                            ST_SetSRID(ST_GeomFromGeoJSON(%s), 4326), %s
+                            ST_GeomFromText(%s, 0), %s
                         ) RETURNING id, id_str
                     """
                     cur.execute(insert_node_sql, (
                         id_str, layer_row['collection_id'], layer_row['indoorfeature_id'], layer_row['id'],
-                        geom_json, primal_id
+                        geom_wkt, primal_id
                     ))
                     new_node = cur.fetchone()
 
@@ -2585,33 +2604,34 @@ class PostgresIndoorDB:
                     primal_id = None
                     
                     if duality_ref:
-                        clean_duality = str(duality_ref).replace('#', '')
+                        clean_duality = duality_ref.split(':')[-1]
                         # Check if Boundary exists
                         check_bound_sql = """
-                            SELECT id FROM cell_space_n_boundary 
-                            WHERE id_str = %s AND indoorfeature_id = %s AND type = 'boundary'
+                            SELECT id, duality_id FROM cell_space_n_boundary 
+                            WHERE id_str = %s AND thematiclayer_id = %s AND type = 'boundary'
                         """
-                        cur.execute(check_bound_sql, (clean_duality, layer_row['indoorfeature_id']))
+                        cur.execute(check_bound_sql, (clean_duality, layer_row['id']))
                         bound_row = cur.fetchone()
                         
                         if not bound_row:
                             raise ValueError(f"Duality target '{clean_duality}' does not exist or is not a CellBoundary.")
+                        elif bound_row['duality_id'] != None:
+                            raise ValueError(f"Duality target '{clean_duality}' already has a duality.")
+
                         primal_id = bound_row['id']
 
                     # 2. Resolve Connected Nodes (Handling Directionality!)
-                    ref_source = str(connects[0]).replace('#', '')
-                    ref_target = str(connects[1]).replace('#', '')
+                    ref_source = connects[0].split(':')[-1]
+                    ref_target = connects[1].split(':')[-1]
                     
                     check_nodes_sql = "SELECT id, id_str FROM node_n_edge WHERE id_str = ANY(%s) AND thematiclayer_id = %s AND type = 'node'"
                     cur.execute(check_nodes_sql, ([ref_source, ref_target], layer_row['id']))
                     node_rows = cur.fetchall() # Returns list of dicts
 
                     if len(node_rows) != 2:
-                        # Check if it's a loop (connecting to self) or actually missing
-                        if ref_source == ref_target and len(node_rows) == 1:
-                            pass # Self-loops are rare in indoorGML but possible
-                        else:
-                            raise ValueError("One or both connected States do not exist.")
+                        msg = "One or both connected nodes do not exist."
+                        LOGGER.debug(msg)
+                        raise ValueError(msg)
 
                     # FIX: Map ID_STR to Internal ID to preserve order (Source vs Target)
                     id_map = {row['id_str']: row['id'] for row in node_rows}
@@ -2625,13 +2645,13 @@ class PostgresIndoorDB:
                             geometry_val, weight, duality_id
                         ) VALUES (
                             %s, 'edge', %s, %s, %s,
-                            ST_SetSRID(ST_GeomFromGeoJSON(%s), 4326), %s, %s
+                            ST_GeomFromText(%s, 0), %s, %s
                         ) RETURNING id, id_str
                     """
                     
                     cur.execute(insert_edge_sql, (
                         id_str, layer_row['collection_id'], layer_row['indoorfeature_id'], layer_row['id'],
-                        geom_json, data.get('weight', 1.0), primal_id
+                        geom_wkt, data.get('weight', 0.0), primal_id
                     ))
                     new_edge = cur.fetchone()
 
@@ -2850,6 +2870,10 @@ class PostgresIndoorDB:
                 """
                 cur.execute(query, (member_str, layer_str, collection_str, item_str))
                 result = cur.fetchone()
+                if not result: 
+                    msg = f"{member_str} is not found."
+                    LOGGER.debug(msg)
+                    raise ValueError(msg)
 
                 # 1. Base Response
                 response = {
@@ -2863,7 +2887,6 @@ class PostgresIndoorDB:
                 # 2. Add Edge-Specific Fields
                 if result['type'] == 'edge':
                     response["weight"] = float(result['weight']) if result['weight'] else 0.0
-                    
                     
                     if result['source_ref']: connects.append(f"{result['source_ref']}")
                     if result['target_ref']: connects.append(f"{result['target_ref']}")
@@ -2880,112 +2903,101 @@ class PostgresIndoorDB:
                 raise e
 
 
-    def update_dual_member(self, collection_str, item_str, layer_str, member_id, data):
+    def update_dual_member(self, collection_str, item_str, layer_str, member_str, data):
         """
         Updates an Edge's weight.
         Strictly prevents updates to Nodes.
         """
-        self.connect()
-
-        try:
-            with self.connection.cursor(cursor_factory=RealDictCursor) as cur:
+        with self.connection.cursor(cursor_factory=RealDictCursor) as cur:
+            try:
                 # One SQL command to rule them all:
                 # 1. Joins the hierarchy to validate the URL path
                 # 2. Filters by type='edge' to protect Nodes
                 # 3. Updates the weight
                 # 4. Returns the ID to confirm success
+                lookup_sql = """
+                    SELECT n.id, n.id_str
+                    FROM node_n_edge n
+                    JOIN collection c ON n.collection_id = c.id
+                    JOIN indoorfeature i ON n.indoorfeature_id = i.id
+                    JOIN thematiclayer t ON n.thematiclayer_id = t.id
+                    WHERE n.id_str = %s AND t.id_str = %s AND c.id_str = %s AND i.id_str = %s AND type='edge'
+                """
+                cur.execute(lookup_sql, (member_str, layer_str, collection_str, item_str))
+                target_edge = cur.fetchone()
+                if not target_edge:
+                    msg = f"{member_str} is not found or is not edge."
+                    LOGGER.debug(msg)
+                    raise ValueError(msg)
+                
                 update_sql = """
                     UPDATE node_n_edge 
                     SET weight = %s 
-                    WHERE id_str = %s 
+                    WHERE id = %s 
                     AND type = 'edge'
-                    AND thematiclayer_id = (
-                        SELECT t.id FROM thematiclayer t
-                        JOIN collection col ON t.collection_id = col.id
-                        JOIN indoorfeature i ON t.indoorfeature_id = i.id
-                        WHERE t.id_str = %s 
-                          AND col.id_str = %s 
-                          AND i.id_str = %s
-                    )
-                    RETURNING id;
                 """
                 
                 cur.execute(update_sql, (
-                    data.get('weight'), 
-                    member_id, 
-                    layer_str, 
-                    collection_str, 
-                    item_str
+                    float(data.get('weight')), 
+                    target_edge['id'], 
                 ))
                 
-                result = cur.fetchone()
-                
-                # In autocommit mode, we don't call .commit()
-                # If result exists, the update is already permanent.
-                return True if result else False
+                self.connection.commit()
+                return True
 
-        except Exception as e:
-            print(f"Update Error: {e}")
-            return False
-        finally:
-            # THIS IS THE KEY: Disconnect after every request to force 
-            # the next GET request to see the fresh data snapshot.
-            self.disconnect()
+            except Exception as e:
+                self.connection.rollback()
+                print(f"Update Error: {e}")
+                raise e
 
-
-    def delete_dual_member(self, collection_str, item_str, layer_str, member_id):
+    def delete_dual_member(self, collection_str, item_str, layer_str, member_str):
         """
         Deletes a Node or Edge from a Thematic Layer.
-        
+        If you delete node, the connected edges are also deleted.
         Cascading Rules:
         1. If Node (State):
            - Remove InterlayerConnections (Links to other Thematic Layers).
-           - Remove connected Edges (Intra-layer transitions).
            - Remove 'connects' table entries.
+           - Remove connected Edges (Intra-layer transitions).
            - Clear Primal Duality (Room references).
         2. If Edge (Transition):
            - Remove 'connects' table entries.
            - Clear Primal Duality (Boundary references).
         """
-        self.connect() # autocommit=True
-
-        try:
-            with self.connection.cursor(cursor_factory=RealDictCursor) as cur:
-                # 1. START ATOMIC TRANSACTION
-                cur.execute("BEGIN;")
-                
+        LOGGER.debug("Delete dual member")
+        with self.connection.cursor(cursor_factory=RealDictCursor) as cur:
+            try:
                 # --- Resolve Layer Context ---
                 lookup_sql = """
                     SELECT t.id FROM thematiclayer t
-                    WHERE t.id_str = %s
-                    AND t.indoorfeature_id = (SELECT id FROM indoorfeature WHERE id_str = %s)
-                    AND t.collection_id = (SELECT id FROM collection WHERE id_str = %s)
+                    JOIN collection c ON t.collection_id = c.id
+                    JOIN indoorfeature i ON t.indoorfeature_id = i.id
+                    WHERE t.id_str = %s AND c.id_str = %s AND i.id_str = %s
                 """
-                cur.execute(lookup_sql, (layer_str, item_str, collection_str))
+                cur.execute(lookup_sql, (layer_str, collection_str, item_str))
                 layer_row = cur.fetchone()
                 if not layer_row: 
-                    cur.execute("ROLLBACK;")
-                    return False
+                    msg = f"{layer_str} is not found."
+                    LOGGER.debug(msg)
+                    raise ValueError(msg)
                 
                 # --- Identify the Member ---
                 check_sql = "SELECT id, type FROM node_n_edge WHERE id_str = %s AND thematiclayer_id = %s"
-                cur.execute(check_sql, (member_id, layer_row['id']))
+                cur.execute(check_sql, (member_str, layer_row['id']))
                 target = cur.fetchone()
                 
                 if not target: 
-                    cur.execute("ROLLBACK;")
-                    return False 
+                    msg = f"{member_str} is not found."
+                    LOGGER.debug(msg)
+                    raise ValueError(msg)
 
-                # =========================================================
-                # LOGIC BRANCH: NODE vs EDGE
-                # =========================================================
-                
                 if target['type'] == 'node':
+                    LOGGER.debug(target)
                     # --- A. Clean up InterlayerConnections (Cross-Layer Links) ---
                     # If this node links to a node in a DIFFERENT Thematic Layer, delete that link.
                     delete_interlayer_sql = """
                         DELETE FROM interlayerconnection 
-                        WHERE state_id_1 = %s OR state_id_2 = %s
+                        WHERE connected_node_a = %s OR connected_node_b = %s
                     """
                     cur.execute(delete_interlayer_sql, (target['id'], target['id']))
 
@@ -3017,12 +3029,8 @@ class PostgresIndoorDB:
                     # Simple: Remove the topological link for this edge
                     cur.execute("DELETE FROM connects WHERE edge_id = %s", (target['id'],))
 
-                # =========================================================
-                # COMMON CLEANUP
-                # =========================================================
-
                 # --- STEP C: Clean up Reverse Duality (Primal Space) ---
-                # Ensure no Primal Space (Room) or Boundary points to this deleted member
+                # Ensure no Cell Space or Boundary points to this deleted member
                 cur.execute("""
                     UPDATE cell_space_n_boundary 
                     SET duality_id = NULL 
@@ -3031,18 +3039,13 @@ class PostgresIndoorDB:
 
                 # --- STEP D: Final Delete of the Member ---
                 cur.execute("DELETE FROM node_n_edge WHERE id = %s", (target['id'],))
-                
-                # Finalize
-                cur.execute("COMMIT;")
+                self.connection.commit()
                 return True
 
-        except Exception as e:
-            if self.connection:
+            except Exception as e:
                 self.connection.rollback()
-            print(f"Delete Dual Member Error: {e}")
-            return False
-        finally:
-            self.disconnect()
+                print(f"Delete Dual Member Error: {e}")
+                return False
 
     def json_to_wkt(self, geom_json):
         """
