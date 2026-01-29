@@ -542,12 +542,12 @@ def manage_collection_item_layer(api: API, request: APIRequest, action, dataset,
             try:
                 pidb_provider.connect()
                 # Schema Validation
-                layer_schema = {
-                    "$schema": INDOOR_SCHEMA.get("$schema"),
-                    "$defs": INDOOR_SCHEMA.get("$defs"), 
-                    "$ref": "#/$defs/ThematicLayer"      
-                }
-                validate(instance=data, schema=layer_schema)
+                # layer_schema = {
+                #     "$schema": INDOOR_SCHEMA.get("$schema"),
+                #     "$defs": INDOOR_SCHEMA.get("$defs"), 
+                #     "$ref": "#/$defs/ThematicLayer"      
+                # }
+                # validate(instance=data, schema=layer_schema)
                 pidb_provider.post_thematic_layer(
                     collection_str_id, 
                     feature_str_id,
