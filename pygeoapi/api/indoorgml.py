@@ -1262,23 +1262,24 @@ def get_dual(api: API, request: APIRequest, collection_id: str, item_id: str, la
         return api.get_format_exception(request)
     
     headers = request.get_response_headers(SYSTEM_LOCALE)
-    provider = PostgresIndoorDB()
+    pidb_provider = PostgresIndoorDB()
 
     # 1. Extract and Parse Query Parameters
     min_weight_param = request.params.get('minWeight')
     max_weight_param = request.params.get('maxWeight')
 
     try:
-        min_weight = float(min_weight_param) if min_weight_param is not None else None
-        max_weight = float(max_weight_param) if max_weight_param is not None else None
+        min_weight = float(min_weight_param) if min_weight_param else None
+        max_weight = float(max_weight_param) if max_weight_param else None
     except ValueError:
         return api.get_exception(
             HTTPStatus.BAD_REQUEST,
             headers, request.format, 'InvalidParameter', "Weights must be valid numbers")
 
     try:
+        pidb_provider.connect()
         # 2. Call the Provider function
-        meta, nodes, edges = provider.get_dual_features_and_metadata(
+        meta, nodes, edges = pidb_provider.get_dual_features(
             collection_id, 
             item_id, 
             layer_id, 
@@ -1293,9 +1294,9 @@ def get_dual(api: API, request: APIRequest, collection_id: str, item_id: str, la
         base_url = f"{api.config['server']['url']}/collections/{collection_id}/items/{item_id}/layers/{layer_id}/dual"
 
         query_params = {}
-        if min_weight is not None:
+        if min_weight:
             query_params['minWeight'] = min_weight
-        if max_weight is not None:
+        if max_weight:
             query_params['maxWeight'] = max_weight
             
         self_href = base_url
@@ -1304,10 +1305,10 @@ def get_dual(api: API, request: APIRequest, collection_id: str, item_id: str, la
 
         # 4. Construct Response
         response = {
-            "id": meta['dualspace_id_str'] if meta['dualspace_id_str'] else f"Dual_{layer_id}",
+            "id": meta['dualspace_id_str'],
             "featureType": "DualSpaceLayer",
-            "isLogical": meta.get('is_logical', True), 
-            "isDirected": meta.get('is_directed', True),
+            "isLogical": meta.get('is_logical', False), 
+            "isDirected": meta.get('is_directed', False),
             "creationDatetime": meta['d_creation_datetime'].isoformat() if meta.get('d_creation_datetime') else None,
             "terminationDatetime": meta['d_termination_datetime'].isoformat() if meta.get('d_termination_datetime') else None,
             
@@ -1329,25 +1330,25 @@ def get_dual(api: API, request: APIRequest, collection_id: str, item_id: str, la
     except Exception as e:
         return api.get_exception(HTTPStatus.INTERNAL_SERVER_ERROR, headers, request.format, 'ServerError', str(e))
     finally:
-        provider.disconnect()
-
+        pidb_provider.disconnect()
 
 def get_dual_member(api: API, request: APIRequest, collection_id: str, item_id: str, layer_id: str, member_id: str) -> Tuple[dict, int, str]:
     """
     GET /collections/.../layers/{layerId}/dual/{memberId}
     Retrieves a single Node or Edge.
     """
+    if not request.is_valid():
+        return api.get_format_exception(request)
+    
     headers = request.get_response_headers(SYSTEM_LOCALE)
-    provider = PostgresIndoorDB()
-
+    pidb_provider = PostgresIndoorDB()
     try:
+        pidb_provider.connect()
         # Fetch the specific member data
-        member = provider.get_dual_member(collection_id, item_id, layer_id, member_id)
+        member = pidb_provider.get_dual_member(collection_id, item_id, layer_id, member_id)
         
         if not member:
             return api.get_exception(HTTPStatus.NOT_FOUND, headers, request.format, 'NotFound', 'Member not found')
-
-        
 
         # 3. HATEOAS Links
         member["links"] = [
@@ -1357,12 +1358,6 @@ def get_dual_member(api: API, request: APIRequest, collection_id: str, item_id: 
                 "type": "application/json",
                 "title": "Dual Member"
             },
-            {
-                "href": f"{api.config['server']['url']}/collections/{collection_id}/items/{item_id}/layers/{layer_id}/dual",
-                "rel": "collection",
-                "type": "application/json",
-                "title": "Dual Space Layer"
-            }
         ]
         
         return headers, HTTPStatus.OK, to_json(member, api.pretty_print)
@@ -1370,7 +1365,7 @@ def get_dual_member(api: API, request: APIRequest, collection_id: str, item_id: 
     except Exception as e:
         return api.get_exception(HTTPStatus.INTERNAL_SERVER_ERROR, headers, request.format, 'ServerError', str(e))
     finally:
-        provider.disconnect()
+        pidb_provider.disconnect()
 
 def manage_dual(api: API, request: APIRequest, action: str, collection_id: str, item_id: str, layer_id: str, member_id: str = None) -> Tuple[dict, int, str]:
     """
