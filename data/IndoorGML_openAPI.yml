@@ -144,6 +144,14 @@ components:
       schema:
         type: string
 
+    mId:
+      name: mId
+      in: path
+      description: Local identifier of a specific memberId for Primal and Dual spaces (e.g., 'C83').
+      required: true
+      schema:
+        type: string
+
     poi:
       name: poi
       in: query
@@ -180,43 +188,11 @@ components:
         format: float
         minimum: 0
     
-    csId:
-      name: csId
-      in: path
-      description: Local identifier of a specific CellSpace (e.g., 'C101').
-      required: true
-      schema:
-        type: string
-
-    cbId:
-      name: cbId
-      in: path
-      description: Local identifier of a specific CellBoundary (e.g., 'CB-101-Door').
-      required: true
-      schema:
-        type: string
-
-    nId:
-      name: nId
-      in: path
-      description: Local identifier of a specific Node (e.g., 'N1').
-      required: true
-      schema:
-        type: string
-
-    eId:
-      name: eId
-      in: path
-      description: Local identifier of a specific Edge (e.g., 'E1').
-      required: true
-      schema:
-        type: string
-    
     cellSpaceName:
       name: cellSpaceName
       in: query
       required: false
-      description: Filter results to include only those matching the specified CellSpace name.
+      description: Filter results to include only those matching the specified CellSpace name. Exact Match
       schema:
         type: string
     
@@ -1532,6 +1508,10 @@ paths:
       description: |-
         Uploads a new thematic layer (e.g., 'Pet-friendly' or 'Furnitures') to a specific `fId`.
         The body must conform to the IndoorJSON ThematicLayer schema.
+
+        The `Id`s of the members in each primalSpace and dualSpace must be unique within the layer.
+        Thus, a `cellSpace` can have the same `Id` as a `node` or `edge` even in the same ThematicLayer.
+        (It is recommended to use a consistent naming convention to avoid confusion between them)
       operationId: createThematicLayer
       requestBody:
         required: true
@@ -1721,7 +1701,6 @@ paths:
       - $ref: '#/components/parameters/collectionId'
       - $ref: '#/components/parameters/fId'
       - $ref: '#/components/parameters/tId'
-      - $ref: '#/components/parameters/cellSpaceName'
     
     get:
       tags:
@@ -1736,6 +1715,7 @@ paths:
         - $ref: '#/components/parameters/level'
         - $ref: '#/components/parameters/poi'
         - $ref: '#/components/parameters/isVirtual'
+        - $ref: '#/components/parameters/cellSpaceName'
       responses:
         '200':
           description: Success. Returns the PrimalSpaceLayer.
@@ -1744,13 +1724,22 @@ paths:
               schema:
                 $ref: '#/components/schemas/PrimalSpaceLayer'
         '404':
-          description: Not Found. The building {fId} or layer {tId} does not exist.
+          description: Not Found. The building `fId` or layer `tId` does not exist.
 
     post:
       tags:
         - PrimalSpaceLayer
       summary: create primal space member
-      description: Create a new cellSpaceMember or cellBoundaryMember.
+      description: |-
+        Create a new `cellSpace` or `cellBoundary`.
+        
+        **Constraints:**
+        - If a `duality` is provided for a `cellBoundary`, the referenced `edge` must already exist and must not already be linked to another feature.
+        - A `cellSpace` cannot have a `duality` link at the moment of creation, as a `node` cannot exist independently without its parent graph.
+        
+        **Automatic Updates:**
+        - When a `node` is later created with a `duality` link to an existing `cellSpace`, the system automatically updates the `cellSpace` record to reflect this bidirectional relationship.
+        - Vice versa, the `edge` record is also updated to include the `cellBoundary` as its duality.
       operationId: createPrimalMember
       requestBody:
         required: true
@@ -1868,9 +1857,6 @@ paths:
       description: Computes a navigable route between two nodes within an IndoorFeature using the dual graph of the specified thematic layer.
       operationId: computeIndoorRoute
       parameters:
-        - $ref: '#/components/parameters/collectionId'
-        - $ref: '#/components/parameters/fId'
-        - $ref: '#/components/parameters/tId'
         - $ref: '#/components/parameters/sn'
         - $ref: '#/components/parameters/dn'
       responses:
@@ -1883,22 +1869,25 @@ paths:
         '404':
           description: Invalid path parameter.
 
-  /collections/{collectionId}/items/{fId}/layers/{tId}/primal/{csId}:
+  /collections/{collectionId}/items/{fId}/layers/{tId}/primal/{mId}:
     parameters:
       - $ref: '#/components/parameters/collectionId'
       - $ref: '#/components/parameters/fId'
       - $ref: '#/components/parameters/tId'
-      - $ref: '#/components/parameters/csId'
+      - $ref: '#/components/parameters/mId'
     
     get:
       tags:
         - PrimalSpaceLayer
       summary: retrieve a specific cell space
-      description: Returns the full representation of a CellSpace, including semantic metadata and 2D/3D geometry.
-      operationId: getCellSpace
+      description: |-
+        Returns the full representation of a primalSpaceMember.
+        If the `mId` refers to a `cellSpace`, it returns the whole cellSpace.
+        If the `mId` refers to a `cellBoundary`, it returns the whole cellBoundary.
+      operationId: getPrimalMember
       responses:
         '200':
-          description: Success. Returns the CellSpace object.
+          description: Success. Returns the CellSpace or CellBoundary object.
           content:
             application/json:
               schema:
@@ -1943,39 +1932,13 @@ paths:
           description: Deleted successfully.
         '404':
           description: CellSpace ID not found.
-  /collections/{collectionId}/items/{fId}/layers/{tId}/primal/{cbId}:
-    parameters:
-      - $ref: '#/components/parameters/collectionId'
-      - $ref: '#/components/parameters/fId'
-      - $ref: '#/components/parameters/tId'
-      - $ref: '#/components/parameters/cbId'
 
-    get:
-      tags:
-        - PrimalSpaceLayer
-      summary: Get a specific CellBoundary
-      description: |-
-        Returns a single CellBoundary object from the Primal Space. 
-        This includes the geometric properties and the `duality` link to the corresponding Edge in the Dual Space.
-      operationId: getCellBoundary
-      responses:
-        '200':
-          description: Success. Returns the requested CellBoundary.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/CellBoundary'
-        '404':
-          description: CellBoundary not found.
-        '400':
-          description: Invalid ID supplied.
-
-  /collections/{collectionId}/items/{fId}/layers/{tId}/primal/{cbId}/bounding:
+  /collections/{collectionId}/items/{fId}/layers/{tId}/primal/{mId}/bounding:
     parameters:
         - $ref: '#/components/parameters/collectionId'
         - $ref: '#/components/parameters/fId'
         - $ref: '#/components/parameters/tId'
-        - $ref: '#/components/parameters/cbId'
+        - $ref: '#/components/parameters/mId'
     get:
       tags:
         - Services
@@ -1993,51 +1956,12 @@ paths:
         '404':
           description: CellBoundary not found.
 
-  /collections/{collectionId}/items/{fId}/layers/{tId}/dual/{nId}:
+  /collections/{collectionId}/items/{fId}/layers/{tId}/dual/{mId}/connected:
     parameters:
       - $ref: '#/components/parameters/collectionId'
       - $ref: '#/components/parameters/fId'
       - $ref: '#/components/parameters/tId'
-      - $ref: '#/components/parameters/nId'
-
-    get:
-      tags:
-        - DualSpaceLayer
-      summary: Retrieve a specific node
-      description: |-
-        Retrieves a single Node in the navigation network. 
-        Returns the node's geometry and the IDs of all adjacent Edges, which is essential for step-by-step path plotting.
-      operationId: getNode
-      responses:
-        '200':
-          description: Successfully retrieved the Node.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Node'
-        '404':
-          description: Node ID not found in this thematic layer.
-
-    delete:
-      tags:
-        - DualSpaceLayer
-      summary: delete a specific node
-      description: |-
-        Permanently removes the specified Node from the DualSpace.
-        **Topological Cleanup:** This operation will also delete all Edges that include this node in their `connects` array to maintain graph integrity.
-      operationId: deleteNode
-      responses:
-        '204':
-          description: Successfully deleted the node and its associated edges.
-        '404':
-          description: The specified building, layer, or Node ID was not found.     
-
-  /collections/{collectionId}/items/{fId}/layers/{tId}/dual/{nId}/connected:
-    parameters:
-      - $ref: '#/components/parameters/collectionId'
-      - $ref: '#/components/parameters/fId'
-      - $ref: '#/components/parameters/tId'
-      - $ref: '#/components/parameters/nId'
+      - $ref: '#/components/parameters/mId'
 
     get:
       tags:
@@ -2047,10 +1971,6 @@ paths:
         Returns nodes and their associated cell spaces that are connectively reachable from the given node within the indoor dual graph.
       operationId: getConnectedNodes
       parameters:
-        - $ref: '#/components/parameters/collectionId'
-        - $ref: '#/components/parameters/fId'
-        - $ref: '#/components/parameters/tId'
-        - $ref: '#/components/parameters/nId'
         - $ref: '#/components/parameters/limit'
         - $ref: '#/components/parameters/hop'
       responses:
@@ -2063,12 +1983,12 @@ paths:
         '404':
           description: Node ID not found in this thematic layer.     
 
-  /collections/{collectionId}/items/{fId}/layers/{tId}/dual/{eId}:
+  /collections/{collectionId}/items/{fId}/layers/{tId}/dual/{mId}:
     parameters:
       - $ref: '#/components/parameters/collectionId'
       - $ref: '#/components/parameters/fId'
       - $ref: '#/components/parameters/tId'
-      - $ref: '#/components/parameters/eId'
+      - $ref: '#/components/parameters/mId'
 
     get:
       tags:
