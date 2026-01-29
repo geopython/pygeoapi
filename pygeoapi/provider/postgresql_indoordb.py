@@ -2903,58 +2903,52 @@ class PostgresIndoorDB:
                 raise e
 
 
-    def update_dual_member(self, collection_str, item_str, layer_str, member_id, data):
+    def update_dual_member(self, collection_str, item_str, layer_str, member_str, data):
         """
         Updates an Edge's weight.
         Strictly prevents updates to Nodes.
         """
-        self.connect()
-
-        try:
-            with self.connection.cursor(cursor_factory=RealDictCursor) as cur:
+        with self.connection.cursor(cursor_factory=RealDictCursor) as cur:
+            try:
                 # One SQL command to rule them all:
                 # 1. Joins the hierarchy to validate the URL path
                 # 2. Filters by type='edge' to protect Nodes
                 # 3. Updates the weight
                 # 4. Returns the ID to confirm success
+                lookup_sql = """
+                    SELECT n.id, n.id_str
+                    FROM node_n_edge n
+                    JOIN collection c ON n.collection_id = c.id
+                    JOIN indoorfeature i ON n.indoorfeature_id = i.id
+                    JOIN thematiclayer t ON n.thematiclayer_id = t.id
+                    WHERE n.id_str = %s AND t.id_str = %s AND c.id_str = %s AND i.id_str = %s AND type='edge'
+                """
+                cur.execute(lookup_sql, (member_str, layer_str, collection_str, item_str))
+                target_edge = cur.fetchone()
+                if not target_edge:
+                    msg = f"{member_str} is not found or is not edge."
+                    LOGGER.debug(msg)
+                    raise ValueError(msg)
+                
                 update_sql = """
                     UPDATE node_n_edge 
                     SET weight = %s 
-                    WHERE id_str = %s 
+                    WHERE id = %s 
                     AND type = 'edge'
-                    AND thematiclayer_id = (
-                        SELECT t.id FROM thematiclayer t
-                        JOIN collection col ON t.collection_id = col.id
-                        JOIN indoorfeature i ON t.indoorfeature_id = i.id
-                        WHERE t.id_str = %s 
-                          AND col.id_str = %s 
-                          AND i.id_str = %s
-                    )
-                    RETURNING id;
                 """
                 
                 cur.execute(update_sql, (
-                    data.get('weight'), 
-                    member_id, 
-                    layer_str, 
-                    collection_str, 
-                    item_str
+                    float(data.get('weight')), 
+                    target_edge['id'], 
                 ))
                 
-                result = cur.fetchone()
-                
-                # In autocommit mode, we don't call .commit()
-                # If result exists, the update is already permanent.
-                return True if result else False
+                self.connection.commit()
+                return True
 
-        except Exception as e:
-            print(f"Update Error: {e}")
-            return False
-        finally:
-            # THIS IS THE KEY: Disconnect after every request to force 
-            # the next GET request to see the fresh data snapshot.
-            self.disconnect()
-
+            except Exception as e:
+                self.connection.rollback()
+                print(f"Update Error: {e}")
+                raise e
 
     def delete_dual_member(self, collection_str, item_str, layer_str, member_str):
         """
