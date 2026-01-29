@@ -2,7 +2,7 @@
 #
 # Authors: Tom Kralidis <tomkralidis@gmail.com>
 #
-# Copyright (c) 2025 Tom Kralidis
+# Copyright (c) 2026 Tom Kralidis
 #
 # Permission is hereby granted, free of charge, to any person
 # obtaining a copy of this software and associated documentation
@@ -285,7 +285,7 @@ class BaseProvider:
 
                 msg = 'record already exists'
                 LOGGER.error(msg)
-                raise ProviderInvalidDataError(msg)
+                raise ProviderInvalidDataError(user_msg=msg)
             except ProviderItemNotFoundError:
                 LOGGER.debug('record does not exist')
 

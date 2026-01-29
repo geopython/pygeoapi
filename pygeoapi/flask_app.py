@@ -3,7 +3,7 @@
 # Authors: Tom Kralidis <tomkralidis@gmail.com>
 #          Norman Barker <norman.barker@gmail.com>
 #
-# Copyright (c) 2025 Tom Kralidis
+# Copyright (c) 2026 Tom Kralidis
 #
 # Permission is hereby granted, free of charge, to any person
 # obtaining a copy of this software and associated documentation
@@ -46,6 +46,7 @@ import pygeoapi.api.maps as maps_api
 import pygeoapi.api.processes as processes_api
 import pygeoapi.api.stac as stac_api
 import pygeoapi.api.tiles as tiles_api
+from pygeoapi.asyncapi import load_asyncapi_document
 from pygeoapi.openapi import load_openapi_document
 from pygeoapi.config import get_config
 from pygeoapi.util import get_mimetype, get_api_rules
@@ -53,6 +54,7 @@ from pygeoapi.util import get_mimetype, get_api_rules
 
 CONFIG = get_config()
 OPENAPI = load_openapi_document()
+ASYNCAPI = load_asyncapi_document()
 
 API_RULES = get_api_rules(CONFIG)
 
@@ -91,7 +93,7 @@ if CONFIG['server'].get('cors', False):
 APP.config['JSONIFY_PRETTYPRINT_REGULAR'] = CONFIG['server'].get(
     'pretty_print', True)
 
-api_ = API(CONFIG, OPENAPI)
+api_ = API(CONFIG, OPENAPI, ASYNCAPI)
 
 OGC_SCHEMAS_LOCATION = CONFIG['server'].get('ogc_schemas_location')
 
@@ -179,6 +181,17 @@ def openapi():
     """
 
     return execute_from_flask(core_api.openapi_, request)
+
+
+@BLUEPRINT.route('/asyncapi')
+def asyncapi():
+    """
+    AsyncAPI endpoint
+
+    :returns: HTTP response
+    """
+
+    return execute_from_flask(core_api.asyncapi_, request)
 
 
 @BLUEPRINT.route('/conformance')

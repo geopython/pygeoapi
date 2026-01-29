@@ -2,7 +2,7 @@
 #
 # Authors: Tom Kralidis <tomkralidis@gmail.com>
 #
-# Copyright (c) 2025 Tom Kralidis
+# Copyright (c) 2026 Tom Kralidis
 #
 # Permission is hereby granted, free of charge, to any person
 # obtaining a copy of this software and associated documentation
@@ -249,7 +249,7 @@ def str2bool(value: Union[bool, str]) -> bool:
 
 def to_json(dict_: dict, pretty: bool = False) -> str:
     """
-    Serialize dict to json
+    Serialize dict to JSON
 
     :param dict_: `dict` of JSON representation
     :param pretty: `bool` of whether to prettify JSON (default is `False`)
@@ -792,3 +792,15 @@ def get_dataset_formatters(dataset: dict) -> dict:
         dataset_formatters[df2.name] = df2
 
     return dataset_formatters
+
+
+def remove_url_auth(url: str) -> str:
+    """
+    Provide a RFC1738 URL without embedded authentication
+    :param url: RFC1738 URL
+    :returns: RFC1738 URL without authentication
+    """
+
+    u = urlparse(url)
+    auth = f'{u.username}:{u.password}@'
+    return url.replace(auth, '')

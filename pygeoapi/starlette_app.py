@@ -5,7 +5,7 @@
 #          Abdulazeez Abdulazeez Adeshina <youngestdev@gmail.com>
 #
 # Copyright (c) 2025 Francesco Bartoli
-# Copyright (c) 2025 Tom Kralidis
+# Copyright (c) 2026 Tom Kralidis
 # Copyright (c) 2022 Abdulazeez Abdulazeez Adeshina
 #
 # Permission is hereby granted, free of charge, to any person
@@ -59,6 +59,7 @@ import pygeoapi.api.maps as maps_api
 import pygeoapi.api.processes as processes_api
 import pygeoapi.api.stac as stac_api
 import pygeoapi.api.tiles as tiles_api
+from pygeoapi.asyncapi import load_asyncapi_document
 from pygeoapi.openapi import load_openapi_document
 from pygeoapi.config import get_config
 from pygeoapi.util import get_api_rules
@@ -69,6 +70,7 @@ if 'PYGEOAPI_OPENAPI' not in os.environ:
     raise RuntimeError('PYGEOAPI_OPENAPI environment variable not set')
 
 OPENAPI = load_openapi_document()
+ASYNCAPI = load_asyncapi_document()
 
 if CONFIG['server'].get('admin'):
     import pygeoapi.api.admin as admin_api
@@ -86,7 +88,7 @@ except KeyError:
 
 API_RULES = get_api_rules(CONFIG)
 
-api_ = API(CONFIG, OPENAPI)
+api_ = API(CONFIG, OPENAPI, ASYNCAPI)
 
 
 def call_api_threadsafe(
@@ -165,6 +167,17 @@ async def openapi(request: Request) -> Response:
     :returns: Starlette HTTP Response
     """
     return await execute_from_starlette(core_api.openapi_, request)
+
+
+async def asyncapi(request: Request) -> Response:
+    """
+    AsyncAPI endpoint
+
+    :param request: Starlette Request instance
+
+    :returns: Starlette HTTP Response
+    """
+    return await execute_from_starlette(core_api.asyncapi_, request)
 
 
 async def conformance(request: Request) -> Response:
@@ -699,6 +712,7 @@ class ApiRulesMiddleware:
 api_routes = [
     Route('/', landing_page),
     Route('/openapi', openapi),
+    Route('/asyncapi', asyncapi),
     Route('/conformance', conformance),
     Route('/TileMatrixSets/{tileMatrixSetId}', get_tilematrix_set),
     Route('/TileMatrixSets', get_tilematrix_sets),

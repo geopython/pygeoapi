@@ -167,6 +167,33 @@ properties:
             - mimetype
             - encoding
             - map
+    pubsub:
+        type: object
+        description: Pub/Sub settings for event driven notifications
+        properties:
+            name:
+                type: string
+                description: name of pubsub client
+            broker:
+                type: object
+                description: broker definition
+                properties:
+                    url:
+                        type: string
+                        format: uri
+                        description: URL of broker
+                    channel:
+                        type: string
+                        description: channel to subscribe to
+                    hidden:
+                        type: boolean
+                        default: false
+                        description: whether to hide broker link on API responses
+                required:
+                    - url
+        required:
+            - name
+            - broker
     logging:
         type: object
         description: logging definitions

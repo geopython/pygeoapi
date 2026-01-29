@@ -127,7 +127,7 @@ def all_apis() -> dict:
     """
 
     from . import (coverages, environmental_data_retrieval, itemtypes, maps,
-                   processes, tiles, stac)
+                   processes, pubsub, tiles, stac)
 
     return {
         'coverage': coverages,
@@ -135,6 +135,7 @@ def all_apis() -> dict:
         'itemtypes': itemtypes,
         'map': maps,
         'process': processes,
+        'pubsub': pubsub,
         'tile': tiles,
         'stac': stac
     }
@@ -531,21 +532,25 @@ class APIRequest:
 class API:
     """API object"""
 
-    def __init__(self, config: dict, openapi: dict) -> Self | None:
+    def __init__(self, config: dict, openapi: dict,
+                 asyncapi: dict = {}) -> Self | None:
         """
         constructor
 
         :param config: configuration dict
         :param openapi: openapi dict
+        :param asyncapi: asyncapi dict
 
         :returns: `pygeoapi.API` instance
         """
 
         self.config = config
         self.openapi = openapi
+        self.asyncapi = asyncapi
         self.api_headers = get_api_rules(self.config).response_headers
         self.base_url = get_base_url(self.config)
         self.prefetcher = UrlPrefetcher()
+        self.pubsub_client = None
 
         CHARSET[0] = config['server'].get('encoding', 'utf-8')
         if config['server'].get('gzip'):
@@ -572,6 +577,10 @@ class API:
 
         self.manager = get_manager(self.config)
         LOGGER.info('Process manager plugin loaded')
+
+        if self.config.get('pubsub') is not None:
+            LOGGER.debug('Loading PubSub client')
+            self.pubsub_client = load_plugin('pubsub', self.config['pubsub'])
 
     def get_exception(self, status: int, headers: dict, format_: str | None,
                       code: str, description: str) -> Tuple[dict, int, str]:
@@ -731,6 +740,33 @@ def landing_page(api: API,
         'href': f"{api.base_url}/TileMatrixSets?f=html"
     }]
 
+    if api.pubsub_client is not None and not api.pubsub_client.hidden:
+        LOGGER.debug('Adding PubSub broker link')
+        pubsub_link = {
+            'rel': 'hub',
+            'type': 'application/json',
+            'title': l10n.translate('Pub/Sub broker', request.locale),
+            'href': api.pubsub_client.broker_safe_url
+        }
+        if api.pubsub_client.channel is not None:
+            pubsub_link['channel'] = api.pubsub_client.channel
+
+        fcm['links'].append(pubsub_link)
+
+    if api.asyncapi:
+        fcm['links'].append({
+            'rel': 'service-doc',
+            'type': 'text/html',
+            'title': l10n.translate('The AsyncAPI definition as HTML', request.locale),  # noqa
+            'href': f'{api.base_url}/asyncapi?f=html'
+        })
+        fcm['links'].append({
+            'rel': 'service-desc',
+            'type': 'application/asyncapi+json',
+            'title': l10n.translate('The AsyncAPI definition as JSON', request.locale),  # noqa
+            'href': f'{api.base_url}/asyncapi?f=json'
+        })
+
     headers = request.get_response_headers(**api.api_headers)
     if request.format == F_HTML:  # render
 
@@ -746,6 +782,14 @@ def landing_page(api: API,
                         if filter_providers_by_type(value['providers'],
                                                     'tile'):
                             fcm['tile'] = True
+
+        if api.pubsub_client is not None and not api.pubsub_client.hidden:
+            fcm['pubsub'] = {
+                'name': api.pubsub_client.name,
+                'url': api.pubsub_client.broker_safe_url,
+                'channel': api.pubsub_client.channel,
+                'asyncapi': api.asyncapi
+            }
 
         content = render_j2_template(
             api.tpl_config, api.config['server']['templates'],
@@ -795,6 +839,41 @@ def openapi_(api: API, request: APIRequest) -> Tuple[dict, int, str]:
         return headers, HTTPStatus.OK, api.openapi
 
 
+def asyncapi_(api: API, request: APIRequest) -> Tuple[dict, int, str]:
+    """
+    Provide AsyncAPI document
+
+    :param request: A request object
+
+    :returns: tuple of headers, status code, content
+    """
+
+    headers = request.get_response_headers(**api.api_headers)
+
+    if not api.asyncapi:
+        msg = 'AsyncAPI not supported/configured'
+        return api.get_exception(
+            HTTPStatus.NOT_IMPLEMENTED, headers, request.format,
+            'NoApplicableCode', msg)
+
+    if request.format == F_HTML:
+        template = 'asyncapi.html'
+
+        path = f'{api.base_url}/asyncapi'
+        data = {
+            'asyncapi-document-path': path
+        }
+        content = render_j2_template(
+            api.tpl_config, api.config['server']['templates'], template, data,
+            request.locale)
+
+        return headers, HTTPStatus.OK, content
+
+    headers['Content-Type'] = 'application/asyncapi+json'
+
+    return headers, HTTPStatus.OK, to_json(api.asyncapi, api.pretty_print)
+
+
 def conformance(api: API, request: APIRequest) -> Tuple[dict, int, str]:
     """
     Provide conformance definition
@@ -823,6 +902,9 @@ def conformance(api: API, request: APIRequest) -> Tuple[dict, int, str]:
                 if provider['type'] == 'record':
                     conformance_list.extend(
                         apis_dict['itemtypes'].CONFORMANCE_CLASSES_RECORDS)
+
+    if api.pubsub_client is not None:
+        conformance_list.extend(apis_dict['pubsub'].CONFORMANCE_CLASSES)
 
     conformance = {
         'conformsTo': sorted(list(set(conformance_list)))

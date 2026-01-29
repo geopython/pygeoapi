@@ -538,6 +538,11 @@ def get_oas_30(cfg: dict, fail_on_invalid_collection: bool = True) -> dict:
 
         try:
             sub_tags, sub_paths = api_module.get_oas_30(cfg, locale_)
+
+            if not sub_tags and not sub_paths:
+                LOGGER.debug('Empty content from {api_name}; skipping')
+                continue
+
             oas['paths'].update(sub_paths['paths'])
             oas['tags'].extend(sub_tags)
         except Exception as err:
@@ -994,6 +999,7 @@ def validate_openapi_document(instance_dict: dict) -> bool:
 
     schema_file = SCHEMASDIR / 'openapi' / 'openapi-3.0.x.json'
 
+    LOGGER.debug(f'Validating against {schema_file}')
     with schema_file.open() as fh2:
         schema_dict = json.load(fh2)
         jsonschema_validate(instance_dict, schema_dict)

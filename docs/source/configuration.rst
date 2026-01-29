@@ -14,6 +14,7 @@ file whatever you wish; typical filenames end with ``.yml``.
 pygeoapi configuration contains the following core sections:
 
 - ``server``: server-wide settings
+- ``pubsub``: Publish-Subscribe settings (optional)
 - ``logging``: logging configuration
 - ``metadata``: server-wide metadata (contact, licensing, etc.)
 - ``resources``: dataset collections, processes and stac-collections offered by the server
@@ -89,6 +90,23 @@ For more information related to API design rules (the ``api_rules`` property in 
         strict_slashes: true  # trailing slashes will not be allowed and result in a 404
         url_prefix: 'v{api_major}'  # adds a /v1 prefix to all URL paths
         version_header: X-API-Version  # add a response header of this name with the API version
+
+``pubsub``
+^^^^^^^^^^
+
+The ``pubsub`` section provides directives for enabling publication of CloudEvent messaages on item-based transactions
+
+
+.. code-block:: yaml
+
+  pubsub:
+      name: MQTT
+      broker:
+          url: mqtt://localhost:1883
+          channel: my/service/topic
+
+.. seealso::
+   :ref:`pubsub` for more information on Publish-Subscribe capabilities
 
 
 ``logging``
