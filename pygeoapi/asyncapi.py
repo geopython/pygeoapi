@@ -222,8 +222,8 @@ def load_asyncapi_document() -> dict:
     if not os.path.exists(pygeoapi_asyncapi):
         msg = (f'AsyncAPI document {pygeoapi_asyncapi} does not exist.  '
                'Please generate before starting pygeoapi')
-        LOGGER.error(msg)
-        raise RuntimeError(msg)
+        LOGGER.warning(msg)
+        return {}
 
     with open(pygeoapi_asyncapi, encoding='utf8') as ff:
         if pygeoapi_asyncapi.endswith(('.yaml', '.yml')):

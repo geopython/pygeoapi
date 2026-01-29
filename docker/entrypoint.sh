@@ -93,8 +93,7 @@ echo "openapi.yml generated continue to pygeoapi"
 echo "Trying to generate asyncapi.yml"
 /venv/bin/pygeoapi asyncapi generate ${PYGEOAPI_CONFIG} --output-file ${PYGEOAPI_ASYNCAPI}
 
-[[ $? -ne 0 ]] && error "asyncapi.yml could not be generated ERROR"
-echo "asyncapi.yml generated continue to pygeoapi"
+[[ $? -ne 0 ]] && echo "asyncapi.yml could not be generated; skipping"
 
 start_gunicorn() {
     # SCRIPT_NAME should not have value '/'
