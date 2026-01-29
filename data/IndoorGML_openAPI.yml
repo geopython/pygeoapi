@@ -1448,6 +1448,7 @@ paths:
       description: |
         A user SHOULD insert a set of indoor features or an indoor feature into a collection with id `collectionId`.
         The request body schema SHALL follow the IndoorJSON schema.
+        While the InterLayerConnection and Primal, Dual Spaces are not essential in a IndoorFeature's existence, it must have at least one ThematicLayer.
       tags: 
       - IndoorFeatures
       operationId: createItem
@@ -1525,7 +1526,8 @@ paths:
         '204':
           description: Successfully deleted.
         '404':
-          description: Collection or feature ID not found.
+          description: Given `collectionId` or `fId` not found.
+  
   /collections/{collectionId}/items/{fId}/layers:
     parameters:
       - $ref: '#/components/parameters/collectionId'
@@ -1535,7 +1537,7 @@ paths:
         - ThematicLayers
       summary: register a new thematic layer
       description: |-
-        Uploads a new thematic layer (e.g., 'Pet-friendly' or 'Wifi-coverage') to a specific IndoorFeature.
+        Uploads a new thematic layer (e.g., 'Pet-friendly' or 'Furnitures') to a specific `fId`.
         The body must conform to the IndoorJSON ThematicLayer schema.
       operationId: createThematicLayer
       requestBody:
@@ -1563,19 +1565,28 @@ paths:
       tags:
         - ThematicLayers
       summary: retrieve all thematic layers
-      description: Returns a summary list of all thematic layers within the specified indoor feature.
+      description: Returns a summary list of all (filtered) thematic layers within the specified indoor feature.
       operationId: getThematicLayers
       parameters:
         - $ref: '#/components/parameters/limit'
         - $ref: '#/components/parameters/theme'
-        - $ref: '#/components/parameters/level'
+        - name: level
+          in: query
+          required: false
+          description: |- 
+            Returns all the thematicLayers that have at least one cellSpace on this level.
+            applied to `CellSpace` geometries in this `tId` (e.g., '1F', 'B1').
+          schema:
+            type: string
+            example: '1F'
       responses:
         '200':
-          description: A JSON object containing level information and a list of layers.
+          description: A JSON object containing level information and a list of thematicLayers including those level(s).
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ThematicLayerList'
+  
   /collections/{collectionId}/items/{fId}/interlayerconnections:
     parameters:
       - $ref: '#/components/parameters/collectionId'
@@ -1652,18 +1663,8 @@ paths:
         - $ref: '#/components/parameters/collectionId'
         - $ref: '#/components/parameters/fId'
         - $ref: '#/components/parameters/tId'
-        - name: level
-          in: query
-          schema: { type: string }
-          description: "Filter by floor level (e.g., L1)"
-        - name: bbox
-          in: query
-          schema:
-            type: array
-            items: { type: number }
-            minItems: 4
-            maxItems: 4
-          description: "Bounding box filter [minX, minY, maxX, maxY]"
+        - $ref: '#/components/parameters/level'
+        - $ref: '#/components/parameters/bbox'
       responses:
         '200':
           description: Success.
