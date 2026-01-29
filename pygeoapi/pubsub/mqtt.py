@@ -31,7 +31,7 @@ import logging
 
 from paho.mqtt import client as mqtt_client
 
-from pygeoapi.pubsub.base import BasePubSubClient
+from pygeoapi.pubsub.base import BasePubSubClient, PubSubClientConnectionError
 
 LOGGER = logging.getLogger(__name__)
 
@@ -83,8 +83,11 @@ class MQTTPubSubClient(BasePubSubClient):
         :returns: None
         """
 
-        self.conn.connect(self.broker_url.hostname, self.port)
-        LOGGER.debug('Connected to broker')
+        try:
+            self.conn.connect(self.broker_url.hostname, self.port)
+            LOGGER.debug('Connected to broker')
+        except Exception as err:
+            raise PubSubClientConnectionError(err)
 
     def pub(self, channel: str, message: str, qos: int = 1) -> bool:
         """

@@ -33,7 +33,7 @@ import logging
 
 import requests
 
-from pygeoapi.pubsub.base import BasePubSubClient
+from pygeoapi.pubsub.base import BasePubSubClient, PubSubClientConnectionError
 
 LOGGER = logging.getLogger(__name__)
 
@@ -99,7 +99,7 @@ class HTTPPubSubClient(BasePubSubClient):
             response = requests.post(url, auth=self.auth, json=message)
             response.raise_for_status()
         except Exception as err:
-            LOGGER.debug(f'Message publishing failed: {err}')
+            raise PubSubClientConnectionError(err)
 
     def __repr__(self):
         return f'<HTTPPubSubClient> {self.broker_safe_url}'

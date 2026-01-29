@@ -534,8 +534,12 @@ def execute_process(api: API, request: APIRequest,
 
     if api.pubsub_client is not None:
         LOGGER.debug('Publishing message')
-        publish_message(api.pubsub_client, api.base_url, 'process', process_id,
-                        job_id, response2)
+        try:
+            publish_message(api.pubsub_client, api.base_url, 'process',
+                            process_id, job_id, response2)
+        except Exception as err:
+            msg = f'Could not publish message {err}'
+            LOGGER.warning(msg)
 
     return headers, http_status, response2
 

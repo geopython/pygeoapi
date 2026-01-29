@@ -80,8 +80,11 @@ def publish_message(pubsub_client, url: str, action: str,
                                       channel, data_)
     LOGGER.debug(f'Message: {message}')
 
-    pubsub_client.connect()
-    pubsub_client.pub(channel, json.dumps(message))
+    try:
+        pubsub_client.connect()
+        pubsub_client.pub(channel, json.dumps(message))
+    except Exception as err:
+        raise RuntimeError(err)
 
 
 def generate_ogc_cloudevent(type_: str, media_type: str, source: str,
