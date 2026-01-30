@@ -141,3 +141,7 @@ ALTER TABLE "interlayerconnection" ADD FOREIGN KEY ("indoorfeature_id") REFERENC
 ALTER TABLE "interlayerconnection" ADD FOREIGN KEY ("connected_layer_a") REFERENCES "thematiclayer" ("id");
 
 ALTER TABLE "interlayerconnection" ADD FOREIGN KEY ("connected_layer_b") REFERENCES "thematiclayer" ("id");
+
+-- ALTER TABLE "cell_space_n_boundary" ADD CONSTRAINT "unique_space_n_boundary_id_per_feature" UNIQUE ("indoorfeature_id", "id_str");
+
+-- ALTER TABLE "node_n_edge" ADD CONSTRAINT "unique_node_n_edge_id_per_feature" UNIQUE ("indoorfeature_id", "id_str");

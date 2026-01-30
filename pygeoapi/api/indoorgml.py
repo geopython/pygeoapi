@@ -439,6 +439,7 @@ def get_collection_item(api: API, request: APIRequest, dataset, identifier) -> T
 
     # --- Extract Level Parameter ---
     level = request.params.get('level')
+    bbox = request.params.get('bbox')
     # You might want to strip whitespace if it's a string
     if level:
         level = str(level).strip()
@@ -450,7 +451,8 @@ def get_collection_item(api: API, request: APIRequest, dataset, identifier) -> T
         result = pidb_provider.get_feature(
             collection_str_id, 
             ifeature_str_id, 
-            level=level 
+            level=level,
+            bbox=bbox
         )
         
         # If the result is None (e.g., ID doesn't exist), handle 404
@@ -466,9 +468,10 @@ def get_collection_item(api: API, request: APIRequest, dataset, identifier) -> T
         self_href = base_url
         
         # If level parameter exists, append it to the URL
-        if level:
-            query_params = {'level': level}
+        if level and bbox:
+            query_params = {'level': level, 'bbox': bbox}
             self_href += "?" + urllib.parse.urlencode(query_params)
+
 
         result['links'].append({
             "href": self_href,
