@@ -73,34 +73,35 @@ class PostgresIndoorDB:
         """
         Query indoor features collection list with metadata.
         """
-        self.connect()
-
         with self.connection.cursor() as cur:
-            # Select the String ID and the JSON properties
-            select_query = "SELECT id_str, collection_property FROM collection"
+            try:
+                select_query = "SELECT id_str, collection_property FROM collection"
 
-            cur.execute(select_query)
-            result = cur.fetchall()
-        
-        clean_list = []
-        for row in result:
-            c_id = row[0]       # id_str column
-            props = row[1]      # collection_property column (JSONB)
+                cur.execute(select_query)
+                result = cur.fetchall()
             
-            # Safety check: if props is None, use empty dict
-            if props is None:
-                props = {}
-            
-            clean_list.append({
-                'id': c_id,
-                # Default to the ID if title is missing
-                'title': props.get('title', c_id),
-                'itemType': props.get('itemType', 'indoorfeature')
-            })
+                clean_list = []
+                for row in result:
+                    c_id = row[0]       # id_str column
+                    props = row[1]      # collection_property column (JSONB)
+                    
+                    # Safety check: if props is None, use empty dict
+                    if props is None:
+                        props = {}
+                    
+                    clean_list.append({
+                        'id': c_id,
+                        # Default to the ID if title is missing
+                        'title': props.get('title', c_id),
+                        'itemType': props.get('itemType', 'indoorfeature')
+                    })
+            except Exception as e:
+                LOGGER.debug(e)
+                raise e
             
         return clean_list
     
-    def get_collection(self, collection_id):
+    def get_collection(self, collection_str):
         """
         Query specific indoor features collection metadata.
         Args:
@@ -108,43 +109,42 @@ class PostgresIndoorDB:
         Returns:
             dict: Metadata dict or None if not found.
         """
-        self.connect()
-        
         with self.connection.cursor() as cur:
-            # Query for the ID and Properties using the String ID
-            query = "SELECT id_str, collection_property FROM collection WHERE id_str = %s"
-            cur.execute(query, (collection_id,))
-            row = cur.fetchone()
-        
-        if not row:
-            return None
+            try:
+                query = "SELECT id_str, collection_property FROM collection WHERE id_str = %s"
+                cur.execute(query, (collection_str,))
+                row = cur.fetchone()
             
-        c_id = row[0]
-        props = row[1] if row[1] else {}
-        
-        return {
-            'id': c_id,
-            'title': props.get('title', c_id),
-            'description': props.get('description', ''),
-            'itemType': props.get('itemType', 'indoorfeature')
-        }
-    
+                if not row:
+                    return None
+                
+                c_id = row[0]
+                props = row[1] if row[1] else {}
+                
+                response = {
+                    'id': c_id,
+                    'title': props.get('title', c_id),
+                    'description': props.get('description', ''),
+                    'itemType': props.get('itemType', 'indoorfeature')
+                }
 
+                return response
+            except Exception as e:
+                LOGGER.debug(e)
+                raise e
+    
     def create_collection(self, id_str, title, description, item_type='indoorfeature'):
         """
         Creates a new collection.
         Relies on DB to auto-generate the Integer ID.
         """
-        self.connect()
-        
         properties = {
             'title': title,
             'description': description,
             'itemType': item_type
         }
-        
-        try:
-            with self.connection.cursor() as cur:
+        with self.connection.cursor() as cur:
+            try:
                 # 1. Check if exists
                 cur.execute("SELECT 1 FROM collection WHERE id_str = %s", (id_str,))
                 if cur.fetchone():
@@ -159,60 +159,61 @@ class PostgresIndoorDB:
                 
                 self.connection.commit()
                 return True
-        except Exception as e:
-            self.connection.rollback()
-            LOGGER.error(f"Error creating collection: {e}")
-            return False
+            except Exception as e:
+                self.connection.rollback()
+                LOGGER.error(f"Error creating collection: {e}")
+                raise e
 
     def delete_collection(self, id_str):
         """
         Deletes a collection and CASCADES valid deletions down to all child tables.
         Performs the "Deep Clean" logic 
         """
-        self.connect()
-
         with self.connection.cursor() as cur:
-            # 1. Get the Numeric Primary Key (id) from the String ID (id_str)
-            cur.execute("SELECT id FROM collection WHERE id_str = %s", (id_str,))
-            row = cur.fetchone()
-            
-            if not row:
-                return False # Collection not found
-            
-            coll_pk = row[0]
+            try:
+                # 1. Get the Numeric Primary Key (id) from the String ID (id_str)
+                cur.execute("SELECT id FROM collection WHERE id_str = %s", (id_str,))
+                row = cur.fetchone()
+                
+                if not row:
+                    return False # Collection not found
+                
+                coll_pk = row[0]
 
-            # 2. CASCADE DELETE (Bottom-Up Order)
-            
-            # A. Delete Connections (Edges between nodes)
-            # Logic: Delete from 'connects' where source or target is in the set of nodes belonging to this collection
-            delete_connects = """
-                DELETE FROM connects 
-                WHERE node_source_id IN (SELECT id FROM node_n_edge WHERE collection_id = %s)
-                   OR node_target_id IN (SELECT id FROM node_n_edge WHERE collection_id = %s)
-                   OR edge_id IN (SELECT id FROM node_n_edge WHERE collection_id = %s)
-            """
-            cur.execute(delete_connects, (coll_pk, coll_pk, coll_pk))
+                # 2. CASCADE DELETE (Bottom-Up Order)
+                
+                # A. Delete Connections (Edges between nodes)
+                # Logic: Delete from 'connects' where source or target is in the set of nodes belonging to this collection
+                delete_connects = """
+                    DELETE FROM connects 
+                    WHERE node_source_id IN (SELECT id FROM node_n_edge WHERE collection_id = %s)
+                    OR node_target_id IN (SELECT id FROM node_n_edge WHERE collection_id = %s)
+                    OR edge_id IN (SELECT id FROM node_n_edge WHERE collection_id = %s)
+                """
+                cur.execute(delete_connects, (coll_pk, coll_pk, coll_pk))
 
-            # B. Delete Inter-Layer Connections
-            cur.execute("DELETE FROM interlayerconnection WHERE collection_id = %s", (coll_pk,))
+                # B. Delete Inter-Layer Connections
+                cur.execute("DELETE FROM interlayerconnection WHERE collection_id = %s", (coll_pk,))
 
-            # C. Delete Spatial Elements (Nodes & Cells)
-            cur.execute("DELETE FROM node_n_edge WHERE collection_id = %s", (coll_pk,))
-            cur.execute("DELETE FROM cell_space_n_boundary WHERE collection_id = %s", (coll_pk,))
+                # C. Delete Spatial Elements (Nodes & Cells)
+                cur.execute("DELETE FROM node_n_edge WHERE collection_id = %s", (coll_pk,))
+                cur.execute("DELETE FROM cell_space_n_boundary WHERE collection_id = %s", (coll_pk,))
 
-            # D. Delete Thematic Layers
-            cur.execute("DELETE FROM thematiclayer WHERE collection_id = %s", (coll_pk,))
+                # D. Delete Thematic Layers
+                cur.execute("DELETE FROM thematiclayer WHERE collection_id = %s", (coll_pk,))
 
-            # E. Delete IndoorFeatures
-            cur.execute("DELETE FROM indoorfeature WHERE collection_id = %s", (coll_pk,))
+                # E. Delete IndoorFeatures
+                cur.execute("DELETE FROM indoorfeature WHERE collection_id = %s", (coll_pk,))
 
-            # F. FINALLY: Delete the Collection itself
-            cur.execute("DELETE FROM collection WHERE id = %s", (coll_pk,))
-            
-            self.connection.commit()
-        
-        return True
-    
+                # F. FINALLY: Delete the Collection itself
+                cur.execute("DELETE FROM collection WHERE id = %s", (coll_pk,))
+                
+                self.connection.commit()
+                return True
+            except Exception as e:
+                self.connection.rollback()
+                LOGGER.error(f"Error creating collection: {e}")
+                raise e
 # endregion
 
 # region IndoorFeatures 
@@ -222,12 +223,8 @@ class PostgresIndoorDB:
         Returns True if it is an IndoorGML collection, False otherwise.
         """
         is_indoor = False
-        try:
-            # Re-use existing connection logic or ensure connected
-            if not self.connection or self.connection.closed:
-                self.connect()
-
-            with self.connection.cursor() as cur:
+        with self.connection.cursor() as cur:
+            try:
                 # Adjust column names 'id_str' and 'itemType' to match your schema
                 cur.execute("""
                     SELECT collection_property 
@@ -238,14 +235,10 @@ class PostgresIndoorDB:
                 
                 if props:
                     if props[0].get('itemType') == 'indoorfeature':
-                        is_indoor = True
-                    
-        except Exception as e:
-            LOGGER.error(f"Error checking collection type: {e}")
-        # Note: You might choose NOT to disconnect here if you plan 
-        # to reuse the connection immediately after.
-        # self.disconnect() 
-        
+                        is_indoor = True    
+            except Exception as e:
+                LOGGER.error(f"Error checking collection type: {e}")
+
         return is_indoor
 
     def get_collection_items(
@@ -255,7 +248,6 @@ class PostgresIndoorDB:
         Optimized to fetch data and total count in a single query.
         /collections/{collectionId}/items
         """
-        self.connect()
         try:    
             # 1. Prepare Filter Strings
             where_clauses = ["c.id_str = %s"]
@@ -325,8 +317,9 @@ class PostgresIndoorDB:
                 
                 return features, number_matched
 
-        finally:
-            self.disconnect()
+        except Exception as e:
+                LOGGER.debug(e)
+                raise e
             
     def get_feature(self, collection_id, feature_id, level=None, bbox=None):
         """
@@ -372,19 +365,17 @@ class PostgresIndoorDB:
             # ---------------------------------------------------------
                 # CHECK: If no level and bbox provided, return Metadata only
             # ---------------------------------------------------------
-            if not level or not bbox:
+            if not level and not bbox:
                 LOGGER.debug("No query parameter")
                 return result_feature
             
-            
-            # ---------------------------------------------------------
             # 2. Fetch Thematic Layers (Keep ID mapping for later)
-            # ---------------------------------------------------------
             cur.execute("SELECT id FROM thematiclayer WHERE indoorfeature_id=%s", (feature_pk,))
             rows = cur.fetchall()
             for row in rows:
                 thematic_layers.append(self._get_layer(row, level=level, bbox=bbox))
 
+            # InterlayerConnection
             conn_sql = """
                 SELECT 
                     i.id, i.id_str, i.topo_type, i.comment,
@@ -466,10 +457,10 @@ class PostgresIndoorDB:
                     raise Exception(f"Collection {collection_str} not found.")
                 collection_pk = res[0]
                 # Avoid same str id
-                cur.execute("SELECT id_str FROM indoorFeature WHERE collection_id = %s AND id_str = %s", (collection_pk, feature_str))
-                res = cur.fetchone()
-                if res:
-                    raise Exception(f"IndoorFeature {feature_str} already exist.")
+                # cur.execute("SELECT id_str FROM indoorFeature WHERE collection_id = %s AND id_str = %s", (collection_pk, feature_str))
+                # res = cur.fetchone()
+                # if res:
+                #     raise Exception(f"IndoorFeature {feature_str} already exist.")
                 # Insert IndoorFeature
                 LOGGER.debug("Insert indoorFeature")
                 cur.execute(
@@ -526,10 +517,8 @@ class PostgresIndoorDB:
 
                 coll_pk, feature_pk = res
 
-                # 2. DELETE CHILDREN FIRST (Because we don't have CASCADE in SQL)
-                
+                # 2. DELETE CHILDREN FIRST
                 # A. Delete Connections (Edges between nodes)
-                # We must delete rows in 'connects' where the nodes belong to this feature
                 cur.execute("""
                     DELETE FROM connects 
                     WHERE node_source_id IN (
@@ -568,17 +557,13 @@ class PostgresIndoorDB:
         - Levels: Always returns ALL levels available in that layer (so client knows what else exists).
         - Filtering: Only returns layers that actually contain the requested level.
         """
-        
         response = {
             "levels": [],
             "layers": [],
             "links": []
         }
         with self.connection.cursor() as cur:
-            # -----------------------------------------------------
             # 1. Get Available Levels (Global Context)
-            # -----------------------------------------------------
-
             sql_levels = """
                 SELECT DISTINCT cs.level
                 FROM cell_space_n_boundary cs
@@ -650,8 +635,7 @@ class PostgresIndoorDB:
             # E. Process Results
             for row in rows:
                 l_id, l_theme, semantic_extension, feature_id, layer_levels = row
-                
-                
+                 
                 found_levels = layer_levels if layer_levels is not None else []
                 # Clean up None values and sort
                 found_levels = [l for l in found_levels if l is not None]
@@ -854,10 +838,7 @@ class PostgresIndoorDB:
             params_cells.append(level)
 
         if bbox:
-            parts = bbox.split(',')
-            if len(parts) != 4:
-                raise ValueError("Invalid bbox format. Expected: minx,miny,maxx,maxy")
-            minx, miny, maxx, maxy = map(float, parts)
+            minx, miny, maxx, maxy = map(float, bbox)
             sql_cells += """
                 AND c."2D_geometry"
                 && ST_MakeEnvelope(%s, %s, %s, %s, 0)
@@ -1060,17 +1041,17 @@ class PostgresIndoorDB:
                     msg = f"{feature_str} is not found"
                     LOGGER.debug(msg)
                     raise Exception(msg)
-                duplicate_sql = """
-                    SELECT t.id_str
-                    FROM thematiclayer t
-                    WHERE t.indoorfeature_id = %s AND t.id_str = %s
-                """
-                cur.execute(duplicate_sql, (ifeature['id'], layer_data.get('id')))
-                row = cur.fetchone()
-                if row:
-                    msg = f"{layer_data.get('id')} is already exist."
-                    LOGGER.debug(msg)
-                    raise Exception(msg)
+                # duplicate_sql = """
+                #     SELECT t.id_str
+                #     FROM thematiclayer t
+                #     WHERE t.indoorfeature_id = %s AND t.id_str = %s
+                # """
+                # cur.execute(duplicate_sql, (ifeature['id'], layer_data.get('id')))
+                # row = cur.fetchone()
+                # if row:
+                #     msg = f"{layer_data.get('id')} is already exist."
+                #     LOGGER.debug(msg)
+                #     raise Exception(msg)
 
                 cur.execute(
                     """
@@ -1129,11 +1110,11 @@ class PostgresIndoorDB:
             geom_3d = geom_raw.get('geometry3D', None)
             
             duplicate_sql = """
-                    SELECT c.id
-                    FROM cell_space_n_boundary c
-                    WHERE c.thematiclayer_id = %s AND c.id_str = %s
+                    SELECT n.id_str
+                    FROM node_n_edge n
+                    WHERE n.indoorfeature_id = %s AND n.id_str = %s
                 """
-            cur.execute(duplicate_sql, (layer_pk, cell.get('id')))
+            cur.execute(duplicate_sql, (feat_pk, cell.get('id')))
             row = cur.fetchone()
             if row:
                 msg = f"{cell.get('id')} is already exist."
@@ -1176,11 +1157,11 @@ class PostgresIndoorDB:
             geom_3d = geom_raw.get('geometry3D', None)
 
             duplicate_sql = """
-                    SELECT c.id
-                    FROM cell_space_n_boundary c
-                    WHERE c.thematiclayer_id = %s AND c.id_str = %s
+                    SELECT n.id_str
+                    FROM node_n_edge n
+                    WHERE n.indoorfeature_id = %s AND n.id_str = %s
                 """
-            cur.execute(duplicate_sql, (layer_pk, bound.get('id')))
+            cur.execute(duplicate_sql, (feat_pk, bound.get('id')))
             row = cur.fetchone()
             if row:
                 msg = f"{bound.get('id')} is already exist."
@@ -1254,11 +1235,11 @@ class PostgresIndoorDB:
         node_pk_dict = {}
         for node in dual_data.get('nodeMember', []):
             duplicate_sql = """
-                    SELECT n.id
-                    FROM node_n_edge n
-                    WHERE n.thematiclayer_id = %s AND n.id_str = %s
+                    SELECT c.id
+                    FROM cell_space_n_boundary c
+                    WHERE c.indoorfeature_id = %s AND c.id_str = %s
                 """
-            cur.execute(duplicate_sql, (layer_pk, node.get('id')))
+            cur.execute(duplicate_sql, (feat_pk, node.get('id')))
             row = cur.fetchone()
             if row:
                 msg = f"{node.get('id')} is already exist."
@@ -1298,11 +1279,11 @@ class PostgresIndoorDB:
         # 2. Edges
         for edge in dual_data.get('edgeMember', []):
             duplicate_sql = """
-                    SELECT n.id
-                    FROM node_n_edge n
-                    WHERE n.thematiclayer_id = %s AND n.id_str = %s
+                    SELECT c.id
+                    FROM cell_space_n_boundary c
+                    WHERE c.indoorfeature_id = %s AND c.id_str = %s
                 """
-            cur.execute(duplicate_sql, (layer_pk, edge.get('id')))
+            cur.execute(duplicate_sql, (feat_pk, edge.get('id')))
             row = cur.fetchone()
             if row:
                 msg = f"{edge.get('id')} is already exist."
@@ -1524,7 +1505,6 @@ class PostgresIndoorDB:
         UPDATED: Implements Supervisor's "Direct SQL Check" to prevent duplicates 
         within the same Feature scope.
         """
-        self.connect()
         
         new_id_str = data.get('id')
         topo = data.get('typeOfTopoExpression', 'others').lower()
@@ -1538,8 +1518,9 @@ class PostgresIndoorDB:
         n1_str, n2_str = (nodes[0], nodes[1]) if len(nodes) >= 2 else (None, None)
         c1_str, c2_str = (cells[0], cells[1]) if len(cells) >= 2 else (None, None)
 
-        try:
-            with self.connection.cursor() as cur:
+        
+        with self.connection.cursor() as cur:
+            try:
                 # 1. Resolve Context (Collection & Feature)
                 cur.execute("SELECT id FROM collection WHERE id_str = %s", (collection_str_id,))
                 res = cur.fetchone()
@@ -1622,18 +1603,15 @@ class PostgresIndoorDB:
                 self.connection.commit()
                 return new_id_str
 
-        except Exception as e:
-            self.connection.rollback()
-            LOGGER.error(f"DB Error: {e}")
-            return None
+            except Exception as e:
+                self.connection.rollback()
+                LOGGER.error(f"DB Error: {e}")
+                return None
         
     def delete_interlayer_connection(self, collection_str, item_str, connection_id):
         """
         Deletes an InterLayerConnection.
         """
-        self.connect()
-        
-        # FIX: Changed table name from 'interlayer_connection' to 'interlayerconnection'
         query = """
             DELETE FROM interlayerconnection
             WHERE id_str = %s
@@ -1834,30 +1812,30 @@ class PostgresIndoorDB:
             return layer_row, final_spaces, boundaries
         
     # Creates a CellSpace or CellBoundary member in the specified layer.
-    def post_primal_member(self, collection_str_id, item_str_id, layer_str_id, data):
+    def post_primal_member(self, collection_str, feature_str, layer_str, data):
         with self.connection.cursor(cursor_factory=RealDictCursor) as cur:
             try:  
                 # --- A. Lookup Context ---
                 lookup_sql = """
                     SELECT t.id, t.collection_id, t.indoorfeature_id 
                     FROM thematiclayer t
-                    WHERE t.id_str = %s
-                      AND t.indoorfeature_id = (SELECT id FROM indoorfeature WHERE id_str = %s)
-                      AND t.collection_id = (SELECT id FROM collection WHERE id_str = %s)
+                    JOIN collection c ON t.collection_id = c.id
+                    JOIN indoorfeature i ON t.indoorfeature_id = i.id
+                    WHERE t.id_str = %s and c.id_str = %s, i.id_str = %s
                 """
-                cur.execute(lookup_sql, (layer_str_id, item_str_id, collection_str_id))
+                cur.execute(lookup_sql, (layer_str, collection_str, feature_str))
                 layer_row = cur.fetchone()
                 
                 if not layer_row:
-                    LOGGER.debug(f"Layer context not found for {layer_str_id}")
+                    LOGGER.debug(f"Layer context not found for {layer_str}")
                     return None
 
                 duplicate_sql = """
-                    SELECT id, id_str 
-                    FROM cell_space_n_boundary
-                    WHERE thematiclayer_id = %s and id_str = %s
+                    SELECT id_str 
+                    FROM node_n_edge
+                    WHERE indoorfeature_id = %s and id_str = %s
                 """
-                cur.execute(duplicate_sql, (layer_row['id'], data.get('id')))
+                cur.execute(duplicate_sql, (layer_row['indoorfeature_id'], data.get('id')))
                 row = cur.fetchone()
                 if row:
                     LOGGER.debug(f"Invalid data value: {data.get('id')} is already exist.")
@@ -1906,7 +1884,7 @@ class PostgresIndoorDB:
                         rows = cur.fetchall()
                         
                         if len(rows) != len(unique_refs):
-                            LOGGER.debug(f"Validation Failed: Missing boundaries in layer {layer_str_id}")
+                            LOGGER.debug(f"Validation Failed: Missing boundaries in layer {layer_str}")
                             return None 
                         else: # validation check: CellBoundary can bound only if it bounds nothing
                             for row in rows:
@@ -2221,7 +2199,6 @@ class PostgresIndoorDB:
                 LOGGER.debug(f"Get Member Error: {e}")
                 return None
 
-
     def update_primal_member(self, collection_str, item_str, layer_str, member_str, data):
         """
         Updates a CellSpace. 
@@ -2327,7 +2304,7 @@ class PostgresIndoorDB:
 
 # region DualSpaceLayer 
 
-    def post_dual_member(self, collection_str, item_str, layer_str, data): 
+    def post_dual_member(self, collection_str, feature_str, layer_str, data): 
         """
         Create a single Node or Edge. 
         The created data id_str has to be unique in thematiclayer.
@@ -2338,11 +2315,11 @@ class PostgresIndoorDB:
                 lookup_sql = """
                     SELECT t.id, t.collection_id, t.indoorfeature_id 
                     FROM thematiclayer t
-                    WHERE t.id_str = %s
-                    AND t.indoorfeature_id = (SELECT id FROM indoorfeature WHERE id_str = %s)
-                    AND t.collection_id = (SELECT id FROM collection WHERE id_str = %s)
+                    JOIN collection c ON t.collection_id = c.id
+                    JOIN indoorfeature i ON t.indoorfeature_id = i.id
+                    WHERE t.id_str = %s and c.id_str = %s, i.id_str = %s
                 """
-                cur.execute(lookup_sql, (layer_str, item_str, collection_str))
+                cur.execute(lookup_sql, (layer_str, collection_str, feature_str))
                 layer_row = cur.fetchone()
                 if not layer_row: 
                     LOGGER.debug("Layer not found.")
@@ -2351,11 +2328,11 @@ class PostgresIndoorDB:
                 f_type = data.get('featureType')
                 id_str = data.get('id')
                 duplicate_sql = """
-                    SELECT n.id
-                    FROM node_n_edge n
-                    WHERE n.thematiclayer_id = %s AND n.id_str = %s
+                    SELECT id.str
+                    FROM cell_space_n_boundary 
+                    WHERE indoorfeature_id = %s AND id_str = %s
                 """
-                cur.execute(duplicate_sql, (layer_row['id'], id_str))
+                cur.execute(duplicate_sql, (layer_row['indoorfeature_id'], id_str))
                 row = cur.fetchone()
                 if row:
                     LOGGER.debug(f"{id_str} is already exist. id_str must be unique in layer.")
@@ -2692,7 +2669,7 @@ class PostgresIndoorDB:
                 cur.execute(query, (member_str, layer_str, collection_str, item_str))
                 result = cur.fetchone()
                 if not result: 
-                    msg = f"{member_str} is not found."
+                    msg = f"Path parameters are not found."
                     LOGGER.debug(msg)
                     raise ValueError(msg)
 
@@ -2722,7 +2699,6 @@ class PostgresIndoorDB:
             except Exception as e:
                 LOGGER.debug(f"Get Dual Member Error: {e}")
                 raise e
-
 
     def update_dual_member(self, collection_str, item_str, layer_str, member_str, data):
         """
@@ -2867,6 +2843,41 @@ class PostgresIndoorDB:
                 self.connection.rollback()
                 print(f"Delete Dual Member Error: {e}")
                 return False
+
+    
+# endregion      
+
+# region Services
+
+    def get_indoor_route(self, collection_id, item_id, layer_id, sn, dn):
+        # This query gets the full sequence from pgRouting and joins it with your tables
+        sql = """
+        WITH path AS (
+            SELECT * FROM pgr_dijkstra(
+                'SELECT edge_id as id, node_source_id as source, node_target_id as target, weight as cost 
+                FROM connects 
+                JOIN node_n_edge ON connects.edge_id = node_n_edge.id
+                WHERE thematiclayer_id = (SELECT id FROM thematiclayer WHERE id_str = %s)',
+                (SELECT id FROM node_n_edge WHERE id_str = %s),
+                (SELECT id FROM node_n_edge WHERE id_str = %s),
+                FALSE
+            )
+        )
+        SELECT 
+            -- Collect the actual geometries of the EDGES in the path
+            ST_AsGeoJSON(ST_Collect(e.geometry_val ORDER BY p.seq))::jsonb AS geometry,
+            SUM(p.cost) AS total_weight,
+            -- Ordered lists for your RouteResult
+            array_agg(n.id_str ORDER BY p.seq) AS route_nodes,
+            array_remove(array_agg(e.id_str ORDER BY p.seq), NULL) AS route_edges,
+            (SELECT p_creation_datetime FROM thematiclayer WHERE id_str = %s) as creation_date
+        FROM path p
+        LEFT JOIN node_n_edge n ON p.node = n.id
+        LEFT JOIN node_n_edge e ON p.edge = e.id;
+        """
+        with self.connection.cursor(cursor_factory=RealDictCursor) as cur:
+            cur.execute(sql, (layer_id, sn, dn, layer_id))
+            return cur.fetchone()
 
     def json_to_wkt(self, geom_json):
         """
@@ -3019,39 +3030,4 @@ class PostgresIndoorDB:
             return {"type": "MultiPolygon", "coordinates": coords}
 
         return None
-# endregion      
-
-# region Services
-
-def get_indoor_route(self, collection_id, item_id, layer_id, sn, dn):
-    # This query gets the full sequence from pgRouting and joins it with your tables
-    sql = """
-    WITH path AS (
-        SELECT * FROM pgr_dijkstra(
-            'SELECT edge_id as id, node_source_id as source, node_target_id as target, weight as cost 
-             FROM connects 
-             JOIN node_n_edge ON connects.edge_id = node_n_edge.id
-             WHERE thematiclayer_id = (SELECT id FROM thematiclayer WHERE id_str = %s)',
-            (SELECT id FROM node_n_edge WHERE id_str = %s),
-            (SELECT id FROM node_n_edge WHERE id_str = %s),
-            FALSE
-        )
-    )
-    SELECT 
-        -- Collect the actual geometries of the EDGES in the path
-        ST_AsGeoJSON(ST_Collect(e.geometry_val ORDER BY p.seq))::jsonb AS geometry,
-        SUM(p.cost) AS total_weight,
-        -- Ordered lists for your RouteResult
-        array_agg(n.id_str ORDER BY p.seq) AS route_nodes,
-        array_remove(array_agg(e.id_str ORDER BY p.seq), NULL) AS route_edges,
-        (SELECT p_creation_datetime FROM thematiclayer WHERE id_str = %s) as creation_date
-    FROM path p
-    LEFT JOIN node_n_edge n ON p.node = n.id
-    LEFT JOIN node_n_edge e ON p.edge = e.id;
-    """
-    with self.connection.cursor(cursor_factory=RealDictCursor) as cur:
-        cur.execute(sql, (layer_id, sn, dn, layer_id))
-        return cur.fetchone()
-
-
 # endregion

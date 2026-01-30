@@ -35,68 +35,85 @@ def manage_collection(api: API, request: APIRequest, action: str, dataset: str =
     """
     PNU STEMLab: Manages IndoorGML Collections via Provider
     """
-    headers = request.get_response_headers(SYSTEM_LOCALE)
+    if not request.is_valid(PLUGINS['formatter'].keys()):
+        return api.get_format_exception(request)
     
-    # Initialize Provider
-    provider = PostgresIndoorDB()
+    headers = request.get_response_headers(SYSTEM_LOCALE)
+    pidb_provider = PostgresIndoorDB()
 
-    try:
-        # --- Action: CREATE ---
-        if action == 'create':
-            # 1. Safe JSON Parsing
-            try:
-                data = request.data
-                if isinstance(data, bytes):
-                    data = json.loads(data.decode('utf-8'))
-            except Exception:
-                return api.get_exception(
-                    HTTPStatus.BAD_REQUEST, headers, request.format, 
-                    'InvalidParameterValue', 'Invalid JSON body')
+    # --- Action: CREATE ---
+    if action == 'create':
+        if not request.data:
+            msg = 'No data found'
+            LOGGER.error(msg)
+            return api.get_exception(
+                HTTPStatus.BAD_REQUEST,
+                headers, request.format, 'InvalidParameterValue', msg) 
+        data = request.data
+        try:
+            # Parse bytes data, if applicable
+            data = data.decode()
+        except (UnicodeDecodeError, AttributeError):
+            pass
 
-            c_id = data.get('id')
-            title = data.get('title')
-            # Use .get() defaults to prevent errors
-            description = data.get('description', '')
-            item_type = data.get('itemType', 'indoorfeature')
+        try:
+            data = json.loads(data)
+        except (json.decoder.JSONDecodeError, TypeError) as err:
+            # Input does not appear to be valid JSON
+            LOGGER.error(err)
+            msg = 'invalid request data'
+            return api.get_exception(
+                HTTPStatus.BAD_REQUEST,
+                headers, request.format, 'InvalidParameterValue', msg)
 
-            if not c_id or not title:
-                return api.get_exception(
-                    HTTPStatus.BAD_REQUEST, headers, request.format, 
-                    'MissingParameterValue', 'Required fields: id, title')
+        c_id = data.get('id')
+        title = data.get('title')
+        # Use .get() defaults to prevent errors
+        description = data.get('description', '')
+        item_type = data.get('itemType', 'indoorfeature')
 
-            # 2. Call Provider to Create
-            # We don't need to touch api.config anymore. The DB is the authority.
-            success = provider.create_collection(c_id, title, description, item_type)
+        if not c_id or not title:
+            return api.get_exception(
+                HTTPStatus.BAD_REQUEST, headers, request.format, 
+                'MissingParameterValue', 'Required fields: id, title')
+
+        # 2. Call Provider to Create
+        try:
+            pidb_provider.connect()
+            success = pidb_provider.create_collection(c_id, title, description, item_type)
 
             if not success:
-                 return api.get_exception(
+                return api.get_exception(
                     HTTPStatus.CONFLICT, headers, request.format,
                     'Conflict', f'Collection {c_id} already exists')
 
             response_data = {'id': c_id, 'status': 'created'}
             return headers, HTTPStatus.CREATED, to_json(response_data, api.pretty_print)
+        except Exception as e:
+            return api.get_exception(HTTPStatus.INTERNAL_SERVER_ERROR, headers, request.format, 'ServerError', str(e))
+        finally:
+            pidb_provider.disconnect()
 
-        # --- Action: DELETE ---
-        elif action == 'delete':
+    # --- Action: DELETE ---
+    elif action == 'delete':
+        try:
+            pidb_provider.connect()
             collection_id = str(dataset)
             
             # 1. Call Provider to Delete
-            # We trust the provider to handle the cascade
-            success = provider.delete_collection(collection_id)
+            success = pidb_provider.delete_collection(collection_id)
             
             if not success:
                 return api.get_exception(
                     HTTPStatus.NOT_FOUND, headers, request.format,
                     'NotFound', f'Collection {collection_id} not found')
-
-            # Note: No need to delete from api.config because we never added it there!
             
             return headers, HTTPStatus.NO_CONTENT, ''
 
-    except Exception as e:
-        return api.get_exception(HTTPStatus.INTERNAL_SERVER_ERROR, headers, request.format, 'ServerError', str(e))
-    finally:
-        provider.disconnect()
+        except Exception as e:
+            return api.get_exception(HTTPStatus.INTERNAL_SERVER_ERROR, headers, request.format, 'ServerError', str(e))
+        finally:
+            pidb_provider.disconnect()
 
     return headers, HTTPStatus.METHOD_NOT_ALLOWED, ''
 
@@ -105,24 +122,22 @@ def get_collection(api: API, request: APIRequest, dataset=None) -> Tuple[dict, i
     GET /collections/{collectionId}
     Retrieves a single collection's metadata from the IndoorGML Database.
     """
+    if not request.is_valid(PLUGINS['formatter'].keys()):
+        return api.get_format_exception(request)
     collection_id = str(dataset)
     headers = request.get_response_headers(SYSTEM_LOCALE)
-    
-    # Initialize Provider
-    provider = PostgresIndoorDB()
-
+    pidb_provider = PostgresIndoorDB()
     try:
+        pidb_provider.connect()
         # 1. Fetch from DB
-        collection_data = provider.get_collection(collection_id)
+        collection_data = pidb_provider.get_collection(collection_id)
 
-        # 2. Handle Not Found
         if not collection_data:
             return api.get_exception(
                 HTTPStatus.NOT_FOUND, headers, request.format,
                 'NotFound', f'Collection {collection_id} not found.')
 
         # 3. Construct Response
-        # We manually build the response to ensure it matches OGC standards
         response = {
             "id": collection_data['id'],
             "title": collection_data['title'],
@@ -143,11 +158,10 @@ def get_collection(api: API, request: APIRequest, dataset=None) -> Tuple[dict, i
         })
 
         return headers, HTTPStatus.OK, to_json(response, api.pretty_print)
-    
     except Exception as e:
         return api.get_exception(HTTPStatus.INTERNAL_SERVER_ERROR, headers, request.format, 'ServerError', str(e))
     finally:
-        provider.disconnect()
+        pidb_provider.disconnect()
 
 def is_indoor_collection(collection_id: String) -> bool:
     pidb_provider = PostgresIndoorDB()
@@ -155,13 +169,13 @@ def is_indoor_collection(collection_id: String) -> bool:
         pidb_provider.connect()
         if pidb_provider.is_indoor_collection(collection_id):
             return True
+        else:
+            return False
     
     except Exception as e:
             LOGGER.error(f"Error checking collection type: {e}")
     finally:
         pidb_provider.disconnect()
-
-    return False
 # endregion
 
 # region IndoorFeatures
@@ -340,84 +354,86 @@ def get_collection_items(api: API, request: APIRequest, dataset) -> Tuple[dict, 
     # --- CALL PROVIDER ---
     # We pass the cleaned params to the DB layer
     LOGGER.debug(f'Querying provider with offset: {offset}, limit: {limit}, bbox: {bbox}')
-    provider = PostgresIndoorDB()
+    pidb_provider = PostgresIndoorDB()
     try:
-        content, number_matched = provider.get_collection_items(
+        pidb_provider.connect()
+        content, number_matched = pidb_provider.get_collection_items(
             collection_id=collection_str_id,
             bbox=bbox,
             limit=limit,
             offset=offset,
         )
+        # --- GENERATE LINKS (Pagination) ---
+        links = []
+        
+        # 1. Self Link
+        # Reconstructs current URL with current params
+        self_href = f"{api.base_url}/collections/{collection_str_id}/items?offset={offset}&limit={limit}"
+        if bbox:
+            self_href += f"&bbox={','.join(map(str, bbox))}"
+        
+        links.append({
+            'rel': 'self',
+            'type': 'application/geo+json',
+            'title': 'This document',
+            'href': self_href
+        })
+
+        # 2. Next Link
+        # Only show if there are more items remaining
+        if (offset + limit) < number_matched:
+            next_offset = offset + limit
+            next_href = f"{api.base_url}/collections/{collection_str_id}/items?offset={next_offset}&limit={limit}"
+            if bbox:
+                next_href += f"&bbox={','.join(map(str, bbox))}"
+            
+            links.append({
+                'rel': 'next',
+                'type': 'application/geo+json',
+                'title': 'Next page',
+                'href': next_href
+            })
+
+        # 3. Previous Link
+        # Only show if we are not on the first page
+        if offset > 0:
+            prev_offset = max(0, offset - limit)
+            prev_href = f"{api.base_url}/collections/{collection_str_id}/items?offset={prev_offset}&limit={limit}"
+            if bbox:
+                prev_href += f"&bbox={','.join(map(str, bbox))}"
+                
+            links.append({
+                'rel': 'prev',
+                'type': 'application/geo+json',
+                'title': 'Previous page',
+                'href': prev_href
+            })
+
+        # --- CONSTRUCT RESPONSE ---
+        feature_collection = {
+            'type': 'FeatureCollection',
+            'numberMatched': number_matched,
+            'numberReturned': len(content),
+            'links': links,
+            'features': content
+        }
+        
+        # 1. Get Headers (Standard OGC headers)
+        headers = request.get_response_headers(SYSTEM_LOCALE)
+        
+        # 2. Serialize the content to a string
+        content_body = to_json(feature_collection, api.pretty_print)
+        
+        # 3. Return in the correct order: Headers, Status, Content
+        return headers, HTTPStatus.OK, content_body
     except Exception as err:
         LOGGER.error(f"Provider error: {err}")
         return api.get_exception(
             HTTPStatus.INTERNAL_SERVER_ERROR,
             headers, request.format, 'NoApplicableCode', 'Internal Server Error')
+    finally:
+        pidb_provider.disconnect()
 
-    # --- GENERATE LINKS (Pagination) ---
-    links = []
-    
-    # 1. Self Link
-    # Reconstructs current URL with current params
-    self_href = f"{api.base_url}/collections/{collection_str_id}/items?offset={offset}&limit={limit}"
-    if bbox:
-        self_href += f"&bbox={','.join(map(str, bbox))}"
-    
-    links.append({
-        'rel': 'self',
-        'type': 'application/geo+json',
-        'title': 'This document',
-        'href': self_href
-    })
-
-    # 2. Next Link
-    # Only show if there are more items remaining
-    if (offset + limit) < number_matched:
-        next_offset = offset + limit
-        next_href = f"{api.base_url}/collections/{collection_str_id}/items?offset={next_offset}&limit={limit}"
-        if bbox:
-            next_href += f"&bbox={','.join(map(str, bbox))}"
-        
-        links.append({
-            'rel': 'next',
-            'type': 'application/geo+json',
-            'title': 'Next page',
-            'href': next_href
-        })
-
-    # 3. Previous Link
-    # Only show if we are not on the first page
-    if offset > 0:
-        prev_offset = max(0, offset - limit)
-        prev_href = f"{api.base_url}/collections/{collection_str_id}/items?offset={prev_offset}&limit={limit}"
-        if bbox:
-            prev_href += f"&bbox={','.join(map(str, bbox))}"
-            
-        links.append({
-            'rel': 'prev',
-            'type': 'application/geo+json',
-            'title': 'Previous page',
-            'href': prev_href
-        })
-
-    # --- CONSTRUCT RESPONSE ---
-    feature_collection = {
-        'type': 'FeatureCollection',
-        'numberMatched': number_matched,
-        'numberReturned': len(content),
-        'links': links,
-        'features': content
-    }
-    
-    # 1. Get Headers (Standard OGC headers)
-    headers = request.get_response_headers(SYSTEM_LOCALE)
-    
-    # 2. Serialize the content to a string
-    content_body = to_json(feature_collection, api.pretty_print)
-    
-    # 3. Return in the correct order: Headers, Status, Content
-    return headers, HTTPStatus.OK, content_body
-    
 def get_collection_item(api: API, request: APIRequest, dataset, identifier) -> Tuple[dict, int, str]:
     """
     Get a single collection item
@@ -439,15 +455,26 @@ def get_collection_item(api: API, request: APIRequest, dataset, identifier) -> T
 
     # --- Extract Level Parameter ---
     level = request.params.get('level')
-    bbox = request.params.get('bbox')
+    # --- BBOX PARAMETER ---
+    LOGGER.debug('Processing bbox parameter')
+    bbox_param = request.params.get('bbox')
+    bbox = None
+
+    if bbox_param:
+        try:
+            bbox = validate_bbox(bbox_param)
+        except ValueError as err:
+            msg = str(err)
+            return api.get_exception(
+                HTTPStatus.BAD_REQUEST,
+                headers, request.format, 'InvalidParameterValue', msg)
+    
     # You might want to strip whitespace if it's a string
     if level:
         level = str(level).strip()
 
     try:
         pidb_provider.connect()
-
-        # --- Pass level to the provider ---
         result = pidb_provider.get_feature(
             collection_str_id, 
             ifeature_str_id, 
@@ -485,13 +512,14 @@ def get_collection_item(api: API, request: APIRequest, dataset, identifier) -> T
         return api.get_exception(
             HTTPStatus.BAD_REQUEST,
             headers, request.format, 'ConnectingError', msg)
+    finally:
+        pidb_provider.disconnect()
     
     return headers, HTTPStatus.OK, to_json(result, api.pretty_print)
 #endregion
 
 # region ThematicLayers
 def manage_collection_item_layer(api: API, request: APIRequest, action, dataset, identifier, layer=None) -> Tuple[dict, int, str]:
-    
     if not request.is_valid(PLUGINS['formatter'].keys()):
         return api.get_format_exception(request)
     
@@ -513,89 +541,77 @@ def manage_collection_item_layer(api: API, request: APIRequest, action, dataset,
     collection_str_id = str(dataset)
     feature_str_id = str(identifier)
     layer_str_id = str(layer) if layer else None
-    try:
-        pidb_provider.connect()
-        # =====================================================================
-        # ACTION: CREATE (POST)
-        # =====================================================================
-        if action == 'create':
-            if not request.data:
-                msg = 'No data found'
-                LOGGER.error(msg)
-                return api.get_exception(
-                    HTTPStatus.BAD_REQUEST,
-                    headers, request.format, 'InvalidParameterValue', msg) 
-            data = request.data
-            try:
-                # Parse bytes data, if applicable
-                data = data.decode()
-            except (UnicodeDecodeError, AttributeError):
-                pass
+    if action == 'create':
+        if not request.data:
+            msg = 'No data found'
+            LOGGER.error(msg)
+            return api.get_exception(
+                HTTPStatus.BAD_REQUEST,
+                headers, request.format, 'InvalidParameterValue', msg) 
+        data = request.data
+        try:
+            # Parse bytes data, if applicable
+            data = data.decode()
+        except (UnicodeDecodeError, AttributeError):
+            pass
 
-            try:
-                data = json.loads(data)
-            except (json.decoder.JSONDecodeError, TypeError) as err:
-                # Input does not appear to be valid JSON
-                LOGGER.error(err)
-                msg = 'invalid request data'
-                return api.get_exception(
-                    HTTPStatus.BAD_REQUEST,
-                    headers, request.format, 'InvalidParameterValue', msg)
-            LOGGER.debug('Creating item')  
-            try:
-                pidb_provider.connect()
-                # Schema Validation
-                # layer_schema = {
-                #     "$schema": INDOOR_SCHEMA.get("$schema"),
-                #     "$defs": INDOOR_SCHEMA.get("$defs"), 
-                #     "$ref": "#/$defs/ThematicLayer"      
-                # }
-                # validate(instance=data, schema=layer_schema)
-                pidb_provider.post_thematic_layer(
-                    collection_str_id, 
-                    feature_str_id,
-                    data
-                )
-                layer_str_id = data.get("id")
-            except (Exception, psycopg2.Error) as error:
-                msg = str(error)
-                return api.get_exception(
-                    HTTPStatus.BAD_REQUEST,
-                    headers, request.format, 'ConnectingError', msg)
-            finally:
-                pidb_provider.disconnect()
-            headers['Location'] = '{}/{}/items/{}'.format(
-                api.get_collections_url(), dataset, layer_str_id)
+        try:
+            data = json.loads(data)
+        except (json.decoder.JSONDecodeError, TypeError) as err:
+            # Input does not appear to be valid JSON
+            LOGGER.error(err)
+            msg = 'invalid request data'
+            return api.get_exception(
+                HTTPStatus.BAD_REQUEST,
+                headers, request.format, 'InvalidParameterValue', msg)
+        LOGGER.debug('Creating item')  
+        try:
+            pidb_provider.connect()
+            # Schema Validation
+            # layer_schema = {
+            #     "$schema": INDOOR_SCHEMA.get("$schema"),
+            #     "$defs": INDOOR_SCHEMA.get("$defs"), 
+            #     "$ref": "#/$defs/ThematicLayer"      
+            # }
+            # validate(instance=data, schema=layer_schema)
+            pidb_provider.post_thematic_layer(
+                collection_str_id, 
+                feature_str_id,
+                data
+            )
+            layer_str_id = data.get("id")
+        except (Exception, psycopg2.Error) as error:
+            msg = str(error)
+            return api.get_exception(
+                HTTPStatus.BAD_REQUEST,
+                headers, request.format, 'ConnectingError', msg)
+        finally:
+            pidb_provider.disconnect()
+        headers['Location'] = '{}/{}/items/{}'.format(
+            api.get_collections_url(), dataset, layer_str_id)
 
-            return headers, 201, to_json({"status": "Created", "id": layer_str_id}, api.pretty_print)  
+        return headers, 201, to_json({"status": "Created", "id": layer_str_id}, api.pretty_print)  
         # =====================================================================
         # ACTION: DELETE (DELETE)
         # =====================================================================
-        elif action == 'delete':
-            LOGGER.debug('Deleting layer')
-            
-            try:
-                pidb_provider.connect()
-                pidb_provider.delete_thematic_layer(collection_str_id, feature_str_id, layer_str_id)
- 
-            except (Exception, psycopg2.Error) as error:
-                msg = str(error)
-                return api.get_exception(
-                    HTTPStatus.BAD_REQUEST,
-                    headers, request.format, 'ConnectingError', msg)
-            finally:
-                pidb_provider.disconnect()
-                return headers, 204, '' # No Content
+    elif action == 'delete':
+        LOGGER.debug('Deleting layer')
+        
+        try:
+            pidb_provider.connect()
+            pidb_provider.delete_thematic_layer(collection_str_id, feature_str_id, layer_str_id)
 
-        else:
-            return api.get_exception(405, headers, request.format, 'MethodNotAllowed', "Action not yet implemented")
+        except (Exception, psycopg2.Error) as error:
+            msg = str(error)
+            return api.get_exception(
+                HTTPStatus.BAD_REQUEST,
+                headers, request.format, 'ConnectingError', msg)
+        finally:
+            pidb_provider.disconnect()
+            return headers, 204, '' # No Content
 
-    except Exception as e:
-        LOGGER.error(f"Global error in manage_layer: {e}")
-        return api.get_exception(500, headers, request.format, 'ServerError', str(e))
-
-    finally:
-        pidb_provider.disconnect()
+    else:
+        return api.get_exception(405, headers, request.format, 'MethodNotAllowed', "Action not yet implemented")
 
 def get_collection_item_layers(api: API, request: APIRequest, dataset, identifier) -> Tuple[dict, int, str]:
     """
@@ -678,7 +694,6 @@ def get_collection_item_layers(api: API, request: APIRequest, dataset, identifie
         )
 
         # 4. Construct Lightweight Summary & Base URL
-        # We define the full endpoint path here to avoid repetition
         base_url = f"{api.config['server']['url']}/collections/{collection_str_id}/items/{ifeature_str_id}/layers"
 
         # 1. Add Detail Links to each Layer
@@ -767,14 +782,25 @@ def get_collection_item_layer(api: API, request: APIRequest, dataset, identifier
     layer_str_id = str(layer)
     pidb_provider = PostgresIndoorDB()
     level = request.params.get('level')
-    bbox = request.params.get('bbox')
+    # --- BBOX PARAMETER ---
+    LOGGER.debug('Processing bbox parameter')
+    bbox_param = request.params.get('bbox')
+    bbox = None
+
+    if bbox_param:
+        try:
+            bbox = validate_bbox(bbox_param)
+        except ValueError as err:
+            msg = str(err)
+            return api.get_exception(
+                HTTPStatus.BAD_REQUEST,
+                headers, request.format, 'InvalidParameterValue', msg)
     
     if not request.is_valid():
         return api.get_format_exception(request)
     try:
         pidb_provider.connect()
         result = pidb_provider.get_layer(collection_str_id, ifeature_str_id, layer_str_id, bbox=bbox, level=level)
-
 
         if result is None:
             msg = f"Layer '{layer_str_id}' not found in feature '{ifeature_str_id}'"
@@ -844,14 +870,14 @@ def get_collection_item_interlayerconnections(api: API, request: APIRequest, dat
     connected_layer_param = request.params.get('connectedLayerId')
     topo_type_param = request.params.get('typeOfTopoExpression')
 
-    provider = PostgresIndoorDB()
+    pidb_provider = PostgresIndoorDB()
 
     try:
-        provider.connect()
+        pidb_provider.connect()
         
         # 3. Call Provider
         # Returns: {'connections': [...], 'numberMatched': X, 'numberReturned': Y}
-        data = provider.get_interlayer_connections(
+        data = pidb_provider.get_interlayer_connections(
             collection_id, 
             item_id,
             connected_layer_id=connected_layer_param,
@@ -906,128 +932,58 @@ def get_collection_item_interlayerconnections(api: API, request: APIRequest, dat
     except Exception as e:
         return api.get_exception(HTTPStatus.INTERNAL_SERVER_ERROR, headers, request.format, 'ServerError', str(e))
     finally:
-        provider.disconnect()
-
+        pidb_provider.disconnect()
 
 def manage_collection_item_interlayerconnections(api: API, request: APIRequest, action: str, collection_id: str, item_id: str, connection_id: str = None) -> Tuple[dict, int, str]:
     """
     POST / DELETE for Interlayer Connections
     """
     headers = request.get_response_headers(SYSTEM_LOCALE)
-    provider = PostgresIndoorDB()
+    pidb_provider = PostgresIndoorDB()
 
-    try:
-        if action == 'create':
-            try:
-                data = request.data
-                if isinstance(data, bytes):
-                    data = json.loads(data.decode('utf-8'))
-            except Exception:
-                return api.get_exception(HTTPStatus.BAD_REQUEST, headers, request.format, 'InvalidParameterValue', 'Invalid JSON')
+    if action == 'create':
+        try:
+            data = request.data
+            if isinstance(data, bytes):
+                data = json.loads(data.decode('utf-8'))
+        except Exception:
+            return api.get_exception(HTTPStatus.BAD_REQUEST, headers, request.format, 'InvalidParameterValue', 'Invalid JSON')
 
-            # Pass collection_id and item_id (feature_id) to helper for ID resolution
-            new_id = provider.post_interlayer_connection(collection_id, item_id, data)
-            
+        # Pass collection_id and item_id (feature_id) to helper for ID resolution
+        try:
+            pidb_provider.connect()
+            new_id = pidb_provider.post_interlayer_connection(collection_id, item_id, data)
+        
             if new_id:
                 headers['Location'] = f"{api.config['server']['url']}/collections/{collection_id}/items/{item_id}/interlayerconnections/{new_id}"
                 return headers, HTTPStatus.CREATED, to_json({"status": "Created", "id": new_id}, api.pretty_print)
             else:
                 return api.get_exception(HTTPStatus.INTERNAL_SERVER_ERROR, headers, request.format, 'ServerError', 'Creation failed (check logs)')
+        except Exception as e:
+            return api.get_exception(HTTPStatus.INTERNAL_SERVER_ERROR, headers, request.format, 'ServerError', str(e))
+        finally:
+            pidb_provider.disconnect()
 
-        elif action == 'delete':
-            if not connection_id:
-                return api.get_exception(HTTPStatus.BAD_REQUEST, headers, request.format, 'MissingParameterValue', 'ID required')
+    elif action == 'delete':
+        if not connection_id:
+            return api.get_exception(HTTPStatus.BAD_REQUEST, headers, request.format, 'MissingParameterValue', 'ID required')
 
-
-            success = provider.delete_interlayer_connection(collection_id, item_id, connection_id)
+        try:
+            pidb_provider.connect()
+            success = pidb_provider.delete_interlayer_connection(collection_id, item_id, connection_id)
             if success:
                 return headers, HTTPStatus.NO_CONTENT, ''
             else:
                 return api.get_exception(HTTPStatus.NOT_FOUND, headers, request.format, 'NotFound', 'Connection not found')
-
-
-    except Exception as e:
-        return api.get_exception(HTTPStatus.INTERNAL_SERVER_ERROR, headers, request.format, 'ServerError', str(e))
-    finally:
-        provider.disconnect()
-
-    return headers, HTTPStatus.METHOD_NOT_ALLOWED, ''
-
+        except Exception as e:
+            return api.get_exception(HTTPStatus.INTERNAL_SERVER_ERROR, headers, request.format, 'ServerError', str(e))
+        finally:
+            pidb_provider.disconnect()
+    else:
+        return api.get_exception(405, headers, request.format, 'MethodNotAllowed', "Action not yet implemented")
 # endregion
 
 # region PrimalSpace
-def get_list_of_collections_id():
-    pidb_provider = PostgresIndoorDB()
-    try:
-        pidb_provider.connect()
-        result = pidb_provider.get_collections_list()
-        collections_id = []
-        for row in result:
-            collections_id.append(row.get('id'))
-        return True, collections_id
-    except (Exception, psycopg2.Error) as error:
-        return False, error
-    finally:
-        pidb_provider.disconnect()
-
-def validate_bbox(value=None) -> list:
-    """
-    Helper function to validate bbox parameter
-
-    :param value: `list` of minx, miny, maxx, maxy
-
-    :returns: bbox as `list` of `float` values
-    """
-
-    if value is None:
-        LOGGER.debug('bbox is empty')
-        return []
-
-    bbox = value.split(',')
-
-    if len(bbox) != 4 and len(bbox) != 6:
-        msg = 'bbox should be 4 values (minx,miny,maxx,maxy) or \
-            6 values (minx,miny,minz,maxx,maxy,maxz)'
-        LOGGER.debug(msg)
-        raise ValueError(msg)
-
-    try:
-        bbox = [float(c) for c in bbox]
-    except ValueError as err:
-        msg = 'bbox values must be numbers'
-        err.args = (msg,)
-        LOGGER.debug(msg)
-        raise
-
-    if len(bbox) == 4:
-        if bbox[1] > bbox[3]:
-            msg = 'miny should be less than maxy'
-            LOGGER.debug(msg)
-            raise ValueError(msg)
-
-        if bbox[0] > bbox[2]:
-            msg = 'minx is greater than maxx (possibly antimeridian bbox)'
-            LOGGER.debug(msg)
-            raise ValueError(msg)
-
-    if len(bbox) == 6:
-        if bbox[2] > bbox[5]:
-            msg = 'minz should be less than maxz'
-            LOGGER.debug(msg)
-            raise ValueError(msg)
-
-        if bbox[1] > bbox[4]:
-            msg = 'miny should be less than maxy'
-            LOGGER.debug(msg)
-            raise ValueError(msg)
-
-        if bbox[0] > bbox[3]:
-            msg = 'minx is greater than maxx (possibly antimeridian bbox)'
-            LOGGER.debug(msg)
-            raise ValueError(msg)
-
-    return bbox
-
 def get_primal(api: API, request: APIRequest, collection_id: str, item_id: str, layer_id: str) -> Tuple[dict, int, str]:
     """
     GET /collections/{id}/items/{featureId}/layers/{layerId}/primal
@@ -1555,3 +1511,75 @@ def get_route(api: API, request: APIRequest, collection_id: str, item_id: str, l
         provider.disconnect()
 
 # endregion
+
+def get_list_of_collections_id():
+    pidb_provider = PostgresIndoorDB()
+    try:
+        pidb_provider.connect()
+        result = pidb_provider.get_collections_list()
+        collections_id = []
+        for row in result:
+            collections_id.append(row.get('id'))
+        return True, collections_id
+    except (Exception, psycopg2.Error) as error:
+        return False, error
+    finally:
+        pidb_provider.disconnect()
+
+def validate_bbox(value=None) -> list:
+    """
+    Helper function to validate bbox parameter
+
+    :param value: `list` of minx, miny, maxx, maxy
+
+    :returns: bbox as `list` of `float` values
+    """
+
+    if value is None:
+        LOGGER.debug('bbox is empty')
+        return []
+
+    bbox = value.split(',')
+
+    if len(bbox) != 4 and len(bbox) != 6:
+        msg = 'bbox should be 4 values (minx,miny,maxx,maxy) or \
+            6 values (minx,miny,minz,maxx,maxy,maxz)'
+        LOGGER.debug(msg)
+        raise ValueError(msg)
+
+    try:
+        bbox = [float(c) for c in bbox]
+    except ValueError as err:
+        msg = 'bbox values must be numbers'
+        err.args = (msg,)
+        LOGGER.debug(msg)
+        raise
+
+    if len(bbox) == 4:
+        if bbox[1] > bbox[3]:
+            msg = 'miny should be less than maxy'
+            LOGGER.debug(msg)
+            raise ValueError(msg)
+
+        if bbox[0] > bbox[2]:
+            msg = 'minx is greater than maxx (possibly antimeridian bbox)'
+            LOGGER.debug(msg)
+            raise ValueError(msg)
+
+    if len(bbox) == 6:
+        if bbox[2] > bbox[5]:
+            msg = 'minz should be less than maxz'
+            LOGGER.debug(msg)
+            raise ValueError(msg)
+
+        if bbox[1] > bbox[4]:
+            msg = 'miny should be less than maxy'
+            LOGGER.debug(msg)
+            raise ValueError(msg)
+
+        if bbox[0] > bbox[3]:
+            msg = 'minx is greater than maxx (possibly antimeridian bbox)'
+            LOGGER.debug(msg)
+            raise ValueError(msg)
+
+    return bbox
