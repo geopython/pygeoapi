@@ -328,8 +328,7 @@ class PostgresIndoorDB:
         finally:
             self.disconnect()
             
-
-    def get_feature(self, collection_id, feature_id, level=None):
+    def get_feature(self, collection_id, feature_id, level=None, bbox=None):
         """
         TODO: bbox filtering
 
@@ -358,7 +357,8 @@ class PostgresIndoorDB:
             feature_pk, feature_id_str, geom_str, props = row
             geometry = json.loads(geom_str) if geom_str else None
             properties = props or {}
-
+            thematic_layers = []
+            interlayer_connections = []
             # Initialize Skeleton
             result_feature = {
                 "featureType": "Feature",
@@ -366,295 +366,24 @@ class PostgresIndoorDB:
                 "geometry": geometry,
                 "properties": properties, # Standard metadata properties
                 
-                # The core IndoorGML data structure
-                "IndoorFeatures": {
-                    "featureType": "IndoorFeatures",
-                    "layers": [],
-                    "layerConnections": []
-                },
                 "links": []
             }
-
+            
             # ---------------------------------------------------------
-                # CHECK: If no level provided, return Metadata only
-                # TODO: for bbox too
+                # CHECK: If no level and bbox provided, return Metadata only
             # ---------------------------------------------------------
-            if level is None:
+            if not level or not bbox:
+                LOGGER.debug("No query parameter")
                 return result_feature
-
+            
+            
             # ---------------------------------------------------------
             # 2. Fetch Thematic Layers (Keep ID mapping for later)
             # ---------------------------------------------------------
-
-            cur.execute("""
-                SELECT 
-                    id, 
-                    id_str, 
-                    primalspace_id_str, 
-                    dualspace_id_str, 
-                    semantic_extension, 
-                    theme,
-                    p_creation_datetime, 
-                    p_termination_datetime,
-                    d_creation_datetime, 
-                    d_termination_datetime,
-                    is_logical, 
-                    is_directed
-                FROM thematiclayer
-                WHERE indoorfeature_id = %s
-            """, (feature_pk,))
-
-            layer_rows = cur.fetchall()
-
-            # Map database ID (pk) to the layer object so we can inject content later
-            layers_by_pk = {}
-
-            for l_row in layer_rows:
-                (
-                    l_pk, l_id, l_p_id, l_d_id, l_se, l_t, 
-                    p_start, p_end, d_start, d_end, d_is_log, d_is_dir
-                ) = l_row
-                
-                thematic_layer = {
-                    "id": l_id,
-                    "featureType": "ThematicLayer",
-                    "theme": l_t if l_t else "Unknown",
-                    "semanticExtension": l_se if l_se else False,
-                    
-                    # 1. Primal Space Object (ID + Members)
-                    "primalSpace": {
-                        "id": l_p_id,
-                        "featureType": "PrimalSpaceLayer",
-                        # Convert datetime to ISO string if exists, else None
-                        "creationDatetime": p_start.isoformat() if p_start else None, 
-                        "terminationDatetime": p_end.isoformat() if p_end else None,
-                        "cellSpaceMember": [],
-                        "cellBoundaryMember": []
-                    },
-                    
-                    # 2. Dual Space Object (ID + Members)
-                    "dualSpace": {
-                        "id": l_d_id,
-                        "featureType": "DualSpaceLayer",
-                        # Use DB value; if None, fall back to True/False based on your preference
-                        "isLogical": d_is_log if d_is_log is not None else True,   
-                        "isDirected": d_is_dir if d_is_dir is not None else True,  
-                        
-                        "creationDatetime": d_start.isoformat() if d_start else None,
-                        "terminationDatetime": d_end.isoformat() if d_end else None,
-                        
-                        "nodeMember": [],
-                        "edgeMember": []
-                    }
-                }
-                
-                result_feature["IndoorFeatures"]["layers"].append(thematic_layer)
-                layers_by_pk[l_pk] = thematic_layer
-            
-            # ---------------------------------------------------------
-            # 3. Fetch CellSpaces (with Level Filter)
-            # ---------------------------------------------------------
-            # We LEFT JOIN node_n_edge to get the duality string ID immediately.
-            
-            space_sql = """
-                SELECT 
-                    s.id, s.id_str, s.thematiclayer_id, 
-                    ST_AsText(s."2D_geometry"), s."3D_geometry",
-                    s.cell_name, s.level, s.external_reference, 
-                    s.poi, 
-                    d.id_str as duality_str
-                FROM cell_space_n_boundary s
-                LEFT JOIN node_n_edge d ON s.duality_id = d.id
-                WHERE s.indoorfeature_id = %s AND s.type = 'space'
-            """
-            space_params = [feature_pk]
-
-            if level:
-                space_sql += " AND s.level = %s"
-                space_params.append(str(level))
-
-            cur.execute(space_sql, tuple(space_params))
-            space_rows = cur.fetchall()
-
-            valid_space_ids = set() 
-            spaces_by_pk = {} # Temporary map: { db_pk : space_object_reference }
-
-            for s_row in space_rows:
-                s_pk, s_id, layer_pk, s_geom_2d, s_geom_3d, s_name, s_lvl, s_ext, s_poi, s_duality_str = s_row
-                
-                valid_space_ids.add(s_pk)
-                
-                space_obj = {
-                    "featureType": "CellSpace",
-                    "id": s_id,
-                    "cellSpacegeom": {
-                        "geometry2D": self.wkt_to_json(s_geom_2d),
-                        "geometry3D": s_geom_3d
-                    }, 
-                    "cellSpaceName": s_name,
-                    "level": s_lvl,
-                    "poi": s_poi if s_poi is not None else False,
-                    "duality": s_duality_str, # Now a string
-                    "boundedBy": [],          # Initialize empty, fill in Step 4
-                    "externalReference": s_ext
-                }
-
-                # Save reference for reverse-lookup in step 4
-                spaces_by_pk[s_pk] = space_obj
-
-                # Inject into the correct layer
-                if layer_pk in layers_by_pk:
-                    layers_by_pk[layer_pk]["primalSpace"]["cellSpaceMember"].append(space_obj)
-
-            # ---------------------------------------------------------
-            # 4. Fetch CellSpaceBoundaries (Filtered by Space IDs)
-            # ---------------------------------------------------------
-            
-            should_fetch_boundaries = True
-            if level and not valid_space_ids:
-                should_fetch_boundaries = False
-
-            if should_fetch_boundaries:
-                # We fetch bounded_by_cell_id to link back to the space.
-                # We LEFT JOIN node_n_edge to get the duality string ID.
-                bound_sql = """
-                    SELECT 
-                        b.id, b.id_str, b.thematiclayer_id, 
-                        ST_AsText(b."2D_geometry"), b."3D_geometry",
-                        b.external_reference, b.is_virtual,
-                        b.bounded_by_cell_id,
-                        d.id_str as duality_str
-                    FROM cell_space_n_boundary b
-                    LEFT JOIN node_n_edge d ON b.duality_id = d.id
-                    WHERE b.indoorfeature_id = %s AND b.type = 'boundary'
-                """
-                bound_params = [feature_pk]
-
-                if level:
-                    bound_sql += " AND b.bounded_by_cell_id = ANY(%s)"
-                    bound_params.append(list(valid_space_ids))
-
-                cur.execute(bound_sql, tuple(bound_params))
-                bound_rows = cur.fetchall()
-
-                for b_row in bound_rows:
-                    b_pk, b_id, layer_pk, b_geom_2d, b_geom_3d, b_ext, b_virt, parent_space_pk, b_duality_str = b_row
-                    bound_obj = {
-                        "featureType": "CellBoundary",
-                        "id": b_id,
-                        "CellBoundaryGeom": {
-                            "geometry2D": self.wkt_to_json(b_geom_2d),
-                            "geometry3D": b_geom_3d
-                        },
-                        "isVirtual": b_virt if b_virt is not None else False,
-                        "duality": b_duality_str, # Now a string
-                        "externalReference": b_ext 
-                    }
-
-                    # INVERSION LOGIC: Add this boundary ID to the parent Space's boundedBy list
-                    if parent_space_pk in spaces_by_pk:
-                        spaces_by_pk[parent_space_pk]["boundedBy"].append(b_id)
-
-                    if layer_pk in layers_by_pk:
-                        layers_by_pk[layer_pk]["primalSpace"]["cellBoundaryMember"].append(bound_obj)
-
-            # ---------------------------------------------------------
-            # 5 & 6. Fetch Dual Space (Nodes & Edges)
-            # ---------------------------------------------------------
-            
-            dual_sql = """
-                SELECT 
-                    n.id, n.id_str, n.type, n.thematiclayer_id, 
-                    ST_AsText(n.geometry_val), 
-                    n.weight,
-                    p.id_str as duality_str
-                FROM node_n_edge n
-                LEFT JOIN cell_space_n_boundary p ON n.duality_id = p.id
-                WHERE n.indoorfeature_id = %s
-            """
-            cur.execute(dual_sql, (feature_pk,))
-            dual_rows = cur.fetchall()
-
-            # Temporary map to lookup objects by DB ID for the connection step
-            # Key: database_id (int), Value: reference to the node/edge dict
-            dual_items_by_pk = {}
-
-            for d_row in dual_rows:
-                d_pk, d_id, d_type, layer_pk, d_geom_str, d_weight, d_duality_str = d_row
-                
-                # --- NODE ---
-                if d_type == 'node':
-                    node_obj = {
-                        "featureType": "Node",
-                        "id": d_id,
-                        "geometry": self.wkt_to_json(d_geom_str),
-                        "duality": d_duality_str, 
-                        "connects": [] # Will be populated in the next block
-                    }
-                    
-                    dual_items_by_pk[d_pk] = node_obj
-                    
-                    if layer_pk in layers_by_pk:
-                        layers_by_pk[layer_pk]["dualSpace"]["nodeMember"].append(node_obj)
-                
-                # --- EDGE ---
-                elif d_type == 'edge':
-                    edge_obj = {
-                        "featureType": "Edge",
-                        "id": d_id,
-                        "geometry": self.wkt_to_json(d_geom_str),
-                        "weight": d_weight if d_weight is not None else 0.0,
-                        "duality": d_duality_str, 
-                        "connects": [] # Will be populated in the next block
-                    }
-
-                    dual_items_by_pk[d_pk] = edge_obj
-
-                    if layer_pk in layers_by_pk:
-                        layers_by_pk[layer_pk]["dualSpace"]["edgeMember"].append(edge_obj)
-
-            # ---------------------------------------------------------
-            # 6.5. Populate 'connects' for Nodes and Edges
-            # ---------------------------------------------------------
-            # We query the 'connects' table and JOIN node_n_edge 3 times
-            # to retrieve the String IDs for the Edge, Source Node, and Target Node.
-            
-            connects_sql = """
-                SELECT 
-                    c.edge_id,      e.id_str AS edge_str,
-                    c.node_source_id, ns.id_str AS source_str,
-                    c.node_target_id, nt.id_str AS target_str
-                FROM connects c
-                JOIN node_n_edge e  ON c.edge_id = e.id
-                JOIN node_n_edge ns ON c.node_source_id = ns.id
-                JOIN node_n_edge nt ON c.node_target_id = nt.id
-                WHERE e.indoorfeature_id = %s
-            """
-            cur.execute(connects_sql, (feature_pk,))
-            connects_rows = cur.fetchall()
-
-            for conn_row in connects_rows:
-                edge_pk, edge_str, src_pk, src_str, tgt_pk, tgt_str = conn_row
-                
-                # 1. Update the Edge object: connects [Source, Target]
-                if edge_pk in dual_items_by_pk:
-                    dual_items_by_pk[edge_pk]["connects"] = [src_str, tgt_str]
-
-                # 2. Update the Source Node object: add Edge ID
-                if src_pk in dual_items_by_pk:
-                    dual_items_by_pk[src_pk]["connects"].append(edge_str)
-
-                # 3. Update the Target Node object: add Edge ID
-                if tgt_pk in dual_items_by_pk:
-                    dual_items_by_pk[tgt_pk]["connects"].append(edge_str)
-                
-            # ---------------------------------------------------------
-            # 7. Fetch InterLayerConnections 
-            # ---------------------------------------------------------
-            # Logic: We strictly query the 'interlayerconnection' table.
-            # We LEFT JOIN 'thematiclayer', 'cell_space_n_boundary', and 'node_n_edge'
-            # ONLY to resolve the integer Foreign Keys into String IDs (id_str).
-            # This does NOT involve the 'connects' table.
+            cur.execute("SELECT id FROM thematiclayer WHERE indoorfeature_id=%s", (feature_pk,))
+            rows = cur.fetchall()
+            for row in rows:
+                thematic_layers.append(self._get_layer(row, level=level, bbox=bbox))
 
             conn_sql = """
                 SELECT 
@@ -702,10 +431,74 @@ class PostgresIndoorDB:
                     "connectedCells": cells
                 }
                 
-                result_feature["IndoorFeatures"]["layerConnections"].append(interlayer_connection)
+                interlayer_connections.append(interlayer_connection)
+            
+            result_indoorfeature = {
+                "featureType": "IndoorFeatures",
+                    "layers": thematic_layers,
+                    "layerConnections": interlayer_connections
+            }
+            result_feature["IndoorFeatures"] = result_indoorfeature
         
         return result_feature
     
+    def post_indoorfeature(self, collection_str, indoorfeature):
+        """
+        Insert a indoor feature into a collection
+
+        :param collection_id: local identifier of a collection
+
+        :returns: IndoorFeature ID
+        """        
+        feature_str = indoorfeature.get('id')
+        properties = indoorfeature.get('properties', {})
+        geometries = indoorfeature.get('geometry', {})
+        layers = indoorfeature.get('layers', None)
+        interlayerconnections = indoorfeature.get('layerConnections', None)
+        if not layers:
+            raise Exception(f"An indoorFeature must have at least one thematic layer.")
+        with self.connection.cursor() as cur:
+            try:
+                # Resolve Collection DB ID (Integer) from String ID
+                cur.execute("SELECT id FROM collection WHERE id_str = %s", (collection_str,))
+                res = cur.fetchone()
+                if not res:
+                    raise Exception(f"Collection {collection_str} not found.")
+                collection_pk = res[0]
+                # Avoid same str id
+                cur.execute("SELECT id_str FROM indoorFeature WHERE collection_id = %s AND id_str = %s", (collection_pk, feature_str))
+                res = cur.fetchone()
+                if res:
+                    raise Exception(f"IndoorFeature {feature_str} already exist.")
+                # Insert IndoorFeature
+                LOGGER.debug("Insert indoorFeature")
+                cur.execute(
+                    """
+                    INSERT INTO indoorfeature (id_str, collection_id, geojson_geometry ,geojson_properties)
+                    VALUES (%s, %s, ST_SetSRID(ST_GeomFromGeoJSON(%s), 4326),%s)
+                    RETURNING id
+                    """,
+                    (feature_str, collection_pk, json.dumps(geometries), Json(properties))
+                )
+                indoorfeature_pk = cur.fetchone()[0]
+                
+                # Iterate and Insert Layers
+                for layer in layers:
+                    self._post_thematic_layer(collection_str, feature_str, layer)
+
+                for connection in interlayerconnections:
+                    self.post_interlayer_connection(connection)
+
+                # autocommit is False
+                self.connection.commit()
+            
+                return feature_str
+
+            except Exception as e:
+                self.connection.rollback()
+                print(f"Error occurred: {e}. Rolling back changes.")
+                raise e
+
     def delete_indoorfeature(self, collection_str_id, feature_id_str):
         """
         Deletes an IndoorFeature and all its associated layers, cells, nodes, and connections.
@@ -876,6 +669,49 @@ class PostgresIndoorDB:
 
         return response
     
+    def _get_layer(self, layer_pk, level=None, bbox=None):
+        """
+        Retrieves a single Thematic Layer.
+        If not filtered, just the meta data is given.
+        - PrimalSpace: Filtered by 'level' if provided.
+        - DualSpace: Returns the ENTIRE network (unfiltered) for connectivity.
+        """
+        result_layer = None
+        with self.connection.cursor() as cur:
+            try:
+                if level and bbox:
+                # 1. Fetch layer filtered by level or bbox
+                    query = """
+                        SELECT tl.id, tl.id_str, tl.theme, tl.is_logical, tl.is_directed, tl.primalspace_id_str, tl.dualspace_id_str, tl.p_creation_datetime, tl.d_creation_datetime
+                        FROM thematiclayer tl
+                        WHERE tl.id = %s
+                    """
+                    cur.execute(query, (layer_pk,))
+
+                    row = cur.fetchone()
+                    
+                    if not row:
+                        return None
+                    l_pk, l_id, l_theme, l_logical, l_directed, p_id, d_id, p_create, d_create = row
+                    # 2. Fetch Primal and Dual Spaces
+                    primal = self._get_primal_space(cur, l_pk, p_id, p_create, level=level, bbox=bbox)
+                    dual = self._get_dual_space(cur, l_pk, d_id, d_create, l_logical, l_directed)
+                    result_layer = {
+                        "id": l_id,
+                        "featureType": "ThematicLayer",
+                        "theme": l_theme if l_theme else "Unknown",
+                        "semanticExtension": False,
+                        "primalSpace": primal,
+                        "dualSpace": dual,
+                        "links": []
+                    }
+                else:
+                    raise ValueError()
+            except Exception as e:
+                raise e           
+
+        return result_layer
+
     def get_layer(self, collection_id, feature_id, layer_id, level=None, bbox=None):
         """
         Retrieves a single Thematic Layer.
@@ -985,7 +821,6 @@ class PostgresIndoorDB:
                     "links": []
                 }
             
-
         return result_layer
 
     def _get_primal_space(self, cur, layer_pk, primalspace_id, p_create, level=None, bbox=None):
@@ -1069,7 +904,6 @@ class PostgresIndoorDB:
                 # if ext: boundary["externalReference"] = {"uri": ext}
                 # primal_space["cellBoundaryMember"].append(boundary)
             
-           
             # Convert set to list for the query
             boundary_id_list = list(all_referenced_boundaries)
         
@@ -1203,64 +1037,7 @@ class PostgresIndoorDB:
                     node_map[target_id]["connects"].append(eid)
 
         return dual_space
-
-    def post_indoorfeature(self, collection_str, indoorfeature):
-        """
-        Insert a indoor feature into a collection
-
-        :param collection_id: local identifier of a collection
-
-        :returns: IndoorFeature ID
-        """        
-        feature_str = indoorfeature.get('id')
-        properties = indoorfeature.get('properties', {})
-        geometries = indoorfeature.get('geometry', {})
-        layers = indoorfeature.get('layers', None)
-        interlayerconnections = indoorfeature.get('layerConnections', None)
-        if not layers:
-            raise Exception(f"An indoorFeature must have at least one thematic layer.")
-        with self.connection.cursor() as cur:
-            try:
-                # Resolve Collection DB ID (Integer) from String ID
-                cur.execute("SELECT id FROM collection WHERE id_str = %s", (collection_str,))
-                res = cur.fetchone()
-                if not res:
-                    raise Exception(f"Collection {collection_str} not found.")
-                collection_pk = res[0]
-                # Avoid same str id
-                cur.execute("SELECT id_str FROM indoorFeature WHERE collection_id = %s AND id_str = %s", (collection_pk, feature_str))
-                res = cur.fetchone()
-                if res:
-                    raise Exception(f"IndoorFeature {feature_str} already exist.")
-                # Insert IndoorFeature
-                LOGGER.debug("Insert indoorFeature")
-                cur.execute(
-                    """
-                    INSERT INTO indoorfeature (id_str, collection_id, geojson_geometry ,geojson_properties)
-                    VALUES (%s, %s, ST_SetSRID(ST_GeomFromGeoJSON(%s), 4326),%s)
-                    RETURNING id
-                    """,
-                    (feature_str, collection_pk, json.dumps(geometries), Json(properties))
-                )
-                indoorfeature_pk = cur.fetchone()[0]
-                
-                # Iterate and Insert Layers
-                for layer in layers:
-                    self._post_thematic_layer(collection_str, feature_str, layer)
-
-                for connection in interlayerconnections:
-                    self.post_interlayer_connection(connection)
-
-                # autocommit is False
-                self.connection.commit()
-            
-                return feature_str
-
-            except Exception as e:
-                self.connection.rollback()
-                print(f"Error occurred: {e}. Rolling back changes.")
-                raise e
-            
+     
     def _post_thematic_layer(self, collection_str, feature_str, layer_data):
         """
         Helper to insert a ThematicLayer and trigger its content insertion.
@@ -1655,92 +1432,89 @@ class PostgresIndoorDB:
         - limit/offset: Pagination.
         """
         response = {
-            "connections": [],
-            "numberMatched": 0,
-            "numberReturned": 0
+            "layerConnections": [],
         }
 
         with self.connection.cursor() as cur:
-            # 1. Get Context (Collection & Feature PKs)
-            cur.execute("""
-                SELECT i.id 
-                FROM indoorfeature i
-                JOIN collection c ON i.collection_id = c.id
-                WHERE c.id_str = %s AND i.id_str = %s
-            """, (collection_str_id, feature_str_id))
-            
-            res = cur.fetchone()
-            if not res:
-                return response # Return empty if feature not found
-
-            feature_pk = res[0]
-
-            # 2. Build Query
-            # We include COUNT(*) OVER() to get the full count ignoring LIMIT
-            sql = """
-                SELECT 
-                    c.id_str, 
-                    c.topo_type, 
-                    c.comment,
-                    l1.id_str as l1_id, l2.id_str as l2_id,
-                    n1.id_str as n1_id, n2.id_str as n2_id,
-                    cs1.id_str as c1_id, cs2.id_str as c2_id,
-                    COUNT(*) OVER() as full_count
-                FROM interlayerconnection c
-                LEFT JOIN thematiclayer l1 ON c.connected_layer_a = l1.id
-                LEFT JOIN thematiclayer l2 ON c.connected_layer_b = l2.id
-                LEFT JOIN node_n_edge n1 ON c.connected_node_a = n1.id
-                LEFT JOIN node_n_edge n2 ON c.connected_node_b = n2.id
-                LEFT JOIN cell_space_n_boundary cs1 ON c.connected_cell_a = cs1.id
-                LEFT JOIN cell_space_n_boundary cs2 ON c.connected_cell_b = cs2.id
-                WHERE c.indoorfeature_id = %s
-            """
-            params = [feature_pk]
-
-            # --- FILTER: Connected Layer ---
-            if connected_layer_id:
-                # Check if the requested layer is EITHER side of the connection
-                sql += " AND (l1.id_str = %s OR l2.id_str = %s)"
-                params.extend([connected_layer_id, connected_layer_id])
-
-            # --- FILTER: Topology Type ---
-            if topo_type:
-                # We assume the input string matches the ENUM values (case-sensitivity depends on DB collation)
-                sql += " AND c.topo_type = %s"
-                params.append(topo_type)
-
-            # --- PAGINATION ---
-            sql += " ORDER BY c.id ASC LIMIT %s OFFSET %s"
-            params.extend([limit, offset])
-
-            cur.execute(sql, tuple(params))
-            rows = cur.fetchall()
-            
-            # Handle empty results
-            if not rows:
-                return response
-
-            # Set metadata from the first row
-            response["numberMatched"] = rows[0][9]
-
-            for row in rows:
-                # Build lists, filtering out None values (e.g. connections might only link Layers, not Nodes)
-                layers = [x for x in [row[3], row[4]] if x]
-                nodes = [x for x in [row[5], row[6]] if x]
-                cells = [x for x in [row[7], row[8]] if x]
-
-                conn_obj = {
-                    "id": row[0],
-                    "featureType": "InterLayerConnection",
-                    "typeOfTopoExpression": row[1],
-                    "comment": row[2] or "",
-                    "connectedLayers": layers,
-                    "connectedNodes": nodes,
-                    "connectedCells": cells
-                }
-                response["connections"].append(conn_obj)
+            try:
+                # 1. Get Context (Collection & Feature PKs)
+                cur.execute("""
+                    SELECT i.id 
+                    FROM indoorfeature i
+                    JOIN collection c ON i.collection_id = c.id
+                    WHERE c.id_str = %s AND i.id_str = %s
+                """, (collection_str_id, feature_str_id))
                 
-            response["numberReturned"] = len(response["connections"])
+                res = cur.fetchone()
+                if not res:
+                    return response # Return empty if feature not found
+
+                feature_pk = res[0]
+
+                # 2. Build Query
+                # We include COUNT(*) OVER() to get the full count ignoring LIMIT
+                sql = """
+                    SELECT 
+                        c.id_str, 
+                        c.topo_type, 
+                        c.comment,
+                        l1.id_str as l1_id, l2.id_str as l2_id,
+                        n1.id_str as n1_id, n2.id_str as n2_id,
+                        cs1.id_str as c1_id, cs2.id_str as c2_id,
+                        COUNT(*) OVER() as full_count
+                    FROM interlayerconnection c
+                    LEFT JOIN thematiclayer l1 ON c.connected_layer_a = l1.id
+                    LEFT JOIN thematiclayer l2 ON c.connected_layer_b = l2.id
+                    LEFT JOIN node_n_edge n1 ON c.connected_node_a = n1.id
+                    LEFT JOIN node_n_edge n2 ON c.connected_node_b = n2.id
+                    LEFT JOIN cell_space_n_boundary cs1 ON c.connected_cell_a = cs1.id
+                    LEFT JOIN cell_space_n_boundary cs2 ON c.connected_cell_b = cs2.id
+                    WHERE c.indoorfeature_id = %s
+                """
+                params = [feature_pk]
+
+                # --- FILTER: Connected Layer ---
+                if connected_layer_id:
+                    # Check if the requested layer is EITHER side of the connection
+                    sql += " AND (l1.id_str = %s OR l2.id_str = %s)"
+                    params.extend([connected_layer_id, connected_layer_id])
+
+                # --- FILTER: Topology Type ---
+                if topo_type:
+                    # We assume the input string matches the ENUM values (case-sensitivity depends on DB collation)
+                    sql += " AND c.topo_type = %s"
+                    params.append(topo_type.lower())
+
+                # --- PAGINATION ---
+                sql += " ORDER BY c.id ASC LIMIT %s OFFSET %s"
+                params.extend([limit, offset])
+
+                cur.execute(sql, tuple(params))
+                rows = cur.fetchall()
+                
+                # Handle empty results
+                if not rows:
+                    return response
+                
+                for row in rows:
+                    # Build lists, filtering out None values (e.g. connections might only link Layers, not Nodes)
+                    layers = [x for x in [row[3], row[4]] if x]
+                    nodes = [x for x in [row[5], row[6]] if x]
+                    cells = [x for x in [row[7], row[8]] if x]
+
+                    conn_obj = {
+                        "id": row[0],
+                        "featureType": "InterLayerConnection",
+                        "typeOfTopoExpression": row[1],
+                        "comment": row[2] or "",
+                        "connectedLayers": layers,
+                        "connectedNodes": nodes,
+                        "connectedCells": cells
+                    }
+                    response["layerConnections"].append(conn_obj)
+            except Exception as e:
+                LOGGER.debug(e)
+                raise e
                 
         return response
 
@@ -2081,7 +1855,7 @@ class PostgresIndoorDB:
                 duplicate_sql = """
                     SELECT id, id_str 
                     FROM cell_space_n_boundary
-                    WHERE thematiclayer_id = %s, id_str = %s
+                    WHERE thematiclayer_id = %s and id_str = %s
                 """
                 cur.execute(duplicate_sql, (layer_row['id'], data.get('id')))
                 row = cur.fetchone()
