@@ -142,6 +142,25 @@ ALTER TABLE "interlayerconnection" ADD FOREIGN KEY ("connected_layer_a") REFEREN
 
 ALTER TABLE "interlayerconnection" ADD FOREIGN KEY ("connected_layer_b") REFERENCES "thematiclayer" ("id");
 
--- ALTER TABLE "cell_space_n_boundary" ADD CONSTRAINT "unique_space_n_boundary_id_per_feature" UNIQUE ("indoorfeature_id", "id_str");
+-- Ensure Feature ID is unique within a Collection
+ALTER TABLE "indoorfeature" ADD CONSTRAINT "uk_feature_per_collection" UNIQUE ("collection_id", "id_str");
+-- Ensure Layer ID is unique within a Feature
+ALTER TABLE "thematiclayer" ADD CONSTRAINT "uk_layer_per_feature" UNIQUE ("indoorfeature_id", "id_str");
+-- Ensure Cell/Node ID is unique within a Feature
+ALTER TABLE "cell_space_n_boundary" ADD CONSTRAINT "uk_cell_per_feature" UNIQUE ("indoorfeature_id", "id_str");
+ALTER TABLE "node_n_edge" ADD CONSTRAINT "uk_node_per_feature" UNIQUE ("indoorfeature_id", "id_str");
+ALTER TABLE "interlayerconnection" ADD CONSTRAINT "uk_ilc_per_feature" UNIQUE ("indoorfeature_id", "id_str");
 
--- ALTER TABLE "node_n_edge" ADD CONSTRAINT "unique_node_n_edge_id_per_feature" UNIQUE ("indoorfeature_id", "id_str");
+CREATE INDEX IF NOT EXISTS idx_cell_geom ON "cell_space_n_boundary" USING GIST ("2D_geometry");
+
+CREATE INDEX IF NOT EXISTS idx_layer_feature ON "thematiclayer" ("indoorfeature_id");
+
+CREATE INDEX IF NOT EXISTS idx_cell_duality ON "cell_space_n_boundary" ("duality_id");
+CREATE INDEX IF NOT EXISTS idx_node_duality ON "node_n_edge" ("duality_id");
+
+CREATE INDEX IF NOT EXISTS idx_conn_source ON "connects" ("node_source_id");
+CREATE INDEX IF NOT EXISTS idx_conn_target ON "connects" ("node_target_id");
+CREATE INDEX IF NOT EXISTS idx_conn_edge ON "connects" ("edge_id");
+
+CREATE INDEX IF NOT EXISTS idx_ilc_layer_a ON "interlayerconnection" ("connected_layer_a");
+CREATE INDEX IF NOT EXISTS idx_ilc_layer_b ON "interlayerconnection" ("connected_layer_b");
