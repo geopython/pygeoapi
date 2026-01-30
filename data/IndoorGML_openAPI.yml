@@ -40,42 +40,22 @@ components:
       in: query
       description: |-
         Spatial filter [minX, minY, maxX, maxY].
-        Supports 6 numbers for 3D IndoorGML [minX, minY, minZ, maxX, maxY, maxZ].
+    
+        Only features that have a geometry that intersects the bounding box are selected. 
+        
+        The bounding box is provided as four numbers, recommended to use with `level`
 
-        Only features that have a geometry that intersects the bounding box are selected. The bounding box is provided as four or six numbers, depending on whether the coordinate reference system includes a vertical axis (height or depth):
-
-        Lower left corner, coordinate axis 1
-
-        Lower left corner, coordinate axis 2
-
-        Minimum value, coordinate axis 3 (optional)
-
-        Upper right corner, coordinate axis 1
-
-        Upper right corner, coordinate axis 2
-
-        Maximum value, coordinate axis 3 (optional)
-
-        The coordinate reference system for the bounding box is WGS 84 longitude/latitude (http://www.opengis.net/def/crs/OGC/1.3/CRS84).
-
-        If the value consists of six numbers, the coordinate reference system is WGS 84 longitude/latitude/ellipsoidal height (http://www.opengis.net/def/crs/OGC/0/CRS84h).
-
-        For WGS 84 longitude/latitude the values are the sequence of minimum longitude, minimum latitude, maximum longitude and maximum latitude.
-
-        If the vertical axis is included, the third and the sixth number are the bottom and the top of the 3-dimensional bounding box.
-
+        Can be used alone not regarding the z axis for 3D geometries.
       required: false
       schema:
         type: array
-        oneOf:
-          - minItems: 4
-            maxItems: 4
-          - minItems: 6
-            maxItems: 6
+        minItems: 4
+        maxItems: 4
         items:
           type: number
       style: form
       explode: false
+      example: [129.0, 35.1, 129.1, 35.2]
 
     fId:
       name: fId
@@ -319,13 +299,6 @@ components:
           uniqueItems: true
           items: { $ref: '#/components/schemas/CellBoundary' }
 
-    PrimalBulkUpdate:
-      type: object
-      properties:
-        cellSpaceMember:
-          type: array
-          items:
-            $ref: '#/components/schemas/CellSpaceBulkItem'
 
     CellSpace:
       type: object
@@ -364,21 +337,6 @@ components:
           type: string
           example: "Restroom"
 
-    CellSpaceBulkItem:
-      type: object
-      required: [id] # ID is required to find the record
-      properties:
-        id:
-          type: string
-        cellSpaceName:
-          type: string
-        level:
-          type: integer
-        poi:
-          type: string
-        # Note: cellSpaceGeom and other structural fields are omitted 
-        # to prevent accidental changes during bulk metadata updates.
-
     CellBoundary:
       type: object
       title: CellBoundary
@@ -413,15 +371,6 @@ components:
           type: array
           uniqueItems: true
           items: { $ref: '#/components/schemas/Edge' }
-
-    DualSpaceBulkWeightUpdate:
-      type: object
-      description: "A list of weight updates for specific edges in the dual space."
-      properties:
-        edgeMember:
-          type: array
-          items:
-            $ref: '#/components/schemas/EdgeBulkWeightItem'
 
     Node:
       type: object
@@ -473,20 +422,6 @@ components:
           format: double
           description: "The new weight value for the edge."
           minimum: 0  # Optional: added if weights cannot be negative
-
-    # Individual instruction for one edge
-    EdgeBulkWeightItem:
-      type: object
-      required: [id, weight]
-      properties:
-        id:
-          type: string
-          description: "The ID of the edge to update."
-        weight:
-          type: number
-          format: double
-          minimum: 0
-          description: "The new navigation weight."
 
     InterLayerConnection:
       type: object
@@ -862,12 +797,12 @@ components:
           items:
             $ref: '#/components/schemas/link'
     
-    InterLayerConnectionList:
+    InterLayerConnections:
       type: object
-      title: InterLayerConnectionList
-      required: [connections]
+      title: InterLayerConnections
+      required: [layerConnections]
       properties:
-        connections:
+        layerConnections:
           type: array
           items:
             $ref: '#/components/schemas/InterLayerConnection'
@@ -1285,13 +1220,6 @@ components:
                 rel: self
                 type: application/json
 
-    OK:
-      description: The request was successful.
-      content:
-        application/json:
-          schema:
-            $ref: '#/components/schemas/ApiResponse'
-
     Created:
       description: The resource was successfully created.
       content:
@@ -1305,15 +1233,7 @@ components:
         application/json:
           schema:
             $ref: '#/components/schemas/ApiResponse'
-
-    NotImplemented:
-      description: The requested feature is not implemented.
-      content:
-        application/json:
-          schema:
-            $ref: '#/components/schemas/ApiError'
     
-
     BadRequest:
       description: Invalid request parameters or malformed input.
       content:
@@ -1342,22 +1262,8 @@ components:
           schema:
             $ref: '#/components/schemas/ApiError'
 
-    Method Not Allowed:
-      description: The request method is not supported for the specified resource.
-      content:
-        application/json:
-          schema:
-            $ref: '#/components/schemas/ApiError'
-
     PayloadTooLarge:
       description: The request is too large for the server to process.
-      content:
-        application/json:
-          schema:
-            $ref: '#/components/schemas/ApiError'
-
-    TooManyRequests:
-      description: Rate limit exceeded.
       content:
         application/json:
           schema:
@@ -1369,20 +1275,7 @@ components:
         application/json:
           schema:
             $ref: '#/components/schemas/ApiError'
-    
-    BadGateway:
-      description: The server received an invalid response from the upstream server.
-      content:
-        application/json:
-          schema:
-            $ref: '#/components/schemas/ApiError'
 
-    ServiceUnavailable:
-      description: The server is currently unable to handle the request due to temporary overloading or maintenance of the server.
-      content:
-        application/json:
-          schema:
-            $ref: '#/components/schemas/ApiError'
 
 paths:
   /collections:
@@ -1549,7 +1442,31 @@ paths:
       parameters:
         - $ref: '#/components/parameters/collectionId'
         - $ref: '#/components/parameters/limit'
-        - $ref: '#/components/parameters/bbox'
+          bbox:
+            name: bbox
+            in: query
+            required: false
+            description: |-
+              Only features that have a geometry that intersects the bounding box are selected. The bounding box is provided as four or six numbers, depending on whether the coordinate reference system includes a vertical axis (height or depth):
+              Lower left corner, coordinate axis 1
+              Lower left corner, coordinate axis 2
+              Minimum value, coordinate axis 3 (optional)
+              Upper right corner, coordinate axis 1
+              Upper right corner, coordinate axis 2
+              Maximum value, coordinate axis 3 (optional)
+              If the value consists of four numbers, the coordinate reference system is WGS 84 longitude/latitude (http://www.opengis.net/def/crs/OGC/1.3/CRS84) unless a different coordinate reference system is specified in the parameter bbox-crs.
+
+              If the value consists of six numbers, the coordinate reference system is WGS 84 longitude/latitude/ellipsoidal height (http://www.opengis.net/def/crs/OGC/0/CRS84h) unless a different coordinate reference system is specified in the parameter bbox-crs.
+
+              The query parameter bbox-crs is specified in OGC API - Features - Part 2: Coordinate Reference Systems by Reference.
+
+              For WGS 84 longitude/latitude the values are in most cases the sequence of minimum longitude, minimum latitude, maximum longitude and maximum latitude. However, in cases where the box spans the antimeridian the first value (west-most box edge) is larger than the third value (east-most box edge).
+
+              If the vertical axis is included, the third and the sixth number are the bottom and the top of the 3-dimensional bounding box.
+
+              If a feature has multiple spatial geometry properties, it is the decision of the server whether only a single spatial geometry property is used to determine the extent or all relevant geometries.
+            schema:
+              type: string
       responses:
         '200':
           $ref: '#/components/responses/Features'
@@ -1701,7 +1618,7 @@ paths:
       description: |-
         Creates a new inter-layer connection between two thematic layers within the same IndoorFeature.
         When connectedNodes and connectedCells are given simultaneously, the two cellSpaces and Nodes must have duality relationships.
-        Also the given iDs should all be pre-existing.
+        Also the given Ids should all be pre-existing.
       operationId: createInterLayerConnection
       requestBody:
         description: The InterLayerConnection object to be created.
@@ -1736,29 +1653,13 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/InterLayerConnectionList'
+                $ref: '#/components/schemas/InterLayerConnections'
         '400':
-          description: >-
-            Invalid parameter value. Used if `typeOfTopoExpression` or `limit` 
-            are malformed or out of range.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/responses/BadRequest'
+          $ref: '#/components/responses/BadRequest'
         '404':
-          description: >-
-            Not Found. The specified `connectedLayerId` does not exist 
-            within this collection.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/responses/NotFound'
+          $ref: '#/components/responses/NotFound'
         '500':
-          description: Internal Server Error. Database connection or query failure.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/responses/InternalServerError'
+          $ref: '#/components/responses/InternalServerError'
 
   /collections/{collectionId}/items/{fId}/interlayerconnections/{cnId}:
     parameters:
@@ -1775,12 +1676,20 @@ paths:
       responses:
         '204':
           description: No Content. The connection was successfully deleted.
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
         '404':
-          description: Not Found. The specified connection, item, or collection does not exist.
+          $ref: '#/components/responses/NotFound'
         '500':
           $ref: '#/components/responses/InternalServerError'
 
   /collections/{collectionId}/items/{fId}/layers/{tId}:
+    parameters:
+          - $ref: '#/components/parameters/collectionId'
+          - $ref: '#/components/parameters/fId'
+          - $ref: '#/components/parameters/tId'
     get:
       tags:
         - ThematicLayers
@@ -1788,16 +1697,16 @@ paths:
       description: >-
         Returns metadata summary if no filters are provided. 
         Returns full Primal/Dual features if 'level' or 'bbox' is present.
+
+        As the property 'level' is only available for `cellSpaces`, for `cellBoundaries` they will be inferred through `boundedBy`.
+        The 'dualSpace' will be returned non-filtered.
       operationId: getThematicLayer
       parameters:
-        - $ref: '#/components/parameters/collectionId'
-        - $ref: '#/components/parameters/fId'
-        - $ref: '#/components/parameters/tId'
         - $ref: '#/components/parameters/level'
         - $ref: '#/components/parameters/bbox'
       responses:
         '200':
-          description: Success.
+          description: Successfully retrieved a single thematic layer.
           content:
             application/json:
               schema:
@@ -1805,9 +1714,13 @@ paths:
                   - $ref: '#/components/schemas/ThematicLayerSummary'
                   - $ref: '#/components/schemas/ThematicLayer'
         '400':
-          description: Bad Request. Missing mandatory filter or invalid syntax.
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
         '404':
-          description: Thematic layer or Indoor Feature not found.
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
 
     delete:
       tags:
@@ -1815,19 +1728,19 @@ paths:
       summary: Delete a thematic layer
       description: >-
         Permanently removes the layer and all its internal elements. 
-        Automatically cleans up any InterLayerConnections pointing to this layer to prevent broken links.
+        Automatically cleans up any `InterLayerConnections` pointing to this layer to prevent broken links.
       operationId: deleteThematicLayer
-      parameters:
-        - $ref: '#/components/parameters/collectionId'
-        - $ref: '#/components/parameters/fId'
-        - $ref: '#/components/parameters/tId'
       responses:
         '204':
-          description: Successfully deleted. No content returned.
+          $ref: '#/components/responses/NoContent'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
         '404':
-          description: Thematic layer not found.
+          $ref: '#/components/responses/NotFound'
         '500':
-          description: Internal server error during cascading delete.
+          $ref: '#/components/responses/InternalServerError'
 
   /collections/{collectionId}/items/{fId}/layers/{tId}/primal:
     parameters:
@@ -1841,7 +1754,7 @@ paths:
       summary: retrieve primal space members
       description: |-
         Retrieves a collection of CellSpaces and CellBoundaries within a specific thematic layer. 
-        Supports spatial filtering via bbox and logical filtering via poi/isVirtual.
+        Supports spatial filtering via `bbox`, `level` and logical filtering via `poi`/`isVirtual`.
       operationId: getPrimalSpace
       parameters:
         - $ref: '#/components/parameters/bbox'
@@ -1856,8 +1769,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/PrimalSpaceLayer'
+        '400':
+          $ref: '#/components/responses/BadRequest'
         '404':
-          description: Not Found. The building `fId` or layer `tId` does not exist.
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
 
     post:
       tags:
@@ -1886,7 +1803,11 @@ paths:
         '201':
           description: Created successfully.
         '400':
-          description: Bad Request. Validation failed.
+          $ref: '#/components/responses/BadRequest'
+        '409':
+          description: Conflict. Duality link already exists for that duality reference.
+        '500':
+          $ref: '#/components/responses/InternalServerError'
 
   /collections/{collectionId}/items/{fId}/layers/{tId}/dual:
     parameters:
@@ -1900,6 +1821,7 @@ paths:
       summary: create a dual space member (Node or Edge)
       description: |-
         Registers a new Node or Edge. 
+
         **Strict Duality Requirement:** A Node can only be created if the corresponding CellSpace (duality) exists. 
         An Edge connects exactly 2 nodes.
       operationId: createDualMember
@@ -1915,17 +1837,25 @@ paths:
         '201':
           description: Created successfully.
         '400':
-          description: Bad Request (Schema validation failed).
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
         '404':
-          description: Thematic layer not found.
+          $ref: '#/components/responses/NotFound'
+        '409':
+          description: this edgeId or nodeId already exists in this indoorFeature.
         '422':
-          description: Unprocessable Entity (Missing duality dependency).
+          description: Unprocessable Entity (Node missing duality dependency).
+        '500':
+          $ref: '#/components/responses/InternalServerError'
 
     get:
       tags:
         - DualSpaceLayer
       summary: Retrieve all nodes and edges (Navigation Network)
-      description: Retrieves the dual space layer, optionally filtered by edge weights for pathfinding.
+      description: |-
+        Retrieves the dual space layer, optionally filtered by edge weights for pathfinding.
+        When filtered by weights, the response includes not only the regarding edges, but also only the connected nodes to those edges.
       operationId: getDualSpace
       parameters:
         - $ref: '#/components/parameters/collectionId'
@@ -1946,8 +1876,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/DualSpaceLayer'
+        '400':
+          $ref: '#/components/responses/BadRequest'
         '404':
-          description: Layer ID not found.
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
 
   /collections/{collectionId}/items/{fId}/layers/{tId}/geoquery:
     parameters:
@@ -2026,14 +1960,16 @@ paths:
               schema:
                 $ref: '#/components/schemas/CellSpace'
         '404':
-          description: Collection, Feature, Layer, or CellSpace ID not found.
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
 
     patch:
       tags:
         - PrimalSpaceLayer
       summary: update cell space metadata
       description: |-
-        Performs a partial update. Only include the fields you wish to change (name, level, or poi).
+        Performs a partial update. Only include the fields you wish to change (cellSpaceName, level, or poi).
       operationId: patchCellSpace
       requestBody:
         content:
@@ -2047,8 +1983,14 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/CellSpace'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
         '404':
-          description: CellSpace ID not found.
+          $ref: '#/components/responses/NotFound'
         '422':
           description: Unprocessable Entity. Attempted to modify restricted fields.
 
@@ -2059,12 +2001,21 @@ paths:
       description: |-
         Permanently removes the CellSpace. 
         **Cleanup:** This triggers a cascading delete of the associated DualSpace Node and invalidates connected Edges.
+        Also DELETES the `interLayerConnection`(s) referencing the deleted `primalSpaceMember`.
       operationId: deleteCellSpace
       responses:
         '204':
           description: Deleted successfully.
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
         '404':
-          description: CellSpace ID not found.
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
 
   /collections/{collectionId}/items/{fId}/layers/{tId}/primal/{mId}/bounding:
     parameters:
