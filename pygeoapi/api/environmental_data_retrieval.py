@@ -53,12 +53,12 @@ from pygeoapi.formatter.base import FormatterSerializationError
 from pygeoapi.crs import (create_crs_transform_spec, set_content_crs_header)
 from pygeoapi.openapi import get_oas_30_parameters
 from pygeoapi.plugin import load_plugin, PLUGINS
+from pygeoapi.provider import filter_providers_by_type, get_provider_by_type
 from pygeoapi.provider.base import (
     ProviderGenericError, ProviderItemNotFoundError)
-from pygeoapi.util import (
-    filter_providers_by_type, get_dataset_formatters, get_provider_by_type,
-    get_typed_value, render_j2_template, to_json, filter_dict_by_key_value
-)
+from pygeoapi.util import (get_dataset_formatters, get_typed_value,
+                           render_j2_template, to_json,
+                           filter_dict_by_key_value)
 
 from . import (APIRequest, API, F_COVERAGEJSON, F_HTML, F_JSON, F_JSONLD,
                validate_datetime, validate_bbox)

@@ -58,14 +58,13 @@ from pygeoapi.formatter.base import FormatterSerializationError
 from pygeoapi.linked_data import geojson2jsonld
 from pygeoapi.openapi import get_oas_30_parameters
 from pygeoapi.plugin import load_plugin, PLUGINS
+from pygeoapi.provider import filter_providers_by_type, get_provider_by_type
 from pygeoapi.provider.base import (
     ProviderGenericError, ProviderItemNotFoundError,
     ProviderTypeError, SchemaType)
 
-from pygeoapi.util import (filter_providers_by_type, to_json,
-                           filter_dict_by_key_value, str2bool,
-                           get_provider_by_type, render_j2_template,
-                           get_dataset_formatters)
+from pygeoapi.util import (to_json, filter_dict_by_key_value, str2bool,
+                           render_j2_template, get_dataset_formatters)
 
 from . import (
     APIRequest, API, SYSTEM_LOCALE, F_JSON, FORMAT_TYPES, F_HTML, F_JSONLD,
