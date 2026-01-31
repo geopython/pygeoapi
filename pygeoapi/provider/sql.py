@@ -212,23 +212,23 @@ class GenericSQLProvider(BaseProvider):
                 .options(selected_properties)
             )
 
-            matched = results.count()
-
-            LOGGER.debug(f'Found {matched} result(s)')
-
             LOGGER.debug('Preparing response')
             response = {
                 'type': 'FeatureCollection',
-                'features': [],
-                'numberMatched': matched,
-                'numberReturned': 0
+                'features': []
             }
+
+            if self.count or resulttype == 'hits':
+                matched = results.count()
+                LOGGER.debug(f'Found {matched} result(s)')
+                response['numberMatched'] = matched
 
             if resulttype == 'hits' or not results:
                 return response
 
             crs_transform_out = get_transform_from_spec(crs_transform_spec)
 
+            response['numberReturned'] = 0
             for item in (
                 results.order_by(*order_by_clauses).offset(offset).limit(limit)
             ):

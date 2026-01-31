@@ -144,6 +144,19 @@ def test_query(config):
     assert len(results['features'][0]['properties']) == 2
 
 
+def test_no_count(config):
+    p = CSVProvider(config)
+    results = p.query()
+    assert results['numberMatched'] == 5
+    assert results['numberReturned'] == 5
+
+    config['count'] = False
+    p = CSVProvider(config)
+    results = p.query()
+    assert 'numberMatched' not in results
+    assert results['numberReturned'] == 5
+
+
 def test_get_invalid_property(config):
     """Testing query for an invalid property name"""
     p = CSVProvider(config)
