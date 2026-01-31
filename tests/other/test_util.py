@@ -38,6 +38,7 @@ import pytest
 
 from pygeoapi import util
 from pygeoapi.api import __version__
+from pygeoapi.provider import get_provider_by_type, get_provider_default
 from pygeoapi.provider.base import ProviderTypeError
 
 from ..util import get_test_file_path
@@ -181,25 +182,25 @@ def test_filter_dict_by_key_value(config):
 
 
 def test_get_provider_by_type(config):
-    p = util.get_provider_by_type(config['resources']['obs']['providers'],
-                                  'feature')
+    p = get_provider_by_type(config['resources']['obs']['providers'],
+                             'feature')
 
     assert isinstance(p, dict)
     assert p['type'] == 'feature'
     assert p['name'] == 'CSV'
 
     with pytest.raises(ProviderTypeError):
-        p = util.get_provider_by_type(config['resources']['obs']['providers'],
-                                      'something-else')
+        p = get_provider_by_type(config['resources']['obs']['providers'],
+                                 'something-else')
 
 
 def test_get_provider_default(config):
-    pd = util.get_provider_default(config['resources']['obs']['providers'])
+    pd = get_provider_default(config['resources']['obs']['providers'])
 
     assert pd['type'] == 'feature'
     assert pd['name'] == 'CSV'
 
-    pd = util.get_provider_default(config['resources']['obs']['providers'])
+    pd = get_provider_default(config['resources']['obs']['providers'])
 
 
 def test_read_data():

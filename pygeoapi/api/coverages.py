@@ -46,9 +46,8 @@ from pygeoapi import l10n
 from pygeoapi.openapi import get_oas_30_parameters
 from pygeoapi.plugin import load_plugin
 from pygeoapi.provider.base import ProviderGenericError, ProviderTypeError
-from pygeoapi.util import (
-    filter_dict_by_key_value, get_provider_by_type, to_json
-)
+from pygeoapi.provider import get_provider_by_type
+from pygeoapi.util import filter_dict_by_key_value, to_json
 
 from . import (
     APIRequest, API, F_JSON, SYSTEM_LOCALE, validate_bbox, validate_datetime,

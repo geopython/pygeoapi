@@ -61,13 +61,14 @@ from pygeoapi.linked_data import jsonldify, jsonldify_collection
 from pygeoapi.log import setup_logger
 from pygeoapi.plugin import load_plugin
 from pygeoapi.process.manager.base import get_manager
+from pygeoapi.provider import (
+     filter_providers_by_type, get_provider_by_type, get_provider_default)
 from pygeoapi.provider.base import (
     ProviderConnectionError, ProviderGenericError, ProviderTypeError)
 
 from pygeoapi.util import (
     TEMPLATESDIR, UrlPrefetcher, dategetter,
-    filter_dict_by_key_value, filter_providers_by_type, get_api_rules,
-    get_base_url, get_provider_by_type, get_provider_default, get_typed_value,
+    filter_dict_by_key_value, get_api_rules, get_base_url, get_typed_value,
     render_j2_template, to_json, get_choice_from_headers, get_from_headers,
     get_dataset_formatters
 )

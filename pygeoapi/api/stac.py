@@ -51,13 +51,12 @@ from pygeoapi import api as ogc_api
 from pygeoapi.api import itemtypes as itemtypes_api
 from pygeoapi.plugin import load_plugin
 
+from pygeoapi.provider import get_provider_by_type
 from pygeoapi.provider.base import (
     ProviderConnectionError, ProviderNotFoundError, ProviderTypeError
 )
-from pygeoapi.util import (
-    filter_dict_by_key_value, get_current_datetime, get_provider_by_type,
-    render_j2_template, to_json
-)
+from pygeoapi.util import (filter_dict_by_key_value, get_current_datetime,
+                           render_j2_template, to_json)
 
 from . import APIRequest, API, FORMAT_TYPES, F_JSON, F_HTML
 

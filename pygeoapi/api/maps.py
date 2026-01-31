@@ -46,13 +46,11 @@ from typing import Tuple
 from pygeoapi.crs import transform_bbox
 from pygeoapi.openapi import get_oas_30_parameters
 from pygeoapi.plugin import load_plugin
+from pygeoapi.provider import filter_providers_by_type, get_provider_by_type
 from pygeoapi.provider.base import (
     ProviderGenericError, ProviderInvalidDataError
 )
-from pygeoapi.util import (
-    get_provider_by_type, to_json, filter_providers_by_type,
-    filter_dict_by_key_value
-)
+from pygeoapi.util import to_json, filter_dict_by_key_value
 
 from . import (
     APIRequest, API, F_JSON, FORMAT_TYPES, validate_datetime, validate_subset
