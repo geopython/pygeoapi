@@ -183,7 +183,7 @@ def test_filter_dict_by_key_value(config):
 
 def test_get_provider_by_type(config):
     p = get_provider_by_type(config['resources']['obs']['providers'],
-                                  'feature')
+                             'feature')
 
     assert isinstance(p, dict)
     assert p['type'] == 'feature'
@@ -191,7 +191,7 @@ def test_get_provider_by_type(config):
 
     with pytest.raises(ProviderTypeError):
         p = get_provider_by_type(config['resources']['obs']['providers'],
-                                      'something-else')
+                                 'something-else')
 
 
 def test_get_provider_default(config):
