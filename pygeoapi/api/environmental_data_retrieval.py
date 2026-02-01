@@ -48,7 +48,7 @@ from shapely.errors import ShapelyError
 from shapely.wkt import loads as shapely_loads
 
 from pygeoapi import l10n
-from pygeoapi.api import evaluate_limit
+from pygeoapi.api import evaluate_limit, evaluate_limit_distance
 from pygeoapi.formatter.base import FormatterSerializationError
 from pygeoapi.crs import (create_crs_transform_spec, set_content_crs_header)
 from pygeoapi.openapi import get_oas_30_parameters
@@ -345,6 +345,12 @@ def get_collection_edr_query(api: API, request: APIRequest,
         LOGGER.debug('Processing cube bbox')
         try:
             bbox = validate_bbox(request.params.get('bbox'))
+            server_limits = api.config['server'].get('limits', {})
+            collection_limits = api.config['resources'][dataset].get('limits', {})  # noqa
+
+            _ = evaluate_limit_distance(request.params.get('bbox', []),
+                                        server_limits, collection_limits)
+
             if not bbox and query_type == 'cube':
                 raise ValueError('bbox parameter required by cube queries')
         except ValueError as err:

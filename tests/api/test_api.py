@@ -41,9 +41,8 @@ import pytest
 from pygeoapi.api import (
     API, APIRequest, FORMAT_TYPES, F_HTML, F_JSON, F_JSONLD, F_GZIP,
     __version__, validate_bbox, validate_datetime, evaluate_limit,
-    validate_subset, landing_page, openapi_, conformance, describe_collections,
-    get_collection_schema,
-)
+    evaluate_limit_distance, validate_subset, landing_page, openapi_,
+    conformance, describe_collections, get_collection_schema)
 from pygeoapi.util import yaml_load, get_api_rules, get_base_url
 
 from tests.util import (get_test_file_path, mock_api_request, mock_flask,
@@ -913,3 +912,24 @@ def test_evaluate_limit():
 
     assert evaluate_limit(None, server, collection) == 10
     assert evaluate_limit('40', server, collection) == 3
+
+
+def test_evaluate_limit_distance():
+    collection = {
+        'on_exceed': 'error',
+        'max_distance_x': 10,
+        'max_distance_y': 10
+    }
+
+    with pytest.raises(ValueError):
+        assert evaluate_limit_distance(
+            {}, collection, request_bbox=[-180, -90, 180, 90])
+
+    assert evaluate_limit_distance({}, collection,
+                                   request_bbox=[-142, 42, -140, 44])
+
+    assert evaluate_limit_distance({}, {}, request_bbox=[-180, -90, 180, 90])
+
+    collection['on_exceed'] = 'throttle'
+    assert evaluate_limit_distance(
+        {}, collection, request_bbox=[-180, -90, 180, 90])

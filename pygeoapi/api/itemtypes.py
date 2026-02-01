@@ -48,7 +48,7 @@ from pygeofilter.parsers.cql2_json import parse as parse_cql2_json
 from pyproj.exceptions import CRSError
 
 from pygeoapi import l10n
-from pygeoapi.api import evaluate_limit
+from pygeoapi.api import evaluate_limit, evaluate_limit_distance
 from pygeoapi.api.pubsub import publish_message
 from pygeoapi.crs import (DEFAULT_CRS, DEFAULT_STORAGE_CRS,
                           create_crs_transform_spec, get_supported_crs_list,
@@ -290,9 +290,13 @@ def get_collection_items(
                'level (RFC5)')
         LOGGER.warning(msg)
     try:
+        server_limits = api.config['server'].get('limits', {})
+        collection_limits = collections[dataset].get('limits', {})
+
         limit = evaluate_limit(request.params.get('limit'),
-                               api.config['server'].get('limits', {}),
-                               collections[dataset].get('limits', {}))
+                               server_limits, collection_limits)
+        _ = evaluate_limit_distance(request.params.get('bbox', []),
+                                    server_limits, collection_limits)
     except ValueError as err:
         return api.get_exception(
             HTTPStatus.BAD_REQUEST, headers, request.format,
