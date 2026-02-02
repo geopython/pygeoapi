@@ -524,7 +524,7 @@ def execute_process(api: API, request: APIRequest,
     else:
         response2 = response
 
-    if (headers.get('Preference-Applied', '') == RequestedProcessExecutionMode.respond_async.value):
+    if (headers.get('Preference-Applied', '') == RequestedProcessExecutionMode.respond_async.value):  # noqa
         LOGGER.debug('Asynchronous mode detected, returning statusInfo')
         response2 = {
             'jobID': job_id,

@@ -433,7 +433,7 @@ class BaseManager:
                 LOGGER.debug('Synchronous execution')
                 handler = self._execute_handler_sync
                 if execution_mode == RequestedProcessExecutionMode.wait:
-	            response_headers = None
+                    response_headers = None
                 else:
                     response_headers = {
                         'Preference-Applied': (
