@@ -1891,7 +1891,7 @@ paths:
     get:
       tags:
           - Services
-      summary: Performs a geometric query agains CellSpace geometries
+      summary: Performs a geometric query against CellSpace geometries
       description: Performs a 2D geometric predicate query against CellSpace geometries within a specified indoor level.
       operationId: geometricQuery
       parameters:
@@ -1901,7 +1901,6 @@ paths:
         - $ref: '#/components/parameters/op'
         - $ref: '#/components/parameters/level'
         - $ref: '#/components/parameters/geometry'
-        - $ref: '#/components/parameters/limit'
       responses:
         '200':
           description: Returns the GeoQueryResults.

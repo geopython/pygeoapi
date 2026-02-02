@@ -1,6 +1,5 @@
 import logging
 import json
-import random
 from http import HTTPStatus
 from typing import Tuple
 
@@ -11,17 +10,12 @@ import pygeoapi.api as core_api
 from pygeoapi.util import to_json
 from pygeoapi.util import render_j2_template, to_json
 import os
-from jsonschema import validate, ValidationError
 from datetime import datetime
-from geoalchemy2.shape import to_shape
-from shapely.geometry import mapping
-from sqlalchemy import func, and_
-
 # --- Database Imports ---
 from pygeoapi.provider.postgresql_indoordb import PostgresIndoorDB
-from src.database import get_db
-from src.models import *
 import psycopg2
+from shapely import wkt
+from shapely.errors import WKTReadingError
 
 # Load schema once when the module is loaded
 SCHEMA_PATH = 'data/indoorjson_schema.json'
@@ -163,7 +157,7 @@ def get_collection(api: API, request: APIRequest, dataset=None) -> Tuple[dict, i
     finally:
         pidb_provider.disconnect()
 
-def is_indoor_collection(collection_id: String) -> bool:
+def is_indoor_collection(collection_id: str) -> bool:
     pidb_provider = PostgresIndoorDB()
     try:
         pidb_provider.connect()
@@ -1007,7 +1001,7 @@ def get_primal(api: API, request: APIRequest, collection_id: str, item_id: str, 
         # 2. Call Provider with Filters
         # ---------------------------------------------------------
         pidb_provider.connect()
-        layer_meta, spaces, boundaries = pidb_provider.get_primal_features(
+        layer_meta, spaces, boundaries = pidb_provider.get_primal_members(
             collection_id, 
             item_id, 
             layer_id,
@@ -1238,7 +1232,7 @@ def get_dual(api: API, request: APIRequest, collection_id: str, item_id: str, la
     try:
         pidb_provider.connect()
         # 2. Call the Provider function
-        meta, nodes, edges = pidb_provider.get_dual_features(
+        meta, nodes, edges = pidb_provider.get_dual_members(
             collection_id, 
             item_id, 
             layer_id, 
@@ -1436,6 +1430,82 @@ def manage_dual(api: API, request: APIRequest, action: str, collection_id: str, 
 
 # region Services
 
+def get_geometric_query(api: API, request: APIRequest, collection_id: str, item_id: str, layer_id: str) -> Tuple[dict, int, str]:
+    """
+    GET /collections/{id}/items/{featureId}/layers/{layerId}/geoquery
+    Performs a 2D geometric predicate query against CellSpace geometries within a specified indoor level.
+    :param collection_id: Collection ID
+    :param item_id: Item ID
+    :param layer_id: Layer ID
+    :param geometry: Input geometry expressed as a 2D Well-Known Text (WKT) string.
+    :param op: Spatial predicate operation applied between the input geometry and CellSpace geometries.
+    :param level: Filters the indoorFeatures, thematicLayer, and primalSpace content by a specific floor level.
+
+    :return: ThematicLayer computed by specific op with geometry
+    """
+    if not request.is_valid():
+        return api.get_format_exception(request)
+    
+    headers = request.get_response_headers(SYSTEM_LOCALE)
+    pidb_provider = PostgresIndoorDB()
+    op_param = request.params.get('op')
+    geom_param = request.params.get('geometry')
+    level = request.params.get('level')
+    if not op_param or not geom_param:
+        msg = 'parameter op and geom should be required'
+        return api.get_exception(
+            HTTPStatus.BAD_REQUEST,
+            headers, request.format, 'InvalidParameterValue', msg)
+    
+    elif op_param.lower() not in ["contains", "within", "intersects"]:
+        msg = 'parameter op should be an one of ["contains", "within", "intersects"]'
+        return api.get_exception(
+            HTTPStatus.BAD_REQUEST,
+            headers, request.format, 'InvalidParameterValue', msg)
+    else:
+        try: 
+            geom = validate_geom(geom_param)
+        except ValueError as err:
+            msg = str(err)
+            return api.get_exception(
+                HTTPStatus.BAD_REQUEST,
+                headers, request.format, 'InvalidParameterValue', msg)
+    
+    try:
+        pidb_provider.connect()
+        result = pidb_provider.geometric_query(collection_id, item_id, layer_id, op=op_param, geometry=geom, level=level)
+        if not result:
+            raise Exception()
+        base_url = f"{api.config['server']['url']}/collections/{collection_id}/items/{item_id}/layers/{layer_id}/geoquery"
+
+        query_params = {}
+        if op_param:
+            query_params['op'] = op_param
+        if geom:
+            query_params['geometry'] = geom
+            
+        self_href = base_url
+        if query_params:
+            self_href += "?" + urllib.parse.urlencode(query_params)
+
+        result["links"].append({
+                "href": self_href,
+                "rel": "self",
+                "type": "application/json",
+                "title": "Geometric query result"
+            })
+
+    except (Exception, psycopg2.Error) as error:
+        msg = str(error)
+        return api.get_exception(
+            HTTPStatus.BAD_REQUEST,
+            headers, request.format, 'ConnectingError', msg)
+    finally:
+        pidb_provider.disconnect()
+    
+    return headers, HTTPStatus.OK, to_json(result, api.pretty_print)  ## return OK even if result is none.
+    
+
 def get_route(api: API, request: APIRequest, collection_id: str, item_id: str, layer_id: str) -> Tuple[dict, int, str]:
     """
     GET /collections/{id}/items/{featureId}/layers/{layerId}/dual/route
@@ -1583,3 +1653,36 @@ def validate_bbox(value=None) -> list:
             raise ValueError(msg)
 
     return bbox
+
+def validate_geom(geom_wkt=None) -> str:
+    """
+    Validates if the input string is a strictly 2D, topologically valid WKT geometry.
+    Raises ValueError with specific details if validation fails.
+    """
+    if not geom_wkt or not isinstance(geom_wkt, str):
+        raise ValueError("Input must be a non-empty WKT string.")
+
+    try:
+        # 1. Parse WKT (Checks for Syntax Errors)
+        geometry = wkt.loads(geom_wkt)
+        
+        # 2. Check for Empty Geometry (optional, but usually recommended)
+        if geometry.is_empty:
+             raise ValueError("Geometry is empty (e.g., 'POLYGON EMPTY').")
+
+        # 3. Check Dimensions (Strictly 2D)
+        if geometry.has_z:
+            raise ValueError("3D coordinates detected. Input must be 2D WKT (x y), not 3D (x y z).")
+        
+        # 4. Check Topology (e.g., Self-intersecting Polygons)
+        if not geometry.is_valid:
+            # geometry.explain_validity returns string like "Ring Self-intersection at..."
+            raise ValueError(f"Invalid geometric topology: {geometry.explain_validity}")
+
+        return True
+
+    except WKTReadingError:
+        raise ValueError("Invalid WKT Syntax. Could not parse geometry string.")
+    except Exception as e:
+        # Catch explicit ValueErrors raised above or other unexpected issues
+        raise e

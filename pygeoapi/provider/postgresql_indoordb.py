@@ -663,10 +663,10 @@ class PostgresIndoorDB:
         result_layer = None
         with self.connection.cursor() as cur:
             try:
-                if level and bbox:
+                if level or bbox:
                 # 1. Fetch layer filtered by level or bbox
                     query = """
-                        SELECT tl.id, tl.id_str, tl.theme, tl.is_logical, tl.is_directed, tl.primalspace_id_str, tl.dualspace_id_str, tl.p_creation_datetime, tl.d_creation_datetime
+                        SELECT tl.id, tl.id_str, tl.theme, tl.is_logical, tl.is_directed, tl.primalspace_id_str, tl.dualspace_id_str, tl.p_creation_datetime, tl.d_creation_datetime, tl.semantic_extension
                         FROM thematiclayer tl
                         WHERE tl.id = %s
                     """
@@ -676,7 +676,7 @@ class PostgresIndoorDB:
                     
                     if not row:
                         return None
-                    l_pk, l_id, l_theme, l_logical, l_directed, p_id, d_id, p_create, d_create = row
+                    l_pk, l_id, l_theme, l_logical, l_directed, p_id, d_id, p_create, d_create, l_se = row
                     # 2. Fetch Primal and Dual Spaces
                     primal = self._get_primal_space(cur, l_pk, p_id, p_create, level=level, bbox=bbox)
                     dual = self._get_dual_space(cur, l_pk, d_id, d_create, l_logical, l_directed)
@@ -684,7 +684,7 @@ class PostgresIndoorDB:
                         "id": l_id,
                         "featureType": "ThematicLayer",
                         "theme": l_theme if l_theme else "Unknown",
-                        "semanticExtension": False,
+                        "semanticExtension": l_se if l_se else False,
                         "primalSpace": primal,
                         "dualSpace": dual,
                         "links": []
@@ -1643,7 +1643,7 @@ class PostgresIndoorDB:
 
 # region PrimalSpaceLayer
             
-    def get_primal_features(self, collection_id, item_id, layer_str_id, 
+    def get_primal_members(self, collection_id, item_id, layer_str_id, 
                                          level=None, poi=None, is_virtual=None, cell_space_name=None):
         """
         1. Resolves layer metadata.
@@ -2473,7 +2473,7 @@ class PostgresIndoorDB:
                 # Re-raise so the API knows to return 400/500
                 raise ValueError(f"Failed to create member: {str(e)}")
 
-    def get_dual_features(self, collection_str, item_str, layer_str, min_weight=None, max_weight=None):
+    def get_dual_members(self, collection_str, item_str, layer_str, min_weight=None, max_weight=None):
         """
         1. Fetches Layer Metadata.
         2. Fetches Members (Nodes & Edges).
@@ -2848,6 +2848,124 @@ class PostgresIndoorDB:
 # endregion      
 
 # region Services
+    def geometric_query(self, collection_str, item_str, layer_str, op=None, geometry=None, level=None):
+        with self.connection.cursor(cursor_factory=RealDictCursor) as cur:
+            if not op or not geometry:
+                return False
+            lookup_sql = """
+                SELECT t.*
+                FROM thematiclayer t
+                JOIN collection c ON t.collection_id=c.id
+                JOIN indoorfeature i ON t.indoorfeature_id=i.id
+                WHERE c.id_str = %s AND i.id_str = %s AND t.id_str = %s
+            """
+            cur.execute(lookup_sql, (collection_str, item_str, layer_str))
+            row = cur.fetchone()
+            if not row:
+                return False
+            
+            primal = self._get_primal_geometric_query(cur, row['id'], row['primalspace_id_str'], row['p_creation_datetime'], op=op, geometry=geometry, level=level)
+            dual = self._get_dual_space(cur, row['id'], row['dualspace_id_str'], row['d_creation_datetime'], row['is_logical'], row['is_directed'])
+            result_layer = {
+                "id": row['id_str'],
+                "featureType": "ThematicLayer",
+                "theme": row['theme'] if row['theme'] else "Unknown",
+                "semanticExtension": row['semantic_extension'],
+                "primalSpace": primal,
+                "dualSpace": dual,
+                "links": []
+            }
+
+            return result_layer
+
+    def _get_primal_geometric_query(self, cur, layer_id, pSpace_id, p_create, op: str, geometry: str, level: str = None):
+        primal_space = {
+            "id": pSpace_id, 
+            "featureType": "PrimalSpaceLayer",
+            "creationDatetime": p_create if p_create else None,
+            "cellSpaceMember": [],
+            "cellBoundaryMember": []
+        }
+        geometric_query = """
+            SELECT c.id, c.id_str, ST_AsText(c."2D_geometry"), c."3D_geometry", c.cell_name, c.level, c.poi, c.external_reference, n.id_str as duality, 
+            (
+            SELECT array_agg(child.id_str)s
+            FROM cell_space_n_boundary child
+            WHERE child.bounded_by_cell_id = c.id
+            ) as bounded_by_list
+            FROM cell_space_n_boundary c
+            LEFT JOIN node_n_edge n ON c.duality_id = n.id
+            WHERE c.thematiclayer_id = %s AND c.type = 'space'
+        """
+        params_cells = [layer_id]
+
+        if level:
+            geometric_query += " AND c.level = %s "
+            params_cells.append(level)
+        
+        if op == 'contains':
+            geometric_query += """ AND ST_CONTAINS(c."2D_geometry", ST_GeomFromText(%s)) """
+            params_cells.append(geometry)
+        elif op == 'within':
+            geometric_query += """ AND ST_WITHIN(c."2D_geometry", ST_GeomFromText(%s)) """
+            params_cells.append(geometry)
+        elif op == 'intersects':
+            geometric_query += """ AND ST_INTERSECTS(c."2D_geometry", ST_GeomFromText(%s)) """
+            params_cells.append(geometry)
+        else:
+            return False
+        
+        cur.execute(geometric_query, tuple(params_cells))
+        space_rows = cur.fetchall()
+        all_referenced_boundaries = set()
+
+        for row in space_rows:
+            if row['boundedBylist']:
+                all_referenced_boundaries.update(row['boundedBylist'])
+            geom_2d = self.wkt_to_json(row['2D_geometry'])
+            cell = {
+                    "id": row['id'],
+                    "featureType": "CellSpace",
+                    "duality": row['duality'],
+                    "cellSpaceName": row['cell_name'],
+                    "level": row['level'],
+                    "poi": row['poi'] if row['poi'] else False,
+                    "cellSpaceGeom": {
+                        "geometry2D": geom_2d,
+                        "geometry3D": row['3D_geometry']
+                    },
+                    "boundedBy": row['boundedBylist']
+                }
+            if row['external_reference']: cell["externalReference"] = row['external_reference']
+            primal_space["cellSpaceMember"].append(cell)
+
+        boundary_id_list = list(all_referenced_boundaries)
+        
+        sql_bounds = """
+            SELECT c.id, c.id_str, c.external_reference, 
+            ST_AsText(c."2D_geometry"), c."3D_geometry", n.id_str, c.is_virtual
+            FROM cell_space_n_boundary c
+            LEFT JOIN node_n_edge n ON c.duality_id = n.id
+            WHERE c.id_str = ANY(%s) AND c.thematiclayer_id = %s
+        """
+        cur.execute(sql_bounds, (boundary_id_list, layer_id))
+            
+        for b_row in cur.fetchall():
+            b_pk, b_id, ext, b_geom2d, b_geom3d, duality, is_virtual = b_row
+            boundary = {
+                "id": b_id,
+                "featureType": "CellBoundary",
+                "duality": duality,
+                "isVirtual": is_virtual,
+                "cellBoundaryGeom": {
+                    "geometry2D": self.wkt_to_json(b_geom2d),
+                    "geometry3D": b_geom3d
+                }
+            }
+            if ext: boundary["externalReference"] = {"uri": ext}
+            primal_space["cellBoundaryMember"].append(boundary)
+
+        return primal_space
 
     def get_indoor_route(self, collection_id, item_id, layer_id, sn, dn):
         # This query gets the full sequence from pgRouting and joins it with your tables
