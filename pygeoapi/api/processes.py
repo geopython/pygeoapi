@@ -519,8 +519,12 @@ def execute_process(api: API, request: APIRequest,
     else:
         http_status = HTTPStatus.OK
 
-    if mime_type == 'application/json' or requested_response == 'document':
-        response2 = to_json(response, api.pretty_print)
+    if mime_type == 'application/json':
+        if requested_response == 'document':
+            pretty_print_ = api.pretty_print
+        else:  # raw
+            pretty_print_ = False
+        response2 = to_json(response, pretty_print_)
     else:
         response2 = response
 
