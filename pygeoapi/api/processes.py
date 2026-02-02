@@ -14,7 +14,7 @@
 # Copyright (c) 2022 John A Stevenson and Colin Blackburn
 # Copyright (c) 2023 Ricardo Garcia Silva
 # Copyright (c) 2024 Bernhard Mallinger
-# Copyright (c) 2024 Francesco Martinelli
+# Copyright (c) 2026 Francesco Martinelli
 #
 # Permission is hereby granted, free of charge, to any person
 # obtaining a copy of this software and associated documentation
@@ -528,7 +528,7 @@ def execute_process(api: API, request: APIRequest,
     else:
         response2 = response
 
-    if execution_mode == RequestedProcessExecutionMode.respond_async:
+    if (headers.get('Preference-Applied', '') == RequestedProcessExecutionMode.respond_async.value):  # noqa
         LOGGER.debug('Asynchronous mode detected, returning statusInfo')
         response2 = {
             'jobID': job_id,
