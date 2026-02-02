@@ -71,6 +71,8 @@ class CSVFormatter(BaseFormatter):
 
         if 'Feature' in type or 'features' in data:
             return self._write_from_geojson(options, data)
+        elif 'Coverage' in type or 'coverages' in data:
+            return self._write_from_covjson(options, data)
 
     def _write_from_geojson(
         self, options: dict = {}, data: dict = None, is_point=False
@@ -135,7 +137,79 @@ class CSVFormatter(BaseFormatter):
             LOGGER.error(err)
             raise FormatterSerializationError('Error writing CSV output')
 
+    def _write_from_covjson(
+        self, options: dict = {}, data: dict = None
+    ) -> str:
+        """
+        Generate CovJSON data in CSV format
+
+        :param options: CSV formatting options
+        :param data: dict of CovJSON data
+
+        :returns: string representation of format
+        """
+        LOGGER.debug('Processing CovJSON data for CSV output')
+        units = {}
+        for p, v in data['parameters'].items():
+            unit = v['unit']['symbol']
+            if isinstance(unit, dict):
+                unit = unit.get('value')
+
+            units[p] = unit
+
+        fields = ['parameter', 'datetime', 'value', 'unit', 'x', 'y']
+        LOGGER.debug(f'CSV fields: {fields}')
+        output = io.StringIO()
+        writer = csv.DictWriter(output, fields)
+        writer.writeheader()
+
+        if data['type'] == 'Coverage':
+            is_point = 'point' in data['domain']['domainType'].lower()
+            self._add_coverage(writer, units, data, is_point)
+        else:
+            [
+                self._add_coverage(writer, units, coverage, True)
+                for coverage in data['coverages']
+                if 'point' in coverage['domain']['domainType'].lower()
+            ]
         return output.getvalue().encode('utf-8')
+
+    @staticmethod
+    def _add_coverage(
+        writer: csv.DictWriter, units: dict, data: dict, is_point: bool = False
+    ) -> None:
+        """
+        Add coverage data to CSV writer
+
+        :param writer: CSV DictWriter
+        :param units: dict of parameter units
+        :param data: dict of CovJSON coverage data
+        :param is_point: whether the coverage is a point coverage
+        """
+
+        if is_point is False:
+            LOGGER.warning('Non-point coverages not supported for CSV output')
+            return
+
+        axes = data['domain']['axes']
+        time_range = range(len(axes['t']['values']))
+
+        try:
+            [
+                writer.writerow({
+                    'parameter': parameter,
+                    'datetime': axes['t']['values'][time_value],
+                    'value': data['ranges'][parameter]['values'][time_value],
+                    'unit': units[parameter],
+                    'x': axes['x']['values'][-1],
+                    'y': axes['y']['values'][-1]
+                })
+                for parameter in data['ranges']
+                for time_value in time_range
+            ]
+        except ValueError as err:
+            LOGGER.error(err)
+            raise FormatterSerializationError('Error writing CSV output')
 
     def __repr__(self):
         return f'<CSVFormatter> {self.name}'
