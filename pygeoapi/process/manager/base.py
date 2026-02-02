@@ -6,7 +6,7 @@
 #
 # Copyright (c) 2024 Tom Kralidis
 #           (c) 2023 Ricardo Garcia Silva
-#           (c) 2024 Francesco Martinelli
+#           (c) 2026 Francesco Martinelli
 #
 # Permission is hereby granted, free of charge, to any person
 # obtaining a copy of this software and associated documentation
@@ -393,9 +393,10 @@ class BaseManager:
             'requested_response': requested_response
         }
 
+        job_control_options = processor.metadata.get(
+            'jobControlOptions', [])
+
         if execution_mode == RequestedProcessExecutionMode.respond_async:
-            job_control_options = processor.metadata.get(
-                'jobControlOptions', [])
             # client wants async - do we support it?
             process_supports_async = (
                 ProcessExecutionMode.async_execute.value in job_control_options
@@ -414,17 +415,30 @@ class BaseManager:
                     'Preference-Applied': (
                         RequestedProcessExecutionMode.wait.value)
                 }
-        elif execution_mode == RequestedProcessExecutionMode.wait:
-            # client wants sync - pygeoapi implicitly supports sync mode
-            LOGGER.debug('Synchronous execution')
-            handler = self._execute_handler_sync
-            response_headers = {
-                'Preference-Applied': RequestedProcessExecutionMode.wait.value}
-        else:  # client has no preference
-            # according to OAPI - Processes spec we ought to respond with sync
-            LOGGER.debug('Synchronous execution')
-            handler = self._execute_handler_sync
-            response_headers = None
+        else:  # client has no preference or clients wants sync
+            # do we support sync?
+            process_supports_sync = (
+                ProcessExecutionMode.sync_execute.value in job_control_options
+                )
+            if not process_supports_sync:
+                LOGGER.debug('Asynchronous execution')
+                handler = self._execute_handler_async
+                response_headers = {
+                    'Preference-Applied': (
+                        RequestedProcessExecutionMode.respond_async.value)
+                }
+            else:
+                # according to OAPI - Processes spec we ought to
+                # respond with sync
+                LOGGER.debug('Synchronous execution')
+                handler = self._execute_handler_sync
+                if execution_mode == RequestedProcessExecutionMode.wait:
+	            response_headers = None
+                else:
+                    response_headers = {
+                        'Preference-Applied': (
+                            RequestedProcessExecutionMode.wait.value)
+                    }
 
         # Add Job before returning any response.
         current_status = JobStatus.accepted
