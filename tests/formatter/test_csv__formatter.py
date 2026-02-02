@@ -138,3 +138,61 @@ def test_invalid_geometry_data(invalid_geometry_data):
     formatter = CSVFormatter({'geom': True})
     with pytest.raises(FormatterSerializationError):
         formatter.write(data=invalid_geometry_data)
+
+
+@pytest.fixture
+def point_coverage_data():
+    return {
+        'type': 'Coverage',
+        'domain': {
+            'type': 'Domain',
+            'domainType': 'PointSeries',
+            'axes': {
+                'x': {'values': [-10.1]},
+                'y': {'values': [-40.2]},
+                't': {'values': [
+                    '2013-01-01', '2013-01-02', '2013-01-03',
+                    '2013-01-04', '2013-01-05', '2013-01-06']}
+            }
+        },
+        'parameters': {
+            'PSAL': {
+                'type': 'Parameter',
+                'description': {'en': 'The measured salinity'},
+                'unit': {'symbol': 'psu'},
+                'observedProperty': {
+                    'id': 'http://vocab.nerc.ac.uk/standard_name/sea_water_salinity/',  # noqa
+                    'label': {'en': 'Sea Water Salinity'}
+                }
+            }
+        },
+        'ranges': {
+            'PSAL': {
+                'axisNames': ['t'],
+                'shape': [6],
+                'values': [
+                    43.9599, 43.9599, 43.9640, 43.9640, 43.9679, 43.987
+                ]
+            }
+        }
+    }
+
+
+def test_point_coverage_csv(point_coverage_data):
+    """Test CSV output of point coverage data"""
+    formatter = CSVFormatter({'geom': True})
+    output = formatter.write(data=point_coverage_data)
+    csv_reader = DictReader(StringIO(output.decode('utf-8')))
+    rows = list(csv_reader)
+
+    # Verify number of rows
+    assert len(rows) == 6
+
+    # Verify data
+    first_row = rows[0]
+    assert first_row['parameter'] == 'PSAL'
+    assert first_row['datetime'] == '2013-01-01'
+    assert first_row['value'] == '43.9599'
+    assert first_row['unit'] == 'psu'
+    assert first_row['x'] == '-10.1'
+    assert first_row['y'] == '-40.2'
