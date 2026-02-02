@@ -39,6 +39,30 @@ from pygeoapi.formatter.csv_ import CSVFormatter
 from ..util import get_test_file_path
 
 
+@pytest.fixture()
+def fixture():
+    data = {
+      'features': [{
+          'geometry': {
+            'type': 'Point',
+            'coordinates': [
+              -130.44472222222223,
+              54.28611111111111
+            ]
+          },
+          'type': 'Feature',
+          'properties': {
+            'id': 1972,
+            'foo': 'bar',
+            'title': None,
+          },
+          'id': 48693
+        }]
+    }
+
+    return data
+
+
 @pytest.fixture
 def data():
     data_path = get_test_file_path('data/items.geojson')
@@ -72,6 +96,30 @@ def invalid_geometry_data():
             }
         ]
     }
+
+
+def test_csv__formatter(fixture):
+    f = CSVFormatter({'geom': True})
+    f_csv = f.write(data=fixture)
+
+    buffer = StringIO(f_csv.decode('utf-8'))
+    reader = DictReader(buffer)
+
+    header = list(reader.fieldnames)
+
+    assert f.mimetype == 'text/csv; charset=utf-8'
+
+    assert len(header) == 5
+
+    assert 'x' in header
+    assert 'y' in header
+
+    data = next(reader)
+    assert data['x'] == '-130.44472222222223'
+    assert data['y'] == '54.28611111111111'
+    assert data['id'] == '1972'
+    assert data['foo'] == 'bar'
+    assert data['title'] == ''
 
 
 def test_write_with_geometry_enabled(csv_reader_geom_enabled):
