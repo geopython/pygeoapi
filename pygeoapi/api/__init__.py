@@ -1335,6 +1335,11 @@ def describe_collections(api: API, request: APIRequest,
                         }
                     }
 
+                    collection['parameter_names'][key].update({
+                        'description': value['description']}
+                            if 'description' in value else {}
+                    )
+
             for qt in p.get_query_types():
                 data_query = {
                     'link': {
