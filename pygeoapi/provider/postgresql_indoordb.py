@@ -3032,6 +3032,58 @@ class PostgresIndoorDB:
                 
             return response
 
+    def bounding_cell_space(self, collection_str, item_str, layer_str, boundary_str):
+        lookup_sql = """
+            SELECT b.id, b.bounded_by_cell_id
+            FROM cell_space_n_boundary b
+            JOIN collection c ON b.collection_id = c.id
+            JOIN indoorfeature i ON b.indoorfeature_id = i.id
+            JOIN thematiclayer t ON b.thematiclayer_id = t.id
+            WHERE b.id_str = %s AND c.id_str = %s AND i.id_str = %s AND t.id_str = %s AND type = 'boundary'
+        """
+        response = {}
+        with self.connection.cursor(cursor_factory=RealDictCursor) as cur:
+            cur.execute(lookup_sql, (boundary_str, collection_str, item_str, layer_str))
+            row = cur.fetchone()
+
+            if not row:
+                msg = f"{boundary_str} is not found."
+                raise ValueError(msg)
+            
+            if not row['bounded_by_cell_id']:
+                    return response
+            
+            cell_sql = """
+                SELECT c.id_str, c.cell_name, c.level, c.poi, ST_AsText(c."2D_geometry") as geometry_2d, 
+                c."3D_geometry" as geometry_3d, c.external_reference, n.id_str as duality, (
+                    SELECT array_agg(child.id_str)
+                    FROM cell_space_n_boundary child
+                    WHERE child.bounded_by_cell_id = c.id
+                ) as bounded_by_list
+                FROM cell_space_n_boundary c
+                LEFT JOIN node_n_edge n ON c.duality_id = n.id
+                WHERE c.id = %s
+            """
+            cur.execute(cell_sql, (row['bounded_by_cell_id'],))
+            cell = cur.fetchone()
+            response = {
+                        "id": cell['id_str'],
+                        "featureType": "CellSpace",
+                        "cellSpaceName": cell('cell_name'),
+                        "level": cell('level'),
+                        "poi": cell('poi', False),
+                        "duality": cell('duality'),
+                        "cellSpaceGeom": {
+                            "geometry2D": self.wkt_to_json(cell['geometry_2d']),
+                            "geometry3D": cell('geometry_3d')
+                        },
+                        "externalReference": cell('external_reference'),
+                        # Convert the list of IDs ["B1", "B2"] to URI refs ["#B1", "#B2"]
+                        "boundedBy": cell('bounded_by_list')
+                    }
+            
+            return response
+            
     def json_to_wkt(self, geom_json):
         """
         Converts GeoJSON-like dict to WKT string.
