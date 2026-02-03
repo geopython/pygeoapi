@@ -1,0 +1,7 @@
+fId:
+      name: fId
+      in: path
+      description: Local identifier of a specific indoor feature (e.g., 'IF_AIST_001').
+      required: true
+      schema:
+        type: string

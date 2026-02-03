@@ -1,0 +1,13 @@
+type: object
+title: ThematicLayerList
+properties:
+  levels:
+    type: array
+    description: List of all floors available in this IndoorFeature.
+    items:
+      type: string
+    example: ["L", "2", "3", "F", "5"]
+  layers:
+    type: array
+    items:
+      $ref: './thematicLayerListElement.yml'

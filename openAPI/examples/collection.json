@@ -1,0 +1,34 @@
+{
+  "id": "aist_waterfront_lab",
+  "title": "AIST Waterfront Lab IndoorGML",
+  "description": "IndoorGML data for AIST Waterfront Lab project.",
+  "itemType": "indoorfeature",
+  "extent": {
+    "spatial": {
+      "bbox": [
+        [139.774, 35.618, 139.780, 35.624]
+      ],
+      "crs": "http://www.opengis.net/def/crs/OGC/1.3/CRS84"
+    }
+  },
+  "links": [
+    {
+      "href": "https://data.example.org/collections/aist_waterfront_lab?f=json",
+      "rel": "self",
+      "type": "application/json",
+      "title": "This document as JSON"
+    },
+    {
+      "href": "https://data.example.org/collections/aist_waterfront_lab/items?f=json",
+      "rel": "items",
+      "type": "application/geo+json",
+      "title": "Indoor features in this collection"
+    },
+    {
+      "href": "https://data.example.org?f=json",
+      "rel": "root",
+      "type": "application/json",
+      "title": "The landing page of this server"
+    }
+  ]
+}

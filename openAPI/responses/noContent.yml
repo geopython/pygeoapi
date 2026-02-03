@@ -1,0 +1,5 @@
+description: The request was successful but there is no content to return (Deleted).
+content:
+  application/json:
+    schema:
+      $ref: '../schemas/apiResponse.yml'

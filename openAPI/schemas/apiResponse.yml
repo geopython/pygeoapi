@@ -1,0 +1,15 @@
+type: object
+additionalProperties: false
+required:
+  - type
+  - data
+properties:
+  type:
+    type: string
+    enum:
+      - Response
+    description: Identifies this object as a response.
+  data:
+    type: object
+    description: The response data.
+    additionalProperties: true

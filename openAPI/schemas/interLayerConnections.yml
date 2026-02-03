@@ -1,0 +1,9 @@
+InterLayerConnections:
+      type: object
+      title: InterLayerConnections
+      required: [layerConnections]
+      properties:
+        layerConnections:
+          type: array
+          items:
+            $ref: './interLayerConnection.yml'

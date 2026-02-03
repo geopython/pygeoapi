@@ -1,0 +1,25 @@
+ConnectedResults:
+      type: object
+      additionalProperties: false
+      required:
+        - type
+        - count
+        - items
+      properties:
+        type:
+          type: string
+          enum: [ConnectedResult]
+          description: Identifies this response as a connectivity query result.
+
+        count:
+          type: integer
+          minimum: 0
+          description: Number of returned connected results.
+
+        items:
+          type: array
+          description: |
+            List of connectively reachable CellSpace–Node pairs
+            from the source node within the given hop distance.
+          items:
+            $ref: './connectedItem.yml'

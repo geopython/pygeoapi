@@ -1,0 +1,7 @@
+ connectedLayerId:
+      name: connectedLayerId
+      in: query
+      description: Filter to find all connections involving a specific thematic layer ID.
+      required: false
+      schema:
+        type: string

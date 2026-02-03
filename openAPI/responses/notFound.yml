@@ -1,0 +1,5 @@
+description: The requested resource was not found.
+content:
+  application/json:
+    schema:
+      $ref: '../schemas/apiError.yml'
