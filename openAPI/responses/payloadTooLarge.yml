@@ -1,0 +1,5 @@
+description: The request is too large for the server to process.
+content:
+  application/json:
+    schema:
+      $ref: '../schemas/apiError.yml'

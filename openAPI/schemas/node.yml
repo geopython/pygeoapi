@@ -1,0 +1,24 @@
+type: object
+title: Node
+required:
+  - id
+  - featureType
+  - duality
+properties:
+  id:
+    type: string
+  featureType:
+    type: string
+    enum:
+      - Node
+  duality:
+    type: string
+    format: uri-reference
+  geometry:
+    $ref: 'https://beta.schemas.opengis.net/json-fg/geometry-object.json#/$defs/Point'
+  connects:
+    type: array
+    uniqueItems: true
+    items:
+      type: string
+      format: uri-reference

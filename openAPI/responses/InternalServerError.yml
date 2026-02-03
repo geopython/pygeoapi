@@ -1,0 +1,5 @@
+description: Unexpected server error.
+content:
+  application/json:
+    schema:
+      $ref: '../schemas/ApiError.yml'

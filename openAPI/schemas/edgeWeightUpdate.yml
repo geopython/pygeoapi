@@ -1,0 +1,9 @@
+EdgeWeightUpdate:
+      type: object
+      required: [weight]
+      properties:
+        weight:
+          type: number
+          format: double
+          description: "The new weight value for the edge. Weights cannot be negative"
+          minimum: 0 

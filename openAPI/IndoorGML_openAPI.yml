@@ -8,1275 +8,6 @@ info:
 servers:
   - url: https://api.server.test/v1
 
-components:
-  parameters:
-    collectionId:
-      name: collectionId
-      in: path
-      description: Local identifier of a collection (e.g., 'AIST_Waterfront').
-      required: true
-      schema:
-        type: string
-
-    limit:
-      name: limit
-      in: query
-      description: |-
-         The optional limit parameter limits the number of items that are presented in the response document.
-         Only items are counted that are on the first level of the collection in the response document. Nested objects contained within the explicitly requested items shall not be counted.
-
-         Minimum = 1. Maximum = 10000. Default = 10.
-      required: false
-      schema:
-        type: integer
-        minimum: 1
-        maximum: 10000
-        default: 10
-      style: form
-      explode: false
-
-    bbox:
-      name: bbox
-      in: query
-      description: |-
-        Spatial filter [minX, minY, maxX, maxY].
-    
-        Only features that have a geometry that intersects the bounding box are selected. 
-        
-        The bounding box is provided as four numbers, recommended to use with `level`
-
-        Can be used alone not regarding the z axis for 3D geometries.
-      required: false
-      schema:
-        type: array
-        minItems: 4
-        maxItems: 4
-        items:
-          type: number
-      style: form
-      explode: false
-      example: [129.0, 35.1, 129.1, 35.2]
-
-    fId:
-      name: fId
-      in: path
-      description: Local identifier of a specific indoor feature (e.g., 'IF_AIST_001').
-      required: true
-      schema:
-        type: string
-        
-    level:
-      name: level
-      in: query
-      description: |
-        Filters the indoorFeatures, thematicLayer, and primalSpace content by a specific floor level.
-        
-        **Filtering Logic:**
-        * **Primal Space:** The filter is explicitly applied to `CellSpace` geometries on the specified level (e.g., '1F', 'B1').
-        * **Inferred Members:** Other members of the Primal and Dual spaces (e.g., boundaries, nodes, edges) are automatically included based on their relationships (`boundedBy`, `duality`) with the selected CellSpaces.
-        
-        **Note:** If both this parameter or `bbox` is omitted, the response will return **metadata only** to reduce payload size.
-        
-      required: false
-      schema:
-        type: string
-        example: "1F"
-
-    theme:
-      name: theme
-      in: query
-      description: Filter layers by category.
-      required: false
-      schema:
-        type: string
-        enum: [Virtual, Physical, Tags, Unknown]
-    
-    connectedLayerId:
-      name: connectedLayerId
-      in: query
-      description: Filter to find all connections involving a specific thematic layer ID.
-      required: false
-      schema:
-        type: string
-
-    typeOfTopoExpression:
-      name: typeOfTopoExpression
-      in: query
-      description: Filter by the topological relationship type.
-      required: false
-      schema:
-        type: string
-        enum: [CONTAINS, OVERLAPS, EQUALS, WITHIN, CROSSES, OTHERS]
-
-    tId:
-      name: tId
-      in: path
-      description: Local identifier of a thematic layer (e.g., 'TL-Physical-01').
-      required: true
-      schema:
-        type: string
-
-    cnId:
-      name: cnId
-      in: path
-      description: Local identifier of a specific inter-layer connection (e.g., 'ILC-001').
-      required: true
-      schema:
-        type: string
-
-    mId:
-      name: mId
-      in: path
-      description: Local identifier of a specific memberId for Primal and Dual spaces (e.g., 'C83').
-      required: true
-      schema:
-        type: string
-
-    poi:
-      name: poi
-      in: query
-      description: Filter CellSpaces by Point of Interest status.
-      required: false
-      schema:
-        type: boolean
-        
-    isVirtual:
-      name: isVirtual
-      in: query
-      description: Filter CellBoundaries by virtual status (e.g., invisible transitions).
-      required: false
-      schema:
-        type: boolean
-    
-    minWeight:
-      name: minWeight
-      in: query
-      description: Filter edges by minimum weight (e.g., distance or time > 0).
-      required: false
-      schema:
-        type: number
-        format: float
-        minimum: 0
-        
-    maxWeight:
-      name: maxWeight
-      in: query
-      description: Filter edges by maximum weight (e.g., max walking distance).
-      required: false
-      schema:
-        type: number
-        format: float
-        minimum: 0
-    
-    cellSpaceName:
-      name: cellSpaceName
-      in: query
-      required: false
-      description: Filter results to include only those matching the specified CellSpace name. Exact Match
-      schema:
-        type: string
-    
-    sn:
-      name: sn
-      in: query
-      description: Identifier of the start node in the dual graph
-      required: true
-      schema:
-        type: string
-    dn:
-      name: dn
-      in: query
-      description: Identifier of the destination node in the dual graph
-      required: true
-      schema:
-        type: string
-
-    hop:
-      name: hop
-      in: query
-      description: Maximum hop distance from the source node.
-      required: true
-      schema:
-        type: integer
-        minimum: 0
-        maximum: 4
-        default: 1
-      style: form
-      explode: false
-
-    op:
-      name: op
-      in: query
-      required: true
-      description: |-
-        Spatial predicate operation applied between the input geometry
-        and CellSpace geometries.
-
-        Supported operations:
-        - `within`: returns CellSpaces that contain the input geometry
-        - `intersects`: returns CellSpaces whose geometries intersect the input geometry
-        - `contains`: returns CellSpaces that are fully contained by the input geometry
-      schema:
-        type: string
-        enum:
-          - within
-          - intersects
-          - contains
-      
-    geometry:
-      name: geometry
-      in: query
-      required: true
-      description: |-
-        Input geometry expressed as a 2D Well-Known Text (WKT) string.
-        The geometry is evaluated in the local 2D coordinate reference
-        of the IndoorFeature and the specified level.
-
-        Only 2D geometries are supported. Z coordinates, if provided,
-        are not allowed and will result in an error.
-
-        Examples:
-        - POINT(123.4 56.7)
-        - POLYGON((120 40, 140 40, 140 60, 120 60, 120 40))
-
-      schema:
-        type: string
-        example: POINT(123.4 56.7)
-
-              
-  schemas:
-    IndoorJSON:
-      type: object
-      description: Root schema for IndoorGML 2.0 IndoorFeatures
-      allOf:
-        - $ref: '#/components/schemas/IndoorFeatures'
-
-    IndoorFeatures:
-      type: object
-      title: IndoorFeatures
-      required: [featureType, layers]
-      properties:
-        id: { type: string }
-        featureType: { type: string, enum: [IndoorFeatures] }
-        layers:
-          type: array
-          minItems: 1
-          uniqueItems: true
-          items: { $ref: '#/components/schemas/ThematicLayer' }
-        layerConnections:
-          type: array
-          uniqueItems: true
-          items: { $ref: '#/components/schemas/InterLayerConnection' }
-
-    ThematicLayer:
-      type: object
-      title: ThematicLayer
-      required: [id, featureType, semanticExtension, theme]
-      properties:
-        id: { type: string }
-        featureType: { type: string, enum: [ThematicLayer] }
-        semanticExtension: { type: boolean }
-        theme: { type: string, enum: [Virtual, Physical, Tags, Unknown] }
-        primalSpace: { $ref: '#/components/schemas/PrimalSpaceLayer' }
-        dualSpace: { $ref: '#/components/schemas/DualSpaceLayer' }
-
-    PrimalSpaceLayer:
-      type: object
-      title: PrimalSpaceLayer
-      required: [id, featureType, cellSpaceMember]
-      properties:
-        id: { type: string }
-        featureType: { type: string, enum: [PrimalSpaceLayer] }
-        creationDatetime: { type: string, format: date-time }
-        terminationDatetime: { type: string, format: date-time }
-        cellSpaceMember:
-          type: array
-          minItems: 1
-          uniqueItems: true
-          items: { $ref: '#/components/schemas/CellSpace' }
-        cellBoundaryMember:
-          type: array
-          uniqueItems: true
-          items: { $ref: '#/components/schemas/CellBoundary' }
-
-
-    CellSpace:
-      type: object
-      title: CellSpace
-      required: [id, featureType, poi]
-      properties:
-        id: { type: string }
-        featureType: { type: string, enum: [CellSpace] }
-        cellSpaceName: { type: string }
-        level: { type: string }
-        poi: { type: boolean }
-        duality: { type: string, format: uri-reference }
-        cellSpaceGeom:
-          type: object
-          properties:
-            geometry2D: { $ref: '#/components/schemas/polygonGeoJSON' }
-            geometry3D: { $ref: '#/components/schemas/Polyhedron' }
-        boundedBy:
-          type: array
-          uniqueItems: true
-          items: { type: string, format: uri-reference }
-        externalReference: { $ref: '#/components/schemas/ExternalReferenceType' }
-
-    CellSpaceUpdate:
-      type: object
-      title: CellSpaceUpdate
-      description: "Available fields for partial update. All fields are optional."
-      properties:
-        cellSpaceName:
-          type: string
-          example: "Conference Room A"
-        level:
-          type: integer
-          example: 2
-        poi:
-          type: string
-          example: "Restroom"
-
-    CellBoundary:
-      type: object
-      title: CellBoundary
-      required: [id, featureType, isVirtual]
-      properties:
-        id: { type: string }
-        featureType: { type: string, enum: [CellBoundary] }
-        isVirtual: { type: boolean }
-        duality: { type: string, format: uri-reference }
-        cellBoundaryGeom:
-          type: object
-          properties:
-            geometry2D: { $ref: '#/components/schemas/linestringGeoJSON' }
-            geometry3D: { $ref: '#/components/schemas/polygonGeoJSON' }
-        externalReference: { $ref: '#/components/schemas/ExternalReferenceType' }
-
-    DualSpaceLayer:
-      type: object
-      title: DualSpaceLayer
-      required: [id, featureType, isLogical, isDirected, nodeMember]
-      properties:
-        id: { type: string }
-        featureType: { type: string, enum: [DualSpaceLayer] }
-        isLogical: { type: boolean }
-        isDirected: { type: boolean }
-        nodeMember:
-          type: array
-          minItems: 1
-          uniqueItems: true
-          items: { $ref: '#/components/schemas/Node' }
-        edgeMember:
-          type: array
-          uniqueItems: true
-          items: { $ref: '#/components/schemas/Edge' }
-
-    Node:
-      type: object
-      title: Node
-      required: [id, featureType, duality]
-      properties:
-        id: { type: string }
-        featureType: { type: string, enum: [Node] }
-        duality: { type: string, format: uri-reference }
-        geometry: { $ref: '#/components/schemas/pointGeoJSON' }
-        connects:
-          type: array
-          uniqueItems: true
-          items: { type: string, format: uri-reference }
-
-    Edge:
-      type: object
-      title: Edge
-      required: [id, featureType, weight, connects]
-      properties:
-        id:
-          type: string
-        featureType:
-          type: string
-          enum: [Edge]
-        duality:
-          type: string
-          format: uri-reference
-          description: "Reference to the corresponding primal Space cell."
-        weight:
-          type: number
-        geometry:
-          $ref: '#/components/schemas/linestringGeoJSON'
-        connects:
-          type: array
-          minItems: 2
-          maxItems: 2
-          uniqueItems: true
-          items:
-            type: string
-            format: uri-reference
-
-    EdgeWeightUpdate:
-      type: object
-      required: [weight]
-      properties:
-        weight:
-          type: number
-          format: double
-          description: "The new weight value for the edge."
-          minimum: 0  # Optional: added if weights cannot be negative
-
-    InterLayerConnection:
-      type: object
-      title: InterLayerConnection
-      required: [featureType, connectedLayers, typeOfTopoExpression]
-      properties:
-        id:
-          type: string
-        featureType:
-          type: string
-          enum: [InterLayerConnection]
-        connectedLayers:
-          type: array
-          items:
-            type: string
-            format: uri-reference
-          minItems: 2
-          maxItems: 2
-          uniqueItems: true
-          description: Links exactly two thematic layers.
-        connectedNodes:
-          type: array
-          items:
-            type: string
-            format: uri-reference
-          minItems: 2
-          maxItems: 2
-          uniqueItems: true
-          description: Links specific nodes across the layers.
-        connectedCells:
-          type: array
-          items:
-            type: string
-            format: uri-reference
-          minItems: 2
-          maxItems: 2
-          uniqueItems: true
-          description: Links specific primal space cells across the layers.
-        typeOfTopoExpression:
-          type: string
-          enum: [CONTAINS, OVERLAPS, EQUALS, WITHIN, CROSSES, OTHERS]
-        comment:
-          type: string
-        links:
-          type: array
-          items:
-            $ref: '#/components/schemas/link'
-
-    ExternalReferenceType:
-      type: object
-      required: [externalObject, informationSystem]
-      properties:
-        externalObject:
-          type: object
-          required: [name, uri]
-          properties:
-            name: { type: string }
-            uri: { type: string, format: uri }
-        informationSystem: { type: string, format: uri }
-
-    IndoorJSONRoute:
-      type: object
-      additionalProperties: false
-      required: [routeNode, routeEdge]
-      properties:
-        creationDate:
-          type: string
-          format: date-time
-          description: Timestamp when the route was computed.
-        routeNode:
-          type: array
-          minItems: 2
-          description: Ordered list of nodes along the route.
-          items:
-            $ref: '#/components/schemas/Node'
-        routeEdge:
-          type: array
-          minItems: 1
-          description: Ordered list of edges along the route.
-          items:
-            $ref: '#/components/schemas/Edge'
-
-    Polyhedron:
-      type: object
-      title: Polyhedron
-      description: "A 3D geometry representation for IndoorGML CellSpaces."
-      required: [type, coordinates]
-      properties:
-        type: { type: string, enum: [Polyhedron] }
-        coordinates: { type: array, items: { type: array, items: { type: array, items: { type: array, items: { type: number } } } } }
-
-    link:
-      type: object
-      title: link
-      required: [href, rel]
-      properties:
-        href: { type: string, example: "http://data.example.com/collections/AIST/items/123" }
-        rel: { type: string, example: "self" }
-        type: { type: string, example: "application/geo+json" }
-        title: { type: string }
-        length: { type: integer }
-
-    landingPage: 
-      type: object
-      required: [links]
-      properties:
-        title: { type: string, example: "Indoor feautres data server"}
-        description: { type: string, example: "Access to data about indoor features"}
-        links: { type: array, items: { $ref: '#/components/schemas/link'}}
-  
-    featureCollectionGeoJSON:
-      type: object
-      title: featureCollectionGeoJSON
-      required: [type, features]
-      properties:
-        type: { type: string, enum: [FeatureCollection] }
-        features:
-          type: array
-          items: { $ref: '#/components/schemas/metaGeoJSON' }
-        numberMatched: { type: integer }
-        numberReturned: { type: integer }
-        timeStamp: { type: string, format: date-time }
-        links:
-          type: array
-          items: { $ref: '#/components/schemas/link' }
-
-    metaGeoJSON:
-      type: object
-      title: featureGeoJSON
-      required: [type, geometry, properties]
-      properties:
-        type:
-          type: string
-          enum: [Feature]
-        featureType:
-          type: string
-          enum: [IndoorFeatures]
-        id:
-          type: string
-        geometry:
-          $ref: '#/components/schemas/geometryGeoJSON'
-        properties:
-          type: object
-          properties:
-            metadata:
-              type: object
-              properties:
-                description: { type: string }
-                creationDate: { type: string, format: date-time }
-                version: { type: string }
-        links:
-          type: array
-          items:
-            $ref: '#/components/schemas/link'
-
-    featureGeoJSON:
-      type: object
-      title: featureGeoJSON
-      required: [type, geometry, properties]
-      properties:
-        type:
-          type: string
-          enum: [Feature]
-        featureType:
-          type: string
-          enum: [IndoorFeatures]
-        id:
-          type: string
-        geometry:
-          $ref: '#/components/schemas/geometryGeoJSON'
-        properties:
-          type: object
-          properties:
-            metadata:
-              type: object
-              properties:
-                description: { type: string }
-                creationDate: { type: string, format: date-time }
-                version: { type: string }
-        # This is the massive IndoorGML graph, returned conditionally
-        IndoorFeatures:
-          $ref: '#/components/schemas/IndoorFeatures'
-        links:
-          type: array
-          items:
-            $ref: '#/components/schemas/link'
-
-    geometryGeoJSON:
-      title: geometryGeoJSON
-      oneOf:
-        - $ref: "#/components/schemas/pointGeoJSON"
-        - $ref: "#/components/schemas/multipointGeoJSON"
-        - $ref: "#/components/schemas/linestringGeoJSON"
-        - $ref: "#/components/schemas/multilinestringGeoJSON"
-        - $ref: "#/components/schemas/polygonGeoJSON"
-        - $ref: "#/components/schemas/multipolygonGeoJSON"
-        - $ref: "#/components/schemas/geometrycollectionGeoJSON"
-      discriminator:
-        propertyName: type
-        mapping:
-          Point: '#/components/schemas/pointGeoJSON'
-          MultiPoint: '#/components/schemas/multipointGeoJSON'
-          LineString: '#/components/schemas/linestringGeoJSON'
-          MultiLineString: '#/components/schemas/multilinestringGeoJSON'
-          Polygon: '#/components/schemas/polygonGeoJSON'
-          MultiPolygon: '#/components/schemas/multipolygonGeoJSON'
-          GeometryCollection: '#/components/schemas/geometrycollectionGeoJSON'
-
-    pointGeoJSON:
-      type: object
-      title: pointGeoJSON
-      required: [type, coordinates]
-      properties:
-        type: { type: string, enum: [Point] }
-        coordinates: { type: array, items: { type: number }, minItems: 2 }
-
-    multipointGeoJSON:
-      type: object
-      title: multipointGeoJSON
-      required: [type, coordinates]
-      properties:
-        type: { type: string, enum: [MultiPoint] }
-        coordinates: { type: array, items: { type: array, items: { type: number } } }
-
-    linestringGeoJSON:
-      type: object
-      title: linestringGeoJSON
-      required: [type, coordinates]
-      properties:
-        type: { type: string, enum: [LineString] }
-        coordinates: { type: array, items: { type: array, items: { type: number } } }
-
-    multilinestringGeoJSON:
-      type: object
-      title: multilinestringGeoJSON
-      required: [type, coordinates]
-      properties:
-        type: { type: string, enum: [MultiLineString] }
-        coordinates: { type: array, items: { type: array, items: { type: array, items: { type: number } } } }
-
-    polygonGeoJSON:
-      type: object
-      title: polygonGeoJSON
-      required: [type, coordinates]
-      properties:
-        type: { type: string, enum: [Polygon] }
-        coordinates: { type: array, items: { type: array, items: { type: array, items: { type: number } } } }
-
-    multipolygonGeoJSON:
-      type: object
-      title: multipolygonGeoJSON
-      required: [type, coordinates]
-      properties:
-        type: { type: string, enum: [MultiPolygon] }
-        coordinates: { type: array, items: { type: array, items: { type: array, items: { type: array, items: { type: number } } } } }
-
-    geometrycollectionGeoJSON:
-      type: object
-      title: geometrycollectionGeoJSON
-      required: [type, geometries]
-      properties:
-        type: { type: string, enum: [GeometryCollection] }
-        geometries:
-          type: array
-          items: { $ref: "#/components/schemas/geometryGeoJSON" }
-
-    ThematicLayerList:
-      type: object
-      title: ThematicLayerList
-      properties:
-        levels:
-          type: array
-          description: List of all floors available in this IndoorFeature.
-          items:
-            type: string
-          example: ["L", "2", "3", "F", "5"]
-        layers:
-          type: array
-          items:
-            $ref: '#/components/schemas/ThematicLayerListElement'
-
-    ThematicLayerListElement:
-      type: object
-      title: ThematicLayerListElement
-      required: [id, semanticExtension, theme]
-      properties:
-        id:
-          type: string
-        semanticExtension:
-          type: boolean
-        theme:
-          type: string
-          enum: [Virtual, Physical, Tags, Unknown]
-        bbox:
-          type: array
-          minItems: 4
-          maxItems: 4
-          items:
-            type: number
-          example: [-100, -100, 100, 100]
-        links:
-          type: array
-          items:
-            $ref: '#/components/schemas/link'
-
-
-    ThematicLayerSummary:
-      type: object
-      title: ThematicLayerSummary
-      required: [id, featureType, semanticExtension, theme]
-      properties:
-        id:
-          type: string
-          example: "layer-indoor-nav-f1"
-        featureType:
-          type: string
-          enum: ["ThematicLayer"]
-          example: "ThematicLayer"
-        theme:
-          type: string
-          enum: [Virtual, Physical, Tags, Unknown]
-          example: "Virtual"
-        semanticExtension:
-          type: boolean
-          example: true
-        summary:
-          type: object
-          description: Statistical summary of the Primal and Dual space contents.
-          properties:
-            primalSpace:
-              type: object
-              properties:
-                cellSpaceCount:
-                  type: integer
-                  description: Number of rooms/cells.
-                  example: 2
-                cellBoudaryCount: 
-                  type: integer
-                  description: Number of walls/boundaries.
-                  example: 1
-                level:
-                  type: string
-                  description: The floor level(s) found in this layer.
-                  example: "1F"
-            dualSpace:
-              type: object
-              properties:
-                nodeCount:
-                  type: integer
-                  description: Number of navigation nodes.
-                  example: 2
-                edgeCount:
-                  type: integer
-                  description: Number of navigation edges.
-                  example: 1
-                isDirected:
-                  type: boolean
-                  description: Copy of the isDirected property from DualSpaceLayer.
-                  example: true
-                isLogical:
-                  type: boolean
-                  description: Copy of the isLogical property from DualSpaceLayer.
-                  example: true
-        bbox:
-          type: array
-          minItems: 4
-          maxItems: 4
-          items:
-            type: number
-          example: [-100, -100, 100, 100]
-        links:
-          type: array
-          items:
-            $ref: '#/components/schemas/link'
-    
-    InterLayerConnections:
-      type: object
-      title: InterLayerConnections
-      required: [layerConnections]
-      properties:
-        layerConnections:
-          type: array
-          items:
-            $ref: '#/components/schemas/InterLayerConnection'
-
-    RouteResults:
-      type: object
-      title: RouteResults.
-      required: [type, inputs, cost, route]
-      properties:
-        type:
-          type: string
-          enum: [RouteResult]
-          description: Identifies this response as a computed route result.
-        inputs:
-          type: object
-          additionalProperties: false
-          required: [sn, dn]
-          properties:
-            sn:
-              type: string
-              description: Start node identifier in the dual graph.
-            dn:
-              type: string
-              description: Destination node identifier in the dual graph.
-        cost:
-          type: object
-          additionalProperties: false
-          required: [totalWeight]
-          properties:
-            totalWeight:
-              type: number
-              format: double
-              description: Sum of edge weights along the route.
-  
-        route:
-          $ref: '#/components/schemas/IndoorJSONRoute'
-          description: |
-            Route object following the IndoorJSON2 Route schema.
-            Contains ordered nodes and edges for the computed path.
-                
-        links:
-          type: array
-          description: Optional links related to this computed result.
-          items:
-            $ref: '#/components/schemas/link'
-    
-
-    BoundingCellsResults:
-      type: object
-      required: [type, count, items]
-      properties:
-        type:
-          type: string
-          enum: [BoundingCellsResult]
-          description: Identifies this response as a CellBoundary-to-CellSpace bounding result.
-
-        count:
-          type: integer
-          minimum: 0
-          description: Number of returned CellSpaces.
-
-        items:
-          type: array
-          description: List of CellSpaces bounded by the given CellBoundary.
-          items:
-            $ref: '#/components/schemas/CellSpace'
-
-        links:
-          type: array
-          description: Related links for pagination or navigation.
-          items:
-            $ref: '#/components/schemas/link'
-
-    ConnectedResults:
-      type: object
-      additionalProperties: false
-      required:
-        - type
-        - count
-        - items
-      properties:
-        type:
-          type: string
-          enum: [ConnectedResult]
-          description: Identifies this response as a connectivity query result.
-
-        count:
-          type: integer
-          minimum: 0
-          description: Number of returned connected results.
-
-        items:
-          type: array
-          description: |
-            List of connectively reachable CellSpace–Node pairs
-            from the source node within the given hop distance.
-          items:
-            $ref: '#/components/schemas/ConnectedItem'
-
-        links:
-          type: array
-          description: Pagination and navigation links.
-          items:
-            $ref: '#/components/schemas/link'
- 
-    ConnectedItem:
-      type: object
-      additionalProperties: false
-      required:
-        - node
-        - cellSpace
-        - hopDistance
-      properties:
-        node:
-          $ref: '#/components/schemas/Node'
-        cellSpace:
-          $ref: '#/components/schemas/CellSpace'
-        hopDistance:
-          type: integer
-          minimum: 1
-          description: Hop distance from the source node in the dual graph.
-
-
-    GeoQueryResults:
-      type: object
-      required: [type, count, items]
-      properties:
-        type:
-          type: string
-          enum: [GeometricQueryResult]
-          description: Identifies this response as a geometric query result.
-
-        count:
-          type: integer
-          minimum: 0
-          description: Number of returned CellSpace–Node pairs.
-
-        items:
-          type: array
-          description: |
-            List of CellSpace–Node pairs that satisfy the geometric predicate.
-            The Node is derived via the duality relationship of the matched CellSpace.
-          items:
-            $ref: '#/components/schemas/GeometricQueryItem'
-
-        links:
-          type: array
-          description: Navigation and pagination links.
-          items:
-            $ref: '#/components/schemas/link'
-
-    GeometricQueryItem:
-      type: object
-      additionalProperties: false
-      required:
-        - cellSpace
-        - node
-      properties:
-        cellSpace:
-          $ref: '#/components/schemas/CellSpace'
-        node:
-          $ref: '#/components/schemas/Node'
-
-    ApiResponse:
-      type: object
-      additionalProperties: false
-      required:
-        - type
-        - data
-      properties:
-        type:
-          type: string
-          enum: [Response]
-          description: Identifies this object as a response.
-        data:
-          type: object
-          description: The response data.
-          additionalProperties: true
-
-    ApiError:
-      type: object
-      additionalProperties: false
-      required:
-        - type
-        - code
-        - description
-      properties:
-        type:
-          type: string
-          enum: [Error]
-          description: Identifies this object as an error response.
-        code:
-          type: string
-          description: Machine-readable error code.
-          example: InvalidParameter
-        description:
-          type: string
-          description: Human-readable error message.
-          example: ex) hop must be between 1 and 4.
-        status:
-          type: integer
-          description: HTTP status code.
-          example: 400
-        details:
-          type: array
-          description: Optional list of detailed error items.
-          items:
-            $ref: '#/components/schemas/ApiErrorDetail'
-        instance:
-          type: string
-          format: uri
-          description: Optional URI to identify this specific occurrence for debugging/logging.
-          example: urn:uuid:2d1b9b9a-7db6-4d5b-9f1d-0f1a0b5c6a33
-
-    ApiErrorDetail:
-      type: object
-      additionalProperties: false
-      required: [target, message]
-      properties:
-        target:
-          type: string
-          description: The parameter or field that caused the error.
-          example: ex) geometry
-        message:
-          type: string
-          description: Explanation for the target field.
-          example: ex) Failed to parse WKT geometry.
-        value:
-          description: The provided value that caused the error (optional).
-          oneOf:
-            - type: string
-            - type: number
-            - type: integer
-            - type: boolean
-            - type: object
-            - type: array
-
-    extent:
-      description: |-
-        The extent of the features in the collection. In the Core only spatial and temporal
-        extents are specified. Extensions may add additional members to represent other
-        extents, for example, thermal or pressure ranges.
-
-        An array of extents is provided for each extent type (spatial, temporal). The first item
-        in the array describes the overall extent of the data. All subsequent items describe more
-        precise extents, e.g., to identify clusters of data. Clients only interested in the
-        overall extent will only need to access the first extent in the array.
-      type: object
-      properties:
-        spatial:
-          description: The spatial extent of the features in the collection.
-          type: object
-          properties:
-            bbox:
-              description: |-
-                One or more bounding boxes that describe the spatial extent of the dataset.
-                In the Core only a single bounding box is supported.
-
-                Extensions may support additional areas.
-                The first bounding box describes the overall spatial
-                extent of the data. All subsequent bounding boxes describe
-                more precise bounding boxes, e.g., to identify clusters of data.
-                Clients only interested in the overall spatial extent will
-                only need to access the first bounding box in the array.
-              type: array
-              minItems: 1
-              items:
-                description: |-
-                  Each bounding box is provided as four or six numbers, depending on
-                  whether the coordinate reference system includes a vertical axis
-                  (height or depth):
-
-                  * Lower left corner, coordinate axis 1
-                  * Lower left corner, coordinate axis 2
-                  * Minimum value, coordinate axis 3 (optional)
-                  * Upper right corner, coordinate axis 1
-                  * Upper right corner, coordinate axis 2
-                  * Maximum value, coordinate axis 3 (optional)
-
-                  If the value consists of four numbers, the coordinate reference system is
-                  WGS 84 longitude/latitude (http://www.opengis.net/def/crs/OGC/1.3/CRS84)
-                  unless a different coordinate reference system is specified in `crs`.
-
-                  If the value consists of six numbers, the coordinate reference system is WGS 84
-                  longitude/latitude/ellipsoidal height (http://www.opengis.net/def/crs/OGC/0/CRS84h)
-                  unless a different coordinate reference system is specified in `crs`.
-
-                  For WGS 84 longitude/latitude the values are in most cases the sequence of
-                  minimum longitude, minimum latitude, maximum longitude and maximum latitude.
-                  However, in cases where the box spans the antimeridian the first value
-                  (west-most box edge) is larger than the third value (east-most box edge).
-
-                  If the vertical axis is included, the third and the sixth number are
-                  the bottom and the top of the 3-dimensional bounding box.
-
-                  If a feature has multiple spatial geometry properties, it is the decision of the
-                  server whether only a single spatial geometry property is used to determine
-                  the extent or all relevant geometries.
-                type: array
-                oneOf:
-                  - minItems: 4
-                    maxItems: 4
-                  - minItems: 6
-                    maxItems: 6
-                items:
-                  type: number
-                example:
-                  - -180
-                  - -90
-                  - 180
-                  - 90
-            crs:
-              description: |-
-                Coordinate reference system of the coordinates in the spatial extent
-                (property `bbox`). The default reference system is WGS 84 longitude/latitude.
-                In the Core the only other supported coordinate reference system is
-                WGS 84 longitude/latitude/ellipsoidal height for coordinates with height.
-                Extensions may support additional coordinate reference systems and add
-                additional enum values.
-              type: string
-              enum:
-                - http://www.opengis.net/def/crs/OGC/1.3/CRS84
-                - http://www.opengis.net/def/crs/OGC/0/CRS84h
-              default: http://www.opengis.net/def/crs/OGC/1.3/CRS84
-
-    collection:
-      type: object
-      required: [id, title, itemType, links]
-      properties:
-        id: { type: string }
-        title: { type: string }
-        description: { type: string }
-        itemType: { type: string, default: "indoorfeature" }
-        links:
-          type: array
-          items: { $ref: '#/components/schemas/link' }
-        extent:
-          $ref: '#/components/schemas/extent'
-        crs:
-          description: the list of coordinate reference systems supported by the service
-          type: array
-          items:
-            type: string
-          default:
-            - https://www.opengis.net/def/crs/OGC/1.3/CRS84
-          example:
-            - https://www.opengis.net/def/crs/OGC/1.3/CRS84
-            - https://www.opengis.net/def/crs/EPSG/0/4326
-    
-    collection-body:
-      type: object
-      required: [id, title, itemType]
-      properties:
-        id: { type: string }
-        title: { type: string, description: "human readable title of thte collections"}
-        description: { type: string, description: "any description"}
-        itemType: { type: string, description: indicator about the type of the items in the indoor features collection (the default value is 'indoorfeature')., default: "indoorfeature"}
-
-    collections:
-      type: object
-      required: [colelctons, links]
-      properties:
-        collections: { type: array, items: { $ref: '#/components/schemas/collection'} }
-        links: { type: array, items: { $ref: '#/components/schemas/link'} }
-
-
-  responses:
-    Features:
-      description: A list of indoor features (fIDs) within the collection.
-      content:
-        application/geo+json:
-          schema:
-            $ref: '#/components/schemas/featureCollectionGeoJSON'
-    
-    Collections:
-      description: A JSON object containing the list of available collections and related links.
-      content:
-        application/json:
-          schema:
-            type: object
-            title: Collections
-            required: [collections, links]
-            properties:
-              collections:
-                type: array
-                description: The list of available IndoorGML collections.
-                items:
-                  $ref: '#/components/schemas/collection'
-              links:
-                type: array
-                items:
-                  $ref: '#/components/schemas/link'
-    
-    Collection:
-      description: The metadata being returned.
-      content:
-        application/json:
-          schema:
-            $ref: '#/components/schemas/collection'
-          example:
-            id: ifc-1
-            title: indoor_feature_collection_sample
-            itemType: indoorfeature
-            extent:
-              spatial:
-                bbox:
-                  - -180
-                  - -90
-                  - -190
-                  - 90
-                crs:
-                  - http://www.opengis.net/def/crs/OGC/1.3/CRS84
-            links:
-              - href: https://data.example.org/collections/ifc-1
-                rel: self
-                type: application/json
-
-    Created:
-      description: The resource was successfully created.
-      content:
-        application/json:
-          schema:
-            $ref: '#/components/schemas/ApiResponse'
-
-    NoContent:
-      description: The request was successful but there is no content to return (Deleted).
-      content:
-        application/json:
-          schema:
-            $ref: '#/components/schemas/ApiResponse'
-    
-    BadRequest:
-      description: Invalid request parameters or malformed input.
-      content:
-        application/json:
-          schema:
-            $ref: '#/components/schemas/ApiError'
-
-    Unauthorized:
-      description: Authentication credentials were missing or invalid.
-      content:
-        application/json:
-          schema:
-            $ref: '#/components/schemas/ApiError'
-
-    Forbidden:
-      description: The request was valid, but the server is refusing action.
-      content:
-        application/json:
-          schema:
-            $ref: '#/components/schemas/ApiError'
-
-    NotFound:
-      description: The requested resource was not found.
-      content:
-        application/json:
-          schema:
-            $ref: '#/components/schemas/ApiError'
-
-    PayloadTooLarge:
-      description: The request is too large for the server to process.
-      content:
-        application/json:
-          schema:
-            $ref: '#/components/schemas/ApiError'
-
-    InternalServerError:
-      description: Unexpected server error.
-      content:
-        application/json:
-          schema:
-            $ref: '#/components/schemas/ApiError'
-
-
 paths:
   /collections:
     post:
@@ -1294,19 +25,26 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/collection-body'
-            example: { "id": "aist_waterfront_lab", title: "AIST Waterfront Lab IndoorGML", description: "Experimental IndoorGML data for AIST project", itemType: "indoorfeature" }       
+              $ref: './schemas/collections_post.yml'
+            example: 
+              $ref: './examples/collection_post.json'
       responses:
         '201': 
           description: Successfully created a collection to manage indoor features.
+          headers:
+            Location:
+              description: The URI of the newly created collection.
+              schema:
+                type: string
+                example: "https://data.example.org/collections/tokyo_odaiba"
         '409':
           description: A collection with the specified Id already exists.
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ApiError'
+                $ref: './schemas/ApiError.yml'
         '500': 
-          $ref: '#/components/responses/InternalServerError'
+          $ref: './responses/InternalServerError.yml'
     get:
       summary: Retrieve catalogs of indoor feature collections
       description: |
@@ -1317,15 +55,15 @@ paths:
       operationId: getCollections
       responses:
         '200':
-          $ref: '#/components/responses/Collections'
+          $ref: './responses/Collections.yml'
         '401':
-          $ref: '#/components/responses/Unauthorized'
+          $ref: './responses/unauthorized.yml'
         '500':
-          $ref: '#/components/responses/InternalServerError'
+          $ref: './responses/InternalServerError.yml'
 
   /collections/{collectionId}:
     parameters:
-      - $ref: '#/components/parameters/collectionId'
+      - $ref: './parameters/collectionId.yml'
     get:
       summary: Access metadata about the collection
       description: |
@@ -1335,16 +73,16 @@ paths:
       operationId: getCollection
       responses:
         '200':
-          $ref: '#/components/responses/Collection'
+          $ref: './responses/collection.yml'
         '401':
-          $ref: '#/components/responses/Unauthorized'
+          $ref: './responses/unauthorized.yml'
         '404':
-          $ref: '#/components/responses/NotFound'
+          $ref: './responses/notFound.yml'
         '500':
-          $ref: '#/components/responses/InternalServerError'
+          $ref: './responses/internalServerError.yml'
     patch:
       parameters:
-        - $ref: '#/components/parameters/collectionId'
+        - $ref: './parameters/collectionId.yml'
       summary: Replace metadata about the collection
       description: |
         A user SHOULD replace metadata with `collectionId`.
@@ -1371,15 +109,15 @@ paths:
               description: "This is the updated description for the indoor feature collection."
       responses:
         '200':
-          $ref: '#/components/responses/Collection'
+          $ref: './responses/collection.yml'
         '400':
-          $ref: '#/components/responses/BadRequest'
+          $ref: './responses/badRequest.yml'
         '401':
-          $ref: '#/components/responses/Unauthorized'
+          $ref: './responses/unauthorized.yml'
         '404':
-          $ref: '#/components/responses/NotFound'
+          $ref: './responses/notFound.yml'
         '500':
-          $ref: '#/components/responses/InternalServerError'
+          $ref: './responses/internalServerError.yml'
     delete:
       summary: Deletes a collection
       description: |
@@ -1389,19 +127,19 @@ paths:
       operationId: deleteCollection
       responses:
         '204':
-          $ref: '#/components/responses/NoContent'
+          $ref: './responses/noContent.yml'
         '401':
-          $ref: '#/components/responses/Unauthorized'
+          $ref: './responses/unauthorized.yml'
         '403':
-          $ref: '#/components/responses/Forbidden' 
+          $ref: './responses/forbidden.yml'
         '404':
-          $ref: '#/components/responses/NotFound'
+          $ref: './responses/notFound.yml'
         '500':
-          $ref: '#/components/responses/InternalServerError'
+          $ref: './responses/internalServerError.yml'
 
   /collections/{collectionId}/items:
     parameters:
-      - $ref: '#/components/parameters/collectionId'
+      - $ref: './parameters/collectionId.yml'
     post:
       summary: Insert indoor features
       description: |
@@ -1416,32 +154,32 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/IndoorJSON'
+              $ref: './schemas/indoorJSON.yml'
       responses:
         '201': 
           description: Successfully created an indoorFeature into a specific collection.
         '400':
-          $ref: '#/components/responses/BadRequest'
+          $ref: './responses/badRequest.yml'
         '404':
-          $ref: '#/components/responses/NotFound'
+          $ref: './responses/notFound.yml'
         '413':
-          $ref: '#/components/responses/PayloadTooLarge'
+          $ref: './responses/payloadTooLarge.yml'
         '422':
           description: Unprocessable Entity (Missing Required ThematicLayer).
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ApiError'
+                $ref: './schemas/ApiError.yml'
         '500': 
-          $ref: '#/components/responses/InternalServerError'
+          $ref: './responses/InternalServerError.yml'
 
     get:
       tags: [IndoorFeatures]
       summary: Retrieve indoor feature collection
       operationId: getIndoorFeatures
       parameters:
-        - $ref: '#/components/parameters/collectionId'
-        - $ref: '#/components/parameters/limit'
+        - $ref: './parameters/collectionId.yml'
+        - $ref: './parameters/limit.yml'
           bbox:
             name: bbox
             in: query
@@ -1469,16 +207,16 @@ paths:
               type: string
       responses:
         '200':
-          $ref: '#/components/responses/Features'
+          $ref: './responses/features.yml'
         '404':
           description: A collection with the specified id was not found.
         '500':
-          $ref: '#/components/responses/InternalServerError'
+          $ref: './responses/InternalServerError.yml'
   
   /collections/{collectionId}/items/{fId}:
     parameters:
-      - $ref: '#/components/parameters/collectionId'
-      - $ref: '#/components/parameters/fId'
+      - $ref: './parameters/collectionId.yml'
+      - $ref: './parameters/featureId.yml'
     get:
       tags:
         - IndoorFeatures
@@ -1490,25 +228,25 @@ paths:
         If both are not provided, only the metadata within the properties is returned.
       operationId: getFeature
       parameters:
-        - $ref: '#/components/parameters/bbox'
-        - $ref: '#/components/parameters/level'
+        - $ref: './parameters/bbox.yml'
+        - $ref: './parameters/level.yml'
       responses:
         '200':
           description: Success. Returns a GeoJSON Feature representing the IndoorGML model.
           content:
             application/geo+json:
               schema:
-                $ref: '#/components/schemas/featureGeoJSON'
+                $ref: './schemas/featureGeoJSON.yml'
         '400':
           description: Bad Request (e.g., invalid bbox or level).
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ApiError'
+                $ref: './schemas/ApiError.yml'
         '404':
-          $ref: '#/components/responses/NotFound'
+          $ref: './responses/notFound.yml'
         '500':
-          $ref: '#/components/responses/InternalServerError'
+          $ref: './responses/InternalServerError.yml'
 
     delete:
       tags:
@@ -1522,18 +260,18 @@ paths:
       operationId: deleteFeature
       responses:
         '204':
-          $ref: '#/components/responses/NoContent'
+          $ref: './responses/noContent.yml'
         '401':
-          $ref: '#/components/responses/Unauthorized'
+          $ref: './responses/unauthorized.yml'
         '403':
-          $ref: '#/components/responses/Forbidden'
+          $ref: './responses/forbidden.yml'
         '404':
-          $ref: '#/components/responses/NotFound'
+          $ref: './responses/notFound.yml'
 
   /collections/{collectionId}/items/{fId}/layers:
     parameters:
-      - $ref: '#/components/parameters/collectionId'
-      - $ref: '#/components/parameters/fId'
+      - $ref: './parameters/collectionId.yml'
+      - $ref: './parameters/featureId.yml'
     post:
       tags:
         - ThematicLayers
@@ -1551,7 +289,7 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/ThematicLayer'
+              $ref: './schemas/thematicLayer.yml'
       responses:
         '201':
           description: Success. The layer was validated and stored.
@@ -1561,15 +299,15 @@ paths:
               schema:
                 type: string
         '400':
-          $ref: '#/components/responses/BadRequest'
+          $ref: './responses/badRequest.yml'
         '404':
-          $ref: '#/components/responses/NotFound'
+          $ref: './responses/notFound.yml'
         '409':
           description: Conflict. A ThematicLayer with the same Id already exists within this IndoorFeature
-          $ref: '#/components/schemas/ApiError'
+          $ref: './schemas/ApiError.yml'
         '422':
           description: Unprocessable Entity (Non-unique Ids included).
-          $ref: '#/components/schemas/ApiError'
+          $ref: './schemas/ApiError.yml'
 
 
     get:
@@ -1581,8 +319,8 @@ paths:
         Without the level parameter, it would show all the thematic layers.
       operationId: getThematicLayers
       parameters:
-        - $ref: '#/components/parameters/limit'
-        - $ref: '#/components/parameters/theme'
+        - $ref: './parameters/limit.yml'
+        - $ref: './parameters/theme.yml'
         - name: level
           in: query
           required: false
@@ -1598,19 +336,19 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ThematicLayerList'
+                $ref: './schemas/ThematicLayerList.yml'
         '400':
-          $ref: '#/components/responses/BadRequest'
+          $ref: './responses/badRequest.yml'
         '404':
-          $ref: '#/components/responses/NotFound'
+          $ref: './responses/notFound.yml'
         '500':
-          $ref: '#/components/responses/InternalServerError'
+          $ref: './responses/internalServerError.yml'
   
   /collections/{collectionId}/items/{fId}/interlayerconnections:
     parameters:
-      - $ref: '#/components/parameters/collectionId'
-      - $ref: '#/components/parameters/fId'
-    
+      - $ref: './parameters/collectionId.yml'
+      - $ref: './parameters/featureId.yml'
+
     post:
       tags:
         - InterLayerConnections
@@ -1626,14 +364,14 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/InterLayerConnection'
+              $ref: './schemas/interLayerConnection.yml'
       responses:
         '201':
           description: Created successfully.
         '400':
           description: Bad Request (Missing fields or array length != 2).
         '404':
-          $ref: '#/components/responses/NotFound'
+          $ref: './responses/notFound.yml'
         '422':
           description: Unprocessable Entity (Logical ID mismatch).
 
@@ -1644,29 +382,29 @@ paths:
       description: Returns all inter-layer connections, with optional filtering by layer or topological Expression.
       operationId: getInterLayerConnections
       parameters:
-        - $ref: '#/components/parameters/connectedLayerId'
-        - $ref: '#/components/parameters/typeOfTopoExpression'
-        - $ref: '#/components/parameters/limit'
+        - $ref: './parameters/connectedLayerId.yml'
+        - $ref: './parameters/typeOfTopoExpression.yml'
+        - $ref: './parameters/limit.yml'
       responses:
         '200':
           description: Successfully retrieved list of connection(s).
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/InterLayerConnections'
+                $ref: './schemas/interLayerConnections.yml'
         '400':
-          $ref: '#/components/responses/BadRequest'
+          $ref: './responses/badRequest.yml'
         '404':
-          $ref: '#/components/responses/NotFound'
+          $ref: './responses/notFound.yml'
         '500':
-          $ref: '#/components/responses/InternalServerError'
+          $ref: './responses/internalServerError.yml'
 
   /collections/{collectionId}/items/{fId}/interlayerconnections/{cnId}:
     parameters:
-      - $ref: '#/components/parameters/collectionId'
-      - $ref: '#/components/parameters/fId'
-      - $ref: '#/components/parameters/cnId'
-    
+      - $ref: './parameters/collectionId.yml'
+      - $ref: './parameters/featureId.yml'
+      - $ref: './parameters/cnId.yml'
+
     delete:
       tags:
         - InterLayerConnections
@@ -1677,19 +415,19 @@ paths:
         '204':
           description: No Content. The connection was successfully deleted.
         '401':
-          $ref: '#/components/responses/Unauthorized'
+          $ref: './responses/unauthorized.yml'
         '403':
-          $ref: '#/components/responses/Forbidden'
+          $ref: './responses/forbidden.yml'
         '404':
-          $ref: '#/components/responses/NotFound'
+          $ref: './responses/notFound.yml'
         '500':
-          $ref: '#/components/responses/InternalServerError'
+          $ref: './responses/internalServerError.yml'
 
   /collections/{collectionId}/items/{fId}/layers/{tId}:
     parameters:
-          - $ref: '#/components/parameters/collectionId'
-          - $ref: '#/components/parameters/fId'
-          - $ref: '#/components/parameters/tId'
+          - $ref: './parameters/collectionId.yml'
+          - $ref: './parameters/featureId.yml'
+          - $ref: './parameters/tId.yml'
     get:
       tags:
         - ThematicLayers
@@ -1702,8 +440,8 @@ paths:
         The 'dualSpace' will be returned non-filtered.
       operationId: getThematicLayer
       parameters:
-        - $ref: '#/components/parameters/level'
-        - $ref: '#/components/parameters/bbox'
+        - $ref: './parameters/level.yml'
+        - $ref: './parameters/bbox.yml'
       responses:
         '200':
           description: Successfully retrieved a single thematic layer.
@@ -1711,16 +449,16 @@ paths:
             application/json:
               schema:
                 oneOf:
-                  - $ref: '#/components/schemas/ThematicLayerSummary'
-                  - $ref: '#/components/schemas/ThematicLayer'
+                  - $ref: './schemas/thematicLayerSummary.yml'
+                  - $ref: './schemas/thematicLayer.yml'
         '400':
-          $ref: '#/components/responses/BadRequest'
+          $ref: './responses/badRequest.yml'
         '401':
-          $ref: '#/components/responses/Unauthorized'
+          $ref: './responses/unauthorized.yml'
         '404':
-          $ref: '#/components/responses/NotFound'
+          $ref: './responses/notFound.yml'
         '500':
-          $ref: '#/components/responses/InternalServerError'
+          $ref: './responses/internalServerError.yml'
 
     delete:
       tags:
@@ -1732,22 +470,22 @@ paths:
       operationId: deleteThematicLayer
       responses:
         '204':
-          $ref: '#/components/responses/NoContent'
+          $ref: './responses/noContent.yml'
         '401':
-          $ref: '#/components/responses/Unauthorized'
+          $ref: './responses/unauthorized.yml'
         '403':
-          $ref: '#/components/responses/Forbidden'
+          $ref: './responses/forbidden.yml'
         '404':
-          $ref: '#/components/responses/NotFound'
+          $ref: './responses/notFound.yml'
         '500':
-          $ref: '#/components/responses/InternalServerError'
+          $ref: './responses/internalServerError.yml'
 
   /collections/{collectionId}/items/{fId}/layers/{tId}/primal:
     parameters:
-      - $ref: '#/components/parameters/collectionId'
-      - $ref: '#/components/parameters/fId'
-      - $ref: '#/components/parameters/tId'
-    
+      - $ref: './parameters/collectionId.yml'
+      - $ref: './parameters/featureId.yml'
+      - $ref: './parameters/tId.yml'
+
     get:
       tags:
         - PrimalSpaceLayer
@@ -1757,24 +495,24 @@ paths:
         Supports spatial filtering via `bbox`, `level` and logical filtering via `poi`/`isVirtual`.
       operationId: getPrimalSpace
       parameters:
-        - $ref: '#/components/parameters/bbox'
-        - $ref: '#/components/parameters/level'
-        - $ref: '#/components/parameters/poi'
-        - $ref: '#/components/parameters/isVirtual'
-        - $ref: '#/components/parameters/cellSpaceName'
+        - $ref: './parameters/bbox.yml'
+        - $ref: './parameters/level.yml'
+        - $ref: './parameters/poi.yml'
+        - $ref: './parameters/isVirtual.yml'
+        - $ref: './parameters/cellSpaceName.yml'
       responses:
         '200':
           description: Success. Returns the PrimalSpaceLayer.
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/PrimalSpaceLayer'
+                $ref: './schemas/primalSpaceLayer.yml'
         '400':
-          $ref: '#/components/responses/BadRequest'
+          $ref: './responses/badRequest.yml'
         '404':
-          $ref: '#/components/responses/NotFound'
+          $ref: './responses/notFound.yml'
         '500':
-          $ref: '#/components/responses/InternalServerError'
+          $ref: './responses/internalServerError.yml'
 
     post:
       tags:
@@ -1797,24 +535,24 @@ paths:
           application/json:
             schema:
               oneOf:
-                - $ref: '#/components/schemas/CellSpace'
-                - $ref: '#/components/schemas/CellBoundary'
+                - $ref: './schemas/cellSpace.yml'
+                - $ref: './schemas/cellBoundary.yml'
       responses:
         '201':
           description: Created successfully.
         '400':
-          $ref: '#/components/responses/BadRequest'
+          $ref: './responses/badRequest.yml'
         '409':
           description: Conflict. Duality link already exists for that duality reference.
         '500':
-          $ref: '#/components/responses/InternalServerError'
+          $ref: './responses/internalServerError.yml'
 
   /collections/{collectionId}/items/{fId}/layers/{tId}/dual:
     parameters:
-      - $ref: '#/components/parameters/collectionId'
-      - $ref: '#/components/parameters/fId'
-      - $ref: '#/components/parameters/tId'
-    
+      - $ref: './parameters/collectionId.yml'
+      - $ref: './parameters/featureId.yml'
+      - $ref: './parameters/tId.yml'
+
     post:
       tags:
         - DualSpaceLayer
@@ -1831,23 +569,23 @@ paths:
           application/json:
             schema:
               oneOf:
-                - $ref: '#/components/schemas/Node'
-                - $ref: '#/components/schemas/Edge'
+                - $ref: './schemas/node.yml'
+                - $ref: './schemas/edge.yml'
       responses:
         '201':
           description: Created successfully.
         '400':
-          $ref: '#/components/responses/BadRequest'
+          $ref: './responses/badRequest.yml'
         '401':
-          $ref: '#/components/responses/Unauthorized'
+          $ref: './responses/unauthorized.yml'
         '404':
-          $ref: '#/components/responses/NotFound'
+          $ref: './responses/notFound.yml'
         '409':
           description: this edgeId or nodeId already exists in this indoorFeature.
         '422':
           description: Unprocessable Entity (Node missing duality dependency).
         '500':
-          $ref: '#/components/responses/InternalServerError'
+          $ref: './responses/internalServerError.yml'
 
     get:
       tags:
@@ -1858,9 +596,9 @@ paths:
         When filtered by weights, the response includes not only the regarding edges, but also only the connected nodes to those edges.
       operationId: getDualSpace
       parameters:
-        - $ref: '#/components/parameters/collectionId'
-        - $ref: '#/components/parameters/fId'
-        - $ref: '#/components/parameters/tId'
+        - $ref: './parameters/collectionId.yml'
+        - $ref: './parameters/featureId.yml'
+        - $ref: './parameters/tId.yml'
         - name: minWeight
           in: query
           schema: { type: number, minimum: 0 }
@@ -1875,73 +613,71 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/DualSpaceLayer'
+                $ref: './schemas/dualSpaceLayer.yml'
         '400':
-          $ref: '#/components/responses/BadRequest'
+          $ref: './responses/badRequest.yml'
         '404':
-          $ref: '#/components/responses/NotFound'
+          $ref: './responses/notFound.yml'
         '500':
-          $ref: '#/components/responses/InternalServerError'
+          $ref: './responses/internalServerError.yml'
 
-  /collections/{collectionId}/items/{fId}/layers/{tId}/geoquery:
-    parameters:
-      - $ref: '#/components/parameters/collectionId'
-      - $ref: '#/components/parameters/fId'
-      - $ref: '#/components/parameters/tId'
-    get:
-      tags:
-          - Services
-      summary: Performs a geometric query against CellSpace geometries
-      description: Performs a 2D geometric predicate query against CellSpace geometries within a specified indoor level.
-      operationId: geometricQuery
-      parameters:
-        - $ref: '#/components/parameters/collectionId'
-        - $ref: '#/components/parameters/fId'
-        - $ref: '#/components/parameters/tId'
-        - $ref: '#/components/parameters/op'
-        - $ref: '#/components/parameters/level'
-        - $ref: '#/components/parameters/geometry'
-      responses:
-        '200':
-          description: Returns the GeoQueryResults.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/GeoQueryResults'
-        '404':
-          description: Invalid path parameter.
+  # /collections/{collectionId}/items/{fId}/layers/{tId}/geoquery:
+  #   parameters:
+  #     - $ref: './parameters/collectionId.yml'
+  #     - $ref: './parameters/featureId.yml'
+  #     - $ref: './parameters/tId.yml'
+  #   get:
+  #     tags:
+  #         - Services
+  #     summary: Performs a geometric query agains CellSpace geometries
+  #     description: Performs a 2D geometric predicate query against CellSpace geometries within a specified indoor level.
+  #     operationId: geometricQuery
+  #     parameters:
+  #       - $ref: './parameters/op.yml'
+  #       - $ref: './parameters/level.yml'
+  #       - $ref: './parameters/geometry.yml'
+  #       - $ref: './parameters/limit.yml'
+  #     responses:
+  #       '200':
+  #         description: Returns the GeoQueryResults.
+  #         content:
+  #           application/json:
+  #             schema:
+  #               $ref: '#/components/schemas/GeoQueryResults'
+  #       '404':
+  #         description: Invalid path parameter.
 
-  /collections/{collectionId}/items/{fId}/layers/{tId}/dual/route:
-    parameters:
-      - $ref: '#/components/parameters/collectionId'
-      - $ref: '#/components/parameters/fId'
-      - $ref: '#/components/parameters/tId'
-    get:
-      tags:
-        - Services
-      summary: Compute an indoor route using the dual graph
-      description: Computes a navigable route between two nodes within an IndoorFeature using the dual graph of the specified thematic layer.
-      operationId: computeIndoorRoute
-      parameters:
-        - $ref: '#/components/parameters/sn'
-        - $ref: '#/components/parameters/dn'
-      responses:
-        '200':
-          description: Returns the RouteResults.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/RouteResults'
-        '404':
-          description: Invalid path parameter.
+  # /collections/{collectionId}/items/{fId}/layers/{tId}/dual/route:
+  #   parameters:
+  #     - $ref: './parameters/collectionId.yml'
+  #     - $ref: './parameters/featureId.yml'
+  #     - $ref: './parameters/tId.yml'
+  #   get:
+  #     tags:
+  #       - Services
+  #     summary: Compute an indoor route using the dual graph
+  #     description: Computes a navigable route between two nodes within an IndoorFeature using the dual graph of the specified thematic layer.
+  #     operationId: computeIndoorRoute
+  #     parameters:
+  #       - $ref: './parameters/sn.yml'
+  #       - $ref: './parameters/dn.yml'
+  #     responses:
+  #       '200':
+  #         description: Returns the RouteResults.
+  #         content:
+  #           application/json:
+  #             schema:
+  #               $ref: '#/components/schemas/RouteResults'
+  #       '404':
+  #         description: Invalid path parameter.
 
   /collections/{collectionId}/items/{fId}/layers/{tId}/primal/{mId}:
     parameters:
-      - $ref: '#/components/parameters/collectionId'
-      - $ref: '#/components/parameters/fId'
-      - $ref: '#/components/parameters/tId'
-      - $ref: '#/components/parameters/mId'
-    
+      - $ref: './parameters/collectionId.yml'
+      - $ref: './parameters/featureId.yml'
+      - $ref: './parameters/tId.yml'
+      - $ref: './parameters/mId.yml'
+
     get:
       tags:
         - PrimalSpaceLayer
@@ -1957,11 +693,11 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/CellSpace'
+                $ref: './schemas/cellSpace.yml'
         '404':
-          $ref: '#/components/responses/NotFound'
+          $ref: './responses/notFound.yml'
         '500':
-          $ref: '#/components/responses/InternalServerError'
+          $ref: './responses/internalServerError.yml'
 
     patch:
       tags:
@@ -1974,22 +710,22 @@ paths:
         content:
           application/merge-patch+json:
             schema:
-              $ref: '#/components/schemas/CellSpaceUpdate'
+              $ref: './schemas/cellSpaceUpdate.yml'
       responses:
         '200':
           description: Success. Returns the updated CellSpace.
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/CellSpace'
+                $ref: './schemas/cellSpace.yml'
         '400':
-          $ref: '#/components/responses/BadRequest'
+          $ref: './responses/badRequest.yml'
         '401':
-          $ref: '#/components/responses/Unauthorized'
+          $ref: './responses/unauthorized.yml'
         '403':
-          $ref: '#/components/responses/Forbidden'
+          $ref: './responses/forbidden.yml'
         '404':
-          $ref: '#/components/responses/NotFound'
+          $ref: './responses/notFound.yml'
         '422':
           description: Unprocessable Entity. Attempted to modify restricted fields.
 
@@ -2006,22 +742,22 @@ paths:
         '204':
           description: Deleted successfully.
         '400':
-          $ref: '#/components/responses/BadRequest'
+          $ref: './responses/badRequest.yml'
         '401':
-          $ref: '#/components/responses/Unauthorized'
+          $ref: './responses/unauthorized.yml'
         '403':
-          $ref: '#/components/responses/Forbidden'
+          $ref: './responses/forbidden.yml'
         '404':
-          $ref: '#/components/responses/NotFound'
+          $ref: './responses/notFound.yml'
         '500':
-          $ref: '#/components/responses/InternalServerError'
+          $ref: './responses/internalServerError.yml'
 
   /collections/{collectionId}/items/{fId}/layers/{tId}/primal/{mId}/bounding:
     parameters:
-        - $ref: '#/components/parameters/collectionId'
-        - $ref: '#/components/parameters/fId'
-        - $ref: '#/components/parameters/tId'
-        - $ref: '#/components/parameters/mId'
+        - $ref: './parameters/collectionId.yml'
+        - $ref: './parameters/featureId.yml'
+        - $ref: './parameters/tId.yml'
+        - $ref: './parameters/mId.yml'
     get:
       tags:
         - Services
@@ -2035,16 +771,18 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/BoundingCellsResults'
+                $ref: './schemas/cellSpace.yml'
         '404':
           description: CellBoundary not found.
+        '500':
+          $ref: './responses/InternalServerError.yml'
 
   /collections/{collectionId}/items/{fId}/layers/{tId}/dual/{mId}/connected:
     parameters:
-      - $ref: '#/components/parameters/collectionId'
-      - $ref: '#/components/parameters/fId'
-      - $ref: '#/components/parameters/tId'
-      - $ref: '#/components/parameters/mId'
+      - $ref: './parameters/collectionId.yml'
+      - $ref: './parameters/featureId.yml'
+      - $ref: './parameters/tId.yml'
+      - $ref: './parameters/mId.yml'
 
     get:
       tags:
@@ -2054,24 +792,26 @@ paths:
         Returns nodes and their associated cell spaces that are connectively reachable from the given node within the indoor dual graph.
       operationId: getConnectedNodes
       parameters:
-        - $ref: '#/components/parameters/limit'
-        - $ref: '#/components/parameters/hop'
+        - $ref: './parameters/limit.yml'
+        - $ref: './parameters/hop.yml'
       responses:
         '200':
           description: Successfully retrieved the Node and CellSpaces.
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ConnectedResults'
+                $ref: './schemas/connectedResults.yml'
         '404':
-          description: Node ID not found in this thematic layer.     
+          description: Node ID not found in this thematic layer.
+        '500':
+          $ref: './responses/InternalServerError.yml'     
 
   /collections/{collectionId}/items/{fId}/layers/{tId}/dual/{mId}:
     parameters:
-      - $ref: '#/components/parameters/collectionId'
-      - $ref: '#/components/parameters/fId'
-      - $ref: '#/components/parameters/tId'
-      - $ref: '#/components/parameters/mId'
+      - $ref: './parameters/collectionId.yml'
+      - $ref: './parameters/featureId.yml'
+      - $ref: './parameters/tId.yml'
+      - $ref: './parameters/mId.yml'
 
     get:
       tags:
@@ -2088,11 +828,13 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Edge'
+                $ref: './schemas/edge.yml'
         '404':
           description: Edge not found.
         '400':
           description: Invalid ID supplied.
+        '500':
+          $ref: './responses/InternalServerError.yml'
 
     patch:
       tags:
@@ -2104,18 +846,20 @@ paths:
         content:
           application/merge-patch+json:
             schema:
-              $ref: '#/components/schemas/EdgeWeightUpdate'
+              $ref: './schemas/edgeWeightUpdate.yml'
       responses:
         '200':
           description: Successfully updated the edge weight.
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Edge' # Returns the full object with the new weight
+                $ref: './schemas/edge.yml'
         '400':
           description: Bad Request (e.g., invalid weight value).
         '404':
           description: Edge ID not found.
+        '500':
+          $ref: './responses/InternalServerError.yml'
 
     delete:
       tags:
@@ -2130,3 +874,5 @@ paths:
           description: Successfully deleted.
         '404':
           description: Edge ID not found.
+        '500':
+          $ref: './responses/InternalServerError.yml'

@@ -1,0 +1,5 @@
+description: Authentication credentials were missing or invalid.
+content:
+  application/json:
+    schema:
+      $ref: '../schemas/apiError.yml'

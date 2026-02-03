@@ -1,0 +1,27 @@
+type: object
+title: ThematicLayer
+required:
+  - id
+  - featureType
+  - semanticExtension
+  - theme
+properties:
+  id:
+    type: string
+  featureType:
+    type: string
+    enum:
+      - ThematicLayer
+  semanticExtension:
+    type: boolean
+  theme:
+    type: string
+    enum:
+      - Virtual
+      - Physical
+      - Tags
+      - Unknown
+  primalSpace:
+    $ref: './primalSpaceLayer.yml'
+  dualSpace:
+    $ref: './dualSpaceLayer.yml'

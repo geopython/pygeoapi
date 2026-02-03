@@ -1,0 +1,14 @@
+CellSpaceUpdate:
+      type: object
+      title: CellSpaceUpdate
+      description: "Available fields for partial update. All fields are optional."
+      properties:
+        cellSpaceName:
+          type: string
+          example: "Conference Room A"
+        level:
+          type: integer
+          example: 2
+        poi:
+          type: string
+          example: "Restroom"

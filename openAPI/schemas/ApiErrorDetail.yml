@@ -1,0 +1,23 @@
+type: object
+additionalProperties: false
+required:
+  - target
+  - message
+properties:
+  target:
+    type: string
+    description: The parameter or field that caused the error.
+    example: "ex) geometry"
+  message:
+    type: string
+    description: Explanation for the target field.
+    example: "ex) Failed to parse WKT geometry."
+  value:
+    description: The provided value that caused the error (optional).
+    oneOf:
+      - type: string
+      - type: number
+      - type: integer
+      - type: boolean
+      - type: object
+      - type: array

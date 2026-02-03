@@ -1,0 +1,7 @@
+description: The metadata being returned.
+content:
+  application/json:
+    schema:
+      $ref: '../schemas/collection.yml'
+    example:
+      $ref: '../examples/collection.json'

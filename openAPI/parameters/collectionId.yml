@@ -1,0 +1,7 @@
+collectionId:
+      name: collectionId
+      in: path
+      description: Local identifier of a collection (e.g., 'AIST_Waterfront').
+      required: true
+      schema:
+        type: string

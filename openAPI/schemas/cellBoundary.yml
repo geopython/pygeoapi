@@ -1,0 +1,27 @@
+type: object
+title: CellBoundary
+required:
+  - id
+  - featureType
+  - isVirtual
+properties:
+  id:
+    type: string
+  featureType:
+    type: string
+    enum:
+      - CellBoundary
+  isVirtual:
+    type: boolean
+  duality:
+    type: string
+    format: uri-reference
+  cellBoundaryGeom:
+    type: object
+    properties:
+      geometry2D:
+        $ref: 'https://beta.schemas.opengis.net/json-fg/geometry-object.json#/$defs/LineString'
+      geometry3D:
+        $ref: 'https://beta.schemas.opengis.net/json-fg/geometry-object.json#/$defs/Polygon'
+  externalReference:
+    $ref: './externalReferenceType.yml'

@@ -1,0 +1,35 @@
+type: object
+required:
+  - id
+  - title
+  - itemType
+  - links
+properties:
+  id:
+    type: string
+  title:
+    type: string
+  description:
+    type: string
+  itemType:
+    type: string
+    default: "indoorfeature"
+  links:
+    type: array
+    items:
+        $ref: 'https://schemas.opengis.net/ogcapi/features/part1/1.0/openapi/schemas/link.yaml'
+    example:
+      - href: "http://data.example.com/collections/tokyo_odaiba"
+        rel: "self"
+  extent:
+    $ref: 'https://schemas.opengis.net/ogcapi/features/part1/1.0/openapi/schemas/extent.yaml'
+  crs:
+    description: "the list of coordinate reference systems supported by the service"
+    type: array
+    items:
+      type: string
+    default:
+      - https://www.opengis.net/def/crs/OGC/1.3/CRS84
+    example:
+      - https://www.opengis.net/def/crs/OGC/1.3/CRS84
+      - https://www.opengis.net/def/crs/EPSG/0/4326

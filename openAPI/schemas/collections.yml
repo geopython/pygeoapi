@@ -1,0 +1,13 @@
+type: object
+required:
+  - collections
+  - links
+properties:
+  collections:
+    type: array
+    items:
+      $ref: 'collection.yml'
+  links:
+    type: array
+    items:
+      $ref: 'https://schemas.opengis.net/ogcapi/features/part1/1.0/openapi/schemas/link.yaml'

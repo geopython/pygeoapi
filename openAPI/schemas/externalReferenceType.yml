@@ -1,0 +1,11 @@
+ExternalReferenceType:
+      type: object
+      required: [externalObject, informationSystem]
+      properties:
+        externalObject:
+          type: object
+          required: [name, uri]
+          properties:
+            name: { type: string }
+            uri: { type: string, format: uri }
+        informationSystem: { type: string, format: uri }

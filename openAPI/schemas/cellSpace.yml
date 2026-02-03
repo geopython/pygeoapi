@@ -1,0 +1,37 @@
+type: object
+title: CellSpace
+required:
+  - id
+  - featureType
+  - poi
+properties:
+  id:
+    type: string
+  featureType:
+    type: string
+    enum:
+      - CellSpace
+  cellSpaceName:
+    type: string
+  level:
+    type: string
+  poi:
+    type: boolean
+  duality:
+    type: string
+    format: uri-reference
+  cellSpaceGeom:
+    type: object
+    properties:
+      geometry2D:
+        $ref: 'https://beta.schemas.opengis.net/json-fg/geometry-object.json#/$defs/Polygon'
+      geometry3D:
+        $ref: 'https://beta.schemas.opengis.net/json-fg/geometry-object.json#/$defs/Polyhedron'
+  boundedBy:
+    type: array
+    uniqueItems: true
+    items:
+      type: string
+      format: uri-reference
+  externalReference:
+    $ref: './externalReferenceType.yml'

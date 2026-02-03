@@ -1,0 +1,131 @@
+{
+  "collections": [
+    {
+      "id": "indoor-pnu",
+      "title": "PNU STEMLab Indoor Features",
+      "description": "Physical rooms and logical nodes from IndoorJSON.",
+      "keywords": [
+        "IndoorGML",
+        "PNU"
+      ],
+      "links": [
+        {
+          "type": "application/json",
+          "rel": "root",
+          "title": "The landing page of this server as JSON",
+          "href": "https://data.example.org?f=json"
+        },
+        {
+          "type": "text/html",
+          "rel": "root",
+          "title": "The landing page of this server as HTML",
+          "href": "https://data.example.org?f=html"
+        },
+        {
+          "type": "application/json",
+          "rel": "self",
+          "title": "This document as JSON",
+          "href": "https://data.example.org/collections/indoor-pnu?f=json"
+        },
+        {
+          "type": "application/ld+json",
+          "rel": "alternate",
+          "title": "This document as RDF (JSON-LD)",
+          "href": "https://data.example.org/collections/indoor-pnu?f=jsonld"
+        },
+        {
+          "type": "text/html",
+          "rel": "alternate",
+          "title": "This document as HTML",
+          "href": "https://data.example.org/collections/indoor-pnu?f=html"
+        },
+        {
+          "type": "application/geo+json",
+          "rel": "items",
+          "title": "Items as GeoJSON",
+          "href": "https://data.example.org/collections/indoor-pnu/items?f=json"
+        },
+        {
+          "type": "text/html",
+          "rel": "items",
+          "title": "Items as HTML",
+          "href": "https://data.example.org/collections/indoor-pnu/items?f=html"
+        },
+        {
+          "type": "application/schema+json",
+          "rel": "http://www.opengis.net/def/rel/ogc/1.0/queryables",
+          "title": "Queryables for this collection as JSON",
+          "href": "https://data.example.org/collections/indoor-pnu/queryables?f=json"
+        }
+      ],
+      "extent": {
+        "spatial": {
+          "bbox": [
+            [0, 0, 4, 2]
+          ],
+          "crs": "http://www.opengis.net/def/crs/OGC/1.3/CRS84"
+        }
+      },
+      "itemType": "feature"
+    },
+    {
+      "id": "aist_waterfront_lab",
+      "title": "AIST Waterfront Lab IndoorGML",
+      "description": "IndoorGML data for AIST Waterfront Lab IndoorGML",
+      "itemType": "indoorfeature",
+      "keywords": [],
+      "links": [
+        {
+          "type": "application/schema+json",
+          "rel": "http://www.opengis.net/def/rel/ogc/1.0/queryables",
+          "title": "Queryables for this collection as JSON",
+          "href": "https://data.example.org/collections/aist_waterfront_lab/queryables?f=json"
+        },
+        {
+          "type": "application/json",
+          "rel": "root",
+          "title": "The landing page of this server as JSON",
+          "href": "https://data.example.org?f=json"
+        },
+        {
+          "type": "application/json",
+          "rel": "self",
+          "title": "This document as JSON",
+          "href": "https://data.example.org/collections/aist_waterfront_lab?f=json"
+        },
+        {
+          "type": "application/geo+json",
+          "rel": "items",
+          "title": "Items as GeoJSON",
+          "href": "https://data.example.org/collections/aist_waterfront_lab/items?f=json"
+        },
+        {
+          "type": "text/html",
+          "rel": "items",
+          "title": "Items as HTML",
+          "href": "https://data.example.org/collections/aist_waterfront_lab/items?f=html"
+        }
+      ]
+    }
+  ],
+  "links": [
+    {
+      "type": "application/json",
+      "rel": "self",
+      "title": "This document as JSON",
+      "href": "https://data.example.org/collections?f=json"
+    },
+    {
+      "type": "application/ld+json",
+      "rel": "alternate",
+      "title": "This document as RDF (JSON-LD)",
+      "href": "https://data.example.org/collections?f=jsonld"
+    },
+    {
+      "type": "text/html",
+      "rel": "alternate",
+      "title": "This document as HTML",
+      "href": "https://data.example.org/collections?f=html"
+    }
+  ]
+}

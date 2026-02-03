@@ -1,0 +1,30 @@
+type: object
+title: PrimalSpaceLayer
+required:
+  - id
+  - featureType
+  - cellSpaceMember
+properties:
+  id:
+    type: string
+  featureType:
+    type: string
+    enum:
+      - PrimalSpaceLayer
+  creationDatetime:
+    type: string
+    format: date-time
+  terminationDatetime:
+    type: string
+    format: date-time
+  cellSpaceMember:
+    type: array
+    minItems: 1
+    uniqueItems: true
+    items:
+      $ref: './cellSpace.yml'
+  cellBoundaryMember:
+    type: array
+    uniqueItems: true
+    items:
+      $ref: './cellBoundary.yml'
