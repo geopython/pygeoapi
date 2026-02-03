@@ -1,0 +1,18 @@
+type: object
+required:
+  - id
+  - title
+  - itemType
+properties:
+  id:
+    type: string
+  title:
+    type: string
+    description: "Human readable title of the collection"
+  description:
+    type: string
+    description: "Any description"
+  itemType:
+    type: string
+    description: "Indicator about the type of the items in the indoor features collection (the default value is 'indoorfeature')."
+    default: "indoorfeature"

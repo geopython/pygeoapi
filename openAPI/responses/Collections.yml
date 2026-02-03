@@ -1,0 +1,7 @@
+description: A JSON object containing the list of available collections and related links.
+content:
+  application/json:
+    schema:
+      $ref: '../responses/collections.yml'
+    examples:
+      $ref: '../examples/collections.json'

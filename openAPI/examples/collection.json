@@ -1,0 +1,25 @@
+{
+  "id": "ifc-1",
+  "title": "indoor_feature_collection_sample",
+  "itemType": "indoorfeature",
+  "extent": {
+    "spatial": {
+      "bbox": [
+        -180,
+        -90,
+        180,
+        90
+      ],
+      "crs": [
+        "http://www.opengis.net/def/crs/OGC/1.3/CRS84"
+      ]
+    }
+  },
+  "links": [
+    {
+      "href": "https://data.example.org/collections/ifc-1",
+      "rel": "self",
+      "type": "application/json"
+    }
+  ]
+}

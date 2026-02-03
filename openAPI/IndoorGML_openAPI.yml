@@ -513,17 +513,6 @@ components:
         type: { type: string, enum: [Polyhedron] }
         coordinates: { type: array, items: { type: array, items: { type: array, items: { type: array, items: { type: number } } } } }
 
-    link:
-      type: object
-      title: link
-      required: [href, rel]
-      properties:
-        href: { type: string, example: "http://data.example.com/collections/AIST/items/123" }
-        rel: { type: string, example: "self" }
-        type: { type: string, example: "application/geo+json" }
-        title: { type: string }
-        length: { type: integer }
-
     landingPage: 
       type: object
       required: [links]
@@ -982,41 +971,6 @@ components:
           description: The response data.
           additionalProperties: true
 
-    ApiError:
-      type: object
-      additionalProperties: false
-      required:
-        - type
-        - code
-        - description
-      properties:
-        type:
-          type: string
-          enum: [Error]
-          description: Identifies this object as an error response.
-        code:
-          type: string
-          description: Machine-readable error code.
-          example: InvalidParameter
-        description:
-          type: string
-          description: Human-readable error message.
-          example: ex) hop must be between 1 and 4.
-        status:
-          type: integer
-          description: HTTP status code.
-          example: 400
-        details:
-          type: array
-          description: Optional list of detailed error items.
-          items:
-            $ref: '#/components/schemas/ApiErrorDetail'
-        instance:
-          type: string
-          format: uri
-          description: Optional URI to identify this specific occurrence for debugging/logging.
-          example: urn:uuid:2d1b9b9a-7db6-4d5b-9f1d-0f1a0b5c6a33
-
     ApiErrorDetail:
       type: object
       additionalProperties: false
@@ -1040,135 +994,6 @@ components:
             - type: object
             - type: array
 
-    extent:
-      description: |-
-        The extent of the features in the collection. In the Core only spatial and temporal
-        extents are specified. Extensions may add additional members to represent other
-        extents, for example, thermal or pressure ranges.
-
-        An array of extents is provided for each extent type (spatial, temporal). The first item
-        in the array describes the overall extent of the data. All subsequent items describe more
-        precise extents, e.g., to identify clusters of data. Clients only interested in the
-        overall extent will only need to access the first extent in the array.
-      type: object
-      properties:
-        spatial:
-          description: The spatial extent of the features in the collection.
-          type: object
-          properties:
-            bbox:
-              description: |-
-                One or more bounding boxes that describe the spatial extent of the dataset.
-                In the Core only a single bounding box is supported.
-
-                Extensions may support additional areas.
-                The first bounding box describes the overall spatial
-                extent of the data. All subsequent bounding boxes describe
-                more precise bounding boxes, e.g., to identify clusters of data.
-                Clients only interested in the overall spatial extent will
-                only need to access the first bounding box in the array.
-              type: array
-              minItems: 1
-              items:
-                description: |-
-                  Each bounding box is provided as four or six numbers, depending on
-                  whether the coordinate reference system includes a vertical axis
-                  (height or depth):
-
-                  * Lower left corner, coordinate axis 1
-                  * Lower left corner, coordinate axis 2
-                  * Minimum value, coordinate axis 3 (optional)
-                  * Upper right corner, coordinate axis 1
-                  * Upper right corner, coordinate axis 2
-                  * Maximum value, coordinate axis 3 (optional)
-
-                  If the value consists of four numbers, the coordinate reference system is
-                  WGS 84 longitude/latitude (http://www.opengis.net/def/crs/OGC/1.3/CRS84)
-                  unless a different coordinate reference system is specified in `crs`.
-
-                  If the value consists of six numbers, the coordinate reference system is WGS 84
-                  longitude/latitude/ellipsoidal height (http://www.opengis.net/def/crs/OGC/0/CRS84h)
-                  unless a different coordinate reference system is specified in `crs`.
-
-                  For WGS 84 longitude/latitude the values are in most cases the sequence of
-                  minimum longitude, minimum latitude, maximum longitude and maximum latitude.
-                  However, in cases where the box spans the antimeridian the first value
-                  (west-most box edge) is larger than the third value (east-most box edge).
-
-                  If the vertical axis is included, the third and the sixth number are
-                  the bottom and the top of the 3-dimensional bounding box.
-
-                  If a feature has multiple spatial geometry properties, it is the decision of the
-                  server whether only a single spatial geometry property is used to determine
-                  the extent or all relevant geometries.
-                type: array
-                oneOf:
-                  - minItems: 4
-                    maxItems: 4
-                  - minItems: 6
-                    maxItems: 6
-                items:
-                  type: number
-                example:
-                  - -180
-                  - -90
-                  - 180
-                  - 90
-            crs:
-              description: |-
-                Coordinate reference system of the coordinates in the spatial extent
-                (property `bbox`). The default reference system is WGS 84 longitude/latitude.
-                In the Core the only other supported coordinate reference system is
-                WGS 84 longitude/latitude/ellipsoidal height for coordinates with height.
-                Extensions may support additional coordinate reference systems and add
-                additional enum values.
-              type: string
-              enum:
-                - http://www.opengis.net/def/crs/OGC/1.3/CRS84
-                - http://www.opengis.net/def/crs/OGC/0/CRS84h
-              default: http://www.opengis.net/def/crs/OGC/1.3/CRS84
-
-    collection:
-      type: object
-      required: [id, title, itemType, links]
-      properties:
-        id: { type: string }
-        title: { type: string }
-        description: { type: string }
-        itemType: { type: string, default: "indoorfeature" }
-        links:
-          type: array
-          items: { $ref: '#/components/schemas/link' }
-        extent:
-          $ref: '#/components/schemas/extent'
-        crs:
-          description: the list of coordinate reference systems supported by the service
-          type: array
-          items:
-            type: string
-          default:
-            - https://www.opengis.net/def/crs/OGC/1.3/CRS84
-          example:
-            - https://www.opengis.net/def/crs/OGC/1.3/CRS84
-            - https://www.opengis.net/def/crs/EPSG/0/4326
-    
-    collection-body:
-      type: object
-      required: [id, title, itemType]
-      properties:
-        id: { type: string }
-        title: { type: string, description: "human readable title of thte collections"}
-        description: { type: string, description: "any description"}
-        itemType: { type: string, description: indicator about the type of the items in the indoor features collection (the default value is 'indoorfeature')., default: "indoorfeature"}
-
-    collections:
-      type: object
-      required: [colelctons, links]
-      properties:
-        collections: { type: array, items: { $ref: '#/components/schemas/collection'} }
-        links: { type: array, items: { $ref: '#/components/schemas/link'} }
-
-
   responses:
     Features:
       description: A list of indoor features (fIDs) within the collection.
@@ -1176,49 +1001,6 @@ components:
         application/geo+json:
           schema:
             $ref: '#/components/schemas/featureCollectionGeoJSON'
-    
-    Collections:
-      description: A JSON object containing the list of available collections and related links.
-      content:
-        application/json:
-          schema:
-            type: object
-            title: Collections
-            required: [collections, links]
-            properties:
-              collections:
-                type: array
-                description: The list of available IndoorGML collections.
-                items:
-                  $ref: '#/components/schemas/collection'
-              links:
-                type: array
-                items:
-                  $ref: '#/components/schemas/link'
-    
-    Collection:
-      description: The metadata being returned.
-      content:
-        application/json:
-          schema:
-            $ref: '#/components/schemas/collection'
-          example:
-            id: ifc-1
-            title: indoor_feature_collection_sample
-            itemType: indoorfeature
-            extent:
-              spatial:
-                bbox:
-                  - -180
-                  - -90
-                  - -190
-                  - 90
-                crs:
-                  - http://www.opengis.net/def/crs/OGC/1.3/CRS84
-            links:
-              - href: https://data.example.org/collections/ifc-1
-                rel: self
-                type: application/json
 
     Created:
       description: The resource was successfully created.
@@ -1239,43 +1021,35 @@ components:
       content:
         application/json:
           schema:
-            $ref: '#/components/schemas/ApiError'
+            $ref: './schemas/ApiError.yml'
 
     Unauthorized:
       description: Authentication credentials were missing or invalid.
       content:
         application/json:
           schema:
-            $ref: '#/components/schemas/ApiError'
+            $ref: './schemas/ApiError.yml'
 
     Forbidden:
       description: The request was valid, but the server is refusing action.
       content:
         application/json:
           schema:
-            $ref: '#/components/schemas/ApiError'
+            $ref: './schemas/ApiError.yml'
 
     NotFound:
       description: The requested resource was not found.
       content:
         application/json:
           schema:
-            $ref: '#/components/schemas/ApiError'
+            $ref: './schemas/ApiError.yml'
 
     PayloadTooLarge:
       description: The request is too large for the server to process.
       content:
         application/json:
           schema:
-            $ref: '#/components/schemas/ApiError'
-
-    InternalServerError:
-      description: Unexpected server error.
-      content:
-        application/json:
-          schema:
-            $ref: '#/components/schemas/ApiError'
-
+            $ref: './schemas/ApiError.yml'
 
 paths:
   /collections:
@@ -1294,19 +1068,26 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/collection-body'
-            example: { "id": "aist_waterfront_lab", title: "AIST Waterfront Lab IndoorGML", description: "Experimental IndoorGML data for AIST project", itemType: "indoorfeature" }       
+              $ref: './schemas/collections_post.yml'
+            example: 
+              $ref: './examples/collection_post.json'
       responses:
         '201': 
           description: Successfully created a collection to manage indoor features.
+          headers:
+            Location:
+              description: The URI of the newly created collection.
+              schema:
+                type: string
+                example: "https://data.example.org/collections/tokyo_odaiba"
         '409':
           description: A collection with the specified Id already exists.
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ApiError'
+                $ref: './schemas/ApiError.yml'
         '500': 
-          $ref: '#/components/responses/InternalServerError'
+          $ref: './responses/InternalServerError.yml'
     get:
       summary: Retrieve catalogs of indoor feature collections
       description: |
@@ -1317,11 +1098,11 @@ paths:
       operationId: getCollections
       responses:
         '200':
-          $ref: '#/components/responses/Collections'
+          $ref: './responses/Collections.yml'
         '401':
           $ref: '#/components/responses/Unauthorized'
         '500':
-          $ref: '#/components/responses/InternalServerError'
+          $ref: './responses/InternalServerError.yml'
 
   /collections/{collectionId}:
     parameters:
@@ -1335,13 +1116,13 @@ paths:
       operationId: getCollection
       responses:
         '200':
-          $ref: '#/components/responses/Collection'
+          $ref: './responses/Collection.yml'
         '401':
           $ref: '#/components/responses/Unauthorized'
         '404':
           $ref: '#/components/responses/NotFound'
         '500':
-          $ref: '#/components/responses/InternalServerError'
+          $ref: './responses/InternalServerError.yml'
     patch:
       parameters:
         - $ref: '#/components/parameters/collectionId'
@@ -1371,7 +1152,7 @@ paths:
               description: "This is the updated description for the indoor feature collection."
       responses:
         '200':
-          $ref: '#/components/responses/Collection'
+          $ref: './responses/Collection.yml'
         '400':
           $ref: '#/components/responses/BadRequest'
         '401':
@@ -1379,7 +1160,7 @@ paths:
         '404':
           $ref: '#/components/responses/NotFound'
         '500':
-          $ref: '#/components/responses/InternalServerError'
+          $ref: './responses/InternalServerError.yml'
     delete:
       summary: Deletes a collection
       description: |
@@ -1397,7 +1178,7 @@ paths:
         '404':
           $ref: '#/components/responses/NotFound'
         '500':
-          $ref: '#/components/responses/InternalServerError'
+          $ref: './responses/InternalServerError.yml'
 
   /collections/{collectionId}/items:
     parameters:
@@ -1431,9 +1212,9 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ApiError'
+                $ref: './schemas/ApiError.yml'
         '500': 
-          $ref: '#/components/responses/InternalServerError'
+          $ref: './responses/InternalServerError.yml'
 
     get:
       tags: [IndoorFeatures]
@@ -1473,7 +1254,7 @@ paths:
         '404':
           description: A collection with the specified id was not found.
         '500':
-          $ref: '#/components/responses/InternalServerError'
+          $ref: './responses/InternalServerError.yml'
   
   /collections/{collectionId}/items/{fId}:
     parameters:
@@ -1504,11 +1285,11 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ApiError'
+                $ref: './schemas/ApiError.yml'
         '404':
           $ref: '#/components/responses/NotFound'
         '500':
-          $ref: '#/components/responses/InternalServerError'
+          $ref: './responses/InternalServerError.yml'
 
     delete:
       tags:
@@ -1566,10 +1347,10 @@ paths:
           $ref: '#/components/responses/NotFound'
         '409':
           description: Conflict. A ThematicLayer with the same Id already exists within this IndoorFeature
-          $ref: '#/components/schemas/ApiError'
+          $ref: './schemas/ApiError.yml'
         '422':
           description: Unprocessable Entity (Non-unique Ids included).
-          $ref: '#/components/schemas/ApiError'
+          $ref: './schemas/ApiError.yml'
 
 
     get:
@@ -1604,8 +1385,7 @@ paths:
         '404':
           $ref: '#/components/responses/NotFound'
         '500':
-          $ref: '#/components/responses/InternalServerError'
-  
+          $ref: './responses/InternalServerError.yml'
   /collections/{collectionId}/items/{fId}/interlayerconnections:
     parameters:
       - $ref: '#/components/parameters/collectionId'
@@ -1659,7 +1439,7 @@ paths:
         '404':
           $ref: '#/components/responses/NotFound'
         '500':
-          $ref: '#/components/responses/InternalServerError'
+          $ref: './responses/InternalServerError.yml'
 
   /collections/{collectionId}/items/{fId}/interlayerconnections/{cnId}:
     parameters:
@@ -1683,7 +1463,7 @@ paths:
         '404':
           $ref: '#/components/responses/NotFound'
         '500':
-          $ref: '#/components/responses/InternalServerError'
+          $ref: './responses/InternalServerError.yml'
 
   /collections/{collectionId}/items/{fId}/layers/{tId}:
     parameters:
@@ -1720,7 +1500,7 @@ paths:
         '404':
           $ref: '#/components/responses/NotFound'
         '500':
-          $ref: '#/components/responses/InternalServerError'
+          $ref: './responses/InternalServerError.yml'
 
     delete:
       tags:
@@ -1740,7 +1520,7 @@ paths:
         '404':
           $ref: '#/components/responses/NotFound'
         '500':
-          $ref: '#/components/responses/InternalServerError'
+          $ref: './responses/InternalServerError.yml'
 
   /collections/{collectionId}/items/{fId}/layers/{tId}/primal:
     parameters:
@@ -1774,7 +1554,7 @@ paths:
         '404':
           $ref: '#/components/responses/NotFound'
         '500':
-          $ref: '#/components/responses/InternalServerError'
+          $ref: './responses/InternalServerError.yml'
 
     post:
       tags:
@@ -1807,7 +1587,7 @@ paths:
         '409':
           description: Conflict. Duality link already exists for that duality reference.
         '500':
-          $ref: '#/components/responses/InternalServerError'
+          $ref: './responses/InternalServerError.yml'
 
   /collections/{collectionId}/items/{fId}/layers/{tId}/dual:
     parameters:
@@ -1847,7 +1627,7 @@ paths:
         '422':
           description: Unprocessable Entity (Node missing duality dependency).
         '500':
-          $ref: '#/components/responses/InternalServerError'
+          $ref: './responses/InternalServerError.yml'
 
     get:
       tags:
@@ -1881,7 +1661,7 @@ paths:
         '404':
           $ref: '#/components/responses/NotFound'
         '500':
-          $ref: '#/components/responses/InternalServerError'
+          $ref: './responses/InternalServerError.yml'
 
   /collections/{collectionId}/items/{fId}/layers/{tId}/geoquery:
     parameters:
@@ -1962,7 +1742,7 @@ paths:
         '404':
           $ref: '#/components/responses/NotFound'
         '500':
-          $ref: '#/components/responses/InternalServerError'
+          $ref: './responses/InternalServerError.yml'
 
     patch:
       tags:
@@ -2015,7 +1795,7 @@ paths:
         '404':
           $ref: '#/components/responses/NotFound'
         '500':
-          $ref: '#/components/responses/InternalServerError'
+          $ref: './responses/InternalServerError.yml'
 
   /collections/{collectionId}/items/{fId}/layers/{tId}/primal/{mId}/bounding:
     parameters:
@@ -2039,6 +1819,8 @@ paths:
                 $ref: '#/components/schemas/BoundingCellsResults'
         '404':
           description: CellBoundary not found.
+        '500':
+          $ref: './responses/InternalServerError.yml'
 
   /collections/{collectionId}/items/{fId}/layers/{tId}/dual/{mId}/connected:
     parameters:
@@ -2065,7 +1847,9 @@ paths:
               schema:
                 $ref: '#/components/schemas/ConnectedResults'
         '404':
-          description: Node ID not found in this thematic layer.     
+          description: Node ID not found in this thematic layer.
+        '500':
+          $ref: './responses/InternalServerError.yml'     
 
   /collections/{collectionId}/items/{fId}/layers/{tId}/dual/{mId}:
     parameters:
@@ -2094,6 +1878,8 @@ paths:
           description: Edge not found.
         '400':
           description: Invalid ID supplied.
+        '500':
+          $ref: './responses/InternalServerError.yml'
 
     patch:
       tags:
@@ -2117,6 +1903,8 @@ paths:
           description: Bad Request (e.g., invalid weight value).
         '404':
           description: Edge ID not found.
+        '500':
+          $ref: './responses/InternalServerError.yml'
 
     delete:
       tags:
@@ -2131,3 +1919,5 @@ paths:
           description: Successfully deleted.
         '404':
           description: Edge ID not found.
+        '500':
+          $ref: './responses/InternalServerError.yml'
