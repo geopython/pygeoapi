@@ -50,9 +50,8 @@ from pygeoapi.provider import get_provider_by_type
 from pygeoapi.util import filter_dict_by_key_value, to_json
 
 from . import (
-    APIRequest, API, F_JSON, SYSTEM_LOCALE, validate_bbox, validate_datetime,
-    validate_subset
-)
+    APIRequest, API, F_JSON, SYSTEM_LOCALE, evaluate_limit_distance,
+    validate_bbox, validate_datetime, validate_subset)
 
 LOGGER = logging.getLogger(__name__)
 
@@ -111,6 +110,11 @@ def get_collection_coverage(
     else:
         try:
             bbox = validate_bbox(bbox)
+            server_limits = api.config['server'].get('limits', {})
+            collection_limits = api.config['resources'][dataset].get('limits', {})  # noqa
+
+            _ = evaluate_limit_distance(request.params.get('bbox', []),
+                                        server_limits, collection_limits)
         except ValueError as err:
             msg = str(err)
             return api.get_exception(

@@ -1753,3 +1753,53 @@ def evaluate_limit(requested: Union[None, int], server_limits: dict,
     else:
         LOGGER.debug('limit requested')
         return min(requested2, max_)
+
+
+def evaluate_limit_distance(server_limits: dict, collection_limits: dict,
+                            request_bbox: list = []) -> bool:
+    """
+    Helper function to evaluate limit parameter
+
+    :param server_limits: `dict` of server limits
+    :param collection_limits: `dict` of collection limits
+    :param request_bbox: `list` bbox of request
+
+    :returns: `bool` successful distance check
+    """
+
+    exceed_msg = None
+
+    effective_limits = ChainMap(collection_limits, server_limits)
+
+    on_exceed = effective_limits.get('on_exceed', 'throttle')
+    max_distance_x = effective_limits.get('max_distance_x')
+    max_distance_y = effective_limits.get('max_distance_y')
+    max_distance_units = effective_limits.get('max_distance_units')
+
+    LOGGER.debug(f'On exceed: {on_exceed}')
+    LOGGER.debug(f'Maximum distance x: {max_distance_x}')
+    LOGGER.debug(f'Maximum distance y: {max_distance_y}')
+    LOGGER.debug(f'Maximum distance units: {max_distance_units}')
+
+    # TODO: assess distance units
+
+    if not request_bbox:
+        LOGGER.debug('no bbox requested')
+        return True
+
+    if max_distance_x is not None:
+        requested_distance_x = abs(request_bbox[2] - request_bbox[0])
+        if requested_distance_x > max_distance_x:
+            exceed_msg = 'Maximum distance x exceeded'
+
+    if max_distance_y is not None:
+        requested_distance_y = abs(request_bbox[3] - request_bbox[1])
+        if requested_distance_y > max_distance_y:
+            exceed_msg = 'Maximum distance y exceeded'
+
+    if exceed_msg is not None:
+        LOGGER.warning(exceed_msg)
+        if on_exceed == 'error':
+            raise ValueError(exceed_msg)
+
+    return True
