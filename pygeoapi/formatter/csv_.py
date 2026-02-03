@@ -104,7 +104,7 @@ class CSVFormatter(BaseFormatter):
 
         LOGGER.debug(f'CSV fields: {fields}')
         output = io.StringIO()
-        writer = csv.DictWriter(output, fields)
+        writer = csv.DictWriter(output, fields, extrasaction='ignore')
         writer.writeheader()
 
         for feature in data['features']:
