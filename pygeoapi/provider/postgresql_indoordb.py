@@ -476,9 +476,9 @@ class PostgresIndoorDB:
                 # Iterate and Insert Layers
                 for layer in layers:
                     self._post_thematic_layer(collection_str, feature_str, layer)
-
-                for connection in interlayerconnections:
-                    self.post_interlayer_connection(connection)
+                if interlayerconnections:
+                    for connection in interlayerconnections:
+                        self.post_interlayer_connection(connection)
 
                 # autocommit is False
                 self.connection.commit()
@@ -821,8 +821,8 @@ class PostgresIndoorDB:
         }
         with self.connection.cursor() as cur:
             sql_cells = """
-                SELECT c.id, c.id_str, c.type, c.cell_name, c.level, c.external_reference, 
-                    ST_AsText("2D_geometry"), c."3D_geometry", c.poi, n.id_str, c.is_virtual,
+                SELECT c.id, c.id_str, c.cell_name, c.level, c.external_reference, 
+                    ST_AsText("2D_geometry"), c."3D_geometry", c.poi, n.id_str,
                     (
                         SELECT array_agg(child.id_str)s
                         FROM cell_space_n_boundary child
@@ -830,7 +830,7 @@ class PostgresIndoorDB:
                         ) as bounded_by_list
                 FROM cell_space_n_boundary c
                 LEFT JOIN node_n_edge n ON c.duality_id = n.id
-                WHERE c.thematiclayer_id = %s AND type = 'space'
+                WHERE c.thematiclayer_id = %s AND c.type = 'space'
             """
             params_cells = [layer_pk]
 
@@ -1028,17 +1028,6 @@ class PostgresIndoorDB:
                     msg = f"{feature_str} is not found"
                     LOGGER.debug(msg)
                     raise Exception(msg)
-                # duplicate_sql = """
-                #     SELECT t.id_str
-                #     FROM thematiclayer t
-                #     WHERE t.indoorfeature_id = %s AND t.id_str = %s
-                # """
-                # cur.execute(duplicate_sql, (ifeature['id'], layer_data.get('id')))
-                # row = cur.fetchone()
-                # if row:
-                #     msg = f"{layer_data.get('id')} is already exist."
-                #     LOGGER.debug(msg)
-                #     raise Exception(msg)
 
                 cur.execute(
                     """
@@ -1068,13 +1057,13 @@ class PostgresIndoorDB:
                     )
                 )
             
-                layer_pk = cur.fetchone()[0]
+                layer_pk = cur.fetchone()
             
                 # Insert Primal Members (Cells/Boundaries) - returns duality dict 
-                d_c, d_b = self._post_primal_members(ifeature['collection_id'], ifeature['id'], layer_pk, primal)
+                d_c, d_b = self._post_primal_members(ifeature['collection_id'], ifeature['id'], layer_pk['id'], primal)
                 
                 # Insert Dual Members (Nodes/Edges)
-                self._post_dual_members(ifeature['collection_id'], ifeature['id'], layer_pk, dual, d_c, d_b)   
+                self._post_dual_members(ifeature['collection_id'], ifeature['id'], layer_pk['id'], dual, d_c, d_b)   
 
                 return True
             except Exception as e:
@@ -1129,14 +1118,14 @@ class PostgresIndoorDB:
                     cell.get('poi')
                 ))
                 # Store cell pk for duality
-                cell_pk = cur.fetchone()[0]
+                cell_pk = cur.fetchone()
                 duality_of_cell = cell.get('duality').split(":")[-1]
-                dual_cell[duality_of_cell] = cell_pk
+                dual_cell[duality_of_cell] = cell_pk['id']
                 # Store cell pk for boundedBy
                 bbs = cell.get('boundedBy')
                 if bbs:
                     for b in bbs:
-                        boundedBy[b.split(":")[-1]] = cell_pk
+                        boundedBy[b.split(":")[-1]] = cell_pk['id']
         
             # 2. Boundaries
             for bound in primal_data.get('cellBoundaryMember', []):
@@ -1177,10 +1166,10 @@ class PostgresIndoorDB:
                 ))
 
                 # Store boundary pk for duality
-                boundary_pk = cur.fetchone()[0]
+                boundary_pk = cur.fetchone()
                 if bound.get('duality'):
                     duality_of_boundary = bound.get('duality').split(":")[-1]
-                    dual_boundary[duality_of_boundary] = boundary_pk
+                    dual_boundary[duality_of_boundary] = boundary_pk['id']
             
             # If there is no 2D geometry but 3D, project 3D to 2D geometry
             LOGGER.debug("Project geometry 3D to 2D ")
@@ -1220,6 +1209,7 @@ class PostgresIndoorDB:
         Helper to insert Nodes and Edges
         """
         # 1. Nodes
+        LOGGER.debug("Creating Dual members ")
         node_pk_dict = {}
         with self.connection.cursor(cursor_factory=RealDictCursor) as cur:
             for node in dual_data.get('nodeMember', []):
@@ -1257,13 +1247,13 @@ class PostgresIndoorDB:
                     dual_cell_pk
                 ))
                 # update node's duality
-                node_pk = cur.fetchone()[0]
+                node_pk = cur.fetchone()
                 cur.execute("""
                         UPDATE cell_space_n_boundary 
                         SET duality_id = %s 
                         WHERE id = %s
-                    """, (node_pk, dual_cell_pk))
-                node_pk_dict[node.get('id')] = node_pk
+                    """, (node_pk['id'], dual_cell_pk))
+                node_pk_dict[node.get('id')] = node_pk['id']
 
             # 2. Edges
             for edge in dual_data.get('edgeMember', []):
@@ -1299,12 +1289,12 @@ class PostgresIndoorDB:
                 ))
 
                 # update edge's duality
-                edge_pk = cur.fetchone()[0]
+                edge_pk = cur.fetchone()
                 cur.execute("""
                         UPDATE cell_space_n_boundary 
                         SET duality_id = %s 
                         WHERE id = %s
-                    """, (edge_pk, dual_boundary_pk))
+                    """, (edge_pk['id'], dual_boundary_pk))
                 
                 # Insert connects into connects table
                 sql = """
@@ -1320,7 +1310,7 @@ class PostgresIndoorDB:
                 cur.execute(sql, (
                     n_pk[0],
                     n_pk[1],
-                    edge_pk
+                    edge_pk['id']
                 ))    
               
     def post_thematic_layer(self, collection_id, feature_id, layer_data):
@@ -2853,7 +2843,7 @@ class PostgresIndoorDB:
             if not row:
                 return False
             
-            primal = self._get_primal_geometric_query(cur, row['id'], row['primalspace_id_str'], row['p_creation_datetime'], op=op, geometry=geometry, level=level)
+            primal = self._get_primal_geometric_query(row['id'], row['primalspace_id_str'], row['p_creation_datetime'], op=op, geometry=geometry, level=level)
             dual = self._get_dual_space(row['id'], row['dualspace_id_str'], row['d_creation_datetime'], row['is_logical'], row['is_directed'])
             result_layer = {
                 "id": row['id_str'],
@@ -2867,7 +2857,7 @@ class PostgresIndoorDB:
 
             return result_layer
 
-    def _get_primal_geometric_query(self, cur, layer_id, pSpace_id, p_create, op: str, geometry: str, level: str = None):
+    def _get_primal_geometric_query(self, layer_id, pSpace_id, p_create, op: str, geometry: str, level: str = None):
         primal_space = {
             "id": pSpace_id, 
             "featureType": "PrimalSpaceLayer",
@@ -2958,35 +2948,89 @@ class PostgresIndoorDB:
 
         return primal_space
 
-    def get_indoor_route(self, collection_id, item_id, layer_id, sn, dn):
+    def routing_query(self, collection_str, item_str, layer_str, sn, dn):
         # This query gets the full sequence from pgRouting and joins it with your tables
-        sql = """
-        WITH path AS (
+        lookup_sql = """
+            SELECT n.id 
+            FROM node_n_edge n
+            JOIN collection c ON n.collection_id = c.id
+            JOIN indoorfeature i ON n.indoorfeature_id = i.id
+            JOIN thematiclayer t ON n.thematiclayer_id = t.id
+            WHERE n.id_str = %s AND c.id_str = %s AND i.id_str = %s AND t.id_str = %s
+        """
+        network_sql = """
+        SELECT 
+            c.edge_id as id, 
+            c.node_source_id as source, 
+            c.node_target_id as target, 
+            COALESCE(n.weight, ST_Length(n.geometry_val)) as cost, 
+            COALESCE(n.weight, ST_Length(n.geometry_val)) as reverse_cost 
+        FROM connects c
+        JOIN node_n_edge n ON c.edge_id = n.id
+        """
+        routing_sql = f"""
+        WITH route AS (
             SELECT * FROM pgr_dijkstra(
-                'SELECT edge_id as id, node_source_id as source, node_target_id as target, weight as cost 
-                FROM connects 
-                JOIN node_n_edge ON connects.edge_id = node_n_edge.id
-                WHERE thematiclayer_id = (SELECT id FROM thematiclayer WHERE id_str = %s)',
-                (SELECT id FROM node_n_edge WHERE id_str = %s),
-                (SELECT id FROM node_n_edge WHERE id_str = %s),
-                FALSE
+                '{network_sql}',
+                %(start)s, 
+                %(dest)s, 
+                directed := false -- Set true if one-way streets exist
             )
         )
         SELECT 
-            -- Collect the actual geometries of the EDGES in the path
-            ST_AsGeoJSON(ST_Collect(e.geometry_val ORDER BY p.seq))::jsonb AS geometry,
-            SUM(p.cost) AS total_weight,
-            -- Ordered lists for your RouteResult
-            array_agg(n.id_str ORDER BY p.seq) AS route_nodes,
-            array_remove(array_agg(e.id_str ORDER BY p.seq), NULL) AS route_edges,
-            (SELECT p_creation_datetime FROM thematiclayer WHERE id_str = %s) as creation_date
-        FROM path p
-        LEFT JOIN node_n_edge n ON p.node = n.id
-        LEFT JOIN node_n_edge e ON p.edge = e.id;
+            r.seq,
+            r.node as node_id,
+            r.edge as edge_id,
+            r.cost,
+            r.agg_cost,
+            n.id_str,
+            n.type,
+            ST_AsText(n.geometry_val) as geometry
+        FROM route r
+        LEFT JOIN node_n_edge n 
+            ON (r.edge = n.id)  -- Join Edge info
+            OR (r.edge = -1 AND r.node = n.id) -- Join Last Node info
+        ORDER BY r.seq;
         """
         with self.connection.cursor(cursor_factory=RealDictCursor) as cur:
-            cur.execute(sql, (layer_id, sn, dn, layer_id))
-            return cur.fetchone()
+            cur.execute(lookup_sql, (sn, collection_str, item_str, layer_str))
+            start_node = cur.fetchone()
+            if not start_node:
+                msg = f"{sn} is not found."
+                raise ValueError(msg)
+            cur.execute(lookup_sql, (dn, collection_str, item_str, layer_str))
+            destination_node = cur.fetchone()
+            if not destination_node:
+                msg = f"{dn} is not found."
+                raise ValueError(msg)
+            
+            sn_id= start_node['id']
+            dn_id = destination_node['id']
+            cur.execute(routing_sql, {'start': sn_id, 'dest': dn_id})
+            path_rows = cur.fetchall()
+            if not path_rows:
+                return {"total_weight": 0, "path": []}
+            total_weight = path_rows[-1]['agg_cost']
+
+            response = {
+                "type": "RouteResult",
+                "start_node": sn,
+                "destination_node": dn,
+                "cost": total_weight,
+                "path_segments": [
+                    {
+                        "seq": row['seq'],
+                        "type": "edge" if row['edge_id'] != -1 else "destination_node",
+                        "id_str": row['id_str'],
+                        "cost": row['cost'],
+                        "geometry": self.wkt_to_json(row['geometry'])
+                    }
+                    for row in path_rows
+                ],
+                "links": []
+            }
+                
+            return response
 
     def json_to_wkt(self, geom_json):
         """
