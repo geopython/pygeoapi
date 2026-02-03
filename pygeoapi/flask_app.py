@@ -425,6 +425,7 @@ def collection_items_layers(collection_id, item_id, layer_id=None):
                 item_id,
                 layer_id
             )
+    return api_.get_exception(405, {}, request.format, 'MethodNotAllowed', 'Method not allowed')
 
 @BLUEPRINT.route('/collections/<path:collection_id>/items/<path:item_id>/interlayerconnections', methods=['GET', 'POST'])
 @BLUEPRINT.route('/collections/<path:collection_id>/items/<path:item_id>/interlayerconnections/<path:connection_id>', methods=['DELETE'])
@@ -461,6 +462,18 @@ def collection_items_interlayerconnections(collection_id, item_id, connection_id
                 item_id,
                 connection_id
             )
+
+@BLUEPRINT.route('/collections/<path:collection_id>/items/<path:item_id>/layers/<path:layer_id>/geoquery', methods=['GET'])
+def geometric_query(collection_id, item_id, layer_id):
+    if request.method == 'GET':
+        return execute_from_flask(
+            indoorgml.get_geometric_query, request,
+            collection_id,
+            item_id,
+            layer_id
+        )
+    else:
+        return api_.get_exception(405, {}, request.format, 'MethodNotAllowed', 'Method not allowed')
 
 @BLUEPRINT.route('/collections/<path:collection_id>/items/<path:item_id>/layers/<path:layer_id>/primal', methods=['POST', 'GET'])
 @BLUEPRINT.route('/collections/<path:collection_id>/items/<path:item_id>/layers/<path:layer_id>/primal/<path:member_id>', methods=['GET','PATCH','DELETE']) # cellboundary : only GET
@@ -511,14 +524,25 @@ def collection_items_layers_primal(collection_id, item_id, layer_id, member_id=N
                 member_id
             )
         else:
-            pass
+            return api_.get_exception(405, {}, request.format, 'MethodNotAllowed', 'Method not allowed')
 
-
+@BLUEPRINT.route('/collections/<path:collection_id>/items/<path:item_id>/layers/<path:layer_id>/primal/<path:member_id>/bounding', methods=['GET'])
+def bounding_cell_space(collection_id, item_id, layer_id, member_id):
+    if request.method == 'GET':
+        return execute_from_flask(
+            indoorgml.get_bounding_cell_space, request, 
+            collection_id, 
+            item_id,
+            layer_id,
+            member_id
+        )
+    else:
+        return api_.get_exception(405, {}, request.format, 'MethodNotAllowed', 'Method not allowed')
+    
 @BLUEPRINT.route('/collections/<path:collection_id>/items/<path:item_id>/layers/<path:layer_id>/dual', methods=['POST', 'GET'])
 @BLUEPRINT.route('/collections/<path:collection_id>/items/<path:item_id>/layers/<path:layer_id>/dual/<path:member_id>', methods=['GET','PATCH','DELETE']) # only edge can update
 def collection_items_layers_dual(collection_id, item_id, layer_id, member_id=None):
     if member_id == None:
-        # for Nodes, it HAS TO HAVE A DUALITY WITH AN EXISTING CELLSPACE
         if request.method == 'GET':
             return execute_from_flask(
                 indoorgml.get_dual, request,
@@ -567,22 +591,18 @@ def collection_items_layers_dual(collection_id, item_id, layer_id, member_id=Non
         else:
             pass
 
-@BLUEPRINT.route('/collections/<collectionId>/items/<fId>/layers/<tId>/dual/route')
-def compute_indoor_route(collectionId, fId, tId):
-    # Get start node (sn) and destination node (dn) from query parameters
-    sn = request.args.get('sn')
-    dn = request.args.get('dn')
+@BLUEPRINT.route('/collections/<path:collection_id>/items/<path:item_id>/layers/<path:layer_id>/dual/route', methods=['GET'])
+def compute_indoor_route(collection_id, item_id, layer_id):
+    if request.method == 'GET':
+        return execute_from_flask(
+            indoorgml.get_route, request, 
+            collection_id, 
+            item_id,
+            layer_id
+        )
+    else:
+        return api_.get_exception(405, {}, request.format, 'MethodNotAllowed', 'Method not allowed')
     
-    if not sn or not dn:
-        return jsonify({"error": "Missing 'sn' (start node) or 'dn' (destination node) parameters"}), 400
-    
-    # Call the API layer
-    try:
-        result = indoorgml.get_route(collectionId, fId, tId, sn, dn)
-        return jsonify(result)
-    except Exception as e:
-        return jsonify({"error": str(e)}), 500
-
 @BLUEPRINT.route('/collections/<path:collection_id>/coverage')
 def collection_coverage(collection_id: str):
     """

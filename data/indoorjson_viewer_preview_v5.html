@@ -1,0 +1,629 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>IndoorJSON Preview Viewer (v5) — IndoorJSON Result Overlay</title>
+  <script src="https://cdn.plot.ly/plotly-2.30.0.min.js"></script>
+  <style>
+    :root { --bg:#fff; --fg:#111; --muted:#666; --border:#e6e6e6; --panel:#fafafa; }
+    body { margin:0; font-family: system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif; background:var(--bg); color:var(--fg); }
+    #app { display:grid; grid-template-columns: 370px 1fr; height: 100vh; }
+    #side { border-right:1px solid var(--border); padding:14px; overflow:auto; background:var(--panel); }
+    #main { position:relative; }
+    .block { margin-bottom: 14px; }
+    .label { font-size: 12px; color:var(--muted); margin-bottom:6px; }
+    input[type=file], select, button { width:100%; padding:10px; box-sizing:border-box; border:1px solid var(--border); border-radius:10px; background:#fff; }
+    button { cursor:pointer; }
+    .row { display:flex; gap:10px; }
+    .row > * { flex:1; }
+    #hint { font-size: 12px; color: var(--muted); line-height: 1.4; }
+    #tabs { display:flex; gap:10px; margin-top:10px; flex-wrap:wrap; }
+    #tabs button { width:auto; padding:10px 12px; border-radius:999px; }
+    #tabs button.active { background:#111; color:#fff; border-color:#111; }
+    #plots { position:absolute; inset:0; }
+    .plot { position:absolute; inset:0; display:none; }
+    .plot.active { display:block; }
+    #status, #statusResult { font-size: 12px; color: var(--muted); }
+    pre { white-space: pre-wrap; word-break: break-word; font-size: 12px; background:#fff; border:1px solid var(--border); border-radius:10px; padding:10px; }
+    .tiny { font-size: 11px; color: var(--muted); margin-top: 6px; }
+    .checkrow { display:flex; align-items:center; gap:8px; font-size: 13px; color: var(--fg); }
+    .checkrow input { width:auto; }
+    .pill { font-size: 11px; padding:2px 8px; border-radius: 999px; border:1px solid var(--border); background:#fff; color: var(--muted); display:inline-block; }
+  </style>
+</head>
+<body>
+<div id="app">
+  <aside id="side">
+    <div class="block">
+      <div class="label">Load IndoorJSON (base)</div>
+      <input id="file" type="file" accept=".json,application/json" />
+      <div id="status" style="margin-top:8px;">No file loaded.</div>
+      <div class="tiny">Standalone — reads JSON locally in the browser.</div>
+    </div>
+
+    <div class="block">
+      <div class="label">View</div>
+      <div id="tabs">
+        <button id="btn3d" class="active">3D</button>
+        <button id="btn2d">2D</button>
+      </div>
+    </div>
+
+    <div class="block">
+      <div class="label">Level</div>
+      <select id="level">
+        <option value="__all__">All</option>
+      </select>
+    </div>
+
+    <div class="block">
+      <div class="label">Overlay query result (GeoJSON or IndoorJSON-shaped)</div>
+      <input id="fileResult" type="file" accept=".json,application/json,.geojson,application/geo+json" />
+      <div id="statusResult" style="margin-top:8px;">No result loaded.</div>
+      <div class="checkrow" style="margin-top:8px;">
+        <input id="toggleResult" type="checkbox" checked />
+        <label for="toggleResult">Show result overlay</label>
+      </div>
+      <div class="tiny">
+        Supported formats:<br/>
+        • GeoJSON FeatureCollection / Feature / Geometry<br/>
+        • IndoorJSON-like objects that contain <span class="pill">cellSpaceMember</span> anywhere under:
+          <span class="pill">primalSpace</span>, <span class="pill">primalSpaceLayer</span>, <span class="pill">thematicLayer</span>, or top-level
+      </div>
+    </div>
+
+    <div class="block">
+      <div class="label">Options</div>
+      <div class="row">
+        <button id="fit">Fit view</button>
+        <button id="reset">Reset</button>
+      </div>
+    </div>
+
+    <div class="block">
+      <div class="label">Selection</div>
+      <pre id="sel">{}</pre>
+    </div>
+
+    <div class="block" id="hint">
+      <b>Tips</b><br/>
+      • 3D: drag to orbit, scroll to zoom.<br/>
+      • 2D: pan/zoom like a map.<br/>
+      • Your API sample response is a single <span class="pill">ThematicLayer</span> object with <span class="pill">primalSpace.cellSpaceMember</span> — v5 supports this.<br/>
+    </div>
+  </aside>
+
+  <main id="main">
+    <div id="plots">
+      <div id="plot3d" class="plot active"></div>
+      <div id="plot2d" class="plot"></div>
+    </div>
+  </main>
+</div>
+
+<script>
+/* -------------------- utilities -------------------- */
+function safeStr(v){ return (typeof v === "string") ? v : (typeof v === "number" ? String(v) : ""); }
+
+/**
+ * Collect CellSpace objects from many IndoorJSON-like shapes.
+ *
+ * Supports:
+ * - Full IndoorJSON: indoorFeatures.thematicLayer[*].primalSpaceLayer.cellSpaceMember
+ * - alt: layers[*].primalSpace.cellSpaceMember
+ * - Single ThematicLayer response (your API): { featureType:"ThematicLayer", primalSpace:{cellSpaceMember:[...]}, dualSpace:{...} }
+ * - direct: { cellSpaceMember:[...] }
+ */
+function iterCellSpaces(obj){
+  const out = [];
+  if (!obj || typeof obj !== "object") return out;
+
+  // direct
+  if (Array.isArray(obj.cellSpaceMember)) out.push(...obj.cellSpaceMember);
+
+  // your API sample: ThematicLayer object
+  if (Array.isArray(obj?.primalSpace?.cellSpaceMember)) out.push(...obj.primalSpace.cellSpaceMember);
+  if (Array.isArray(obj?.primalSpaceLayer?.cellSpaceMember)) out.push(...obj.primalSpaceLayer.cellSpaceMember);
+
+  // Full IndoorJSON (indoorFeatures.thematicLayer is array)
+  const indoorFeatures = obj.indoorFeatures || obj.IndoorFeatures || null;
+  const thematicLayer = indoorFeatures?.thematicLayer || indoorFeatures?.ThematicLayer || null;
+  if (Array.isArray(thematicLayer)) {
+    for (const tl of thematicLayer) {
+      if (Array.isArray(tl?.primalSpace?.cellSpaceMember)) out.push(...tl.primalSpace.cellSpaceMember);
+      if (Array.isArray(tl?.primalSpaceLayer?.cellSpaceMember)) out.push(...tl.primalSpaceLayer.cellSpaceMember);
+
+      const primal = tl?.primalSpaceLayer || tl?.primalSpace || null;
+      const members = primal?.cellSpaceMember || primal?.cellSpaces || primal?.cellspaceMember || null;
+      if (Array.isArray(members)) out.push(...members);
+    }
+  }
+
+  // alternate packaging: layers[*]
+  if (Array.isArray(obj.layers)) {
+    for (const layer of obj.layers) {
+      const primal = layer?.primalSpace || layer?.primalSpaceLayer || layer?.primal || null;
+      const members = primal?.cellSpaceMember || primal?.cellSpaces || primal?.cellspaceMember || null;
+      if (Array.isArray(members)) out.push(...members);
+    }
+  }
+
+  // de-dup by id if present (keeps first)
+  const seen = new Set();
+  const dedup = [];
+  for (const cs of out) {
+    const id = cs?.id ? String(cs.id) : null;
+    if (id && seen.has(id)) continue;
+    if (id) seen.add(id);
+    dedup.push(cs);
+  }
+  return dedup;
+}
+
+function triangulateRing(pts){
+  if (!Array.isArray(pts) || pts.length < 3) return [];
+  const first = pts[0];
+  const last = pts[pts.length-1];
+  if (first && last && first[0]===last[0] && first[1]===last[1] && (first[2]??0)===(last[2]??0)) {
+    pts = pts.slice(0, -1);
+  }
+  if (pts.length < 3) return [];
+  const tris = [];
+  for (let i=1;i<pts.length-1;i++){
+    tris.push([pts[0], pts[i], pts[i+1]]);
+  }
+  return tris;
+}
+
+function polyhedronToTris(geom3d){
+  const tris = [];
+  const coords = geom3d?.coordinates;
+  if (!Array.isArray(coords)) return tris;
+
+  const polys = looksLikeFaceList(coords) ? [coords] : coords;
+  for (const poly of polys){
+    if (!Array.isArray(poly)) continue;
+    for (const face of poly){
+      if (!face) continue;
+      let ring = face;
+      if (Array.isArray(face) && Array.isArray(face[0]) && Array.isArray(face[0][0])) ring = face[0];
+      if (!Array.isArray(ring) || ring.length < 3) continue;
+      const pts = ring.map(p => [p[0], p[1], p[2] ?? 0]);
+      tris.push(...triangulateRing(pts));
+    }
+  }
+  return tris;
+
+  function looksLikeFaceList(c){
+    if (!Array.isArray(c) || c.length===0) return false;
+    const a = c[0];
+    if (!Array.isArray(a) || a.length===0) return false;
+    const b = a[0];
+    return Array.isArray(b) && typeof b[0] === "number";
+  }
+}
+
+function polygon2dToRings(geom2d){
+  const type = geom2d?.type;
+  const coords = geom2d?.coordinates;
+  const rings = [];
+  if (!coords) return rings;
+
+  if (type === "Polygon") {
+    if (Array.isArray(coords[0])) rings.push(coords[0]); // outer ring only
+  } else if (type === "MultiPolygon") {
+    for (const poly of coords) if (Array.isArray(poly?.[0])) rings.push(poly[0]);
+  }
+  return rings;
+}
+
+function bboxFromPoints(points){
+  let minX=Infinity,minY=Infinity,minZ=Infinity,maxX=-Infinity,maxY=-Infinity,maxZ=-Infinity;
+  for (const p of points){
+    const x=p[0],y=p[1],z=p[2]??0;
+    if (!Number.isFinite(x)||!Number.isFinite(y)||!Number.isFinite(z)) continue;
+    minX=Math.min(minX,x); minY=Math.min(minY,y); minZ=Math.min(minZ,z);
+    maxX=Math.max(maxX,x); maxY=Math.max(maxY,y); maxZ=Math.max(maxZ,z);
+  }
+  if (!Number.isFinite(minX)) return null;
+  return {min:[minX,minY,minZ], max:[maxX,maxY,maxZ]};
+}
+
+/* -------------------- app state -------------------- */
+let MODEL = null;         // base IndoorJSON model
+let RESULT2D = null;      // overlay model
+let CURRENT_LEVEL = "__all__";
+let CURRENT_MODE = "3d";
+let SHOW_RESULT = true;
+
+/* -------------------- build base IndoorJSON model -------------------- */
+function buildBaseModel(indoorjson){
+  const cells = iterCellSpaces(indoorjson);
+  const levels = new Set();
+  const byLevel3d = new Map();
+  const byLevel2d = new Map();
+
+  const addLevel = (lvl) => {
+    levels.add(lvl);
+    if (!byLevel3d.has(lvl)) byLevel3d.set(lvl, { x:[], y:[], z:[], i:[], j:[], k:[] });
+    if (!byLevel2d.has(lvl)) byLevel2d.set(lvl, { pairs:[] });
+  };
+
+  for (const cs of cells){
+    const lvl = safeStr(cs.level) || safeStr(cs.storey) || safeStr(cs.properties?.level) || "UNKNOWN";
+    addLevel(lvl);
+
+    const geom = cs.cellSpaceGeom || cs.cellspaceGeom || cs.CellSpaceGeom || {};
+    const g3 = geom.geometry3D || geom.Geometry3D || null;
+    const g2 = geom.geometry2D || geom.Geometry2D || null;
+
+    // 3D
+    if (g3 && g3.type === "Polyhedron") {
+      const tris = polyhedronToTris(g3);
+      const store = byLevel3d.get(lvl);
+      for (const tri of tris){
+        const base = store.x.length;
+        for (const p of tri){
+          store.x.push(p[0]); store.y.push(p[1]); store.z.push(p[2] ?? 0);
+        }
+        store.i.push(base); store.j.push(base+1); store.k.push(base+2);
+      }
+    } else if (g2 && (g2.type === "Polygon" || g2.type === "MultiPolygon")) {
+      const rings = polygon2dToRings(g2);
+      const store = byLevel3d.get(lvl);
+      for (const ring of rings){
+        const pts = ring.map(p => [p[0], p[1], (p.length>=3 ? p[2] : 0)]);
+        const tris = triangulateRing(pts);
+        for (const tri of tris){
+          const base = store.x.length;
+          for (const p of tri){
+            store.x.push(p[0]); store.y.push(p[1]); store.z.push(p[2] ?? 0);
+          }
+          store.i.push(base); store.j.push(base+1); store.k.push(base+2);
+        }
+      }
+    }
+
+    // 2D
+    const store2 = byLevel2d.get(lvl);
+    if (g2 && (g2.type === "Polygon" || g2.type === "MultiPolygon")) {
+      const rings = polygon2dToRings(g2);
+      for (const ring of rings) pushRingPairs(store2.pairs, ring);
+    } else if (g3 && g3.type === "Polyhedron") {
+      const tris = polyhedronToTris(g3);
+      const pts = [];
+      for (const tri of tris) for (const p of tri) pts.push(p);
+      const bb = bboxFromPoints(pts);
+      if (bb){
+        const x0=bb.min[0], y0=bb.min[1], x1=bb.max[0], y1=bb.max[1];
+        const rect = [[x0,y0],[x1,y0],[x1,y1],[x0,y1],[x0,y0]];
+        pushRingPairs(store2.pairs, rect);
+      }
+    }
+  }
+
+  return { levels: Array.from(levels).sort(), byLevel3d, byLevel2d };
+
+  function pushRingPairs(pairs, ring){
+    if (!Array.isArray(ring) || ring.length < 2) return;
+    const pts = ring.slice();
+    const a = pts[0], b = pts[pts.length-1];
+    if (!(a[0]===b[0] && a[1]===b[1])) pts.push(a);
+    for (const p of pts) pairs.push([p[0], p[1]]);
+    pairs.push([null, null]);
+  }
+}
+
+/* -------------------- build overlay model -------------------- */
+function buildOverlayModel(obj){
+  const byLevel2d = new Map();
+  const levels = new Set();
+  let count = 0;
+
+  function addLevel(lvl){
+    levels.add(lvl);
+    if (!byLevel2d.has(lvl)) byLevel2d.set(lvl, { pairs:[], count:0 });
+  }
+
+  // GeoJSON
+  const feats = toGeoFeatures(obj);
+  if (feats.length > 0) {
+    for (const f of feats){
+      const props = f.properties || {};
+      const lvl = safeStr(props.level) || safeStr(props.storey) || safeStr(props.floor) || "__all__";
+      addLevel(lvl);
+      const store = byLevel2d.get(lvl);
+      addGeometryPairs(store.pairs, f.geometry || f);
+      store.count += 1; count += 1;
+    }
+    return { levels: Array.from(levels).sort(), byLevel2d, count, format:"geojson" };
+  }
+
+  // IndoorJSON-like (your API sample included)
+  const cells = iterCellSpaces(obj);
+  if (cells.length > 0) {
+    for (const cs of cells){
+      const lvl = safeStr(cs.level) || safeStr(cs.storey) || safeStr(cs.properties?.level) || "UNKNOWN";
+      const g2 = cs?.cellSpaceGeom?.geometry2D || cs?.cellSpaceGeom?.Geometry2D || null;
+      if (!g2 || !g2.type) continue;
+
+      addLevel(lvl);
+      const store = byLevel2d.get(lvl);
+
+      if (g2.type === "Polygon" || g2.type === "MultiPolygon") {
+        const rings = polygon2dToRings(g2);
+        for (const ring of rings) pushRingPairs(store.pairs, ring);
+      } else {
+        addGeometryPairs(store.pairs, g2);
+      }
+
+      store.count += 1; count += 1;
+    }
+    return { levels: Array.from(levels).sort(), byLevel2d, count, format:"indoorjson" };
+  }
+
+  return { levels: [], byLevel2d, count:0, format:"unknown" };
+
+  function toGeoFeatures(o){
+    if (!o || typeof o !== "object") return [];
+    if (o.type === "FeatureCollection" && Array.isArray(o.features)) return o.features;
+    if (o.type === "Feature") return [o];
+    if (typeof o.type === "string" && o.coordinates) return [{ type:"Feature", properties:{}, geometry:o }];
+    if (Array.isArray(o)) return o.flatMap(toGeoFeatures);
+    return [];
+  }
+
+  function addGeometryPairs(pairs, geom){
+    if (!geom || typeof geom !== "object") return;
+    const t = geom.type;
+    const c = geom.coordinates;
+
+    if (t === "Polygon") { if (Array.isArray(c?.[0])) pushRingPairs(pairs, c[0]); return; }
+    if (t === "MultiPolygon") { for (const poly of c || []) if (Array.isArray(poly?.[0])) pushRingPairs(pairs, poly[0]); return; }
+    if (t === "LineString") { pushLinePairs(pairs, c); return; }
+    if (t === "MultiLineString") { for (const line of c || []) pushLinePairs(pairs, line); return; }
+    if (t === "GeometryCollection") { for (const g of geom.geometries || []) addGeometryPairs(pairs, g); return; }
+
+    if (Array.isArray(c)) pushLinePairs(pairs, flattenPoints(c));
+  }
+
+  function pushRingPairs(pairs, ring){
+    if (!Array.isArray(ring) || ring.length < 2) return;
+    const pts = ring.slice();
+    const a = pts[0], b = pts[pts.length-1];
+    if (!(a[0]===b[0] && a[1]===b[1])) pts.push(a);
+    for (const p of pts) pairs.push([p[0], p[1]]);
+    pairs.push([null, null]);
+  }
+
+  function pushLinePairs(pairs, line){
+    if (!Array.isArray(line) || line.length < 2) return;
+    for (const p of line) pairs.push([p[0], p[1]]);
+    pairs.push([null, null]);
+  }
+
+  function flattenPoints(any){
+    const out = [];
+    const stack = [any];
+    while (stack.length){
+      const cur = stack.pop();
+      if (!cur) continue;
+      if (Array.isArray(cur) && typeof cur[0] === "number") { out.push(cur); continue; }
+      if (Array.isArray(cur)) for (const v of cur) stack.push(v);
+    }
+    return out.reverse();
+  }
+}
+
+/* -------------------- Plotly rendering -------------------- */
+function renderAll(){
+  if (!MODEL) return;
+
+  const sel = document.getElementById("level");
+  const prev = sel.value || "__all__";
+  sel.innerHTML = "";
+  const optAll = document.createElement("option");
+  optAll.value = "__all__"; optAll.textContent = "All";
+  sel.appendChild(optAll);
+  for (const lvl of MODEL.levels){
+    const o = document.createElement("option");
+    o.value = lvl; o.textContent = lvl;
+    sel.appendChild(o);
+  }
+  sel.value = (MODEL.levels.includes(prev) || prev==="__all__") ? prev : "__all__";
+  CURRENT_LEVEL = sel.value;
+
+  render3D();
+  render2D();
+  applyLevelFilter();
+}
+
+function render3D(){
+  const traces = [];
+  for (const lvl of MODEL.levels){
+    const s = MODEL.byLevel3d.get(lvl);
+    if (!s || s.i.length === 0) continue;
+    traces.push({
+      type: "mesh3d",
+      name: lvl,
+      x: s.x, y: s.y, z: s.z,
+      i: s.i, j: s.j, k: s.k,
+      opacity: 0.5,
+      hoverinfo: "skip",
+      visible: (CURRENT_LEVEL==="__all__" || CURRENT_LEVEL===lvl),
+      meta: { role: "base", level: lvl }
+    });
+  }
+
+  Plotly.newPlot("plot3d", traces, {
+    margin: {l:0,r:0,t:30,b:0},
+    title: { text: "IndoorJSON (3D)", x: 0.02, y: 0.98, xanchor:"left" },
+    scene: { aspectmode: "data" },
+    showlegend: false
+  }, {responsive:true});
+}
+
+function render2D(){
+  const traces = [];
+
+  // Base
+  for (const lvl of MODEL.levels){
+    const s = MODEL.byLevel2d.get(lvl);
+    if (!s || s.pairs.length === 0) continue;
+    const xs=[]; const ys=[];
+    for (const p of s.pairs){ xs.push(p[0]); ys.push(p[1]); }
+    traces.push({
+      type: "scattergl",
+      mode: "lines",
+      name: lvl,
+      x: xs, y: ys,
+      line: { width: 1, color: "rgba(0,0,0,0.55)" },
+      hoverinfo: "skip",
+      visible: (CURRENT_LEVEL==="__all__" || CURRENT_LEVEL===lvl),
+      meta: { role:"base", level:lvl }
+    });
+  }
+
+  // Overlay
+  if (RESULT2D && RESULT2D.levels.length > 0) {
+    for (const lvl of RESULT2D.levels){
+      const s = RESULT2D.byLevel2d.get(lvl);
+      if (!s || s.pairs.length === 0) continue;
+      const xs=[]; const ys=[];
+      for (const p of s.pairs){ xs.push(p[0]); ys.push(p[1]); }
+      traces.push({
+        type: "scattergl",
+        mode: "lines",
+        name: (lvl==="__all__") ? "RESULT" : `RESULT:${lvl}`,
+        x: xs, y: ys,
+        line: { width: 3, color: "rgba(220,0,0,0.95)" },
+        hoverinfo: "skip",
+        visible: SHOW_RESULT && (CURRENT_LEVEL==="__all__" || lvl==="__all__" || lvl===CURRENT_LEVEL),
+        meta: { role:"result", level:lvl }
+      });
+    }
+  }
+
+  Plotly.newPlot("plot2d", traces, {
+    margin: {l:40,r:10,t:30,b:40},
+    title: { text: "IndoorJSON (2D) + Overlay", x: 0.02, y: 0.98, xanchor:"left" },
+    xaxis: { scaleanchor: "y", zeroline: false },
+    yaxis: { zeroline: false },
+    showlegend: false
+  }, {responsive:true});
+}
+
+function applyLevelFilter(){
+  if (!MODEL) return;
+
+  const gd3 = document.getElementById("plot3d");
+  if (gd3 && gd3.data){
+    Plotly.restyle(gd3, {visible: gd3.data.map(d => (CURRENT_LEVEL==="__all__" || d.name===CURRENT_LEVEL))});
+  }
+
+  const gd2 = document.getElementById("plot2d");
+  if (gd2 && gd2.data){
+    const vis = gd2.data.map(d => {
+      const role = d.meta?.role || "base";
+      const lvl = d.meta?.level || "__all__";
+      if (role === "base") return (CURRENT_LEVEL==="__all__" || d.name===CURRENT_LEVEL);
+      if (!SHOW_RESULT) return false;
+      if (CURRENT_LEVEL==="__all__") return true;
+      return (lvl==="__all__" || lvl===CURRENT_LEVEL);
+    });
+    Plotly.restyle(gd2, {visible: vis});
+  }
+}
+
+function fitView(){
+  const gd = (CURRENT_MODE==="3d") ? document.getElementById("plot3d") : document.getElementById("plot2d");
+  if (!gd) return;
+  if (CURRENT_MODE==="3d") Plotly.relayout(gd, {"scene.camera": null});
+  else Plotly.relayout(gd, {"xaxis.autorange": true, "yaxis.autorange": true});
+}
+
+/* -------------------- UI wiring -------------------- */
+const fileInput = document.getElementById("file");
+const fileResult = document.getElementById("fileResult");
+const statusEl = document.getElementById("status");
+const statusResultEl = document.getElementById("statusResult");
+const selEl = document.getElementById("sel");
+
+document.getElementById("btn3d").addEventListener("click", () => setMode("3d"));
+document.getElementById("btn2d").addEventListener("click", () => setMode("2d"));
+document.getElementById("level").addEventListener("change", (e) => { CURRENT_LEVEL = e.target.value; applyLevelFilter(); });
+document.getElementById("fit").addEventListener("click", fitView);
+document.getElementById("reset").addEventListener("click", () => {
+  CURRENT_LEVEL="__all__"; document.getElementById("level").value="__all__";
+  applyLevelFilter(); fitView();
+  selEl.textContent = "{}";
+});
+document.getElementById("toggleResult").addEventListener("change", (e) => { SHOW_RESULT = e.target.checked; applyLevelFilter(); });
+
+function setMode(mode){
+  CURRENT_MODE = mode;
+  document.getElementById("plot3d").classList.toggle("active", mode==="3d");
+  document.getElementById("plot2d").classList.toggle("active", mode==="2d");
+  document.getElementById("btn3d").classList.toggle("active", mode==="3d");
+  document.getElementById("btn2d").classList.toggle("active", mode==="2d");
+  fitView();
+}
+
+fileInput.addEventListener("change", async (e) => {
+  const file = e.target.files?.[0];
+  if (!file) return;
+  statusEl.textContent = `Loading ${file.name}...`;
+  try {
+    const json = JSON.parse(await file.text());
+    MODEL = buildBaseModel(json);
+    statusEl.textContent = `Loaded ${file.name}. Levels: ${MODEL.levels.length}.`;
+    renderAll();
+  } catch (err) {
+    console.error(err);
+    statusEl.textContent = `Failed to load: ${err?.message || err}`;
+  }
+});
+
+fileResult.addEventListener("change", async (e) => {
+  const file = e.target.files?.[0];
+  if (!file) return;
+  statusResultEl.textContent = `Loading ${file.name}...`;
+  try {
+    const json = JSON.parse(await file.text());
+    RESULT2D = buildOverlayModel(json);
+
+    if (RESULT2D.format === "unknown" || RESULT2D.count === 0) {
+      statusResultEl.textContent = `Loaded ${file.name}, but couldn't find any 2D geometries to draw.`;
+    } else {
+      statusResultEl.textContent = `Loaded ${file.name}. Overlay: ${RESULT2D.format}. Items: ${RESULT2D.count}. Levels: ${RESULT2D.levels.length}.`;
+    }
+
+    if (MODEL) { render2D(); applyLevelFilter(); }
+  } catch (err) {
+    console.error(err);
+    statusResultEl.textContent = `Failed to load: ${err?.message || err}`;
+  }
+});
+
+// click feedback
+function attachPick(){
+  const gd3 = document.getElementById("plot3d");
+  const gd2 = document.getElementById("plot2d");
+
+  gd3.on?.("plotly_click", (ev) => {
+    const p = ev?.points?.[0];
+    if (!p) return;
+    selEl.textContent = JSON.stringify({ mode:"3d", level:p.data?.name, x:p.x, y:p.y, z:p.z }, null, 2);
+  });
+
+  gd2.on?.("plotly_click", (ev) => {
+    const p = ev?.points?.[0];
+    if (!p) return;
+    selEl.textContent = JSON.stringify({ mode:"2d", trace:p.data?.name, x:p.x, y:p.y }, null, 2);
+  });
+}
+setTimeout(attachPick, 800);
+</script>
+</body>
+</html>
