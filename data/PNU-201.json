@@ -1,7 +1,12 @@
 {
   "id": "u64465b1-3012-0c9e-82e4-cf37470411b5",
   "featureType": "IndoorFeatures",
-  "geometry": {},
+  "geometry": {
+    "type": "Point",
+    "coordinates": [
+        300, 11
+    ]
+  },
   "properties": {},
   "layers": [
     {

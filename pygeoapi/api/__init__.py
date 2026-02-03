@@ -1027,14 +1027,15 @@ def describe_collections(self, request: APIRequest, dataset=None) -> Tuple[dict,
 
     # --- [MODIFICATION 2] PART 2: Database Query ---
     # Only run if we are listing ALL, or if we looked for one and missed it.
-    if dataset is None or (dataset is not None and not found_in_yaml):
-        
+    if not dataset or (dataset and not found_in_yaml):
+        LOGGER.debug("get collections in db")
         # 1. Initialize Provider
         from pygeoapi.provider.postgresql_indoordb import PostgresIndoorDB
         provider = PostgresIndoorDB() 
 
         try:
             # 2. Fetch Data from DB
+            provider.connect()
             db_collections_list = provider.get_collections_list()
             
             # 3. Filter for specific dataset (if requested)
@@ -1107,8 +1108,7 @@ def describe_collections(self, request: APIRequest, dataset=None) -> Tuple[dict,
             LOGGER.error(f"Provider Error: {e}")
             # We log errors but try not to crash the whole list if one DB call fails
         finally:
-            if provider:
-                provider.disconnect()
+            provider.disconnect()
 
     # --- [MODIFICATION 3] Final 404 Check ---
     # If we checked BOTH Config and DB and still found nothing:
