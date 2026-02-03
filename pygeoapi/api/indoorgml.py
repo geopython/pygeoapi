@@ -1464,7 +1464,8 @@ def get_geometric_query(api: API, request: APIRequest, collection_id: str, item_
             headers, request.format, 'InvalidParameterValue', msg)
     else:
         try: 
-            geom = validate_geom(geom_param)
+            if validate_geom(geom_param):
+                geom = geom_param
         except ValueError as err:
             msg = str(err)
             return api.get_exception(
