@@ -1,0 +1,23 @@
+type: object
+title: IndoorFeatures
+required:
+  - featureType
+  - layers
+properties:
+  id:
+    type: string
+  featureType:
+    type: string
+    enum:
+      - IndoorFeatures
+  layers:
+    type: array
+    minItems: 1
+    uniqueItems: true
+    items:
+      $ref: './thematicLayer.yml'
+  layerConnections:
+    type: array
+    uniqueItems: true
+    items:
+      $ref: './interLayerConnection.yml'

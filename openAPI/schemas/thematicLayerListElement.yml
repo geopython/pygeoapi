@@ -1,0 +1,29 @@
+type: object
+title: ThematicLayerListElement
+required:
+  - id
+  - semanticExtension
+  - theme
+properties:
+  id:
+    type: string
+  semanticExtension:
+    type: boolean
+  theme:
+    type: string
+    enum:
+      - Virtual
+      - Physical
+      - Tags
+      - Unknown
+  bbox:
+    type: array
+    minItems: 4
+    maxItems: 4
+    items:
+      type: number
+    example: [139.774, 35.618, 139.780, 35.624]
+  links:
+    type: array
+    items:
+      $ref: 'https://schemas.opengis.net/ogcapi/features/part1/1.0/openapi/schemas/link.yaml'

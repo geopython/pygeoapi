@@ -1,0 +1,16 @@
+ ConnectedItem:
+      type: object
+      additionalProperties: false
+      required:
+        - node
+        - cellSpace
+        - hopDistance
+      properties:
+        node:
+          $ref: './node.yml'
+        cellSpace:
+          $ref: './cellSpace.yml'
+        hopDistance:
+          type: integer
+          minimum: 1
+          description: Hop distance from the source node in the dual graph.

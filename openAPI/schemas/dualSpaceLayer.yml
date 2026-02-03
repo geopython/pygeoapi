@@ -1,0 +1,30 @@
+type: object
+title: DualSpaceLayer
+required:
+  - id
+  - featureType
+  - isLogical
+  - isDirected
+  - nodeMember
+properties:
+  id:
+    type: string
+  featureType:
+    type: string
+    enum:
+      - DualSpaceLayer
+  isLogical:
+    type: boolean
+  isDirected:
+    type: boolean
+  nodeMember:
+    type: array
+    minItems: 1
+    uniqueItems: true
+    items:
+      $ref: './node.yml'
+  edgeMember:
+    type: array
+    uniqueItems: true
+    items:
+      $ref: './edge.yml'

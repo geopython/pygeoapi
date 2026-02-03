@@ -1,0 +1,71 @@
+title: geometryGeoJSON
+oneOf:
+  - $ref: '#/definitions/point'
+  - $ref: '#/definitions/multiPoint'
+  - $ref: '#/definitions/lineString'
+  - $ref: '#/definitions/multiLineString'
+  - $ref: '#/definitions/polygon'
+  - $ref: '#/definitions/multiPolygon'
+  - $ref: '#/definitions/geometryCollection'
+discriminator:
+  propertyName: type
+  mapping:
+    Point: '#/definitions/point'
+    MultiPoint: '#/definitions/multiPoint'
+    LineString: '#/definitions/lineString'
+    MultiLineString: '#/definitions/multiLineString'
+    Polygon: '#/definitions/polygon'
+    MultiPolygon: '#/definitions/multiPolygon'
+    GeometryCollection: '#/definitions/geometryCollection'
+
+definitions:
+  point:
+    type: object
+    required: [type, coordinates]
+    properties:
+      type: { type: string, enum: [Point] }
+      coordinates: { type: array, items: { type: number }, minItems: 2 }
+
+  multiPoint:
+    type: object
+    required: [type, coordinates]
+    properties:
+      type: { type: string, enum: [MultiPoint] }
+      coordinates: { type: array, items: { type: array, items: { type: number } } }
+
+  lineString:
+    type: object
+    required: [type, coordinates]
+    properties:
+      type: { type: string, enum: [LineString] }
+      coordinates: { type: array, items: { type: array, items: { type: number } } }
+
+  multiLineString:
+    type: object
+    required: [type, coordinates]
+    properties:
+      type: { type: string, enum: [MultiLineString] }
+      coordinates: { type: array, items: { type: array, items: { type: array, items: { type: number } } } }
+
+  polygon:
+    type: object
+    required: [type, coordinates]
+    properties:
+      type: { type: string, enum: [Polygon] }
+      coordinates: { type: array, items: { type: array, items: { type: array, items: { type: number } } } }
+
+  multiPolygon:
+    type: object
+    required: [type, coordinates]
+    properties:
+      type: { type: string, enum: [MultiPolygon] }
+      coordinates: { type: array, items: { type: array, items: { type: array, items: { type: array, items: { type: number } } } } }
+
+  geometryCollection:
+    type: object
+    required: [type, geometries]
+    properties:
+      type: { type: string, enum: [GeometryCollection] }
+      geometries:
+        type: array
+        items: { $ref: '#' } # Recursively references the top-level oneOf

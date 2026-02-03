@@ -1,0 +1,7 @@
+cnId:
+      name: cnId
+      in: path
+      description: Local identifier of a specific inter-layer connection (e.g., 'ILC-001').
+      required: true
+      schema:
+        type: string

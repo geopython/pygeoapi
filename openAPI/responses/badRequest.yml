@@ -1,0 +1,5 @@
+description: Invalid request parameters or malformed input.
+content:
+  application/json:
+    schema:
+      $ref: '../schemas/apiError.yml'

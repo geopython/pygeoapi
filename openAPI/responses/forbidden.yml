@@ -1,0 +1,5 @@
+description: The request was valid, but the server is refusing action.
+content:
+  application/json:
+    schema:
+      $ref: '../schemas/apiError.yml'

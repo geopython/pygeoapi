@@ -1,0 +1,19 @@
+geometry:
+      name: geometry
+      in: query
+      required: true
+      description: |-
+        Input geometry expressed as a 2D Well-Known Text (WKT) string.
+        The geometry is evaluated in the local 2D coordinate reference
+        of the IndoorFeature and the specified level.
+
+        Only 2D geometries are supported. Z coordinates, if provided,
+        are not allowed and will result in an error.
+
+        Examples:
+        - POINT(123.4 56.7)
+        - POLYGON((120 40, 140 40, 140 60, 120 60, 120 40))
+
+      schema:
+        type: string
+        example: POINT(123.4 56.7)

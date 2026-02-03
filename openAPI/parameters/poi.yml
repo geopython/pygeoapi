@@ -1,0 +1,7 @@
+poi:
+      name: poi
+      in: query
+      description: Filter CellSpaces by Point of Interest status.
+      required: false
+      schema:
+        type: boolean

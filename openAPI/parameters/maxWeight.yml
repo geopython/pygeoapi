@@ -1,0 +1,9 @@
+maxWeight:
+      name: maxWeight
+      in: query
+      description: Filter edges by maximum weight (e.g., max walking distance).
+      required: false
+      schema:
+        type: number
+        format: float
+        minimum: 0

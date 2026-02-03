@@ -1,0 +1,30 @@
+type: object
+title: Edge
+required:
+  - id
+  - featureType
+  - weight
+  - connects
+properties:
+  id:
+    type: string
+  featureType:
+    type: string
+    enum:
+      - Edge
+  duality:
+    type: string
+    format: uri-reference
+    description: "Reference to the corresponding primal Space cell (e.g., a door or opening)."
+  weight:
+    type: number
+  geometry:
+    $ref: 'https://beta.schemas.opengis.net/json-fg/geometry-object.json#/$defs/LineString'
+  connects:
+    type: array
+    minItems: 2
+    maxItems: 2
+    uniqueItems: true
+    items:
+      type: string
+      format: uri-reference

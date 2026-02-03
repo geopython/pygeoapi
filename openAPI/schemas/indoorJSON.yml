@@ -1,0 +1,5 @@
+IndoorJSON:
+      type: object
+      description: Root schema for IndoorGML 2.0 IndoorFeatures
+      allOf:
+        - $ref: './indoorFeature.yml'
