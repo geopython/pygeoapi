@@ -67,7 +67,7 @@ class BaseProvider:
             raise RuntimeError('name/type/data are required')
 
         self.editable = provider_def.get('editable', False)
-        self.count = str2bool(provider_def.get('count', 'true'))
+        self.count = str2bool(provider_def.get('count', True))
         self.options = provider_def.get('options')
         self.id_field = provider_def.get('id_field')
         self.uri_field = provider_def.get('uri_field')
