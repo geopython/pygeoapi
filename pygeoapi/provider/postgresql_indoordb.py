@@ -3083,7 +3083,87 @@ class PostgresIndoorDB:
                     }
             
             return response
-            
+
+    def connected_nodes(self, collection_str, item_str, layer_str, node_str, hop = 1):
+        lookup_sql = """
+            SELECT n.id 
+            FROM node_n_edge n
+            JOIN collection c ON n.collection_id = c.id
+            JOIN indoorfeature i ON n.indoorfeature_id = i.id
+            JOIN thematiclayer t ON n.thematiclayer_id = t.id
+            WHERE n.id_str = %s AND c.id_str = %s AND i.id_str = %s AND t.id_str = %s
+        """
+        with self.connection.cursor(cursor_factory=RealDictCursor) as cur:
+            cur.execute(lookup_sql, (node_str, collection_str, item_str, layer_str))
+            row = cur.fetchone()
+            if not row:
+                msg = f"{node_str} is not found."
+                raise ValueError(msg)
+            starting_node = row['id']
+            nodes_sql = """
+            WITH RECURSIVE neighbors AS (
+            SELECT 
+                node_source_id AS next_node, 
+                node_target_id AS target_node, 
+                1 AS current_hop
+            FROM connects
+            WHERE node_source_id = %s OR node_target_id = %s
+            UNION
+            -- Recursive step: Find nodes connected to the ones found in the previous step
+            SELECT 
+                CASE 
+                    WHEN c.node_source_id = n.target_node THEN c.node_target_id 
+                    ELSE c.node_source_id 
+                END,
+                CASE 
+                    WHEN c.node_source_id = n.target_node THEN c.node_target_id 
+                    ELSE c.node_source_id 
+                END,
+                n.current_hop + 1
+            FROM connects c
+            JOIN neighbors n ON (c.node_source_id = n.target_node OR c.node_target_id = n.target_node)
+            WHERE n.current_hop < %s
+            )
+            SELECT DISTINCT 
+                ne.id_str, 
+                ST_AsText(ne.geometry_val) as geom_wkt, 
+                ne.type,
+                nb.current_hop,
+                c.id_str as duality,
+                (
+                SELECT array_agg(e.id_str)
+                FROM connects c
+                JOIN node_n_edge e ON c.edge_id = e.id
+                WHERE c.node_source_id = ne.id OR c.node_target_id = ne.id
+                ) as node_connects_list
+            FROM node_n_edge ne
+            JOIN neighbors nb ON ne.id = nb.target_node
+            LEFT JOIN cell_space_n_boundary c ON ne.duality_id = c.id
+            WHERE ne.id != %s -- Exclude the starting node itself
+            ORDER BY nb.current_hop ASC
+            """
+            cur.execute(nodes_sql, (starting_node, starting_node, hop, starting_node))
+            nodes = cur.fetchall()
+            response = {
+                "type": "ConnectedNodesResult",
+                "start_node": node_str,
+                "connected_nodes": [
+                    {
+                        "hop": node['current_hop'],
+                        "id": node['id_str'],
+                        "featureType": "node",
+                        "geometry": self.wkt_to_json(node['geom_wkt']),
+                        "duality": node['duality'],
+                        "connects": node['node_connects_list']
+                    }
+                    for node in nodes
+                ],
+                "links": []
+            }
+
+            return response
+
+
     def json_to_wkt(self, geom_json):
         """
         Converts GeoJSON-like dict to WKT string.

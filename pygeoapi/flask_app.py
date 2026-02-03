@@ -603,6 +603,19 @@ def compute_indoor_route(collection_id, item_id, layer_id):
     else:
         return api_.get_exception(405, {}, request.format, 'MethodNotAllowed', 'Method not allowed')
     
+@BLUEPRINT.route('/collections/<path:collection_id>/items/<path:item_id>/layers/<path:layer_id>/dual/<path:member_id>/connected', methods=['GET'])
+def connected_nodes(collection_id, item_id, layer_id, member_id):
+    if request.method == 'GET':
+        return execute_from_flask(
+            indoorgml.get_connected_nodes, request, 
+            collection_id, 
+            item_id,
+            layer_id,
+            member_id
+        )
+    else:
+        return api_.get_exception(405, {}, request.format, 'MethodNotAllowed', 'Method not allowed')
+    
 @BLUEPRINT.route('/collections/<path:collection_id>/coverage')
 def collection_coverage(collection_id: str):
     """

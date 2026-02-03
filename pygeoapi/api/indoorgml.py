@@ -1590,6 +1590,35 @@ def get_bounding_cell_space(api: API, request: APIRequest, collection_id: str, i
         pidb_provider.disconnect()
     return headers, HTTPStatus.OK, to_json(response, api.pretty_print)
 
+def get_connected_nodes(api: API, request: APIRequest, collection_id: str, item_id: str, layer_id: str, node_id: str) -> Tuple[dict, int, str]:
+    """
+    GET a list of connected nodes filtered by hop.
+
+    :return: a list of connected nodes
+    """
+    if not request.is_valid():
+        return api.get_format_exception(request)
+    
+    headers = request.get_response_headers(SYSTEM_LOCALE)
+    hop = int(request.params.get('hop', 1))
+    if not (0 < hop < 4):
+        msg = 'hop value must be between 0 and 4 (inclusive). default: 1'
+        return api.get_exception(
+            HTTPStatus.BAD_REQUEST,
+            headers, request.format, 'InvalidParameterValue', msg)
+    
+    pidb_provider = PostgresIndoorDB()
+
+    try:
+        pidb_provider.connect()
+        response = pidb_provider.connected_nodes(collection_id, item_id, layer_id, node_id, hop=hop)
+
+    except Exception as e:
+        return api.get_exception(HTTPStatus.INTERNAL_SERVER_ERROR, headers, request.format, 'ServerError', str(e))
+    finally:
+        pidb_provider.disconnect()
+    return headers, HTTPStatus.OK, to_json(response, api.pretty_print)
+
 # endregion
 
 def get_list_of_collections_id():
