@@ -463,6 +463,18 @@ def collection_items_interlayerconnections(collection_id, item_id, connection_id
                 connection_id
             )
 
+@BLUEPRINT.route('/collections/<path:collection_id>/items/<path:item_id>/layers/<path:layer_id>/geoquery', methods=['GET'])
+def geometric_query(collection_id, item_id, layer_id):
+    if request.method == 'GET':
+        return execute_from_flask(
+            indoorgml.get_geometric_query, request,
+            collection_id,
+            item_id,
+            layer_id
+        )
+    else:
+        return api_.get_exception(405, {}, request.format, 'MethodNotAllowed', 'Method not allowed')
+
 @BLUEPRINT.route('/collections/<path:collection_id>/items/<path:item_id>/layers/<path:layer_id>/primal', methods=['POST', 'GET'])
 @BLUEPRINT.route('/collections/<path:collection_id>/items/<path:item_id>/layers/<path:layer_id>/primal/<path:member_id>', methods=['GET','PATCH','DELETE']) # cellboundary : only GET
 def collection_items_layers_primal(collection_id, item_id, layer_id, member_id=None):
@@ -514,18 +526,19 @@ def collection_items_layers_primal(collection_id, item_id, layer_id, member_id=N
         else:
             return api_.get_exception(405, {}, request.format, 'MethodNotAllowed', 'Method not allowed')
 
-@BLUEPRINT.route('/collections/<path:collection_id>/items/<path:item_id>/layers/<path:layer_id>/geoquery', methods=['GET'])
-def geometric_query(collection_id, item_id, layer_id):
+@BLUEPRINT.route('/collections/<path:collection_id>/items/<path:item_id>/layers/<path:layer_id>/primal/<path:member_id>/bounding', methods=['GET'])
+def bounding_cell_space(collection_id, item_id, layer_id, member_id):
     if request.method == 'GET':
         return execute_from_flask(
-            indoorgml.get_geometric_query, request,
-            collection_id,
+            indoorgml.get_bounding_cell_space, request, 
+            collection_id, 
             item_id,
-            layer_id
+            layer_id,
+            member_id
         )
     else:
         return api_.get_exception(405, {}, request.format, 'MethodNotAllowed', 'Method not allowed')
-
+    
 @BLUEPRINT.route('/collections/<path:collection_id>/items/<path:item_id>/layers/<path:layer_id>/dual', methods=['POST', 'GET'])
 @BLUEPRINT.route('/collections/<path:collection_id>/items/<path:item_id>/layers/<path:layer_id>/dual/<path:member_id>', methods=['GET','PATCH','DELETE']) # only edge can update
 def collection_items_layers_dual(collection_id, item_id, layer_id, member_id=None):

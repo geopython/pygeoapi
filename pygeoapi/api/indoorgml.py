@@ -1564,6 +1564,32 @@ def get_route(api: API, request: APIRequest, collection_id: str, item_id: str, l
     
     return headers, HTTPStatus.OK, to_json(response, api.pretty_print)
 
+def get_bounding_cell_space(api: API, request: APIRequest, collection_id: str, item_id: str, layer_id: str, boundary_id: str) -> Tuple[dict, int, str]:
+    """
+    GET cell space bounded by specific cell boundary.
+
+    :return: a list of cell spaces.
+    """
+    if not request.is_valid():
+        return api.get_format_exception(request)
+    
+    headers = request.get_response_headers(SYSTEM_LOCALE)
+    pidb_provider = PostgresIndoorDB()
+
+    try:
+        pidb_provider.connect()
+        response = pidb_provider.bounding_cell_space(collection_id, item_id, layer_id, boundary_id)
+        if not response:
+             return api.get_exception(
+                 HTTPStatus.NOT_FOUND, 
+                 headers, request.format, 'NotFound', 'Specified path paremeters are not found.')
+
+    except Exception as e:
+        return api.get_exception(HTTPStatus.INTERNAL_SERVER_ERROR, headers, request.format, 'ServerError', str(e))
+    finally:
+        pidb_provider.disconnect()
+    return headers, HTTPStatus.OK, to_json(response, api.pretty_print)
+
 # endregion
 
 def get_list_of_collections_id():
