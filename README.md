@@ -3,7 +3,7 @@
 IndoorGML api is a RESTful api implementation of the **OGC IndoorGML 2.0** standard, designed to align with **OGC API - Features** standards. This api extends the pygeoapi framework to provide specialized service layers for indoor environments.
 
 
-### About Naming
+### Naming
 
 This API is referred to as the **IndoorGML API** because it implements
 the IndoorGML conceptual model, including spatial subdivision, topology,
@@ -20,7 +20,7 @@ This project is a extension of
 [pygeoapi](https://pygeoapi.io), designed to provide a RESTful API for IndoorGML 2.0 standard.
 ### Key Accomplishments
 * **OGC Standards Alignment:** Successfully mapped IndoorGML 2.0 Indoorfeature to the OGC API - Features core.
-* **Dual-Space Logic:** Full implementation of Primal Space (Rooms/Boundaries) and Dual Space (Nodes/Edges) connectivity.
+* **Dual-Space Logic:** Full implementation of Primal Space (Rooms/Boundaries) and Dual Space (Nodes/Edges) connectivity via. Poincare's Duality.
 * **Advanced Navigation:** Custom service endpoints for Shortest Path (Dijkstra) and Topological N-Hop analysis.
 * **Engineering Precision:** Native support for **SRID 0** (Cartesian Plane) for building-scale accuracy.
 
@@ -45,10 +45,12 @@ This engine is built upon a specialized fork of **pygeoapi**, a Python server im
 The IndoorGML API is designed according to a **separation-of-concerns architecture** that distinguishes between:
 
 - **Persistent storage optimized for spatial querying and data integrity**, and
-- **A serialization layer that produces schema-conformant IndoorJSON documents**
+- **A encoding layer that produces schema-conformant IndoorJSON documents**
 
 The database schema and the API representation are intentionally decoupled.  
 The database is treated as an **implementation detail**, while IndoorJSON serves as the **canonical exchange format** exposed to clients.
+
+### Resource diagram
 
 ![System Architecture Diagram](./data/indoorfeatures.drawio.svg)
 
@@ -63,7 +65,7 @@ All core entities are assigned:
 - a **surrogate numeric identifier** for internal relational operations, and  
 - a **stable string identifier** corresponding to the IndoorJSON `"id"` field.
 
-During serialization, string identifiers are emitted verbatim as IndoorJSON identifiers.  
+During encoding, string identifiers are emitted verbatim as IndoorJSON identifiers.  
 During ingestion, IndoorJSON identifiers are resolved to their corresponding internal keys.
 
 This strategy ensures **identifier stability, referential integrity, and lossless round-trip conversion** between database and IndoorJSON representations.
@@ -93,7 +95,7 @@ The IndoorJSON conceptual hierarchy is preserved at the architectural level:
   - `InterLayerConnection`
 
 In the database, layers function as **aggregation and scoping units**.  
-Spatial entities and network elements are associated with their respective layers and are composed into hierarchical IndoorJSON structures at serialization time.
+Spatial entities and network elements are associated with their respective layers and are composed into hierarchical IndoorJSON structures at encoding time.
 
 #### Topology and Connectivity
 
@@ -122,7 +124,7 @@ This design minimizes storage redundancy while preserving **semantic
 correctness and topological completeness** in the serialized IndoorJSON
 output.
 
-### Serialization Workflow
+### Encoding Workflow
 
 The generation of an IndoorJSON document follows a deterministic process:
 
@@ -178,7 +180,7 @@ cd IndoorGML_API
 python3 -m venv venv
 source venv/bin/activate
 # Install required dependencies
-pip3 install -r requirements.txt
+pip3 install -r requirements-indoor.txt
 pip install -e .
 # Start Docker Containers
 docker-compose up -d --build
