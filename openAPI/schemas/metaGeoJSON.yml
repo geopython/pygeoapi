@@ -1,0 +1,27 @@
+type: object
+title: featureGeoJSON
+required: [type, geometry, properties]
+properties:
+  type:
+    type: string
+    enum: [Feature]
+  featureType:
+    type: string
+    enum: [IndoorFeatures]
+  id:
+    type: string
+  geometry:
+    $ref: './geometryGeoJSON.yml'
+  properties:
+    type: object
+    properties:
+      metadata:
+        type: object
+        properties:
+          description: { type: string }
+          creationDate: { type: string, format: date-time }
+          version: { type: string }
+  links:
+    type: array
+    items:
+      $ref: 'https://schemas.opengis.net/ogcapi/features/part1/1.0/openapi/schemas/link.yaml'

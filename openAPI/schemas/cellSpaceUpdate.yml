@@ -12,3 +12,5 @@ CellSpaceUpdate:
         poi:
           type: string
           example: "Restroom"
+example:
+  $ref: '../examples/cellSpaceUpdate.json'

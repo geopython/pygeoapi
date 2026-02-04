@@ -1,0 +1,113 @@
+{
+  "featureType": "IndoorFeatures",
+  "id": "AIST_Waterfront_Center",
+  "geometry": {
+    "type": "Point",
+    "coordinates": [
+        125.6, 10.1
+    ]
+  },
+  "properties": {},
+  "layers": [
+    {
+      "id": "TL-1",
+      "featureType": "ThematicLayer",
+      "semanticExtension": false,
+      "theme": "Physical",
+      "primalSpace": {
+        "id": "PS-1",
+        "featureType": "PrimalSpaceLayer",
+        "creationDatetime": "2025-10-30T13:00:00",
+        "cellSpaceMember": [
+          {
+            "id": "C1",
+            "featureType": "CellSpace",
+            "duality": "TL-1:DS-1:N1",
+            "poi": false,
+            "level": "1",
+            "cellSpaceGeom": {
+              "geometry2D": {
+                "type": "Polygon",
+                "coordinates": [[[0,0], [2,0], [2,2], [0,2], [0,0]]]
+              }
+            },
+            "boundedBy": ["TL-1:PS-1:B1"]
+          },
+          {
+            "id": "C2",
+            "featureType": "CellSpace",
+            "duality": "TL-1:DS-1:N2",
+            "poi": false,
+            "level": "1",
+            "cellSpaceGeom": {
+              "geometry2D": {
+                "type": "Polygon",
+                "coordinates": [[[2,0], [4,0], [4,2], [2,2], [2,0]]]
+              }
+            },
+            "boundedBy": []
+          }
+        ],
+        "cellBoundaryMember": [
+          {
+            "id": "B1",
+            "featureType": "CellBoundary",
+            "isVirtual": false,
+            "duality": "TL-1:DS-1:E1",
+            "cellBoundaryGeom": {
+                "geometry2D": {
+                  "type": "LineString",
+                  "coordinates": [[2,0],[2,2]]
+                }           
+            }
+          }
+        ]
+      },
+      "dualSpace": {
+        "id": "DS-1",
+        "featureType": "DualSpaceLayer",
+        "creationDatetime": "2025-10-30T13:00:00",
+        "isLogical": false,
+        "isDirected": false,
+        "nodeMember": [
+          {
+            "id": "N1",
+            "featureType": "Node",
+            "duality": "TL-1:PS-1:C1",
+            "geometry": {
+              "type": "Point",
+              "coordinates": [1,1]
+            },
+            "connects": ["TL-1:DS-1:E1"]
+          },
+          {
+            "id": "N2",
+            "featureType": "Node",
+            "duality": "C2",
+            "geometry": {
+              "type": "Point",
+              "coordinates": [3,1]
+            },
+            "connects": ["E1"]
+          }
+        ],
+        "edgeMember": [
+          {
+            "id": "E1",
+            "featureType": "Edge",
+            "duality": "B1",
+            "weight": 1.0,
+            "geometry": {
+              "type": "LineString",
+              "coordinates": [[1,1],[3,1]]
+            },
+            "connects": [
+              "TL-1:DS-1:N1",
+              "TL-1:DS-1:N2"
+            ]
+          }
+        ]
+      }
+    }
+  ]
+}

@@ -28,3 +28,5 @@ properties:
     uniqueItems: true
     items:
       $ref: './cellBoundary.yml'
+example:
+  $ref: '../examples/primalSpaceLayer.json'

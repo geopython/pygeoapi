@@ -25,3 +25,5 @@ properties:
         $ref: 'https://beta.schemas.opengis.net/json-fg/geometry-object.json#/$defs/Polygon'
   externalReference:
     $ref: './externalReferenceType.yml'
+example:
+  $ref: '../examples/cellBoundary.json'

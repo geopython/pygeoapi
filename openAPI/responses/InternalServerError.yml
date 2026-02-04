@@ -3,3 +3,5 @@ content:
   application/json:
     schema:
       $ref: '../schemas/ApiError.yml'
+    example:
+      $ref: '../examples/internalServerError.json'

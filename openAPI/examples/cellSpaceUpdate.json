@@ -1,0 +1,8 @@
+{
+    "cellSpaceName": "Executive Office",
+    "poi": true,
+    "boundedBy": [
+        "#boundary-wall-01",
+        "#boundary-wall-02"
+    ]
+}

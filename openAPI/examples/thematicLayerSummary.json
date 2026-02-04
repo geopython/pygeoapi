@@ -1,0 +1,35 @@
+{
+    "id": "layer-indoor-nav-f1",
+    "featureType": "ThematicLayer",
+    "theme": "virtual",
+    "semanticExtension": true,
+    "summary": {
+        "primalSpace": {
+            "cellSpaceCount": 2,
+            "cellBoundaryCount": 1,
+            "level": [
+                "1F"
+            ]
+        },
+        "dualSpace": {
+            "nodeCount": 2,
+            "edgeCount": 1,
+            "isDirected": true,
+            "isLogical": true
+        }
+    },
+    "bbox": [
+        0.0,
+        0.0,
+        20.0,
+        10.0
+    ],
+    "links": [
+        {
+            "href": "http://localhost:5000/collections/aist_waterfront_lab/items/AIST_Waterfront_Center/layers/layer-indoor-nav-f1",
+            "rel": "self",
+            "type": "application/json",
+            "title": "Thematic Layer"
+        }
+    ]
+}

@@ -25,3 +25,5 @@ properties:
     $ref: './primalSpaceLayer.yml'
   dualSpace:
     $ref: './dualSpaceLayer.yml'
+example:
+  $ref: '../examples/thematicLayer.json'

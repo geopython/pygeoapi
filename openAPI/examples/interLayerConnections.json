@@ -1,0 +1,27 @@
+{
+    "layerConnections": [
+        {
+            "id": "conn_physical_to_virtual_01",
+            "featureType": "InterLayerConnection",
+            "typeOfTopoExpression": "equals",
+            "comment": "Connecting physical node N1 to virtual node 101",
+            "connectedLayers": [
+                "TL-1",
+                "layer-indoor-nav-f1"
+            ],
+            "connectedNodes": [
+                "N1",
+                "node-101"
+            ],
+            "connectedCells": []
+        }
+    ],
+    "links": [
+        {
+            "href": "http://localhost:5000/collections/aist_waterfront_lab/items/AIST_Waterfront_Center/interlayerconnections?limit=10&connectedLayerId=TL-1&offset=0",
+            "rel": "self",
+            "type": "application/json",
+            "title": "Current Page"
+        }
+    ]
+}
