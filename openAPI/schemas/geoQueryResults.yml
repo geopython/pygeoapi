@@ -14,9 +14,9 @@ properties:
     type: string
     nullable: true
   primalSpace:
-    $ref: './primalSpace.yml' 
+    $ref: './primalSpaceLayer.yml' 
   dualSpace:
-    $ref: './dualSpace.yml'
+    $ref: './dualSpaceLayer.yml'
   links:
     type: array
     items:

@@ -1,0 +1,38 @@
+title: RouteResult
+type: object
+required: [type, start_node, destination_node, cost, path_segments]
+properties:
+  type:
+    type: string
+    enum: [RouteResult]
+  start_node:
+    type: string
+    description: Start node identifier (sn).
+  destination_node:
+    type: string
+    description: Destination node identifier (dn).
+  cost:
+    type: number
+    format: double
+    description: The total aggregated weight/length of the path.
+  path_segments:
+    type: array
+    items:
+      type: object
+      required: [seq, type, id_str, cost, geometry]
+      properties:
+        seq:
+          type: integer
+        type:
+          type: string
+          enum: [edge, destination_node]
+        id_str:
+          type: string
+        cost:
+          type: number
+        geometry:
+          $ref: 'https://beta.schemas.opengis.net/json-fg/geometry-object.json#/$defs/LineString'
+  links:
+    type: array
+    items:
+      $ref: 'https://schemas.opengis.net/ogcapi/features/part1/1.0/openapi/schemas/link.yaml'
