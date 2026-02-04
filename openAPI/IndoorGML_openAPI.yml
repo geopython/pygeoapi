@@ -477,6 +477,8 @@ paths:
             application/json:
               schema:
                 $ref: './schemas/primalSpaceLayer.yml'
+              example:
+                $ref: './examples/primalSpaceLayer.json'
         '400':
           $ref: './responses/badRequest.yml'
         '404':
@@ -817,10 +819,12 @@ paths:
             application/json:
               schema:
                 $ref: './schemas/edge.yml'
+              example:
+                $ref: './examples/edge.json'
         '404':
-          description: Edge not found.
+          $ref: './responses/notFound.yml'
         '400':
-          description: Invalid ID supplied.
+          $ref: './responses/badRequest.yml'
         '500':
           $ref: './responses/InternalServerError.yml'
 
