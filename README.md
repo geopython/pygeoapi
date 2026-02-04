@@ -180,7 +180,7 @@ cd IndoorGML_API
 python3 -m venv venv
 source venv/bin/activate
 # Install required dependencies
-pip3 install -r requirements.txt
+pip3 install -r requirements-indoor.txt
 pip install -e .
 # Start Docker Containers
 docker-compose up -d --build
