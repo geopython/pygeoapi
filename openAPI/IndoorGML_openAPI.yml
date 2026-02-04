@@ -611,55 +611,103 @@ paths:
         '500':
           $ref: './responses/internalServerError.yml'
 
-  # /collections/{collectionId}/items/{fId}/layers/{tId}/geoquery:
-  #   parameters:
-  #     - $ref: './parameters/collectionId.yml'
-  #     - $ref: './parameters/featureId.yml'
-  #     - $ref: './parameters/tId.yml'
-  #   get:
-  #     tags:
-  #         - Services
-  #     summary: Performs a geometric query agains CellSpace geometries
-  #     description: Performs a 2D geometric predicate query against CellSpace geometries within a specified indoor level.
-  #     operationId: geometricQuery
-  #     parameters:
-  #       - $ref: './parameters/op.yml'
-  #       - $ref: './parameters/level.yml'
-  #       - $ref: './parameters/geometry.yml'
-  #       - $ref: './parameters/limit.yml'
-  #     responses:
-  #       '200':
-  #         description: Returns the GeoQueryResults.
-  #         content:
-  #           application/json:
-  #             schema:
-  #               $ref: '#/components/schemas/GeoQueryResults'
-  #       '404':
-  #         description: Invalid path parameter.
+  /collections/{collectionId}/items/{fId}/layers/{tId}/geoquery:
+    parameters:
+      - $ref: './parameters/collectionId.yml'
+      - $ref: './parameters/featureId.yml'
+      - $ref: './parameters/tId.yml'
+    get:
+      tags:
+          - Services
+      summary: Performs a geometric query agains CellSpace geometries
+      description: |-
+        Performs a spatial query against the **PrimalSpace** of a specific ThematicLayer using 2D geometric predicates.
+        
+        **Functionality:**
+        This operation filters `CellSpace` geometries based on a provided spatial operator (`op`) and a reference geometry. Unlike a standard bounding box filter, this endpoint supports complex topological predicates (e.g., *intersects*, *contains*, *within*) defined by the OGC Simple Features standard.
 
-  # /collections/{collectionId}/items/{fId}/layers/{tId}/dual/route:
-  #   parameters:
-  #     - $ref: './parameters/collectionId.yml'
-  #     - $ref: './parameters/featureId.yml'
-  #     - $ref: './parameters/tId.yml'
-  #   get:
-  #     tags:
-  #       - Services
-  #     summary: Compute an indoor route using the dual graph
-  #     description: Computes a navigable route between two nodes within an IndoorFeature using the dual graph of the specified thematic layer.
-  #     operationId: computeIndoorRoute
-  #     parameters:
-  #       - $ref: './parameters/sn.yml'
-  #       - $ref: './parameters/dn.yml'
-  #     responses:
-  #       '200':
-  #         description: Returns the RouteResults.
-  #         content:
-  #           application/json:
-  #             schema:
-  #               $ref: '#/components/schemas/RouteResults'
-  #       '404':
-  #         description: Invalid path parameter.
+        **Spatial Duality Logic:**
+        - **Primal Space:** Only the `CellSpaceMember` items that satisfy the geometric predicate are returned.
+        - **Dual Space:** The server automatically identifies the `Nodes` (States) corresponding to the filtered CellSpaces via the duality relationship. The resulting `dualSpace` will contain these nodes and any `Edges` (Transitions) that connect them, providing a sub-graph of the indoor navigation network that exists within the queried area.
+
+        **Parameters:**
+        - `op`: The geometric predicate to apply (e.g., `intersects`, `disjoint`, `contains`).
+        - `geometry`: The reference geometry in WKT (Well-Known Text) format used for the predicate.
+        - `level`: (Optional) Restricts the search to a specific floor or vertical level within the IndoorGML model.
+
+        **Response:**
+        Returns a single `ThematicLayer` object containing the filtered Primal and Dual space components.
+      operationId: geometricQuery
+      parameters:
+        - $ref: './parameters/op.yml'
+        - $ref: './parameters/level.yml'
+        - $ref: './parameters/geometry.yml'
+      responses:
+        '200':
+          description: Returns the GeoQueryResults.
+          content:
+            application/json:
+              schema:
+                $ref: './schemas/geoQueryResults.yml'
+              example:
+                $ref: './examples/geoQueryResults.json'
+        '400':
+          $ref: './responses/badRequest.yml'
+        '401':
+          $ref: './responses/unauthorized.yml'
+        '404':
+          $ref: './responses/notFound.yml'
+        '500':
+          $ref: './responses/internalServerError.yml'
+
+  /collections/{collectionId}/items/{fId}/layers/{tId}/dual/route:
+    parameters:
+      - $ref: './parameters/collectionId.yml'
+      - $ref: './parameters/featureId.yml'
+      - $ref: './parameters/tId.yml'
+    get:
+      tags:
+        - Services
+      summary: Compute an indoor route using the dual graph
+      description: |-
+        Computes the shortest navigable path between two points within an `IndoorFeature` based on the **Dual Space** graph logic of a specific `ThematicLayer`.
+
+        **Routing Logic:**
+        This operation utilizes the **Dijkstra algorithm** (via pgRouting) to traverse the network of `Nodes` (States) and `Edges` (Transitions) defined in the IndoorGML dual graph. It calculates the path with the lowest cumulative weight, where weight typically represents physical distance or travel time.
+
+        **Spatial Awareness:**
+        - **Start/Destination:** The `sn` (Start Node) and `dn` (Destination Node) must exist within the specified `ThematicLayer`. 
+        - **Segments:** The result returns an ordered sequence of `path_segments`. Each segment represents a **Transition** (Edge) in the graph, except for the final segment which identifies the reached **State** (Node).
+        - **Geometry:** Every segment includes GeoJSON geometry derived from the dual space, allowing for immediate visualization of the route on a 2D or 3D map.
+
+        **Duality context:**
+        While the route is calculated in the **Dual Space** (the network), the resulting IDs can be used to identify the corresponding **Primal Space** cells (rooms, corridors) that the user will physically pass through, thanks to the IndoorGML duality relationship.
+
+        **Usage Note:**
+        If no path exists between the two nodes (e.g., nodes are in disconnected sub-graphs or different buildings), the service returns an empty path with a total cost of zero.
+      operationId: computeIndoorRoute
+      parameters:
+        - $ref: './parameters/sn.yml'
+        - $ref: './parameters/dn.yml'
+      responses:
+        '200':
+          description: Returns the RouteResults.
+          content:
+            application/json:
+              schema:
+                $ref: './schemas/routeResults.yml'
+              example:
+                $ref: './examples/routeResults.json'
+        '400':
+          $ref: './responses/badRequest.yml'
+        '401':
+          $ref: './responses/unauthorized.yml'
+        '404':
+          $ref: './responses/notFound.yml'
+        '422':
+          $ref: './responses/unprocessableEntity.yml'
+        '500':
+          $ref: './responses/internalServerError.yml'
 
   /collections/{collectionId}/items/{fId}/layers/{tId}/primal/{mId}:
     parameters:

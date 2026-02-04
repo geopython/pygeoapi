@@ -3,7 +3,7 @@
 IndoorGML api is a RESTful api implementation of the **OGC IndoorGML 2.0** standard, designed to align with **OGC API - Features** standards. This api extends the pygeoapi framework to provide specialized service layers for indoor environments.
 
 
-### About Naming
+### Naming
 
 This API is referred to as the **IndoorGML API** because it implements
 the IndoorGML conceptual model, including spatial subdivision, topology,
@@ -20,7 +20,7 @@ This project is a extension of
 [pygeoapi](https://pygeoapi.io), designed to provide a RESTful API for IndoorGML 2.0 standard.
 ### Key Accomplishments
 * **OGC Standards Alignment:** Successfully mapped IndoorGML 2.0 Indoorfeature to the OGC API - Features core.
-* **Dual-Space Logic:** Full implementation of Primal Space (Rooms/Boundaries) and Dual Space (Nodes/Edges) connectivity.
+* **Dual-Space Logic:** Full implementation of Primal Space (Rooms/Boundaries) and Dual Space (Nodes/Edges) connectivity via. Poincare's Duality.
 * **Advanced Navigation:** Custom service endpoints for Shortest Path (Dijkstra) and Topological N-Hop analysis.
 * **Engineering Precision:** Native support for **SRID 0** (Cartesian Plane) for building-scale accuracy.
 
