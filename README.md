@@ -49,7 +49,9 @@ The IndoorGML API is designed according to a **separation-of-concerns architectu
 
 The database schema and the API representation are intentionally decoupled.  
 The database is treated as an **implementation detail**, while IndoorJSON serves as the **canonical exchange format** exposed to clients.
+
 ![System Architecture Diagram](./data/indoorfeatures.drawio.svg)
+
 ---
 
 ### DB–IndoorJSON Mapping Principles
@@ -66,8 +68,6 @@ During ingestion, IndoorJSON identifiers are resolved to their corresponding int
 
 This strategy ensures **identifier stability, referential integrity, and lossless round-trip conversion** between database and IndoorJSON representations.
 
----
-
 #### Geometry Representation
 
 IndoorJSON differentiates between two-dimensional and three-dimensional geometries.  
@@ -82,8 +82,6 @@ The API adopts the following mapping strategy:
 
 This approach preserves **computational efficiency for spatial operations** while maintaining **semantic fidelity** to the IndoorJSON specification for volumetric and surface geometries.
 
----
-
 #### Layer-Oriented Data Organization
 
 The IndoorJSON conceptual hierarchy is preserved at the architectural level:
@@ -96,8 +94,6 @@ The IndoorJSON conceptual hierarchy is preserved at the architectural level:
 
 In the database, layers function as **aggregation and scoping units**.  
 Spatial entities and network elements are associated with their respective layers and are composed into hierarchical IndoorJSON structures at serialization time.
-
----
 
 #### Topology and Connectivity
 
@@ -126,8 +122,6 @@ This design minimizes storage redundancy while preserving **semantic
 correctness and topological completeness** in the serialized IndoorJSON
 output.
 
----
-
 ### Serialization Workflow
 
 The generation of an IndoorJSON document follows a deterministic process:
@@ -141,8 +135,6 @@ The generation of an IndoorJSON document follows a deterministic process:
 4. Assemble inter-layer connections
 5. Serialize the result as a schema-conformant IndoorJSON document
 
----
-
 ### Design Considerations
 
 The architecture is guided by the following objectives:
@@ -155,7 +147,6 @@ The architecture is guided by the following objectives:
 
 This design enables IndoorJSON to function as a **robust exchange format**, independent of the underlying persistence mechanism.
 
-
 ---
 
 ## 🛰 API Service Architecture
@@ -167,8 +158,9 @@ This design enables IndoorJSON to function as a **robust exchange format**, inde
 | **Navigation** | `...{layer_id}/routing` | Shortest path calculation powered by pgRouting.|
 | **Spatial** | `/geoquery` | Advanced spatial filtering via WKT-form 2D geometries. |
 
-💡 Tip: For a full list of over [20+] endpoints, including detailed parameter schemas and CRUD operations, please refer to our interactive documentation at:
-🔗 Swagger UI: `/openapi` or `/docs`
+💡 Tip: For a full list of over 20+ endpoints, including detailed parameter schemas and CRUD operations, please refer to our interactive documentation at:
+🔗 Swagger UI: `/openapi`.
+
 ---
 
 ## 📥 Installation & Setup
@@ -194,4 +186,3 @@ export PYGEOAPI_CONFIG=pygeoapi-config.yml
 export PYGEOAPI_OPENAPI=local.openapi.yml
 pygeoapi openapi generate $PYGEOAPI_CONFIG --output-file $PYGEOAPI_OPENAPI
 pygeoapi serve
-# Spin up the PostGIS and FastAPI containers
