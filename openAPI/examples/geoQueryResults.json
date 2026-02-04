@@ -1,0 +1,64 @@
+{
+  "id": "TL1",
+  "featureType": "ThematicLayer",
+  "theme": "physical",
+  "semanticExtension": false,
+  "primalSpace": {
+    "id": "m5ffb680-c7aa-7490-e409-1ac27565de55",
+    "featureType": "PrimalSpaceLayer",
+    "cellSpaceMember": [
+      {
+        "id": "C25",
+        "featureType": "CellSpace",
+        "duality": "S26",
+        "level": "1",
+        "cellSpaceGeom": {
+          "geometry2D": {
+            "type": "Polygon",
+            "coordinates": [[[234.85, 399.78], [246.48, 399.58], [287.33, 399.21], [234.85, 399.78]]]
+          },
+          "geometry3D": {
+            "type": "Polyhedron",
+            "coordinates": [[[[211.94, 386.64, 0.0], [225.41, 386.88, 0.0], [211.94, 386.64, 0.0]]]]
+          }
+        }
+      }
+    ]
+  },
+  "dualSpace": {
+    "id": "d7dee6fe-99c8-2489-63fe-52756186bfa2",
+    "featureType": "DualSpaceLayer",
+    "nodeMember": [
+      {
+        "id": "S1",
+        "featureType": "Node",
+        "geometry": {
+          "type": "Point",
+          "coordinates": [199.80, 391.65, 0.0]
+        },
+        "duality": "C1",
+        "connects": ["T3", "T74"]
+      }
+    ],
+    "edgeMember": [
+      {
+        "id": "T1",
+        "featureType": "Edge",
+        "geometry": {
+          "type": "LineString",
+          "coordinates": [[174.12, 536.21, 40.0], [174.33, 536.16, 20.0]]
+        },
+        "weight": 1.0,
+        "connects": ["S5", "S4"]
+      }
+    ]
+  },
+  "links": [
+    {
+      "href": "http://localhost:5000/collections/aist/items/building-1/layers/TL1/geoquery?op=intersects&geometry=POINT(250 350)",
+      "rel": "self",
+      "type": "application/json",
+      "title": "Geometric query result"
+    }
+  ]
+}
