@@ -58,5 +58,5 @@ database:
   host: localhost
   port: 5432
   database: indoordb
-  username: user       # Must match your Docker setup
-  password: password   # Must match your Docker setup
+  username: user      
+  password: password   
