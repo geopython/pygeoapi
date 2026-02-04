@@ -1,11 +1,11 @@
 services:
   db:
-    image: postgis/postgis:16-3.4
-    container_name: indoor_gml_db
+    image: pgrouting/pgrouting:latest
+    container_name: indoorgml_api
     environment:
       POSTGRES_USER: user
       POSTGRES_PASSWORD: password
-      POSTGRES_DB: indoor_gml
+      POSTGRES_DB: indoordb
     volumes:
       # This maps your local init file into the container
       # It runs automatically the first time the DB starts

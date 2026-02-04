@@ -303,7 +303,7 @@ def collection_items(collection_id: str, item_id: str | None = None):
 
     :returns: HTTP response
     """
-    #collections = filter_dict_by_key_value(api_.config['resources'],'type', 'collection')
+    collections = filter_dict_by_key_value(api_.config['resources'],'type', 'collection')
     
     if indoorgml.is_indoor_collection(collection_id):
         if item_id is None:
