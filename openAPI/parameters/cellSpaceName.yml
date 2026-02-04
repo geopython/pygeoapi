@@ -1,7 +1,6 @@
-cellSpaceName:
-      name: cellSpaceName
-      in: query
-      required: false
-      description: Filter results to include only those matching the specified CellSpace name. Exact Match
-      schema:
-        type: string
+name: cellSpaceName
+in: query
+required: false
+description: Filter results to include only those matching the specified CellSpace name. Exact Match
+schema:
+  type: string

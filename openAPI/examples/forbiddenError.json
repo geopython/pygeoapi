@@ -1,0 +1,7 @@
+{
+  "type": "Error",
+  "code": "PermissionDenied",
+  "description": "The authenticated user does not have permission to modify this IndoorFeature collection.",
+  "status": 403,
+  "instance": "urn:uuid:883c4421-3e11-4b2a-9e1d-223344556677"
+}

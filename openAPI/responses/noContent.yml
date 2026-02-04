@@ -3,3 +3,5 @@ content:
   application/json:
     schema:
       $ref: '../schemas/apiResponse.yml'
+    example:
+      $ref: '../examples/successDelete.json'

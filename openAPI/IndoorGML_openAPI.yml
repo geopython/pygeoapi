@@ -151,6 +151,8 @@ paths:
           application/json:
             schema:
               $ref: './schemas/indoorJSON.yml'
+            example:
+              $ref: './examples/indoorFeature.json'
       responses:
         '201': 
           description: Successfully created an indoorFeature into a specific collection.
@@ -174,7 +176,10 @@ paths:
         - $ref: './parameters/bbox.yml'
       responses:
         '200':
+          schema:
           $ref: './responses/features.yml'
+          example:
+            $ref: './examples/indoorFeatures.json'
         '404':
           $ref: './responses/notFound.yml'
         '500':
@@ -206,6 +211,9 @@ paths:
                 oneOf:
                   - $ref: './schemas/featureGeoJSON.yml'
                   - $ref: './schemas/metaGeoJSON.yml'
+              examples:
+                indoorFeature:
+                  $ref: './examples/indoorFeature.json'
         '400':
           $ref: './responses/badRequest.yml'
         '404':
@@ -255,6 +263,8 @@ paths:
           application/json:
             schema:
               $ref: './schemas/thematicLayer.yml'
+            example:
+              $ref: './examples/thematicLayer.json'
       responses:
         '201':
           description: Success. The layer was validated and stored.
@@ -291,6 +301,8 @@ paths:
             application/json:
               schema:
                 $ref: './schemas/ThematicLayerList.yml'
+              example:
+                $ref: './examples/thematicLayerList.json'
         '400':
           $ref: './responses/badRequest.yml'
         '404':
@@ -319,6 +331,8 @@ paths:
           application/json:
             schema:
               $ref: './schemas/interLayerConnection.yml'
+            example:
+              $ref: './examples/interLayerConnection.json'
       responses:
         '201':
           description: Created successfully.
@@ -346,6 +360,8 @@ paths:
             application/json:
               schema:
                 $ref: './schemas/interLayerConnections.yml'
+              example:
+                $ref: './examples/interLayerConnections.json'
         '400':
           $ref: './responses/badRequest.yml'
         '404':
@@ -461,6 +477,8 @@ paths:
             application/json:
               schema:
                 $ref: './schemas/primalSpaceLayer.yml'
+              example:
+                $ref: './examples/primalSpaceLayer.json'
         '400':
           $ref: './responses/badRequest.yml'
         '404':
@@ -491,6 +509,15 @@ paths:
               oneOf:
                 - $ref: './schemas/cellSpace.yml'
                 - $ref: './schemas/cellBoundary.yml'
+            examples:
+              cellSpace:
+                summary: Example of a CellSpace
+                value: 
+                  $ref: './examples/cellSpace.json'
+              cellBoundary:
+                summary: Example of a CellBoundary
+                value: 
+                  $ref: './examples/cellBoundary.json'
       responses:
         '201':
           description: Created successfully.
@@ -525,6 +552,15 @@ paths:
               oneOf:
                 - $ref: './schemas/node.yml'
                 - $ref: './schemas/edge.yml'
+            examples:
+              cellSpace:
+                summary: Example of a Node
+                value: 
+                  $ref: './examples/node.json'
+              cellBoundary:
+                summary: Example of an Edge
+                value: 
+                  $ref: './examples/edge.json'
       responses:
         '201':
           description: Created successfully.
@@ -783,10 +819,12 @@ paths:
             application/json:
               schema:
                 $ref: './schemas/edge.yml'
+              example:
+                $ref: './examples/edge.json'
         '404':
-          description: Edge not found.
+          $ref: './responses/notFound.yml'
         '400':
-          description: Invalid ID supplied.
+          $ref: './responses/badRequest.yml'
         '500':
           $ref: './responses/InternalServerError.yml'
 

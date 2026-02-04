@@ -4,4 +4,7 @@ content:
     schema:
       $ref: '../responses/collections.yml'
     examples:
-      $ref: '../examples/collections.json'
+      collections_example:
+        summary: An example of the collections list
+        value:
+          $ref: '../examples/collections.json'

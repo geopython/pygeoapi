@@ -1,0 +1,7 @@
+{
+  "type": "Error",
+  "code": "InvalidParameter",
+  "description": "The 'bbox' parameter must contain 4 or 6 coordinates.",
+  "status": 400,
+  "instance": "urn:uuid:2d1b9b9a-7db6-4d5b-9f1d-0f1a0b5c6a33"
+}

@@ -1,16 +1,15 @@
-level:
-      name: level
-      in: query
-      description: |
-        Filters the indoorFeatures, thematicLayer, and primalSpace content by a specific floor level.
-        
-        **Filtering Logic:**
-        * **Primal Space:** The filter is explicitly applied to `CellSpace` geometries on the specified level (e.g., '1F', 'B1').
-        * **Inferred Members:** Other members of the Primal and Dual spaces (e.g., boundaries, nodes, edges) are automatically included based on their relationships (`boundedBy`, `duality`) with the selected CellSpaces.
-        
-        **Note:** If both this parameter or `bbox` is omitted, the response will return **metadata only** to reduce payload size.
-        
-      required: false
-      schema:
-        type: string
-        example: "1F"
+name: level
+in: query
+description: |
+  Filters the indoorFeatures, thematicLayer, and primalSpace content by a specific floor level.
+  
+  **Filtering Logic:**
+  * **Primal Space:** The filter is explicitly applied to `CellSpace` geometries on the specified level (e.g., '1F', 'B1').
+  * **Inferred Members:** Other members of the Primal and Dual spaces (e.g., boundaries, nodes, edges) are automatically included based on their relationships (`boundedBy`, `duality`) with the selected CellSpaces.
+  
+  **Note:** If both this parameter or `bbox` is omitted, the response will return **metadata only** to reduce payload size.
+  
+required: false
+schema:
+  type: string
+  example: "1F"

@@ -1,0 +1,6 @@
+{
+  "type": "Success",
+  "code": "ResourceDeleted",
+  "description": "The IndoorFeature was successfully removed from the database.",
+  "status": 200
+}

@@ -1,9 +1,8 @@
-minWeight:
-      name: minWeight
-      in: query
-      description: Filter edges by minimum weight (e.g., distance or time > 0).
-      required: false
-      schema:
-        type: number
-        format: float
-        minimum: 0
+name: minWeight
+in: query
+description: Filter edges by minimum weight (e.g., distance or time > 0).
+required: false
+schema:
+  type: number
+  format: float
+  minimum: 0

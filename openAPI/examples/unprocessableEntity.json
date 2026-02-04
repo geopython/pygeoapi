@@ -1,0 +1,13 @@
+{
+  "type": "Error",
+  "code": "UnprocessableEntity",
+  "description": "The request was well-formed but contains semantic errors or missing required fields.",
+  "status": 422,
+  "instance": "urn:uuid:7c9e0b21-4f1a-4d3c-9b8a-112233445566",
+  "details": [
+    {
+      "field": "layers",
+      "issue": "Missing required ThematicLayer: 'Basement'"
+    }
+  ]
+}

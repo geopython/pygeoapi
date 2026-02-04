@@ -1,0 +1,7 @@
+{
+  "type": "Error",
+  "code": "NotFound",
+  "description": "The requested IndoorFeature with the provided ID could not be found.",
+  "status": 404,
+  "instance": "urn:uuid:a1b2c3d4-e5f6-4a5b-8c9d-0e1f2a3b4c5d"
+}

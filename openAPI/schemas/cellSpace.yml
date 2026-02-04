@@ -35,5 +35,3 @@ properties:
       format: uri-reference
   externalReference:
     $ref: './externalReferenceType.yml'
-example:
-  $ref: '../examples/cellSpace.json'

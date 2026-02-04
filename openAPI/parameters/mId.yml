@@ -1,7 +1,6 @@
-mId:
-      name: mId
-      in: path
-      description: Local identifier of a specific memberId for Primal and Dual spaces (e.g., 'C83').
-      required: true
-      schema:
-        type: string
+name: mId
+in: path
+description: Local identifier of a specific memberId for Primal and Dual spaces (e.g., 'C83').
+required: true
+schema:
+  type: string

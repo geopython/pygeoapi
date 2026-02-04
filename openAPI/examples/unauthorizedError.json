@@ -1,0 +1,7 @@
+{
+  "type": "Error",
+  "code": "Unauthorized",
+  "description": "Authentication is required. Please provide a valid API key or Bearer token in the Authorization header.",
+  "status": 401,
+  "instance": "urn:uuid:c9b8a7f6-e5d4-4c3b-b2a1-0f9e8d7c6b5a"
+}
