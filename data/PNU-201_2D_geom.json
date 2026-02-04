@@ -44560,7 +44560,7 @@
                                 ]
                             },
                             "duality": null,
-                            "weight": 0.0,
+                            "weight": 3.0,
                             "connects": [
                                 "S35",
                                 "S34"
@@ -44600,7 +44600,7 @@
                                 ]
                             },
                             "duality": "B60",
-                            "weight": 0.0,
+                            "weight": 7.0,
                             "connects": [
                                 "S6",
                                 "S82"
@@ -44640,7 +44640,7 @@
                                 ]
                             },
                             "duality": "B61",
-                            "weight": 0.0,
+                            "weight": 2.0,
                             "connects": [
                                 "S7",
                                 "S82"
@@ -44675,7 +44675,7 @@
                                 ]
                             },
                             "duality": "B64-REVERSE",
-                            "weight": 0.0,
+                            "weight": 6.0,
                             "connects": [
                                 "S8",
                                 "S82"
@@ -44710,7 +44710,7 @@
                                 ]
                             },
                             "duality": "B62-REVERSE",
-                            "weight": 0.0,
+                            "weight": 9.0,
                             "connects": [
                                 "S9",
                                 "S82"
@@ -44745,7 +44745,7 @@
                                 ]
                             },
                             "duality": "B67-REVERSE",
-                            "weight": 0.0,
+                            "weight": 1.0,
                             "connects": [
                                 "S10",
                                 "S82"
@@ -44785,7 +44785,7 @@
                                 ]
                             },
                             "duality": "B84",
-                            "weight": 0.0,
+                            "weight": 1.0,
                             "connects": [
                                 "S27",
                                 "S32"
@@ -44830,7 +44830,7 @@
                                 ]
                             },
                             "duality": "B86",
-                            "weight": 0.0,
+                            "weight": 6.0,
                             "connects": [
                                 "S28",
                                 "S32"
@@ -44880,7 +44880,7 @@
                                 ]
                             },
                             "duality": "B87",
-                            "weight": 0.0,
+                            "weight": 9.0,
                             "connects": [
                                 "S29",
                                 "S32"
@@ -44915,7 +44915,7 @@
                                 ]
                             },
                             "duality": "B76-REVERSE",
-                            "weight": 0.0,
+                            "weight": 4.0,
                             "connects": [
                                 "S18",
                                 "S19"
@@ -44955,7 +44955,7 @@
                                 ]
                             },
                             "duality": "B77",
-                            "weight": 0.0,
+                            "weight": 3.0,
                             "connects": [
                                 "S20",
                                 "S19"
@@ -44990,7 +44990,7 @@
                                 ]
                             },
                             "duality": "B79",
-                            "weight": 0.0,
+                            "weight": 2.0,
                             "connects": [
                                 "S19",
                                 "S21"

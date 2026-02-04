@@ -2963,8 +2963,7 @@ class PostgresIndoorDB:
             c.edge_id as id, 
             c.node_source_id as source, 
             c.node_target_id as target, 
-            COALESCE(n.weight, ST_Length(n.geometry_val)) as cost, 
-            COALESCE(n.weight, ST_Length(n.geometry_val)) as reverse_cost 
+            COALESCE(ST_Length(n.geometry_val), n.weight) as cost
         FROM connects c
         JOIN node_n_edge n ON c.edge_id = n.id
         """
@@ -2974,7 +2973,7 @@ class PostgresIndoorDB:
                 '{network_sql}',
                 %(start)s, 
                 %(dest)s, 
-                directed := false -- Set true if one-way streets exist
+                directed := true -- Set true if one-way streets exist
             )
         )
         SELECT 

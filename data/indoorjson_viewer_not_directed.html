@@ -1,0 +1,657 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>IndoorJSON Preview Viewer (v6) — Overlay + Route</title>
+<script src="https://cdn.plot.ly/plotly-2.30.0.min.js"></script>
+<style>
+:root{--bg:#fff;--fg:#111;--muted:#666;--border:#e6e6e6;--panel:#fafafa}
+body{margin:0;font-family:system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;background:var(--bg);color:var(--fg)}
+#app{display:grid;grid-template-columns:390px 1fr;height:100vh}
+#side{border-right:1px solid var(--border);padding:14px;overflow:auto;background:var(--panel)}
+#main{position:relative}
+.block{margin-bottom:14px}
+.label{font-size:12px;color:var(--muted);margin-bottom:6px}
+input[type=file],select,button{width:100%;padding:10px;box-sizing:border-box;border:1px solid var(--border);border-radius:10px;background:#fff}
+button{cursor:pointer}
+.row{display:flex;gap:10px}
+.row>*{flex:1}
+#tabs{display:flex;gap:10px;margin-top:10px;flex-wrap:wrap}
+#tabs button{width:auto;padding:10px 12px;border-radius:999px}
+#tabs button.active{background:#111;color:#fff;border-color:#111}
+#plots{position:absolute;inset:0}
+.plot{position:absolute;inset:0;display:none}
+.plot.active{display:block}
+#status,#statusResult,#statusRoute{font-size:12px;color:var(--muted)}
+pre{white-space:pre-wrap;word-break:break-word;font-size:12px;background:#fff;border:1px solid var(--border);border-radius:10px;padding:10px}
+.tiny{font-size:11px;color:var(--muted);margin-top:6px}
+.checkrow{display:flex;align-items:center;gap:8px;font-size:13px}
+.checkrow input{width:auto}
+.pill{font-size:11px;padding:2px 8px;border-radius:999px;border:1px solid var(--border);background:#fff;color:var(--muted);display:inline-block}
+</style>
+</head>
+<body>
+<div id="app">
+<aside id="side">
+  <div class="block">
+    <div class="label">Load IndoorJSON (base)</div>
+    <input id="file" type="file" accept=".json,application/json"/>
+    <div id="status" style="margin-top:8px;">No file loaded.</div>
+    <div class="tiny">Standalone — reads JSON locally in the browser.</div>
+  </div>
+
+  <div class="block">
+    <div class="label">View</div>
+    <div id="tabs">
+      <button id="btn3d" class="active">3D</button>
+      <button id="btn2d">2D</button>
+    </div>
+  </div>
+
+  <div class="block">
+    <div class="label">Level</div>
+    <select id="level"><option value="__all__">All</option></select>
+    <div class="tiny">Base geometry grouped by CellSpace.level (if present). Route can be multi-level.</div>
+  </div>
+
+  <div class="block">
+    <div class="label">Overlay query result (GeoJSON or IndoorJSON-shaped)</div>
+    <input id="fileResult" type="file" accept=".json,application/json,.geojson,application/geo+json"/>
+    <div id="statusResult" style="margin-top:8px;">No result loaded.</div>
+    <div class="checkrow" style="margin-top:8px;">
+      <input id="toggleResult" type="checkbox" checked/><label for="toggleResult">Show result overlay</label>
+    </div>
+  </div>
+
+  <div class="block">
+    <div class="label">Route result (GeoJSON or IDs)</div>
+    <input id="fileRoute" type="file" accept=".json,application/json,.geojson,application/geo+json"/>
+    <div id="statusRoute" style="margin-top:8px;">No route loaded.</div>
+    <div class="checkrow" style="margin-top:8px;">
+      <input id="toggleRoute" type="checkbox" checked/><label for="toggleRoute">Show route</label>
+    </div>
+    <div class="tiny">
+      Accepted route shapes (any one):<br/>
+      • GeoJSON LineString / Feature / FeatureCollection<br/>
+      • <span class="pill">coordinates</span>: [[x,y],[x,y,z],...]<br/>
+      • <span class="pill">nodeIds</span>/<span class="pill">nodes</span>: ["S12", ...] (needs base Node geometries)<br/>
+      • <span class="pill">edgeIds</span>/<span class="pill">edges</span>: ["T4", ...] (needs base Edge geometries)
+    </div>
+  </div>
+
+  <div class="block">
+    <div class="label">Options</div>
+    <div class="row">
+      <button id="fit">Fit view</button>
+      <button id="reset">Reset</button>
+    </div>
+  </div>
+
+  <div class="block">
+    <div class="label">Selection</div>
+    <pre id="sel">{}</pre>
+  </div>
+
+  <div class="block tiny">
+    Route color: <span class="pill">blue</span> · Result overlay: <span class="pill">red</span>
+  </div>
+</aside>
+
+<main id="main">
+  <div id="plots">
+    <div id="plot3d" class="plot active"></div>
+    <div id="plot2d" class="plot"></div>
+  </div>
+</main>
+</div>
+
+<script>
+function safeStr(v){return (typeof v==="string")?v:(typeof v==="number"?String(v):"");}
+function deepFind(obj,predicate,maxDepth=6){
+  const out=[],seen=new Set(),stack=[{v:obj,d:0}];
+  while(stack.length){
+    const {v,d}=stack.pop();
+    if(!v||typeof v!=="object")continue;
+    if(seen.has(v))continue; seen.add(v);
+    if(predicate(v))out.push(v);
+    if(d>=maxDepth)continue;
+    if(Array.isArray(v)) for(let i=v.length-1;i>=0;i--) stack.push({v:v[i],d:d+1});
+    else for(const k of Object.keys(v)) stack.push({v:v[k],d:d+1});
+  }
+  return out;
+}
+function iterCellSpaces(obj){
+  const out=[];
+  if(!obj||typeof obj!=="object") return out;
+  if(Array.isArray(obj.cellSpaceMember)) out.push(...obj.cellSpaceMember);
+  if(Array.isArray(obj?.primalSpace?.cellSpaceMember)) out.push(...obj.primalSpace.cellSpaceMember);
+  if(Array.isArray(obj?.primalSpaceLayer?.cellSpaceMember)) out.push(...obj.primalSpaceLayer.cellSpaceMember);
+  const indoorFeatures=obj.indoorFeatures||obj.IndoorFeatures||null;
+  const thematicLayer=indoorFeatures?.thematicLayer||indoorFeatures?.ThematicLayer||null;
+  if(Array.isArray(thematicLayer)){
+    for(const tl of thematicLayer){
+      if(Array.isArray(tl?.primalSpace?.cellSpaceMember)) out.push(...tl.primalSpace.cellSpaceMember);
+      if(Array.isArray(tl?.primalSpaceLayer?.cellSpaceMember)) out.push(...tl.primalSpaceLayer.cellSpaceMember);
+      const primal=tl?.primalSpaceLayer||tl?.primalSpace||null;
+      const members=primal?.cellSpaceMember||primal?.cellSpaces||primal?.cellspaceMember||null;
+      if(Array.isArray(members)) out.push(...members);
+    }
+  }
+  if(Array.isArray(obj.layers)){
+    for(const layer of obj.layers){
+      const primal=layer?.primalSpace||layer?.primalSpaceLayer||layer?.primal||null;
+      const members=primal?.cellSpaceMember||primal?.cellSpaces||primal?.cellspaceMember||null;
+      if(Array.isArray(members)) out.push(...members);
+    }
+  }
+  const seen=new Set(),dedup=[];
+  for(const cs of out){const id=cs?.id?String(cs.id):null; if(id&&seen.has(id)) continue; if(id) seen.add(id); dedup.push(cs);}
+  return dedup;
+}
+function extractDualGraph(obj){
+  const nodeMap=new Map(), edgeMap=new Map();
+  const nodeObjs=deepFind(obj, v=>v&&typeof v==="object"&&v.featureType==="Node"&&v.geometry?.type==="Point"&&Array.isArray(v.geometry?.coordinates), 9);
+  for(const n of nodeObjs) if(n.id) nodeMap.set(String(n.id), n.geometry.coordinates);
+  const edgeObjs=deepFind(obj, v=>v&&typeof v==="object"&&v.featureType==="Edge"&&v.geometry?.type==="LineString"&&Array.isArray(v.geometry?.coordinates), 9);
+  for(const e of edgeObjs) if(e.id) edgeMap.set(String(e.id), e.geometry.coordinates);
+  return {nodeMap, edgeMap};
+}
+function triangulateRing(pts){
+  if(!Array.isArray(pts)||pts.length<3) return [];
+  const first=pts[0], last=pts[pts.length-1];
+  if(first&&last&&first[0]===last[0]&&first[1]===last[1]&&((first[2]??0)===(last[2]??0))) pts=pts.slice(0,-1);
+  if(pts.length<3) return [];
+  const tris=[];
+  for(let i=1;i<pts.length-1;i++) tris.push([pts[0],pts[i],pts[i+1]]);
+  return tris;
+}
+function polyhedronToTris(geom3d){
+  const tris=[], coords=geom3d?.coordinates;
+  if(!Array.isArray(coords)) return tris;
+  const polys=looksLikeFaceList(coords)?[coords]:coords;
+  for(const poly of polys){
+    if(!Array.isArray(poly)) continue;
+    for(const face of poly){
+      if(!face) continue;
+      let ring=face;
+      if(Array.isArray(face)&&Array.isArray(face[0])&&Array.isArray(face[0][0])) ring=face[0];
+      if(!Array.isArray(ring)||ring.length<3) continue;
+      const pts=ring.map(p=>[p[0],p[1],p[2]??0]);
+      tris.push(...triangulateRing(pts));
+    }
+  }
+  return tris;
+  function looksLikeFaceList(c){
+    if(!Array.isArray(c)||!c.length) return false;
+    const a=c[0]; if(!Array.isArray(a)||!a.length) return false;
+    const b=a[0]; return Array.isArray(b)&&typeof b[0]==="number";
+  }
+}
+function polygon2dToRings(geom2d){
+  const type=geom2d?.type, coords=geom2d?.coordinates, rings=[];
+  if(!coords) return rings;
+  if(type==="Polygon"){ if(Array.isArray(coords[0])) rings.push(coords[0]); }
+  else if(type==="MultiPolygon"){ for(const poly of coords) if(Array.isArray(poly?.[0])) rings.push(poly[0]); }
+  return rings;
+}
+function bboxFromPoints(points){
+  let minX=Infinity,minY=Infinity,minZ=Infinity,maxX=-Infinity,maxY=-Infinity,maxZ=-Infinity;
+  for(const p of points){
+    const x=p[0],y=p[1],z=p[2]??0;
+    if(!Number.isFinite(x)||!Number.isFinite(y)||!Number.isFinite(z)) continue;
+    minX=Math.min(minX,x); minY=Math.min(minY,y); minZ=Math.min(minZ,z);
+    maxX=Math.max(maxX,x); maxY=Math.max(maxY,y); maxZ=Math.max(maxZ,z);
+  }
+  if(!Number.isFinite(minX)) return null;
+  return {min:[minX,minY,minZ], max:[maxX,maxY,maxZ]};
+}
+let MODEL=null, GRAPH=null, RESULT2D=null, ROUTE=null;
+let CURRENT_LEVEL="__all__", CURRENT_MODE="3d";
+let SHOW_RESULT=true, SHOW_ROUTE=true;
+
+function buildBaseModel(indoorjson){
+  const cells=iterCellSpaces(indoorjson);
+  const levels=new Set(), byLevel3d=new Map(), byLevel2d=new Map();
+  const addLevel=(lvl)=>{levels.add(lvl); if(!byLevel3d.has(lvl)) byLevel3d.set(lvl,{x:[],y:[],z:[],i:[],j:[],k:[]}); if(!byLevel2d.has(lvl)) byLevel2d.set(lvl,{pairs:[]});};
+  for(const cs of cells){
+    const lvl=safeStr(cs.level)||safeStr(cs.storey)||safeStr(cs.properties?.level)||"UNKNOWN";
+    addLevel(lvl);
+    const geom=cs.cellSpaceGeom||cs.cellspaceGeom||cs.CellSpaceGeom||{};
+    const g3=geom.geometry3D||geom.Geometry3D||null;
+    const g2=geom.geometry2D||geom.Geometry2D||null;
+
+    if(g3&&g3.type==="Polyhedron"){
+      const tris=polyhedronToTris(g3), store=byLevel3d.get(lvl);
+      for(const tri of tris){
+        const base=store.x.length;
+        for(const p of tri){store.x.push(p[0]);store.y.push(p[1]);store.z.push(p[2]??0);}
+        store.i.push(base);store.j.push(base+1);store.k.push(base+2);
+      }
+    }
+    const store2=byLevel2d.get(lvl);
+    if(g2&&(g2.type==="Polygon"||g2.type==="MultiPolygon")){
+      const rings=polygon2dToRings(g2);
+      for(const ring of rings) pushRingPairs(store2.pairs, ring);
+    } else if(g3&&g3.type==="Polyhedron"){
+      const tris=polyhedronToTris(g3), pts=[];
+      for(const tri of tris) for(const p of tri) pts.push(p);
+      const bb=bboxFromPoints(pts);
+      if(bb){
+        const x0=bb.min[0],y0=bb.min[1],x1=bb.max[0],y1=bb.max[1];
+        pushRingPairs(store2.pairs, [[x0,y0],[x1,y0],[x1,y1],[x0,y1],[x0,y0]]);
+      }
+    }
+  }
+  return {levels:Array.from(levels).sort(), byLevel3d, byLevel2d};
+  function pushRingPairs(pairs, ring){
+    if(!Array.isArray(ring)||ring.length<2) return;
+    const pts=ring.slice(); const a=pts[0], b=pts[pts.length-1];
+    if(!(a[0]===b[0]&&a[1]===b[1])) pts.push(a);
+    for(const p of pts) pairs.push([p[0],p[1]]);
+    pairs.push([null,null]);
+  }
+}
+
+function buildOverlayModel(obj){
+  const byLevel2d=new Map(), levels=new Set(); let count=0;
+  const addLevel=(lvl)=>{levels.add(lvl); if(!byLevel2d.has(lvl)) byLevel2d.set(lvl,{pairs:[],count:0});};
+
+  const feats=toGeoFeatures(obj);
+  if(feats.length){
+    for(const f of feats){
+      const props=f.properties||{};
+      const lvl=safeStr(props.level)||safeStr(props.storey)||safeStr(props.floor)||"__all__";
+      addLevel(lvl);
+      const store=byLevel2d.get(lvl);
+      addGeometryPairs(store.pairs, f.geometry||f);
+      store.count++; count++;
+    }
+    return {levels:Array.from(levels).sort(), byLevel2d, count, format:"geojson"};
+  }
+  const cells=iterCellSpaces(obj);
+  if(cells.length){
+    for(const cs of cells){
+      const lvl=safeStr(cs.level)||safeStr(cs.storey)||safeStr(cs.properties?.level)||"UNKNOWN";
+      const g2=cs?.cellSpaceGeom?.geometry2D||cs?.cellSpaceGeom?.Geometry2D||null;
+      if(!g2||!g2.type) continue;
+      addLevel(lvl);
+      const store=byLevel2d.get(lvl);
+      if(g2.type==="Polygon"||g2.type==="MultiPolygon"){
+        const rings=polygon2dToRings(g2);
+        for(const ring of rings) pushRingPairs(store.pairs, ring);
+      } else addGeometryPairs(store.pairs, g2);
+      store.count++; count++;
+    }
+    return {levels:Array.from(levels).sort(), byLevel2d, count, format:"indoorjson"};
+  }
+  return {levels:[], byLevel2d, count:0, format:"unknown"};
+
+  function toGeoFeatures(o){
+    if(!o||typeof o!=="object") return [];
+    if(o.type==="FeatureCollection"&&Array.isArray(o.features)) return o.features;
+    if(o.type==="Feature") return [o];
+    if(typeof o.type==="string"&&o.coordinates) return [{type:"Feature",properties:{},geometry:o}];
+    if(Array.isArray(o)) return o.flatMap(toGeoFeatures);
+    return [];
+  }
+  function addGeometryPairs(pairs, geom){
+    if(!geom||typeof geom!=="object") return;
+    const t=geom.type, c=geom.coordinates;
+    if(t==="Polygon"){ if(Array.isArray(c?.[0])) pushRingPairs(pairs,c[0]); return; }
+    if(t==="MultiPolygon"){ for(const poly of c||[]) if(Array.isArray(poly?.[0])) pushRingPairs(pairs, poly[0]); return; }
+    if(t==="LineString"){ pushLinePairs(pairs,c); return; }
+    if(t==="MultiLineString"){ for(const line of c||[]) pushLinePairs(pairs,line); return; }
+    if(t==="GeometryCollection"){ for(const g of geom.geometries||[]) addGeometryPairs(pairs,g); return; }
+    if(Array.isArray(c)) pushLinePairs(pairs, flattenPoints(c));
+  }
+  function pushRingPairs(pairs, ring){
+    if(!Array.isArray(ring)||ring.length<2) return;
+    const pts=ring.slice(); const a=pts[0], b=pts[pts.length-1];
+    if(!(a[0]===b[0]&&a[1]===b[1])) pts.push(a);
+    for(const p of pts) pairs.push([p[0],p[1]]);
+    pairs.push([null,null]);
+  }
+  function pushLinePairs(pairs, line){
+    if(!Array.isArray(line)||line.length<2) return;
+    for(const p of line) pairs.push([p[0],p[1]]);
+    pairs.push([null,null]);
+  }
+  function flattenPoints(any){
+    const out=[], stack=[any];
+    while(stack.length){
+      const cur=stack.pop();
+      if(!cur) continue;
+      if(Array.isArray(cur)&&typeof cur[0]==="number"){ out.push(cur); continue; }
+      if(Array.isArray(cur)) for(const v of cur) stack.push(v);
+    }
+    return out.reverse();
+  }
+}
+
+function buildRoute(obj, graph){
+  // returns {points:[[x,y,z],...], source:"...", count:int}
+
+  // 1) Support your API: {type:"RouteResult", path_segments:[{geometry:{...}}, ...]}
+  if (obj && typeof obj === "object" && (obj.type === "RouteResult" || obj.type === "IndoorRouteResult") && Array.isArray(obj.path_segments)) {
+    // Stitch segments so Plotly doesn't draw a fake straight line between disconnected parts.
+    // Also fixes reversed edge geometry (chooses the end that best matches the current cursor).
+    const pts = [];
+    let cursor = null; // last point [x,y,z]
+    const EPS = 1e-6;
+
+    const dist2 = (a,b) => {
+      const dx=(a[0]-b[0]), dy=(a[1]-b[1]), dz=((a[2]??0)-(b[2]??0));
+      return dx*dx+dy*dy+dz*dz;
+    };
+    const same = (a,b) => dist2(a,b) <= EPS;
+
+    const pushBreak = () => {
+      // Break polyline: Plotly uses nulls as a segment break.
+      if (pts.length && (pts[pts.length-1][0] !== null)) pts.push([null,null,null]);
+      cursor = null;
+    };
+
+    for (const seg of obj.path_segments){
+      const g = seg?.geometry;
+      if (!g || !g.type || !Array.isArray(g.coordinates)) continue;
+
+      // Normalize segment coordinates to a list of points
+      let segPts = [];
+      if (g.type === "LineString") segPts = g.coordinates.slice();
+      else if (g.type === "MultiLineString") segPts = g.coordinates.flat();
+      else if (g.type === "Point") segPts = [g.coordinates];
+      else if (g.type === "MultiPoint") segPts = g.coordinates.slice();
+      else continue;
+
+      if (segPts.length === 0) continue;
+
+      // Ensure 3D and numbers
+      segPts = segPts.map(p => [p[0], p[1], (p.length>=3 ? p[2] : 0)]);
+
+      // If this is a line and we already have a cursor, orient it to match.
+      if (segPts.length >= 2 && cursor) {
+        const dStart = dist2(cursor, segPts[0]);
+        const dEnd   = dist2(cursor, segPts[segPts.length-1]);
+        if (dEnd < dStart) segPts.reverse();
+      }
+
+      // If still disconnected, insert a break to avoid drawing a fake connector.
+      if (cursor && !same(cursor, segPts[0])) {
+        pushBreak();
+      }
+
+      // Append, avoiding duplicate first point if it matches cursor
+      if (cursor && same(cursor, segPts[0])) segPts = segPts.slice(1);
+      for (const p of segPts) pts.push(p);
+
+      cursor = pts.length ? pts[pts.length-1] : null;
+      if (cursor && cursor[0] === null) cursor = null;
+    }
+
+    // Remove trailing break
+    while (pts.length && pts[pts.length-1][0] === null) pts.pop();
+
+    if (pts.length) {
+      return {points: pts, source:"RouteResult.path_segments(stitched)", count: pts.filter(p=>p[0]!==null).length};
+    }
+  }
+
+  // 2) GeoJSON LineString / MultiLineString
+  const feats=toGeoLineFeatures(obj);
+  if(feats.length){
+    const pts=[];
+    for(const f of feats){
+      const g=f.geometry||f;
+      if(g.type==="LineString") pts.push(...g.coordinates);
+      else if(g.type==="MultiLineString") for(const line of g.coordinates) pts.push(...line);
+    }
+    const norm=normalizePts(pts);
+    return {points:norm, source:"geojson", count:norm.length};
+  }
+
+  // 3) Any object with a coordinates array (common wrapper)
+  const coords=findCoords(obj);
+  if(coords){
+    const norm=normalizePts(flattenToPoints(coords));
+    if(norm.length) return {points:norm, source:"coordinates", count:norm.length};
+  }
+
+  // 4) nodeIds / nodes (IDs -> Node geometries)
+  const nodeIds=findIdArray(obj,["nodeIds","nodes","node_id_list","node_id"]);
+  if(nodeIds&&graph?.nodeMap){
+    const pts=nodeIds.map(id=>graph.nodeMap.get(String(id))).filter(Boolean);
+    const norm=normalizePts(pts);
+    if(norm.length) return {points:norm, source:"nodeIds", count:norm.length};
+  }
+
+  // Also support start_node/destination_node as strings: draw a 2-point line
+  if(obj && typeof obj==="object" && graph?.nodeMap && (typeof obj.start_node==="string" || typeof obj.destination_node==="string")){
+    const a = (typeof obj.start_node==="string") ? graph.nodeMap.get(String(obj.start_node)) : null;
+    const b = (typeof obj.destination_node==="string") ? graph.nodeMap.get(String(obj.destination_node)) : null;
+    const pts = [];
+    if (a) pts.push(a);
+    if (b) pts.push(b);
+    const norm = normalizePts(pts);
+    if (norm.length>=2) return {points:norm, source:"start_node/destination_node", count:norm.length};
+  }
+
+  // 5) edgeIds / edges (IDs -> Edge lines)
+  const edgeIds=findIdArray(obj,["edgeIds","edges","edge_id_list","edge_id"]);
+  if(edgeIds&&graph?.edgeMap){
+    const pts=[];
+    for(const id of edgeIds){
+      const line=graph.edgeMap.get(String(id));
+      if(Array.isArray(line)) pts.push(...line);
+    }
+    const norm=normalizePts(pts);
+    if(norm.length) return {points:norm, source:"edgeIds", count:norm.length};
+  }
+
+  // 6) fallback: any embedded LineString/MultiLineString
+  const anyLines=deepFind(obj,v=>v&&typeof v==="object"&&(v.type==="LineString"||v.type==="MultiLineString")&&Array.isArray(v.coordinates),7);
+  if(anyLines.length){
+    const pts=[];
+    for(const g of anyLines){
+      if(g.type==="LineString") pts.push(...g.coordinates);
+      else for(const line of g.coordinates) pts.push(...line);
+    }
+    const norm=normalizePts(pts);
+    if(norm.length) return {points:norm, source:"embedded-linestring", count:norm.length};
+  }
+
+  return {points:[], source:"unknown", count:0};
+
+  function toGeoLineFeatures(o){
+    return toGeoFeatures(o).filter(f=>{
+      const g=f.geometry||f;
+      return g&&(g.type==="LineString"||g.type==="MultiLineString")&&Array.isArray(g.coordinates);
+    });
+  }
+  function toGeoFeatures(o){
+    if(!o||typeof o!=="object") return [];
+    if(o.type==="FeatureCollection"&&Array.isArray(o.features)) return o.features;
+    if(o.type==="Feature") return [o];
+    if(typeof o.type==="string"&&o.coordinates) return [{type:"Feature",properties:{},geometry:o}];
+    if(Array.isArray(o)) return o.flatMap(toGeoFeatures);
+    return [];
+  }
+  function normalizePts(pts){ return (pts||[]).map(p=>[p[0],p[1],(p.length>=3?p[2]:0)]); }
+  function findCoords(o){
+    if(!o||typeof o!=="object") return null;
+    if(Array.isArray(o.coordinates)) return o.coordinates;
+    for(const k of ["path","route","geometry","geom","result","data"]){
+      const v=o[k];
+      if(v&&typeof v==="object"&&Array.isArray(v.coordinates)) return v.coordinates;
+    }
+    const hits=deepFind(o,v=>Array.isArray(v?.coordinates),6);
+    return hits.length?hits[0].coordinates:null;
+  }
+  function flattenToPoints(any){
+    const pts=[], stack=[any];
+    while(stack.length){
+      const cur=stack.pop();
+      if(!cur) continue;
+      if(Array.isArray(cur)&&cur.length>=2&&typeof cur[0]==="number"){ pts.push(cur); continue; }
+      if(Array.isArray(cur)) for(const v of cur) stack.push(v);
+    }
+    return pts.reverse();
+  }
+  function findIdArray(o, keys){
+    if(!o||typeof o!=="object") return null;
+    for(const k of keys){ const v=o[k]; if(Array.isArray(v)&&v.every(x=>typeof x==="string"||typeof x==="number")) return v; }
+    const hits=deepFind(o,v=>keys.some(k=>Array.isArray(v?.[k])),5);
+    if(hits.length){
+      for(const h of hits){
+        for(const k of keys){
+          const v=h[k];
+          if(Array.isArray(v)&&v.every(x=>typeof x==="string"||typeof x==="number")) return v;
+        }
+      }
+    }
+    return null;
+  }
+}
+
+function renderAll(){
+  if(!MODEL) return;
+  const sel=document.getElementById("level");
+  const prev=sel.value||"__all__";
+  sel.innerHTML="";
+  const all=document.createElement("option"); all.value="__all__"; all.textContent="All"; sel.appendChild(all);
+  for(const lvl of MODEL.levels){ const o=document.createElement("option"); o.value=lvl; o.textContent=lvl; sel.appendChild(o); }
+  sel.value=(MODEL.levels.includes(prev)||prev==="__all__")?prev:"__all__";
+  CURRENT_LEVEL=sel.value;
+  render3D(); render2D(); applyLevelFilter();
+}
+function render3D(){
+  const traces=[];
+  for(const lvl of MODEL.levels){
+    const s=MODEL.byLevel3d.get(lvl);
+    if(!s||!s.i.length) continue;
+    traces.push({type:"mesh3d",name:lvl,x:s.x,y:s.y,z:s.z,i:s.i,j:s.j,k:s.k,opacity:0.45,hoverinfo:"skip",visible:(CURRENT_LEVEL==="__all__"||CURRENT_LEVEL===lvl),meta:{role:"base",level:lvl}});
+  }
+  if(ROUTE&&ROUTE.points&&ROUTE.points.length>=2){
+    const xs=ROUTE.points.map(p=>p[0]), ys=ROUTE.points.map(p=>p[1]), zs=ROUTE.points.map(p=>p[2]);
+    var nodeColors = [];
+    for (var i = 0; i < xs.length; i++) {
+      if (i === 0) {
+          nodeColors.push("green");           // First Node (Start)
+      } else if (i === xs.length - 1) {
+          nodeColors.push("red");         // Last Node (Destination)
+      } else {
+          nodeColors.push("rgba(0,90,255,0.5)"); // Middle Nodes (Path)
+      }
+    }
+    traces.push({type:"scatter3d",mode:"lines+markers",name:"ROUTE",x:xs,y:ys,z:zs,line:{width:6,color:"rgba(0,90,255,0.95)"},marker:{size:3,color:nodeColors},hoverinfo:"skip",visible:SHOW_ROUTE,meta:{role:"route",level:"__all__"}});
+  }
+  Plotly.newPlot("plot3d",traces,{margin:{l:0,r:0,t:30,b:0},title:{text:"IndoorJSON (3D) + Route",x:0.02,y:0.98,xanchor:"left"},scene:{aspectmode:"data"},showlegend:false},{responsive:true});
+}
+function render2D(){
+  const traces=[];
+  for(const lvl of MODEL.levels){
+    const s=MODEL.byLevel2d.get(lvl); if(!s||!s.pairs.length) continue;
+    const xs=[],ys=[]; for(const p of s.pairs){xs.push(p[0]);ys.push(p[1]);}
+    traces.push({type:"scattergl",mode:"lines",name:lvl,x:xs,y:ys,line:{width:1,color:"rgba(0,0,0,0.55)"},hoverinfo:"skip",visible:(CURRENT_LEVEL==="__all__"||CURRENT_LEVEL===lvl),meta:{role:"base",level:lvl}});
+  }
+  if(RESULT2D&&RESULT2D.levels.length){
+    for(const lvl of RESULT2D.levels){
+      const s=RESULT2D.byLevel2d.get(lvl); if(!s||!s.pairs.length) continue;
+      const xs=[],ys=[]; for(const p of s.pairs){xs.push(p[0]);ys.push(p[1]);}
+      traces.push({type:"scattergl",mode:"lines",name:(lvl==="__all__")?"RESULT":`RESULT:${lvl}`,x:xs,y:ys,line:{width:3,color:"rgba(220,0,0,0.95)"},hoverinfo:"skip",visible:SHOW_RESULT&&(CURRENT_LEVEL==="__all__"||lvl==="__all__"||lvl===CURRENT_LEVEL),meta:{role:"result",level:lvl}});
+    }
+  }
+  if(ROUTE&&ROUTE.points&&ROUTE.points.length>=2){
+    const xs=ROUTE.points.map(p=>p[0]).concat([null]);
+    const ys=ROUTE.points.map(p=>p[1]).concat([null]);
+    traces.push({type:"scattergl",mode:"lines+markers",name:"ROUTE",x:xs,y:ys,line:{width:4,color:"rgba(0,90,255,0.95)"},marker:{size:5,color:"rgba(0,90,255,0.95)"},hoverinfo:"skip",visible:SHOW_ROUTE,meta:{role:"route",level:"__all__"}});
+  }
+  Plotly.newPlot("plot2d",traces,{margin:{l:40,r:10,t:30,b:40},title:{text:"IndoorJSON (2D) + Overlay + Route",x:0.02,y:0.98,xanchor:"left"},xaxis:{scaleanchor:"y",zeroline:false},yaxis:{zeroline:false},showlegend:false},{responsive:true});
+}
+function applyLevelFilter(){
+  if(!MODEL) return;
+  const gd3=document.getElementById("plot3d");
+  if(gd3&&gd3.data){
+    Plotly.restyle(gd3,{visible:gd3.data.map(d=>{const role=d.meta?.role||"base"; if(role==="base") return (CURRENT_LEVEL==="__all__"||d.name===CURRENT_LEVEL); if(role==="route") return SHOW_ROUTE; return true;})});
+  }
+  const gd2=document.getElementById("plot2d");
+  if(gd2&&gd2.data){
+    Plotly.restyle(gd2,{visible:gd2.data.map(d=>{const role=d.meta?.role||"base"; const lvl=d.meta?.level||"__all__"; if(role==="base") return (CURRENT_LEVEL==="__all__"||d.name===CURRENT_LEVEL); if(role==="result"){ if(!SHOW_RESULT) return false; if(CURRENT_LEVEL==="__all__") return true; return (lvl==="__all__"||lvl===CURRENT_LEVEL);} if(role==="route") return SHOW_ROUTE; return true;})});
+  }
+}
+function fitView(){
+  const gd=(CURRENT_MODE==="3d")?document.getElementById("plot3d"):document.getElementById("plot2d");
+  if(!gd) return;
+  if(CURRENT_MODE==="3d") Plotly.relayout(gd,{"scene.camera":null});
+  else Plotly.relayout(gd,{"xaxis.autorange":true,"yaxis.autorange":true});
+}
+
+const fileInput=document.getElementById("file");
+const fileResult=document.getElementById("fileResult");
+const fileRoute=document.getElementById("fileRoute");
+const statusEl=document.getElementById("status");
+const statusResultEl=document.getElementById("statusResult");
+const statusRouteEl=document.getElementById("statusRoute");
+const selEl=document.getElementById("sel");
+
+document.getElementById("btn3d").addEventListener("click",()=>setMode("3d"));
+document.getElementById("btn2d").addEventListener("click",()=>setMode("2d"));
+document.getElementById("level").addEventListener("change",(e)=>{CURRENT_LEVEL=e.target.value;applyLevelFilter();});
+document.getElementById("fit").addEventListener("click",fitView);
+document.getElementById("reset").addEventListener("click",()=>{CURRENT_LEVEL="__all__";document.getElementById("level").value="__all__";applyLevelFilter();fitView();selEl.textContent="{}";});
+document.getElementById("toggleResult").addEventListener("change",(e)=>{SHOW_RESULT=e.target.checked;applyLevelFilter();});
+document.getElementById("toggleRoute").addEventListener("change",(e)=>{SHOW_ROUTE=e.target.checked;applyLevelFilter();});
+function setMode(mode){
+  CURRENT_MODE=mode;
+  document.getElementById("plot3d").classList.toggle("active",mode==="3d");
+  document.getElementById("plot2d").classList.toggle("active",mode==="2d");
+  document.getElementById("btn3d").classList.toggle("active",mode==="3d");
+  document.getElementById("btn2d").classList.toggle("active",mode==="2d");
+  fitView();
+}
+
+fileInput.addEventListener("change",async(e)=>{
+  const file=e.target.files?.[0]; if(!file) return;
+  statusEl.textContent=`Loading ${file.name}...`;
+  try{
+    const json=JSON.parse(await file.text());
+    MODEL=buildBaseModel(json);
+    GRAPH=extractDualGraph(json);
+    statusEl.textContent=`Loaded ${file.name}. Levels: ${MODEL.levels.length}. Graph nodes: ${GRAPH.nodeMap.size}, edges: ${GRAPH.edgeMap.size}.`;
+    renderAll();
+  }catch(err){console.error(err); statusEl.textContent=`Failed to load: ${err?.message||err}`;}
+});
+
+fileResult.addEventListener("change",async(e)=>{
+  const file=e.target.files?.[0]; if(!file) return;
+  statusResultEl.textContent=`Loading ${file.name}...`;
+  try{
+    const json=JSON.parse(await file.text());
+    RESULT2D=buildOverlayModel(json);
+    if(RESULT2D.format==="unknown"||RESULT2D.count===0) statusResultEl.textContent=`Loaded ${file.name}, but couldn't find any 2D geometries to draw.`;
+    else statusResultEl.textContent=`Loaded ${file.name}. Overlay: ${RESULT2D.format}. Items: ${RESULT2D.count}. Levels: ${RESULT2D.levels.length}.`;
+    if(MODEL){render2D();applyLevelFilter();}
+  }catch(err){console.error(err); statusResultEl.textContent=`Failed to load: ${err?.message||err}`;}
+});
+
+fileRoute.addEventListener("change",async(e)=>{
+  const file=e.target.files?.[0]; if(!file) return;
+  statusRouteEl.textContent=`Loading ${file.name}...`;
+  try{
+    const json=JSON.parse(await file.text());
+    ROUTE=buildRoute(json, GRAPH);
+    if(!ROUTE.points.length) statusRouteEl.textContent=`Loaded ${file.name}, but couldn't extract a route polyline.`;
+    else statusRouteEl.textContent=`Loaded ${file.name}. Route source: ${ROUTE.source}. Points: ${ROUTE.points.length}.`;
+    if(MODEL){render3D();render2D();applyLevelFilter();}
+  }catch(err){console.error(err); statusRouteEl.textContent=`Failed to load: ${err?.message||err}`;}
+});
+
+function attachPick(){
+  const gd3=document.getElementById("plot3d"), gd2=document.getElementById("plot2d");
+  gd3.on?.("plotly_click",(ev)=>{const p=ev?.points?.[0]; if(!p) return; selEl.textContent=JSON.stringify({mode:"3d",trace:p.data?.name,x:p.x,y:p.y,z:p.z},null,2);});
+  gd2.on?.("plotly_click",(ev)=>{const p=ev?.points?.[0]; if(!p) return; selEl.textContent=JSON.stringify({mode:"2d",trace:p.data?.name,x:p.x,y:p.y},null,2);});
+}
+setTimeout(attachPick,800);
+</script>
+</body>
+</html>
