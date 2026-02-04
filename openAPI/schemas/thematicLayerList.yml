@@ -11,5 +11,3 @@ properties:
     type: array
     items:
       $ref: './thematicLayerListElement.yml'
-example:
-  $ref: '../examples/thematicLayerList.json'

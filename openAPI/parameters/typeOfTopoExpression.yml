@@ -1,8 +1,7 @@
-typeOfTopoExpression:
-      name: typeOfTopoExpression
-      in: query
-      description: Filter by the topological relationship type.
-      required: false
-      schema:
-        type: string
-        enum: [CONTAINS, OVERLAPS, EQUALS, WITHIN, CROSSES, OTHERS]
+name: typeOfTopoExpression
+in: query
+description: Filter by the topological relationship type.
+required: false
+schema:
+  type: string
+  enum: [CONTAINS, OVERLAPS, EQUALS, WITHIN, CROSSES, OTHERS]

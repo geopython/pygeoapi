@@ -1,8 +1,6 @@
-isVirtual:
-      name: isVirtual
-      in: query
-      description: Filter CellBoundaries by virtual status (e.g., invisible transitions).
-      required: false
-      schema:
-        type: boolean
-    
+name: isVirtual
+in: query
+description: Filter CellBoundaries by virtual status (e.g., invisible transitions).
+required: false
+schema:
+  type: boolean

@@ -21,5 +21,3 @@ properties:
     uniqueItems: true
     items:
       $ref: './interLayerConnection.yml'
-example:
-  $ref: '../examples/indoorFeature.json'

@@ -1,8 +1,7 @@
-theme:
-      name: theme
-      in: query
-      description: Filter layers by category.
-      required: false
-      schema:
-        type: string
-        enum: [Virtual, Physical, Tags, Unknown]
+name: theme
+in: query
+description: Filter layers by category.
+required: false
+schema:
+  type: string
+  enum: [Virtual, Physical, Tags, Unknown]

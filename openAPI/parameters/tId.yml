@@ -1,7 +1,6 @@
-tId:
-      name: tId
-      in: path
-      description: Local identifier of a thematic layer (e.g., 'TL-Physical-01').
-      required: true
-      schema:
-        type: string
+name: tId
+in: path
+description: Local identifier of a thematic layer (e.g., 'TL-Physical-01').
+required: true
+schema:
+  type: string

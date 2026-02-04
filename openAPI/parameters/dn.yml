@@ -1,7 +1,6 @@
-dn:
-      name: dn
-      in: query
-      description: Identifier of the destination node in the dual graph
-      required: true
-      schema:
-        type: string
+name: dn
+in: query
+description: Identifier of the destination node in the dual graph
+required: true
+schema:
+  type: string

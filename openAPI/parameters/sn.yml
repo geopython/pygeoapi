@@ -1,7 +1,6 @@
-sn:
-      name: sn
-      in: query
-      description: Identifier of the start node in the dual graph
-      required: true
-      schema:
-        type: string
+name: sn
+in: query
+description: Identifier of the start node in the dual graph
+required: true
+schema:
+  type: string

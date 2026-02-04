@@ -1,0 +1,7 @@
+{
+  "type": "Error",
+  "code": "PayloadTooLarge",
+  "description": "The uploaded IndoorGML file exceeds the maximum allowed size of 10MB.",
+  "status": 413,
+  "instance": "urn:uuid:f47ac10b-58cc-4372-a567-0e02b2c3d479"
+}

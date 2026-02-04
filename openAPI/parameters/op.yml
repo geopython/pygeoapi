@@ -1,18 +1,17 @@
-op:
-      name: op
-      in: query
-      required: true
-      description: |-
-        Spatial predicate operation applied between the input geometry
-        and CellSpace geometries.
+name: op
+in: query
+required: true
+description: |-
+  Spatial predicate operation applied between the input geometry
+  and CellSpace geometries.
 
-        Supported operations:
-        - `within`: returns CellSpaces that contain the input geometry
-        - `intersects`: returns CellSpaces whose geometries intersect the input geometry
-        - `contains`: returns CellSpaces that are fully contained by the input geometry
-      schema:
-        type: string
-        enum:
-          - within
-          - intersects
-          - contains
+  Supported operations:
+  - `within`: returns CellSpaces that contain the input geometry
+  - `intersects`: returns CellSpaces whose geometries intersect the input geometry
+  - `contains`: returns CellSpaces that are fully contained by the input geometry
+schema:
+  type: string
+  enum:
+    - within
+    - intersects
+    - contains

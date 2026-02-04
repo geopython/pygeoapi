@@ -1,0 +1,7 @@
+{
+  "type": "Error",
+  "code": "IdAlreadyExists",
+  "description": "The specified ID 'building-88' already exists in the collection.",
+  "status": 409,
+  "instance": "urn:uuid:550e8400-e29b-41d4-a716-446655440000"
+}

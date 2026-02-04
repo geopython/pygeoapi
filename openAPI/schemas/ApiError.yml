@@ -12,15 +12,12 @@ properties:
   code:
     type: string
     description: Machine-readable error code.
-    example: InvalidParameter
   description:
     type: string
     description: Human-readable error message.
-    example: "ex) hop must be between 1 and 4."
   status:
     type: integer
     description: HTTP status code.
-    example: 400
   details:
     type: array
     description: Optional list of detailed error items.
@@ -30,4 +27,3 @@ properties:
     type: string
     format: uri
     description: Optional URI to identify this specific occurrence for debugging/logging.
-    example: urn:uuid:2d1b9b9a-7db6-4d5b-9f1d-0f1a0b5c6a33

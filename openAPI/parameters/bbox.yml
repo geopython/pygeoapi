@@ -1,21 +1,20 @@
-bbox:
-      name: bbox
-      in: query
-      description: |-
-        Spatial filter [minX, minY, maxX, maxY].
-    
-        Only features that have a geometry that intersects the bounding box are selected. 
-        
-        The bounding box is provided as four numbers, recommended to use with `level`
+name: bbox
+in: query
+description: |-
+  Spatial filter [minX, minY, maxX, maxY].
 
-        Can be used alone not regarding the z axis for 3D geometries.
-      required: false
-      schema:
-        type: array
-        minItems: 4
-        maxItems: 4
-        items:
-          type: number
-      style: form
-      explode: false
-      example: [129.0, 35.1, 129.1, 35.2]
+  Only features that have a geometry that intersects the bounding box are selected. 
+  
+  The bounding box is provided as four numbers, recommended to use with `level`
+
+  Can be used alone not regarding the z axis for 3D geometries.
+required: false
+schema:
+  type: array
+  minItems: 4
+  maxItems: 4
+  items:
+    type: number
+style: form
+explode: false
+example: [129.0, 35.1, 129.1, 35.2]
