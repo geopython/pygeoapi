@@ -1,0 +1,20 @@
+title: indoorJSONRoute
+additionalProperties: false
+required: [routeNode, routeEdge]
+properties:
+  creationDate:
+    type: string
+    format: date-time
+    description: Timestamp when the route was computed.
+  routeNode:
+    type: array
+    minItems: 2
+    description: Ordered list of nodes along the route.
+    items:
+      $ref: './schemas/node.yml'
+  routeEdge:
+    type: array
+    minItems: 1
+    description: Ordered list of edges along the route.
+    items:
+      $ref: './schemas/edge.yml'

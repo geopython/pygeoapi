@@ -1,0 +1,23 @@
+title: geoQueryResult
+type: object
+required: [id, featureType, primalSpace, dualSpace]
+properties:
+  id:
+    type: string
+    description: The id_str of the thematic layer.
+  featureType:
+    type: string
+    enum: [ThematicLayer]
+  theme:
+    type: string
+  semanticExtension:
+    type: string
+    nullable: true
+  primalSpace:
+    $ref: './primalSpaceLayer.yml' 
+  dualSpace:
+    $ref: './dualSpaceLayer.yml'
+  links:
+    type: array
+    items:
+      $ref: 'https://schemas.opengis.net/ogcapi/features/part1/1.0/openapi/schemas/link.yaml'
