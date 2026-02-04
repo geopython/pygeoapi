@@ -1,0 +1,83 @@
+{
+    "id": "primal-space-f1",
+    "featureType": "PrimalSpaceLayer",
+    "creationDatetime": "2024-01-16T15:00:00",
+    "terminationDatetime": null,
+    "cellSpaceMember": [
+        {
+            "id": "cell-room-101",
+            "featureType": "CellSpace",
+            "cellSpaceName": "Server Room",
+            "level": "1F",
+            "poi": true,
+            "duality": "node-101",
+            "cellSpaceGeom": {
+                "geometry2D": {
+                    "type": "Polygon",
+                    "coordinates": [
+                        [
+                            [
+                                0.0,
+                                0.0
+                            ],
+                            [
+                                10.0,
+                                0.0
+                            ],
+                            [
+                                10.0,
+                                10.0
+                            ],
+                            [
+                                0.0,
+                                10.0
+                            ],
+                            [
+                                0.0,
+                                0.0
+                            ]
+                        ]
+                    ]
+                },
+                "geometry3D": null
+            },
+            "externalReference": null,
+            "boundedBy": [
+                "boundary-wall-01"
+            ]
+        }
+    ],
+    "cellBoundaryMember": [
+        {
+            "id": "boundary-wall-01",
+            "featureType": "CellBoundary",
+            "isVirtual": true,
+            "duality": "edge-101-100",
+            "cellBoundaryGeom": {
+                "geometry2D": {
+                    "type": "LineString",
+                    "coordinates": [
+                        [
+                            10.0,
+                            2.0
+                        ],
+                        [
+                            10.0,
+                            8.0
+                        ]
+                    ]
+                },
+                "geometry3D": null
+            },
+            "externalReference": null
+        }
+    ],
+    "links": [
+        {
+            "href": "http://localhost:5000/collections/aist_waterfront_lab/items/AIST_Waterfront_Center/layers/layer-indoor-nav-f1/primal?cellSpaceName=Room",
+            "rel": "self",
+            "type": "application/json",
+            "title": "Primal Space Layer"
+        }
+    ]
+}

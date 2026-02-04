@@ -1,0 +1,39 @@
+{
+    "type": "FeatureCollection",
+    "numberMatched": 2,
+    "numberReturned": 2,
+    "links": [
+        {
+            "rel": "self",
+            "type": "application/geo+json",
+            "title": "This document",
+            "href": "https://data.example.org/collections/aist_waterfront_lab/items?offset=0&limit=10"
+        }
+    ],
+    "features": [
+        {
+            "type": "Feature",
+            "id": "AIST_Waterfront_Center",
+            "geometry": {
+                "type": "Point",
+                "coordinates": [
+                    125.6,
+                    10.1
+                ]
+            },
+            "properties": {}
+        },
+        {
+            "type": "Feature",
+            "id": "u64465b1-3012-0c9e-82e4-cf37470411b5",
+            "geometry": {
+                "type": "Point",
+                "coordinates": [
+                    300,
+                    11
+                ]
+            },
+            "properties": {}
+        }
+    ]
+}

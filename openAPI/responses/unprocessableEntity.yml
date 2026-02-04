@@ -1,0 +1,5 @@
+description: Unprocessable Entity (Missing Required field for schema or logical mismatch).
+content:
+  application/json:
+    schema:
+      $ref: '../schemas/ApiError.yml'

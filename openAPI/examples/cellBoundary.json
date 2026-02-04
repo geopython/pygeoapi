@@ -1,0 +1,20 @@
+{
+    "featureType": "CellBoundary",
+    "id": "boundary-wall-02",
+    "isVirtual": true,
+    "duality": "T1",
+    "externalReference": {
+        "source": "Manual_Input",
+        "description": "Wall between corridor and new office"
+    },
+    "cellBoundaryGeom": {
+        "geometry2D": {
+            "type": "LineString",
+            "coordinates": [
+                [20, 0],
+                [20, 10]
+            ]
+        },
+        "geometry3D": {}
+    }
+}

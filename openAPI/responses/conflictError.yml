@@ -1,0 +1,5 @@
+description: The specified Id already exists.
+content:
+  application/json:
+    schema:
+      $ref: '../schemas/ApiError.yml'

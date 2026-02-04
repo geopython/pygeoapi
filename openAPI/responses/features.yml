@@ -2,4 +2,6 @@ description: A list of indoor features (fIDs) within the collection.
 content:
   application/geo+json:
     schema:
-      $ref: '../schemas/featureCollectionGeoJSON.yml'
+      $ref: '../schemas/featuresGeoJSON.yml'
+    example:
+      $ref: '../examples/indoorFeatures.json'

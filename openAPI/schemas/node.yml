@@ -22,3 +22,5 @@ properties:
     items:
       type: string
       format: uri-reference
+example:
+  $ref: '../examples/node.json'
