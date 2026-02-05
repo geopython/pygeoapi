@@ -1,25 +1,46 @@
-ConnectedResults:
+title: ConnectedNodesResult
+type: object
+additionalProperties: false
+required:
+  - type
+  - start_node
+  - connected_nodes
+properties:
+  type:
+    type: string
+    enum: [ConnectedNodesResult]
+    description: Identifies this response as a connectivity query result.
+  start_node:
+    type: string
+    description: The identifier of the source node from which the search started.
+  connected_nodes:
+    type: array
+    description: List of nodes reachable within the specified hop distance.
+    items:
       type: object
-      additionalProperties: false
-      required:
-        - type
-        - count
-        - items
+      required: [hop, id, featureType, geometry, duality, connects]
       properties:
-        type:
-          type: string
-          enum: [ConnectedResult]
-          description: Identifies this response as a connectivity query result.
-
-        count:
+        hop:
           type: integer
-          minimum: 0
-          description: Number of returned connected results.
-
-        items:
+          description: The distance in steps from the start node.
+        id:
+          type: string
+          description: Identifier of the connected node.
+        featureType:
+          type: string
+          enum: [node]
+        geometry:
+          $ref: './geometryGeoJSON.yml'
+        duality:
+          type: string
+          nullable: true
+          description: ID of the corresponding CellSpace in primal space.
+        connects:
           type: array
-          description: |
-            List of connectively reachable CellSpace–Node pairs
-            from the source node within the given hop distance.
           items:
-            $ref: './connectedItem.yml'
+            type: string
+          description: List of Edge/Transition IDs connected to this node.
+  links:
+    type: array
+    items:
+      $ref: 'https://schemas.opengis.net/ogcapi/features/part1/1.0/openapi/schemas/link.yaml'
