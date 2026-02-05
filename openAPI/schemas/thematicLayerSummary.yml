@@ -64,7 +64,7 @@ properties:
     minItems: 4
     maxItems: 4
     items:
-      $ref: '../parameters/bbox.yml'
+      type: number
   links:
     type: array
     items:

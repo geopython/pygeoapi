@@ -1,5 +1,5 @@
 type: object
-title: featuresGeoJSON
+title: featureCollectionGeoJSON
 required: [type, features]
 properties:
   type: { type: string, enum: [FeatureCollection] }
@@ -12,5 +12,5 @@ properties:
   timeStamp: { type: string, format: date-time }
   links:
     type: array
-    items: 
+    items:
       $ref: 'https://schemas.opengis.net/ogcapi/features/part1/1.0/openapi/schemas/link.yaml'

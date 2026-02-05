@@ -30,7 +30,7 @@ properties:
           type: string
           enum: [node]
         geometry:
-          $ref: './geometryGeoJSON.yml'
+          $ref: 'https://beta.schemas.opengis.net/json-fg/geometry-object.json#/$defs/Point'
         duality:
           type: string
           nullable: true
