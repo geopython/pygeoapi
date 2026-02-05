@@ -5,6 +5,8 @@
 <meta name="viewport" content="width=device-width,initial-scale=1"/>
 <title>IndoorJSON Preview Viewer (v6) — Overlay + Route</title>
 <script src="https://cdn.plot.ly/plotly-2.30.0.min.js"></script>
+<script src="https://unpkg.com/earcut@2.2.4/dist/earcut.min.js"></script>
+
 <style>
 :root{--bg:#fff;--fg:#111;--muted:#666;--border:#e6e6e6;--panel:#fafafa}
 body{margin:0;font-family:system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;background:var(--bg);color:var(--fg)}
@@ -316,12 +318,73 @@ function extractDualGraph(obj){
   return {nodeMap, edgeMap};
 }
 function triangulateRing(pts){
+  // Triangulate a single 3D ring (face boundary) robustly:
+  // 1) compute face plane basis (u,v)
+  // 2) project to 2D
+  // 3) earcut triangulation
+  // 4) map back to 3D triangles
   if(!Array.isArray(pts)||pts.length<3) return [];
+  // drop closure point if present
   const first=pts[0], last=pts[pts.length-1];
   if(first&&last&&first[0]===last[0]&&first[1]===last[1]&&((first[2]??0)===(last[2]??0))) pts=pts.slice(0,-1);
   if(pts.length<3) return [];
+
+  // find a stable normal using first non-collinear triple
+  let n=null, p0=null;
+  for(let a=0;a<pts.length-2 && !n;a++){
+    for(let b=a+1;b<pts.length-1 && !n;b++){
+      for(let c=b+1;c<pts.length && !n;c++){
+        const A=pts[a], B=pts[b], C=pts[c];
+        const ab=[B[0]-A[0], B[1]-A[1], (B[2]??0)-(A[2]??0)];
+        const ac=[C[0]-A[0], C[1]-A[1], (C[2]??0)-(A[2]??0)];
+        const cross=[ab[1]*ac[2]-ab[2]*ac[1], ab[2]*ac[0]-ab[0]*ac[2], ab[0]*ac[1]-ab[1]*ac[0]];
+        const len=Math.hypot(cross[0],cross[1],cross[2]);
+        if(len>1e-9){ n=[cross[0]/len,cross[1]/len,cross[2]/len]; p0=A; }
+      }
+    }
+  }
+  if(!n){
+    // degenerate (collinear) -> fallback fan
+    const tris=[];
+    for(let i=1;i<pts.length-1;i++) tris.push([pts[0],pts[i],pts[i+1]]);
+    return tris;
+  }
+
+  // build orthonormal basis u,v on face plane
+  // choose any vector not parallel to n
+  const ref = (Math.abs(n[2])<0.9) ? [0,0,1] : [0,1,0];
+  let u=[n[1]*ref[2]-n[2]*ref[1], n[2]*ref[0]-n[0]*ref[2], n[0]*ref[1]-n[1]*ref[0]];
+  let ulen=Math.hypot(u[0],u[1],u[2]);
+  if(ulen<1e-9){
+    // try different ref
+    const ref2=[1,0,0];
+    u=[n[1]*ref2[2]-n[2]*ref2[1], n[2]*ref2[0]-n[0]*ref2[2], n[0]*ref2[1]-n[1]*ref2[0]];
+    ulen=Math.hypot(u[0],u[1],u[2]);
+  }
+  u=[u[0]/ulen,u[1]/ulen,u[2]/ulen];
+  const v=[n[1]*u[2]-n[2]*u[1], n[2]*u[0]-n[0]*u[2], n[0]*u[1]-n[1]*u[0]];
+
+  // project to 2D for earcut
+  const coords2d=[];
+  for(const P of pts){
+    const px=P[0]-p0[0], py=P[1]-p0[1], pz=(P[2]??0)-(p0[2]??0);
+    const x2=px*u[0]+py*u[1]+pz*u[2];
+    const y2=px*v[0]+py*v[1]+pz*v[2];
+    coords2d.push(x2,y2);
+  }
+
+  if(typeof earcut!=="function"){
+    // earcut missing -> fallback fan
+    const tris=[];
+    for(let i=1;i<pts.length-1;i++) tris.push([pts[0],pts[i],pts[i+1]]);
+    return tris;
+  }
+
+  const idx=earcut(coords2d, null, 2);
   const tris=[];
-  for(let i=1;i<pts.length-1;i++) tris.push([pts[0],pts[i],pts[i+1]]);
+  for(let t=0;t<idx.length;t+=3){
+    tris.push([pts[idx[t]], pts[idx[t+1]], pts[idx[t+2]]]);
+  }
   return tris;
 }
 function polyhedronToTris(geom3d){
