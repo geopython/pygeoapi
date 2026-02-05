@@ -5,6 +5,8 @@
 <meta name="viewport" content="width=device-width,initial-scale=1"/>
 <title>IndoorJSON Preview Viewer (v6) — Overlay + Route</title>
 <script src="https://cdn.plot.ly/plotly-2.30.0.min.js"></script>
+<script src="https://unpkg.com/earcut@2.2.4/dist/earcut.min.js"></script>
+
 <style>
 :root{--bg:#fff;--fg:#111;--muted:#666;--border:#e6e6e6;--panel:#fafafa}
 body{margin:0;font-family:system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;background:var(--bg);color:var(--fg)}
@@ -52,6 +54,10 @@ pre{white-space:pre-wrap;word-break:break-word;font-size:12px;background:#fff;bo
   <div class="block">
     <div class="label">Level</div>
     <select id="level"><option value="__all__">All</option></select>
+    <div class="checkrow" style="margin-top:8px;">
+      <input id="toggleDual" type="checkbox" />
+      <label for="toggleDual">Show dual graph (nodes & edges)</label>
+    </div>
     <div class="tiny">Base geometry grouped by CellSpace.level (if present). Route can be multi-level.</div>
   </div>
 
@@ -71,6 +77,20 @@ pre{white-space:pre-wrap;word-break:break-word;font-size:12px;background:#fff;bo
     <div class="checkrow" style="margin-top:8px;">
       <input id="toggleRoute" type="checkbox" checked/><label for="toggleRoute">Show route</label>
     </div>
+    <div class="checkrow" style="margin-top:8px;">
+      <input id="toggleRouteStitch" type="checkbox" />
+      <label for="toggleRouteStitch">Auto-stitch route (undirected / reorder segments)</label>
+    </div>
+    <div class="checkrow" style="margin-top:8px;">
+      <input id="toggleSegMarkers" type="checkbox" checked />
+      <label for="toggleSegMarkers">Show segment boundary markers</label>
+    </div>
+    <div class="checkrow" style="margin-top:8px;">
+      <input id="toggleSegLabels" type="checkbox" />
+      <label for="toggleSegLabels">Show segment labels (on screen)</label>
+    </div>
+
+
     <div class="tiny">
       Accepted route shapes (any one):<br/>
       • GeoJSON LineString / Feature / FeatureCollection<br/>
@@ -126,15 +146,13 @@ function iterCellSpaces(obj){
   if(!obj||typeof obj!=="object") return out;
   if(Array.isArray(obj.cellSpaceMember)) out.push(...obj.cellSpaceMember);
   if(Array.isArray(obj?.primalSpace?.cellSpaceMember)) out.push(...obj.primalSpace.cellSpaceMember);
-  if(Array.isArray(obj?.primalSpaceLayer?.cellSpaceMember)) out.push(...obj.primalSpaceLayer.cellSpaceMember);
   const indoorFeatures=obj.indoorFeatures||obj.IndoorFeatures||null;
-  const thematicLayer=indoorFeatures?.thematicLayer||indoorFeatures?.ThematicLayer||null;
+  const thematicLayer=indoorFeatures?.layers||null;
   if(Array.isArray(thematicLayer)){
     for(const tl of thematicLayer){
       if(Array.isArray(tl?.primalSpace?.cellSpaceMember)) out.push(...tl.primalSpace.cellSpaceMember);
-      if(Array.isArray(tl?.primalSpaceLayer?.cellSpaceMember)) out.push(...tl.primalSpaceLayer.cellSpaceMember);
-      const primal=tl?.primalSpaceLayer||tl?.primalSpace||null;
-      const members=primal?.cellSpaceMember||primal?.cellSpaces||primal?.cellspaceMember||null;
+      const primal=tl?.primalSpace||null;
+      const members=primal?.cellSpaceMember||null;
       if(Array.isArray(members)) out.push(...members);
     }
   }
@@ -149,6 +167,148 @@ function iterCellSpaces(obj){
   for(const cs of out){const id=cs?.id?String(cs.id):null; if(id&&seen.has(id)) continue; if(id) seen.add(id); dedup.push(cs);}
   return dedup;
 }
+function iterDualNodes(obj){
+  const out=[];
+  if(!obj||typeof obj!=="object") return out;
+
+  const pushMembers = (dual)=>{
+    if(!dual) return;
+    const members = dual.nodeMember ||  null;
+    if(Array.isArray(members)){
+      for(const it of members){
+        if(Array.isArray(it)) out.push(...it);
+        else out.push(it);
+      }
+    }
+  };
+
+  // A) direct: obj.dualSpace
+  pushMembers(obj.dualSpace||null);
+
+  // B) obj.layers[].dualSpace
+  if(Array.isArray(obj.layers)){
+    for(const layer of obj.layers){
+      pushMembers(layer?.dualSpace||null);
+    }
+  }
+
+  // C) IndoorFeatures schema: obj.indoorFeatures.layers[].dualSpace  (your PNU-201 style)
+  const IF = obj.indoorFeatures || obj.indoorFeature || obj.IndoorFeatures || null;
+  if(IF){
+    if(Array.isArray(IF.layers)){
+      for(const layer of IF.layers){
+        pushMembers(layer?.dualSpace||null);
+      }
+    }
+  }
+
+  // Dedup by id
+  const seen=new Set(), dedup=[];
+  for(const n of out){
+    const id = n && (n.id||n.identifier||n.nodeId);
+    if(!id) continue;
+    const key=String(id);
+    if(seen.has(key)) continue;
+    seen.add(key);
+    dedup.push(n);
+  }
+  return dedup;
+}
+function iterDualNodes(obj){
+  const out=[];
+  if(!obj||typeof obj!=="object") return out;
+
+  const pushMembers = (dual)=>{
+    if(!dual) return;
+    const members = dual.nodeMember ||  null;
+    if(Array.isArray(members)){
+      for(const it of members){
+        if(Array.isArray(it)) out.push(...it);
+        else out.push(it);
+      }
+    }
+  };
+
+  // A) direct: obj.dualSpace
+  pushMembers(obj.dualSpace||null);
+
+  // B) obj.layers[].dualSpace
+  if(Array.isArray(obj.layers)){
+    for(const layer of obj.layers){
+      pushMembers(layer?.dualSpace||null);
+    }
+  }
+
+  // C) IndoorFeatures schema: obj.indoorFeatures.layers[].dualSpace  (your PNU-201 style)
+  const IF = obj.indoorFeatures || obj.indoorFeature || obj.IndoorFeatures || null;
+  if(IF){
+    if(Array.isArray(IF.layers)){
+      for(const layer of IF.layers){
+        pushMembers(layer?.dualSpace||null);
+      }
+    }
+  }
+
+  // Dedup by id
+  const seen=new Set(), dedup=[];
+  for(const n of out){
+    const id = n && (n.id||n.identifier||n.nodeId);
+    if(!id) continue;
+    const key=String(id);
+    if(seen.has(key)) continue;
+    seen.add(key);
+    dedup.push(n);
+  }
+  return dedup;
+}
+
+function iterDualEdges(obj){
+  const out=[];
+  if(!obj||typeof obj!=="object") return out;
+
+  const pushMembers = (dual)=>{
+    if(!dual) return;
+    const members = dual.edgeMember || null;
+    if(Array.isArray(members)){
+      for(const it of members){
+        if(Array.isArray(it)) out.push(...it);
+        else out.push(it);
+      }
+    }
+  };
+
+  // A) direct: obj.dualSpace
+  pushMembers(obj.dualSpace||null);
+
+  // B) obj.layers[].dualSpace
+  if(Array.isArray(obj.layers)){
+    for(const layer of obj.layers){
+      pushMembers(layer?.dualSpace||null);
+    }
+  }
+
+  // C) IndoorFeatures schema: obj.indoorFeatures.layers[].dualSpace
+  const IF = obj.indoorFeatures || obj.indoorFeature || obj.IndoorFeatures || null;
+  if(IF){
+    if(Array.isArray(IF.layers)){
+      for(const layer of IF.layers){
+        pushMembers(layer?.dualSpace||layer?.dual||layer?.dualSpaceLayer||null);
+      }
+    }
+  }
+
+  // Dedup by id
+  const seen=new Set(), dedup=[];
+  for(const e of out){
+    const id = e && (e.id||e.identifier||e.edgeId);
+    if(!id) continue;
+    const key=String(id);
+    if(seen.has(key)) continue;
+    seen.add(key);
+    dedup.push(e);
+  }
+  return dedup;
+}
 function extractDualGraph(obj){
   const nodeMap=new Map(), edgeMap=new Map();
   const nodeObjs=deepFind(obj, v=>v&&typeof v==="object"&&v.featureType==="Node"&&v.geometry?.type==="Point"&&Array.isArray(v.geometry?.coordinates), 9);
@@ -158,12 +318,73 @@ function extractDualGraph(obj){
   return {nodeMap, edgeMap};
 }
 function triangulateRing(pts){
+  // Triangulate a single 3D ring (face boundary) robustly:
+  // 1) compute face plane basis (u,v)
+  // 2) project to 2D
+  // 3) earcut triangulation
+  // 4) map back to 3D triangles
   if(!Array.isArray(pts)||pts.length<3) return [];
+  // drop closure point if present
   const first=pts[0], last=pts[pts.length-1];
   if(first&&last&&first[0]===last[0]&&first[1]===last[1]&&((first[2]??0)===(last[2]??0))) pts=pts.slice(0,-1);
   if(pts.length<3) return [];
+
+  // find a stable normal using first non-collinear triple
+  let n=null, p0=null;
+  for(let a=0;a<pts.length-2 && !n;a++){
+    for(let b=a+1;b<pts.length-1 && !n;b++){
+      for(let c=b+1;c<pts.length && !n;c++){
+        const A=pts[a], B=pts[b], C=pts[c];
+        const ab=[B[0]-A[0], B[1]-A[1], (B[2]??0)-(A[2]??0)];
+        const ac=[C[0]-A[0], C[1]-A[1], (C[2]??0)-(A[2]??0)];
+        const cross=[ab[1]*ac[2]-ab[2]*ac[1], ab[2]*ac[0]-ab[0]*ac[2], ab[0]*ac[1]-ab[1]*ac[0]];
+        const len=Math.hypot(cross[0],cross[1],cross[2]);
+        if(len>1e-9){ n=[cross[0]/len,cross[1]/len,cross[2]/len]; p0=A; }
+      }
+    }
+  }
+  if(!n){
+    // degenerate (collinear) -> fallback fan
+    const tris=[];
+    for(let i=1;i<pts.length-1;i++) tris.push([pts[0],pts[i],pts[i+1]]);
+    return tris;
+  }
+
+  // build orthonormal basis u,v on face plane
+  // choose any vector not parallel to n
+  const ref = (Math.abs(n[2])<0.9) ? [0,0,1] : [0,1,0];
+  let u=[n[1]*ref[2]-n[2]*ref[1], n[2]*ref[0]-n[0]*ref[2], n[0]*ref[1]-n[1]*ref[0]];
+  let ulen=Math.hypot(u[0],u[1],u[2]);
+  if(ulen<1e-9){
+    // try different ref
+    const ref2=[1,0,0];
+    u=[n[1]*ref2[2]-n[2]*ref2[1], n[2]*ref2[0]-n[0]*ref2[2], n[0]*ref2[1]-n[1]*ref2[0]];
+    ulen=Math.hypot(u[0],u[1],u[2]);
+  }
+  u=[u[0]/ulen,u[1]/ulen,u[2]/ulen];
+  const v=[n[1]*u[2]-n[2]*u[1], n[2]*u[0]-n[0]*u[2], n[0]*u[1]-n[1]*u[0]];
+
+  // project to 2D for earcut
+  const coords2d=[];
+  for(const P of pts){
+    const px=P[0]-p0[0], py=P[1]-p0[1], pz=(P[2]??0)-(p0[2]??0);
+    const x2=px*u[0]+py*u[1]+pz*u[2];
+    const y2=px*v[0]+py*v[1]+pz*v[2];
+    coords2d.push(x2,y2);
+  }
+
+  if(typeof earcut!=="function"){
+    // earcut missing -> fallback fan
+    const tris=[];
+    for(let i=1;i<pts.length-1;i++) tris.push([pts[0],pts[i],pts[i+1]]);
+    return tris;
+  }
+
+  const idx=earcut(coords2d, null, 2);
   const tris=[];
-  for(let i=1;i<pts.length-1;i++) tris.push([pts[0],pts[i],pts[i+1]]);
+  for(let t=0;t<idx.length;t+=3){
+    tris.push([pts[idx[t]], pts[idx[t+1]], pts[idx[t+2]]]);
+  }
   return tris;
 }
 function polyhedronToTris(geom3d){
@@ -209,6 +430,12 @@ function bboxFromPoints(points){
 let MODEL=null, GRAPH=null, RESULT2D=null, ROUTE=null;
 let CURRENT_LEVEL="__all__", CURRENT_MODE="3d";
 let SHOW_RESULT=true, SHOW_ROUTE=true;
+let ROUTE_STITCH=false;
+let LAST_ROUTE_JSON=null;
+let ROUTE_SEGMENTS=[];
+let SHOW_SEG_MARKERS=true;
+let SHOW_SEG_LABELS=false;
+let SHOW_DUAL=false;
 
 function buildBaseModel(indoorjson){
   const cells=iterCellSpaces(indoorjson);
@@ -243,7 +470,11 @@ function buildBaseModel(indoorjson){
       }
     }
   }
-  return {levels:Array.from(levels).sort(), byLevel3d, byLevel2d};
+  const dualNodes=iterDualNodes(indoorjson).filter(n=>n?.geometry?.type==="Point"&&Array.isArray(n.geometry?.coordinates));
+  const dualEdges=iterDualEdges(indoorjson).filter(e=>e?.geometry?.type==="LineString"&&Array.isArray(e.geometry?.coordinates));
+
+
+  return {levels:Array.from(levels).sort(), byLevel3d, byLevel2d, dualNodes, dualEdges};
   function pushRingPairs(pairs, ring){
     if(!Array.isArray(ring)||ring.length<2) return;
     const pts=ring.slice(); const a=pts[0], b=pts[pts.length-1];
@@ -329,72 +560,105 @@ function buildOverlayModel(obj){
   }
 }
 
-function buildRoute(obj, graph){
-  // returns {points:[[x,y,z],...], source:"...", count:int}
+function buildRoute(obj, graph, stitch){
+  // returns {points:[[x,y,z] or null breaks], source:"...", count:int, segments:[...]}
+  // stitch=false: trust route order/direction (directed graph outputs)
+  // stitch=true: auto-orient segments + insert breaks (good for undirected/unordered)
 
-  // 1) Support your API: {type:"RouteResult", path_segments:[{geometry:{...}}, ...]}
+  // 1) Your API: {type:"RouteResult", path_segments:[{geometry:{...}}, ...]}
   if (obj && typeof obj === "object" && (obj.type === "RouteResult" || obj.type === "IndoorRouteResult") && Array.isArray(obj.path_segments)) {
-    // Stitch segments so Plotly doesn't draw a fake straight line between disconnected parts.
-    // Also fixes reversed edge geometry (chooses the end that best matches the current cursor).
-    const pts = [];
-    let cursor = null; // last point [x,y,z]
-    const EPS = 1e-6;
+    const segments = [];
+    const normPt = (p) => [p[0], p[1], (p.length>=3 ? p[2] : 0)];
 
-    const dist2 = (a,b) => {
-      const dx=(a[0]-b[0]), dy=(a[1]-b[1]), dz=((a[2]??0)-(b[2]??0));
-      return dx*dx+dy*dy+dz*dz;
-    };
-    const same = (a,b) => dist2(a,b) <= EPS;
+    if (!stitch) {
+      const pts = [];
+      for (const seg of obj.path_segments){
+        const g = seg?.geometry;
+        if (!g || !g.type || !Array.isArray(g.coordinates)) continue;
 
-    const pushBreak = () => {
-      // Break polyline: Plotly uses nulls as a segment break.
-      if (pts.length && (pts[pts.length-1][0] !== null)) pts.push([null,null,null]);
-      cursor = null;
-    };
+        let segPts = [];
+        if (g.type === "LineString") segPts = g.coordinates.map(normPt);
+        else if (g.type === "MultiLineString") segPts = g.coordinates.flat().map(normPt);
+        else if (g.type === "Point") segPts = [normPt(g.coordinates)];
+        else if (g.type === "MultiPoint") segPts = g.coordinates.map(normPt);
+        else continue;
 
-    for (const seg of obj.path_segments){
-      const g = seg?.geometry;
-      if (!g || !g.type || !Array.isArray(g.coordinates)) continue;
+        if (!segPts.length) continue;
+        pts.push(...segPts);
 
-      // Normalize segment coordinates to a list of points
-      let segPts = [];
-      if (g.type === "LineString") segPts = g.coordinates.slice();
-      else if (g.type === "MultiLineString") segPts = g.coordinates.flat();
-      else if (g.type === "Point") segPts = [g.coordinates];
-      else if (g.type === "MultiPoint") segPts = g.coordinates.slice();
-      else continue;
+        segments.push({
+          seq: seg?.seq ?? null,
+          id_str: seg?.id_str ?? null,
+          type: seg?.type ?? null,
+          cost: seg?.cost ?? null,
+          start: segPts[0],
+          end: segPts[segPts.length-1]
+        });
+      }
+      if (pts.length) return {points: pts, segments, source:"RouteResult.path_segments", count: pts.length};
+    } else {
+      const pts = [];
+      let cursor = null;
+      const EPS = 1e-6;
 
-      if (segPts.length === 0) continue;
+      const dist2 = (a,b) => {
+        const dx=(a[0]-b[0]), dy=(a[1]-b[1]), dz=((a[2]??0)-(b[2]??0));
+        return dx*dx+dy*dy+dz*dz;
+      };
+      const same = (a,b) => dist2(a,b) <= EPS;
 
-      // Ensure 3D and numbers
-      segPts = segPts.map(p => [p[0], p[1], (p.length>=3 ? p[2] : 0)]);
+      const pushBreak = () => {
+        if (pts.length && (pts[pts.length-1][0] !== null)) pts.push([null,null,null]);
+        cursor = null;
+      };
 
-      // If this is a line and we already have a cursor, orient it to match.
-      if (segPts.length >= 2 && cursor) {
-        const dStart = dist2(cursor, segPts[0]);
-        const dEnd   = dist2(cursor, segPts[segPts.length-1]);
-        if (dEnd < dStart) segPts.reverse();
+      for (const seg of obj.path_segments){
+        const g = seg?.geometry;
+        if (!g || !g.type || !Array.isArray(g.coordinates)) continue;
+
+        let segPts = [];
+        if (g.type === "LineString") segPts = g.coordinates.slice();
+        else if (g.type === "MultiLineString") segPts = g.coordinates.flat();
+        else if (g.type === "Point") segPts = [g.coordinates];
+        else if (g.type === "MultiPoint") segPts = g.coordinates.slice();
+        else continue;
+
+        if (!segPts.length) continue;
+        segPts = segPts.map(normPt);
+
+        if (segPts.length >= 2 && cursor) {
+          const dStart = dist2(cursor, segPts[0]);
+          const dEnd   = dist2(cursor, segPts[segPts.length-1]);
+          if (dEnd < dStart) segPts.reverse();
+        }
+
+        if (cursor && !same(cursor, segPts[0])) pushBreak();
+        if (cursor && same(cursor, segPts[0])) segPts = segPts.slice(1);
+        if (!segPts.length) continue;
+
+        const segStart = segPts[0];
+        const segEnd = segPts[segPts.length-1];
+
+        for (const p of segPts) pts.push(p);
+
+        segments.push({
+          seq: seg?.seq ?? null,
+          id_str: seg?.id_str ?? null,
+          type: seg?.type ?? null,
+          cost: seg?.cost ?? null,
+          start: segStart,
+          end: segEnd
+        });
+
+        cursor = pts.length ? pts[pts.length-1] : null;
+        if (cursor && cursor[0] === null) cursor = null;
       }
 
-      // If still disconnected, insert a break to avoid drawing a fake connector.
-      if (cursor && !same(cursor, segPts[0])) {
-        pushBreak();
-      }
-
-      // Append, avoiding duplicate first point if it matches cursor
-      if (cursor && same(cursor, segPts[0])) segPts = segPts.slice(1);
-      for (const p of segPts) pts.push(p);
-
-      cursor = pts.length ? pts[pts.length-1] : null;
-      if (cursor && cursor[0] === null) cursor = null;
+      while (pts.length && pts[pts.length-1][0] === null) pts.pop();
+      const count = pts.filter(p=>p[0]!==null).length;
+      if (count) return {points: pts, segments, source:"RouteResult.path_segments(stitched)", count};
     }
-
-    // Remove trailing break
-    while (pts.length && pts[pts.length-1][0] === null) pts.pop();
-
-    if (pts.length) {
-      return {points: pts, source:"RouteResult.path_segments(stitched)", count: pts.filter(p=>p[0]!==null).length};
-    }
+    return {points: [], segments: [], source:"RouteResult(empty)", count: 0};
   }
 
   // 2) GeoJSON LineString / MultiLineString
@@ -407,22 +671,22 @@ function buildRoute(obj, graph){
       else if(g.type==="MultiLineString") for(const line of g.coordinates) pts.push(...line);
     }
     const norm=normalizePts(pts);
-    return {points:norm, source:"geojson", count:norm.length};
+    return {points:norm, segments: [], source:"geojson", count:norm.length};
   }
 
   // 3) Any object with a coordinates array (common wrapper)
   const coords=findCoords(obj);
   if(coords){
     const norm=normalizePts(flattenToPoints(coords));
-    if(norm.length) return {points:norm, source:"coordinates", count:norm.length};
+    if(norm.length) return {points:norm, segments: [], source:"coordinates", count:norm.length};
   }
 
-  // 4) nodeIds / nodes (IDs -> Node geometries)
+  // 4) nodeIds / nodes
   const nodeIds=findIdArray(obj,["nodeIds","nodes","node_id_list","node_id"]);
   if(nodeIds&&graph?.nodeMap){
     const pts=nodeIds.map(id=>graph.nodeMap.get(String(id))).filter(Boolean);
     const norm=normalizePts(pts);
-    if(norm.length) return {points:norm, source:"nodeIds", count:norm.length};
+    if(norm.length) return {points:norm, segments: [], source:"nodeIds", count:norm.length};
   }
 
   // Also support start_node/destination_node as strings: draw a 2-point line
@@ -433,10 +697,10 @@ function buildRoute(obj, graph){
     if (a) pts.push(a);
     if (b) pts.push(b);
     const norm = normalizePts(pts);
-    if (norm.length>=2) return {points:norm, source:"start_node/destination_node", count:norm.length};
+    if (norm.length>=2) return {points:norm, segments: [], source:"start_node/destination_node", count:norm.length};
   }
 
-  // 5) edgeIds / edges (IDs -> Edge lines)
+  // 5) edgeIds / edges
   const edgeIds=findIdArray(obj,["edgeIds","edges","edge_id_list","edge_id"]);
   if(edgeIds&&graph?.edgeMap){
     const pts=[];
@@ -445,7 +709,7 @@ function buildRoute(obj, graph){
       if(Array.isArray(line)) pts.push(...line);
     }
     const norm=normalizePts(pts);
-    if(norm.length) return {points:norm, source:"edgeIds", count:norm.length};
+    if(norm.length) return {points:norm, segments: [], source:"edgeIds", count:norm.length};
   }
 
   // 6) fallback: any embedded LineString/MultiLineString
@@ -457,10 +721,10 @@ function buildRoute(obj, graph){
       else for(const line of g.coordinates) pts.push(...line);
     }
     const norm=normalizePts(pts);
-    if(norm.length) return {points:norm, source:"embedded-linestring", count:norm.length};
+    if(norm.length) return {points:norm, segments: [], source:"embedded-linestring", count:norm.length};
   }
 
-  return {points:[], source:"unknown", count:0};
+  return {points:[], segments: [], source:"unknown", count:0};
 
   function toGeoLineFeatures(o){
     return toGeoFeatures(o).filter(f=>{
@@ -531,6 +795,95 @@ function render3D(){
     if(!s||!s.i.length) continue;
     traces.push({type:"mesh3d",name:lvl,x:s.x,y:s.y,z:s.z,i:s.i,j:s.j,k:s.k,opacity:0.45,hoverinfo:"skip",visible:(CURRENT_LEVEL==="__all__"||CURRENT_LEVEL===lvl),meta:{role:"base",level:lvl}});
   }
+  // Dual graph (3D) nodes/edges (Z-filtered by the selected level's base geometry)
+  if (SHOW_DUAL){
+    let zMin=-Infinity, zMax=Infinity;
+    if (CURRENT_LEVEL !== "__all__"){
+      const base = MODEL.byLevel3d?.get?.(CURRENT_LEVEL);
+      if (base && Array.isArray(base.z) && base.z.length){
+        zMin = Math.min(...base.z.filter(v=>v!==null && v!==undefined));
+        zMax = Math.max(...base.z.filter(v=>v!==null && v!==undefined));
+        // small padding to be tolerant to float jitter
+        const pad = Math.max(1e-6, (zMax - zMin) * 0.01);
+        // zMin -= pad; // zMax += pad; 
+      }
+    }
+
+    // Edges
+    // We'll instead use precomputed arrays if present
+    const dualEdges = MODEL.dualEdges || null;
+
+    const ex=[], ey=[], ez=[];
+    const pushBreak = ()=>{ ex.push(null); ey.push(null); ez.push(null); };
+
+    const addCoords = (coords)=>{
+      let drawing=false;
+      let ox; let oy; let oz;
+      for(const c of coords){
+        const x=c[0], y=c[1], z=(c.length>=3?c[2]:0);
+        const inside = (z>=zMin && z<zMax);
+        const vertical = (z>=zMin && z<=zMax);
+        if(inside){
+          ex.push(x); ey.push(y); ez.push(z);
+          drawing=true;
+          ox=x; oy=y; oz=z;
+        } else if(vertical && oz>=zMin && oz<zMax) {
+          ex.push(x); ey.push(y); ez.push(z);
+          drawing=true;
+        } else{
+          if(drawing){ pushBreak(); } drawing=false;
+        }
+      }
+      if(drawing) pushBreak();
+    };
+
+    if (dualEdges && Array.isArray(dualEdges)){
+      for(const e of dualEdges){
+        const coords = e?.geometry?.coordinates;
+        if(Array.isArray(coords) && coords.length) addCoords(coords);
+      }
+    } else {
+      // fallback: use iterDualEdges on the loaded IndoorJSON (requires MODEL._src set; see buildBaseModel patch below)
+      for(const e of iterDualEdges(MODEL._src || {}) ){
+        const coords = e?.geometry?.coordinates;
+        if(Array.isArray(coords) && coords.length) addCoords(coords);
+      }
+    }
+
+    if(ex.length){
+      traces.push({type:"scatter3d",mode:"lines",name:"DUAL_EDGES",x:ex,y:ey,z:ez,
+        line:{width:4,color:"rgba(255,120,0,0.9)"},hoverinfo:"skip",
+        visible:(CURRENT_MODE==="3d"),meta:{role:"dual"}});
+    }
+
+    // Nodes
+    const nx=[], ny=[], nz=[], nhover=[];
+    const dualNodes = MODEL.dualNodes ||  null;
+    const addNodePt = (p, id, duality)=>{
+      const z=(p.length>=3?p[2]:0);
+      if(z<zMin || z>=zMax) return;
+      nx.push(p[0]); ny.push(p[1]); nz.push(z);
+      nhover.push(`Node ${id||""}${duality?` (duality ${duality})`:""}`);
+    };
+
+    if (dualNodes && Array.isArray(dualNodes)){
+      for(const n of dualNodes){
+        const p=n?.geometry?.coordinates;
+        if(Array.isArray(p) && p.length>=2) addNodePt(p, n.id, n.duality);
+      }
+    } else {
+      for(const n of iterDualNodes(MODEL._src || {}) ){
+        const p=n?.geometry?.coordinates;
+        if(Array.isArray(p) && p.length>=2) addNodePt(p, n.id, n.duality);
+      }
+    }
+
+    if(nx.length){
+      traces.push({type:"scatter3d",mode:"markers",name:"DUAL_NODES",x:nx,y:ny,z:nz,
+        marker:{size:4,color:"rgba(128,0,128,1.0)"},hovertext:nhover,hoverinfo:"text",
+        visible:(CURRENT_MODE==="3d"),meta:{role:"dual"}});
+    }
+  }
   if(ROUTE&&ROUTE.points&&ROUTE.points.length>=2){
     const xs=ROUTE.points.map(p=>p[0]), ys=ROUTE.points.map(p=>p[1]), zs=ROUTE.points.map(p=>p[2]);
     var nodeColors = [];
@@ -544,6 +897,21 @@ function render3D(){
       }
     }
     traces.push({type:"scatter3d",mode:"lines+markers",name:"ROUTE",x:xs,y:ys,z:zs,line:{width:6,color:"rgba(0,90,255,0.95)"},marker:{size:3,color:nodeColors},hoverinfo:"skip",visible:SHOW_ROUTE,meta:{role:"route",level:"__all__"}});
+  // Segment boundaries (3D)
+  if (SHOW_SEG_MARKERS && ROUTE_SEGMENTS && ROUTE_SEGMENTS.length){
+    const bx=[], by=[], bz=[], hover=[], text=[];
+    for(const s of ROUTE_SEGMENTS){
+      const p=s.start; if(!p||p[0]===null) continue;
+      bx.push(p[0]); by.push(p[1]); bz.push(p[2]??0);
+      hover.push(`seq=${s.seq??""} id=${s.id_str??""} type=${s.type??""} cost=${s.cost??""}`);
+      text.push(String(s.seq??""));
+    }
+    traces.push({type:"scatter3d",mode:SHOW_SEG_LABELS?"markers+text":"markers",name:"SEGMENTS",x:bx,y:by,z:bz,
+      marker:{size:3,color:"rgba(255,140,0,0.95)"},
+      text:SHOW_SEG_LABELS?text:undefined,textposition:"top center",
+      hovertext:hover,hoverinfo:"text",visible:SHOW_ROUTE,meta:{role:"route",level:"__all__"}});
+  }
+
   }
   Plotly.newPlot("plot3d",traces,{margin:{l:0,r:0,t:30,b:0},title:{text:"IndoorJSON (3D) + Route",x:0.02,y:0.98,xanchor:"left"},scene:{aspectmode:"data"},showlegend:false},{responsive:true});
 }
@@ -561,22 +929,76 @@ function render2D(){
       traces.push({type:"scattergl",mode:"lines",name:(lvl==="__all__")?"RESULT":`RESULT:${lvl}`,x:xs,y:ys,line:{width:3,color:"rgba(220,0,0,0.95)"},hoverinfo:"skip",visible:SHOW_RESULT&&(CURRENT_LEVEL==="__all__"||lvl==="__all__"||lvl===CURRENT_LEVEL),meta:{role:"result",level:lvl}});
     }
   }
+  if (SHOW_DUAL && MODEL.dualByLevelNodes){
+    for(const [lvl, b] of MODEL.dualByLevelNodes.entries()){
+      if(!b.x.length) continue;
+      traces.push({type:"scattergl",mode:"markers",name:`DUAL_NODES_${lvl}`,x:b.x,y:b.y,
+        marker:{size:7,color:"rgba(255,120,0,0.95)"},hovertext:b.hover,hoverinfo:"text",
+        visible:(CURRENT_LEVEL==="__all__"||lvl==="__all__"||CURRENT_LEVEL===lvl),
+        meta:{role:"dual",level:lvl}});
+    }
+  }
   if(ROUTE&&ROUTE.points&&ROUTE.points.length>=2){
     const xs=ROUTE.points.map(p=>p[0]).concat([null]);
     const ys=ROUTE.points.map(p=>p[1]).concat([null]);
     traces.push({type:"scattergl",mode:"lines+markers",name:"ROUTE",x:xs,y:ys,line:{width:4,color:"rgba(0,90,255,0.95)"},marker:{size:5,color:"rgba(0,90,255,0.95)"},hoverinfo:"skip",visible:SHOW_ROUTE,meta:{role:"route",level:"__all__"}});
+  // Segment boundaries (2D)
+  if (SHOW_SEG_MARKERS && ROUTE_SEGMENTS && ROUTE_SEGMENTS.length){
+    const bx=[], by=[], hover=[], text=[];
+    for(const s of ROUTE_SEGMENTS){
+      const p=s.start; if(!p||p[0]===null) continue;
+      bx.push(p[0]); by.push(p[1]);
+      hover.push(`seq=${s.seq??""} id=${s.id_str??""} type=${s.type??""} cost=${s.cost??""}`);
+      text.push(String(s.seq??""));
+    }
+    traces.push({type:"scattergl",mode:SHOW_SEG_LABELS?"markers+text":"markers",name:"SEGMENTS",x:bx,y:by,
+      marker:{size:10,color:"rgba(255,140,0,0.95)"},
+      text:SHOW_SEG_LABELS?text:undefined,textposition:"top center",
+      hovertext:hover,hoverinfo:"text",visible:SHOW_ROUTE,meta:{role:"route",level:"__all__"}});
+  }
+
   }
   Plotly.newPlot("plot2d",traces,{margin:{l:40,r:10,t:30,b:40},title:{text:"IndoorJSON (2D) + Overlay + Route",x:0.02,y:0.98,xanchor:"left"},xaxis:{scaleanchor:"y",zeroline:false},yaxis:{zeroline:false},showlegend:false},{responsive:true});
 }
 function applyLevelFilter(){
   if(!MODEL) return;
+
   const gd3=document.getElementById("plot3d");
   if(gd3&&gd3.data){
-    Plotly.restyle(gd3,{visible:gd3.data.map(d=>{const role=d.meta?.role||"base"; if(role==="base") return (CURRENT_LEVEL==="__all__"||d.name===CURRENT_LEVEL); if(role==="route") return SHOW_ROUTE; return true;})});
+    Plotly.restyle(gd3,{visible:gd3.data.map(d=>{
+      const role=d.meta?.role||"base";
+      if(role==="base"){
+        return (CURRENT_LEVEL==="__all__"||d.name===CURRENT_LEVEL);
+      }
+      if(role==="dual"){
+        // Dual graph is 3D-only in this viewer; level filtering is handled by re-rendering (Z filtering).
+        return (SHOW_DUAL && CURRENT_MODE==="3d");
+      }
+      if(role==="route") return SHOW_ROUTE;
+      return true;
+    })});
   }
+
   const gd2=document.getElementById("plot2d");
   if(gd2&&gd2.data){
-    Plotly.restyle(gd2,{visible:gd2.data.map(d=>{const role=d.meta?.role||"base"; const lvl=d.meta?.level||"__all__"; if(role==="base") return (CURRENT_LEVEL==="__all__"||d.name===CURRENT_LEVEL); if(role==="result"){ if(!SHOW_RESULT) return false; if(CURRENT_LEVEL==="__all__") return true; return (lvl==="__all__"||lvl===CURRENT_LEVEL);} if(role==="route") return SHOW_ROUTE; return true;})});
+    Plotly.restyle(gd2,{visible:gd2.data.map(d=>{
+      const role=d.meta?.role||"base";
+      const lvl=d.meta?.level||"__all__";
+      if(role==="base"){
+        return (CURRENT_LEVEL==="__all__"||d.name===CURRENT_LEVEL);
+      }
+      if(role==="result"){
+        if(!SHOW_RESULT) return false;
+        if(CURRENT_LEVEL==="__all__") return true;
+        return (lvl==="__all__"||lvl===CURRENT_LEVEL);
+      }
+      if(role==="dual"){
+        // Dual graph not shown in 2D.
+        return false;
+      }
+      if(role==="route") return SHOW_ROUTE;
+      return true;
+    })});
   }
 }
 function fitView(){
@@ -596,11 +1018,22 @@ const selEl=document.getElementById("sel");
 
 document.getElementById("btn3d").addEventListener("click",()=>setMode("3d"));
 document.getElementById("btn2d").addEventListener("click",()=>setMode("2d"));
-document.getElementById("level").addEventListener("change",(e)=>{CURRENT_LEVEL=e.target.value;applyLevelFilter();});
+document.getElementById("level").addEventListener("change",(e)=>{CURRENT_LEVEL=e.target.value;if(MODEL){render3D();render2D();applyLevelFilter();};});
 document.getElementById("fit").addEventListener("click",fitView);
 document.getElementById("reset").addEventListener("click",()=>{CURRENT_LEVEL="__all__";document.getElementById("level").value="__all__";applyLevelFilter();fitView();selEl.textContent="{}";});
 document.getElementById("toggleResult").addEventListener("change",(e)=>{SHOW_RESULT=e.target.checked;applyLevelFilter();});
 document.getElementById("toggleRoute").addEventListener("change",(e)=>{SHOW_ROUTE=e.target.checked;applyLevelFilter();});
+document.getElementById("toggleSegMarkers").addEventListener("change",(e)=>{SHOW_SEG_MARKERS=e.target.checked;if(MODEL){render3D();render2D();applyLevelFilter();}});
+document.getElementById("toggleSegLabels").addEventListener("change",(e)=>{SHOW_SEG_LABELS=e.target.checked;if(MODEL){render3D();render2D();applyLevelFilter();}});
+document.getElementById("toggleDual").addEventListener("change",(e)=>{SHOW_DUAL=e.target.checked; if(MODEL){render3D();render2D();applyLevelFilter();}});
+document.getElementById("toggleRouteStitch").addEventListener("change", (e) => {
+  ROUTE_STITCH = e.target.checked;
+  if (LAST_ROUTE_JSON) {
+    ROUTE = buildRoute(LAST_ROUTE_JSON, GRAPH, ROUTE_STITCH);
+    ROUTE_SEGMENTS = (ROUTE && ROUTE.segments) ? ROUTE.segments : [];
+    if (MODEL) { render3D(); render2D(); applyLevelFilter(); }
+  }
+});
 function setMode(mode){
   CURRENT_MODE=mode;
   document.getElementById("plot3d").classList.toggle("active",mode==="3d");
@@ -639,7 +1072,9 @@ fileRoute.addEventListener("change",async(e)=>{
   statusRouteEl.textContent=`Loading ${file.name}...`;
   try{
     const json=JSON.parse(await file.text());
-    ROUTE=buildRoute(json, GRAPH);
+    LAST_ROUTE_JSON = json;
+    ROUTE = buildRoute(json, GRAPH, ROUTE_STITCH);
+    ROUTE_SEGMENTS = (ROUTE && ROUTE.segments) ? ROUTE.segments : [];
     if(!ROUTE.points.length) statusRouteEl.textContent=`Loaded ${file.name}, but couldn't extract a route polyline.`;
     else statusRouteEl.textContent=`Loaded ${file.name}. Route source: ${ROUTE.source}. Points: ${ROUTE.points.length}.`;
     if(MODEL){render3D();render2D();applyLevelFilter();}
