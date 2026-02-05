@@ -2963,7 +2963,7 @@ class PostgresIndoorDB:
             c.edge_id as id, 
             c.node_source_id as source, 
             c.node_target_id as target, 
-            COALESCE(ST_Length(n.geometry_val), n.weight) as cost  -- fix if weight is exist.
+            COALESCE(n.weight, ST_Length(n.geometry_val)) as cost  -- fix if weight is exist.
         FROM connects c
         JOIN node_n_edge n ON c.edge_id = n.id
         """
