@@ -1,0 +1,47 @@
+server:
+    bind:
+        host: 0.0.0.0
+        port: 5000
+    url: http://localhost:5000
+    mimetype: application/json; charset=UTF-8
+    encoding: utf-8
+    language: en-US
+    cors: true
+    map:
+        url: https://tile.openstreetmap.org/{z}/{x}/{y}.png
+        attribution: '&copy; <a href="https://openstreetmap.org/copyright">OpenStreetMap contributors</a>'
+    limit: 10
+
+
+logging:
+    level: DEBUG
+    #logfile: /pygeoapi/log.py  # Or a path on your MacBook like ./pygeoapi.log
+
+metadata:
+    identification:
+        title: 
+          en: PNU STEMLab and AIST IndoorGML API
+        description: 
+          en: Developing IndoorGML API support for OGC API Standards.
+        keywords:
+            en: 
+                - IndoorGML
+                - PNU
+                - STEMLab
+                - AIST
+        terms_of_service: https://creativecommons.org/licenses/by/4.0/ # Add this line!
+        url: http://localhost:5000
+    provider:
+        name: PNU STEMLab, AIST
+        url: https://github.com/STEMLab/IndoorGML_API
+    license:
+        name: MIT
+        url: https://opensource.org/licenses/MIT
+    contact:
+        name: Tonny, Seongmin
+        position: Graduate Student
+        city: Tokyo
+        country: Japan
+        phone: +xx-xxx-xxx-xxxx
+        url: https://github.com/STEMLab/IndoorGML_API
+            
