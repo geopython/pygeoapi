@@ -49,8 +49,6 @@ paths:
       tags: 
       - IndoorFeatureCollection
       operationId: getCollections
-      parameters:
-        - $ref: './parameters/geoJSONBbox.yml'
       responses:
         '200':
           $ref: './responses/Collections.yml'
@@ -145,6 +143,8 @@ paths:
       tags: 
       - IndoorFeatures
       operationId: createItem
+      parameters:
+        - $ref: './parameters/geoJSONBbox.yml'
       requestBody:
         required: true
         content:
