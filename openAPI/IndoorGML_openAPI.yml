@@ -185,7 +185,7 @@ paths:
         '500':
           $ref: './responses/InternalServerError.yml'
   
-  /collections/{collectionId}/items/{fId}:
+  /collections/{collectionId}/items/{featureId}:
     parameters:
       - $ref: './parameters/collectionId.yml'
       - $ref: './parameters/featureId.yml'
@@ -241,7 +241,7 @@ paths:
         '404':
           $ref: './responses/notFound.yml'
 
-  /collections/{collectionId}/items/{fId}/layers:
+  /collections/{collectionId}/items/{featureId}/layers:
     parameters:
       - $ref: './parameters/collectionId.yml'
       - $ref: './parameters/featureId.yml'
@@ -250,7 +250,7 @@ paths:
         - ThematicLayers
       summary: register a new thematic layer
       description: |-
-        Uploads a new thematic layer (e.g., 'Pet-friendly' or 'Furnitures') to a specific `fId`.
+        Uploads a new thematic layer (e.g., 'Pet-friendly' or 'Furnitures') to a specific `featureId`.
         The body must conform to the IndoorJSON ThematicLayer schema.
 
         The `Id`s of the members in each primalSpace and dualSpace must be unique within the layer.
@@ -310,7 +310,7 @@ paths:
         '500':
           $ref: './responses/internalServerError.yml'
   
-  /collections/{collectionId}/items/{fId}/interlayerconnections:
+  /collections/{collectionId}/items/{featureId}}/interlayerconnections:
     parameters:
       - $ref: './parameters/collectionId.yml'
       - $ref: './parameters/featureId.yml'
@@ -369,7 +369,7 @@ paths:
         '500':
           $ref: './responses/internalServerError.yml'
 
-  /collections/{collectionId}/items/{fId}/interlayerconnections/{cnId}:
+  /collections/{collectionId}/items/{featureId}/interlayerconnections/{cnId}:
     parameters:
       - $ref: './parameters/collectionId.yml'
       - $ref: './parameters/featureId.yml'
@@ -393,7 +393,7 @@ paths:
         '500':
           $ref: './responses/internalServerError.yml'
 
-  /collections/{collectionId}/items/{fId}/layers/{tId}:
+  /collections/{collectionId}/items/{featureId}/layers/{tId}:
     parameters:
           - $ref: './parameters/collectionId.yml'
           - $ref: './parameters/featureId.yml'
@@ -450,7 +450,7 @@ paths:
         '500':
           $ref: './responses/internalServerError.yml'
 
-  /collections/{collectionId}/items/{fId}/layers/{tId}/primal:
+  /collections/{collectionId}/items/{featureId}/layers/{tId}/primal:
     parameters:
       - $ref: './parameters/collectionId.yml'
       - $ref: './parameters/featureId.yml'
@@ -528,7 +528,7 @@ paths:
         '500':
           $ref: './responses/internalServerError.yml'
 
-  /collections/{collectionId}/items/{fId}/layers/{tId}/dual:
+  /collections/{collectionId}/items/{featureId}/layers/{tId}/dual:
     parameters:
       - $ref: './parameters/collectionId.yml'
       - $ref: './parameters/featureId.yml'
@@ -611,7 +611,7 @@ paths:
         '500':
           $ref: './responses/internalServerError.yml'
 
-  /collections/{collectionId}/items/{fId}/layers/{tId}/geoquery:
+  /collections/{collectionId}/items/{featureId}/layers/{tId}/geoquery:
     parameters:
       - $ref: './parameters/collectionId.yml'
       - $ref: './parameters/featureId.yml'
@@ -660,7 +660,7 @@ paths:
         '500':
           $ref: './responses/internalServerError.yml'
 
-  /collections/{collectionId}/items/{fId}/layers/{tId}/dual/route:
+  /collections/{collectionId}/items/{featureId}/layers/{tId}/dual/route:
     parameters:
       - $ref: './parameters/collectionId.yml'
       - $ref: './parameters/featureId.yml'
@@ -709,7 +709,7 @@ paths:
         '500':
           $ref: './responses/internalServerError.yml'
 
-  /collections/{collectionId}/items/{fId}/layers/{tId}/primal/{mId}:
+  /collections/{collectionId}/items/{featureId}/layers/{tId}/primal/{mId}:
     parameters:
       - $ref: './parameters/collectionId.yml'
       - $ref: './parameters/featureId.yml'
@@ -790,7 +790,7 @@ paths:
         '500':
           $ref: './responses/internalServerError.yml'
 
-  /collections/{collectionId}/items/{fId}/layers/{tId}/primal/{mId}/bounding:
+  /collections/{collectionId}/items/{featureId}/layers/{tId}/primal/{mId}/bounding:
     parameters:
         - $ref: './parameters/collectionId.yml'
         - $ref: './parameters/featureId.yml'
@@ -829,7 +829,7 @@ paths:
         '500':
           $ref: './responses/internalServerError.yml'
 
-  /collections/{collectionId}/items/{fId}/layers/{tId}/dual/{mId}/connected:
+  /collections/{collectionId}/items/{featureId}/layers/{tId}/dual/{mId}/connected:
     parameters:
       - $ref: './parameters/collectionId.yml'
       - $ref: './parameters/featureId.yml'
@@ -871,7 +871,7 @@ paths:
         '500':
           $ref: './responses/internalServerError.yml'     
 
-  /collections/{collectionId}/items/{fId}/layers/{tId}/dual/{mId}:
+  /collections/{collectionId}/items/{featureId}/layers/{tId}/dual/{mId}:
     parameters:
       - $ref: './parameters/collectionId.yml'
       - $ref: './parameters/featureId.yml'
