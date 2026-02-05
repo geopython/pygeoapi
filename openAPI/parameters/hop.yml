@@ -1,10 +1,12 @@
 name: hop
 in: query
-description: Maximum hop distance from the source node.
-required: true
+description: |-
+  The maximum number of edges to traverse from the source node. 
+  A value of 1 returns immediate neighbors.
+required: false
 schema:
   type: integer
-  minimum: 0
+  minimum: 1
   maximum: 4
   default: 1
 style: form
