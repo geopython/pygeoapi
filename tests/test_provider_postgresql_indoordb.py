@@ -1,0 +1,2 @@
+from pygeoapi.provider.postgresql_indoordb import PostgresIndoorDB
+import pytest
