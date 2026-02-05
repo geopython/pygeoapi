@@ -1,443 +1,443 @@
 {
-    "type": "ConnectedNodesResult",
-    "start_node": "S1",
-    "connected_nodes": [
-        {
-            "hop": 1,
-            "id": "S2",
-            "featureType": "node",
-            "geometry": {
-                "type": "Point",
-                "coordinates": [
-                    199.9661492345782,
-                    391.31840285000396,
-                    20.0
-                ]
-            },
-            "duality": "C2",
-            "connects": [
-                "T2",
-                "T3",
-                "T73",
-                "T3-REVERSE",
-                "T2-REVERSE",
-                "T73-REVERSE"
-            ]
-        },
-        {
-            "hop": 1,
-            "id": "S33",
-            "featureType": "node",
-            "geometry": {
-                "type": "Point",
-                "coordinates": [
-                    197.20469617671412,
-                    456.67516521145586,
-                    0.0
-                ]
-            },
-            "duality": "C31",
-            "connects": [
-                "T45",
-                "T46",
-                "T47",
-                "T48",
-                "T49",
-                "T50",
-                "T51",
-                "T52",
-                "T53",
-                "T54",
-                "T55",
-                "T56",
-                "T57",
-                "T74",
-                "T45-REVERSE",
-                "T46-REVERSE",
-                "T47-REVERSE",
-                "T48-REVERSE",
-                "T49-REVERSE",
-                "T50-REVERSE",
-                "T51-REVERSE",
-                "T52-REVERSE",
-                "T53-REVERSE",
-                "T54-REVERSE",
-                "T55-REVERSE",
-                "T56-REVERSE",
-                "T57-REVERSE",
-                "T74-REVERSE"
-            ]
-        },
-        {
-            "hop": 2,
-            "id": "S11",
-            "featureType": "node",
-            "geometry": {
-                "type": "Point",
-                "coordinates": [
-                    132.61655036068373,
-                    478.35533039639836,
-                    0.0
-                ]
-            },
-            "duality": "C11",
-            "connects": [
-                "T20",
-                "T48",
-                "T20-REVERSE",
-                "T48-REVERSE"
-            ]
-        },
-        {
-            "hop": 2,
-            "id": "S12",
-            "featureType": "node",
-            "geometry": {
-                "type": "Point",
-                "coordinates": [
-                    132.43060255573644,
-                    450.1206701609353,
-                    0.0
-                ]
-            },
-            "duality": "C12",
-            "connects": [
-                "T19",
-                "T49",
-                "T19-REVERSE",
-                "T49-REVERSE"
-            ]
-        },
-        {
-            "hop": 2,
-            "id": "S15",
-            "featureType": "node",
-            "geometry": {
-                "type": "Point",
-                "coordinates": [
-                    149.47277525671066,
-                    411.51805594230575,
-                    0.0
-                ]
-            },
-            "duality": "C15",
-            "connects": [
-                "T16",
-                "T17",
-                "T18",
-                "T19",
-                "T50",
-                "T16-REVERSE",
-                "T17-REVERSE",
-                "T18-REVERSE",
-                "T19-REVERSE",
-                "T50-REVERSE"
-            ]
-        },
-        {
-            "hop": 2,
-            "id": "S19",
-            "featureType": "node",
-            "geometry": {
-                "type": "Point",
-                "coordinates": [
-                    156.74761885157474,
-                    368.5924452498791,
-                    0.0
-                ]
-            },
-            "duality": "C18",
-            "connects": [
-                "T13",
-                "T14",
-                "T15",
-                "T51",
-                "T13-REVERSE",
-                "T14-REVERSE",
-                "T15-REVERSE",
-                "T51-REVERSE"
-            ]
-        },
-        {
-            "hop": 2,
-            "id": "S2",
-            "featureType": "node",
-            "geometry": {
-                "type": "Point",
-                "coordinates": [
-                    199.9661492345782,
-                    391.31840285000396,
-                    20.0
-                ]
-            },
-            "duality": "C2",
-            "connects": [
-                "T2",
-                "T3",
-                "T73",
-                "T3-REVERSE",
-                "T2-REVERSE",
-                "T73-REVERSE"
-            ]
-        },
-        {
-            "hop": 2,
-            "id": "S23",
-            "featureType": "node",
-            "geometry": {
-                "type": "Point",
-                "coordinates": [
-                    173.7517403488478,
-                    556.5106900796362,
-                    0.0
-                ]
-            },
-            "duality": "C22",
-            "connects": [
-                "T47",
-                "T47-REVERSE"
-            ]
-        },
-        {
-            "hop": 2,
-            "id": "S24",
-            "featureType": "node",
-            "geometry": {
-                "type": "Point",
-                "coordinates": [
-                    173.97527995304864,
-                    536.0943016471066,
-                    0.0
-                ]
-            },
-            "duality": "C23",
-            "connects": [
-                "T46",
-                "T46-REVERSE"
-            ]
-        },
-        {
-            "hop": 2,
-            "id": "S25",
-            "featureType": "node",
-            "geometry": {
-                "type": "Point",
-                "coordinates": [
-                    218.70737599648717,
-                    353.2492585278638,
-                    0.0
-                ]
-            },
-            "duality": "C24",
-            "connects": [
-                "T52",
-                "T52-REVERSE"
-            ]
-        },
-        {
-            "hop": 2,
-            "id": "S26",
-            "featureType": "node",
-            "geometry": {
-                "type": "Point",
-                "coordinates": [
-                    255.00244960999748,
-                    366.63034794233465,
-                    0.0
-                ]
-            },
-            "duality": "C25",
-            "connects": [
-                "T53",
-                "T53-REVERSE"
-            ]
-        },
-        {
-            "hop": 2,
-            "id": "S3",
-            "featureType": "node",
-            "geometry": {
-                "type": "Point",
-                "coordinates": [
-                    199.68958053702457,
-                    391.6145570961798,
-                    40.0
-                ]
-            },
-            "duality": "C3",
-            "connects": [
-                "T2",
-                "T75",
-                "T2-REVERSE",
-                "T75-REVERSE"
-            ]
-        },
-        {
-            "hop": 2,
-            "id": "S31",
-            "featureType": "node",
-            "geometry": {
-                "type": "Point",
-                "coordinates": [
-                    253.38771100828393,
-                    541.0478377902552,
-                    0.0
-                ]
-            },
-            "duality": "C29",
-            "connects": [
-                "T57",
-                "T57-REVERSE"
-            ]
-        },
-        {
-            "hop": 2,
-            "id": "S32",
-            "featureType": "node",
-            "geometry": {
-                "type": "Point",
-                "coordinates": [
-                    265.147482708762,
-                    429.7209179927447,
-                    0.0
-                ]
-            },
-            "duality": "C30",
-            "connects": [
-                "T10",
-                "T11",
-                "T12",
-                "T54",
-                "T55",
-                "T56",
-                "T10-REVERSE",
-                "T11-REVERSE",
-                "T12-REVERSE",
-                "T54-REVERSE",
-                "T55-REVERSE",
-                "T56-REVERSE"
-            ]
-        },
-        {
-            "hop": 2,
-            "id": "S33",
-            "featureType": "node",
-            "geometry": {
-                "type": "Point",
-                "coordinates": [
-                    197.20469617671412,
-                    456.67516521145586,
-                    0.0
-                ]
-            },
-            "duality": "C31",
-            "connects": [
-                "T45",
-                "T46",
-                "T47",
-                "T48",
-                "T49",
-                "T50",
-                "T51",
-                "T52",
-                "T53",
-                "T54",
-                "T55",
-                "T56",
-                "T57",
-                "T74",
-                "T45-REVERSE",
-                "T46-REVERSE",
-                "T47-REVERSE",
-                "T48-REVERSE",
-                "T49-REVERSE",
-                "T50-REVERSE",
-                "T51-REVERSE",
-                "T52-REVERSE",
-                "T53-REVERSE",
-                "T54-REVERSE",
-                "T55-REVERSE",
-                "T56-REVERSE",
-                "T57-REVERSE",
-                "T74-REVERSE"
-            ]
-        },
-        {
-            "hop": 2,
-            "id": "S36",
-            "featureType": "node",
-            "geometry": {
-                "type": "Point",
-                "coordinates": [
-                    199.15383120205203,
-                    378.8349711332139,
-                    20.0
-                ]
-            },
-            "duality": "C34",
-            "connects": [
-                "T58",
-                "T59",
-                "T60",
-                "T61",
-                "T62",
-                "T63",
-                "T64",
-                "T65",
-                "T66",
-                "T67",
-                "T68",
-                "T69",
-                "T70",
-                "T71",
-                "T72",
-                "T73",
-                "T58-REVERSE",
-                "T59-REVERSE",
-                "T60-REVERSE",
-                "T61-REVERSE",
-                "T62-REVERSE",
-                "T63-REVERSE",
-                "T64-REVERSE",
-                "T65-REVERSE",
-                "T66-REVERSE",
-                "T67-REVERSE",
-                "T68-REVERSE",
-                "T69-REVERSE",
-                "T70-REVERSE",
-                "T71-REVERSE",
-                "T72-REVERSE",
-                "T73-REVERSE"
-            ]
-        },
-        {
-            "hop": 2,
-            "id": "S82",
-            "featureType": "node",
-            "geometry": {
-                "type": "Point",
-                "coordinates": [
-                    149.721383490353,
-                    528.7526484738582,
-                    0.0
-                ]
-            },
-            "duality": "C80",
-            "connects": [
-                "T5",
-                "T6",
-                "T7",
-                "T8",
-                "T9",
-                "T45",
-                "T5-REVERSE",
-                "T6-REVERSE",
-                "T7-REVERSE",
-                "T8-REVERSE",
-                "T9-REVERSE",
-                "T45-REVERSE"
-            ]
-        }
-    ],
-    "links": []
+    "type": "ConnectedNodesResult",
+    "start_node": "S1",
+    "connected_nodes": [
+        {
+            "hop": 1,
+            "id": "S2",
+            "featureType": "node",
+            "geometry": {
+                "type": "Point",
+                "coordinates": [
+                    199.9661492345782,
+                    391.31840285000396,
+                    20.0
+                ]
+            },
+            "duality": "C2",
+            "connects": [
+                "T2",
+                "T3",
+                "T73",
+                "T3-REVERSE",
+                "T2-REVERSE",
+                "T73-REVERSE"
+            ]
+        },
+        {
+            "hop": 1,
+            "id": "S33",
+            "featureType": "node",
+            "geometry": {
+                "type": "Point",
+                "coordinates": [
+                    197.20469617671412,
+                    456.67516521145586,
+                    0.0
+                ]
+            },
+            "duality": "C31",
+            "connects": [
+                "T45",
+                "T46",
+                "T47",
+                "T48",
+                "T49",
+                "T50",
+                "T51",
+                "T52",
+                "T53",
+                "T54",
+                "T55",
+                "T56",
+                "T57",
+                "T74",
+                "T45-REVERSE",
+                "T46-REVERSE",
+                "T47-REVERSE",
+                "T48-REVERSE",
+                "T49-REVERSE",
+                "T50-REVERSE",
+                "T51-REVERSE",
+                "T52-REVERSE",
+                "T53-REVERSE",
+                "T54-REVERSE",
+                "T55-REVERSE",
+                "T56-REVERSE",
+                "T57-REVERSE",
+                "T74-REVERSE"
+            ]
+        },
+        {
+            "hop": 2,
+            "id": "S11",
+            "featureType": "node",
+            "geometry": {
+                "type": "Point",
+                "coordinates": [
+                    132.61655036068373,
+                    478.35533039639836,
+                    0.0
+                ]
+            },
+            "duality": "C11",
+            "connects": [
+                "T20",
+                "T48",
+                "T20-REVERSE",
+                "T48-REVERSE"
+            ]
+        },
+        {
+            "hop": 2,
+            "id": "S12",
+            "featureType": "node",
+            "geometry": {
+                "type": "Point",
+                "coordinates": [
+                    132.43060255573644,
+                    450.1206701609353,
+                    0.0
+                ]
+            },
+            "duality": "C12",
+            "connects": [
+                "T19",
+                "T49",
+                "T19-REVERSE",
+                "T49-REVERSE"
+            ]
+        },
+        {
+            "hop": 2,
+            "id": "S15",
+            "featureType": "node",
+            "geometry": {
+                "type": "Point",
+                "coordinates": [
+                    149.47277525671066,
+                    411.51805594230575,
+                    0.0
+                ]
+            },
+            "duality": "C15",
+            "connects": [
+                "T16",
+                "T17",
+                "T18",
+                "T19",
+                "T50",
+                "T16-REVERSE",
+                "T17-REVERSE",
+                "T18-REVERSE",
+                "T19-REVERSE",
+                "T50-REVERSE"
+            ]
+        },
+        {
+            "hop": 2,
+            "id": "S19",
+            "featureType": "node",
+            "geometry": {
+                "type": "Point",
+                "coordinates": [
+                    156.74761885157474,
+                    368.5924452498791,
+                    0.0
+                ]
+            },
+            "duality": "C18",
+            "connects": [
+                "T13",
+                "T14",
+                "T15",
+                "T51",
+                "T13-REVERSE",
+                "T14-REVERSE",
+                "T15-REVERSE",
+                "T51-REVERSE"
+            ]
+        },
+        {
+            "hop": 2,
+            "id": "S2",
+            "featureType": "node",
+            "geometry": {
+                "type": "Point",
+                "coordinates": [
+                    199.9661492345782,
+                    391.31840285000396,
+                    20.0
+                ]
+            },
+            "duality": "C2",
+            "connects": [
+                "T2",
+                "T3",
+                "T73",
+                "T3-REVERSE",
+                "T2-REVERSE",
+                "T73-REVERSE"
+            ]
+        },
+        {
+            "hop": 2,
+            "id": "S23",
+            "featureType": "node",
+            "geometry": {
+                "type": "Point",
+                "coordinates": [
+                    173.7517403488478,
+                    556.5106900796362,
+                    0.0
+                ]
+            },
+            "duality": "C22",
+            "connects": [
+                "T47",
+                "T47-REVERSE"
+            ]
+        },
+        {
+            "hop": 2,
+            "id": "S24",
+            "featureType": "node",
+            "geometry": {
+                "type": "Point",
+                "coordinates": [
+                    173.97527995304864,
+                    536.0943016471066,
+                    0.0
+                ]
+            },
+            "duality": "C23",
+            "connects": [
+                "T46",
+                "T46-REVERSE"
+            ]
+        },
+        {
+            "hop": 2,
+            "id": "S25",
+            "featureType": "node",
+            "geometry": {
+                "type": "Point",
+                "coordinates": [
+                    218.70737599648717,
+                    353.2492585278638,
+                    0.0
+                ]
+            },
+            "duality": "C24",
+            "connects": [
+                "T52",
+                "T52-REVERSE"
+            ]
+        },
+        {
+            "hop": 2,
+            "id": "S26",
+            "featureType": "node",
+            "geometry": {
+                "type": "Point",
+                "coordinates": [
+                    255.00244960999748,
+                    366.63034794233465,
+                    0.0
+                ]
+            },
+            "duality": "C25",
+            "connects": [
+                "T53",
+                "T53-REVERSE"
+            ]
+        },
+        {
+            "hop": 2,
+            "id": "S3",
+            "featureType": "node",
+            "geometry": {
+                "type": "Point",
+                "coordinates": [
+                    199.68958053702457,
+                    391.6145570961798,
+                    40.0
+                ]
+            },
+            "duality": "C3",
+            "connects": [
+                "T2",
+                "T75",
+                "T2-REVERSE",
+                "T75-REVERSE"
+            ]
+        },
+        {
+            "hop": 2,
+            "id": "S31",
+            "featureType": "node",
+            "geometry": {
+                "type": "Point",
+                "coordinates": [
+                    253.38771100828393,
+                    541.0478377902552,
+                    0.0
+                ]
+            },
+            "duality": "C29",
+            "connects": [
+                "T57",
+                "T57-REVERSE"
+            ]
+        },
+        {
+            "hop": 2,
+            "id": "S32",
+            "featureType": "node",
+            "geometry": {
+                "type": "Point",
+                "coordinates": [
+                    265.147482708762,
+                    429.7209179927447,
+                    0.0
+                ]
+            },
+            "duality": "C30",
+            "connects": [
+                "T10",
+                "T11",
+                "T12",
+                "T54",
+                "T55",
+                "T56",
+                "T10-REVERSE",
+                "T11-REVERSE",
+                "T12-REVERSE",
+                "T54-REVERSE",
+                "T55-REVERSE",
+                "T56-REVERSE"
+            ]
+        },
+        {
+            "hop": 2,
+            "id": "S33",
+            "featureType": "node",
+            "geometry": {
+                "type": "Point",
+                "coordinates": [
+                    197.20469617671412,
+                    456.67516521145586,
+                    0.0
+                ]
+            },
+            "duality": "C31",
+            "connects": [
+                "T45",
+                "T46",
+                "T47",
+                "T48",
+                "T49",
+                "T50",
+                "T51",
+                "T52",
+                "T53",
+                "T54",
+                "T55",
+                "T56",
+                "T57",
+                "T74",
+                "T45-REVERSE",
+                "T46-REVERSE",
+                "T47-REVERSE",
+                "T48-REVERSE",
+                "T49-REVERSE",
+                "T50-REVERSE",
+                "T51-REVERSE",
+                "T52-REVERSE",
+                "T53-REVERSE",
+                "T54-REVERSE",
+                "T55-REVERSE",
+                "T56-REVERSE",
+                "T57-REVERSE",
+                "T74-REVERSE"
+            ]
+        },
+        {
+            "hop": 2,
+            "id": "S36",
+            "featureType": "node",
+            "geometry": {
+                "type": "Point",
+                "coordinates": [
+                    199.15383120205203,
+                    378.8349711332139,
+                    20.0
+                ]
+            },
+            "duality": "C34",
+            "connects": [
+                "T58",
+                "T59",
+                "T60",
+                "T61",
+                "T62",
+                "T63",
+                "T64",
+                "T65",
+                "T66",
+                "T67",
+                "T68",
+                "T69",
+                "T70",
+                "T71",
+                "T72",
+                "T73",
+                "T58-REVERSE",
+                "T59-REVERSE",
+                "T60-REVERSE",
+                "T61-REVERSE",
+                "T62-REVERSE",
+                "T63-REVERSE",
+                "T64-REVERSE",
+                "T65-REVERSE",
+                "T66-REVERSE",
+                "T67-REVERSE",
+                "T68-REVERSE",
+                "T69-REVERSE",
+                "T70-REVERSE",
+                "T71-REVERSE",
+                "T72-REVERSE",
+                "T73-REVERSE"
+            ]
+        },
+        {
+            "hop": 2,
+            "id": "S82",
+            "featureType": "node",
+            "geometry": {
+                "type": "Point",
+                "coordinates": [
+                    149.721383490353,
+                    528.7526484738582,
+                    0.0
+                ]
+            },
+            "duality": "C80",
+            "connects": [
+                "T5",
+                "T6",
+                "T7",
+                "T8",
+                "T9",
+                "T45",
+                "T5-REVERSE",
+                "T6-REVERSE",
+                "T7-REVERSE",
+                "T8-REVERSE",
+                "T9-REVERSE",
+                "T45-REVERSE"
+            ]
+        }
+    ],
+    "links": []
 }
