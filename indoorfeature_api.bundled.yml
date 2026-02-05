@@ -803,48 +803,11 @@ paths:
               cellSpace:
                 summary: Example of a CellSpace
                 value:
-                  featureType: CellSpace
-                  id: cell-office-102
-                  cellSpaceName: Office 102
-                  level: 1F
-                  poi: false
-                  duality: null
-                  boundedBy:
-                    - B5
-                  cellSpaceGeom:
-                    geometry2D:
-                      type: Polygon
-                      coordinates:
-                        - - - 20
-                            - 0
-                          - - 30
-                            - 0
-                          - - 30
-                            - 10
-                          - - 20
-                            - 10
-                          - - 20
-                            - 0
-                    geometry3D: {}
+                  $ref: ./examples/cellSpace.json
               cellBoundary:
                 summary: Example of a CellBoundary
                 value:
-                  featureType: CellBoundary
-                  id: boundary-wall-02
-                  isVirtual: true
-                  duality: T1
-                  externalReference:
-                    source: Manual_Input
-                    description: Wall between corridor and new office
-                  cellBoundaryGeom:
-                    geometry2D:
-                      type: LineString
-                      coordinates:
-                        - - 20
-                          - 0
-                        - - 20
-                          - 10
-                    geometry3D: {}
+                  $ref: ./examples/cellBoundary.json
       responses:
         '201':
           description: Created successfully.
@@ -881,30 +844,11 @@ paths:
               cellSpace:
                 summary: Example of a Node
                 value:
-                  featureType: Node
-                  id: node-corridor
-                  duality: cell-office-102
-                  geometry:
-                    type: Point
-                    coordinates:
-                      - 15
-                      - 5
+                  $ref: ./examples/node.json
               cellBoundary:
                 summary: Example of an Edge
                 value:
-                  featureType: Edge
-                  id: edge-101-100
-                  connects:
-                    - node-101
-                    - node-100
-                  weight: 1.5
-                  geometry:
-                    type: LineString
-                    coordinates:
-                      - - 5
-                        - 5
-                      - - 15
-                        - 5
+                  $ref: ./examples/edge.json
       responses:
         '201':
           description: Created successfully.
@@ -2044,40 +1988,7 @@ components:
           type: object
           description: The response data.
           additionalProperties: true
-    featuresGeoJSON:
-      featuresGeoJSON:
-        type: object
-        title: featureCollectionGeoJSON
-        required:
-          - type
-          - features
-        properties:
-          type:
-            type: string
-            enum:
-              - FeatureCollection
-          features:
-            type: array
-            items:
-              $ref: ./metaGeoJSON.yml
-          numberMatched:
-            type: integer
-          numberReturned:
-            type: integer
-          timeStamp:
-            type: string
-            format: date-time
-          links:
-            type: array
-            items:
-              $ref: https://schemas.opengis.net/ogcapi/features/part1/1.0/openapi/schemas/link.yaml
-    indoorJSON:
-      IndoorJSON:
-        type: object
-        description: Root schema for IndoorGML 2.0 IndoorFeatures
-        allOf:
-          - $ref: ./indoorFeature.yml
-    point:
+    pointGeoJSON:
       type: object
       required:
         - type
@@ -2089,10 +2000,10 @@ components:
             - Point
         coordinates:
           type: array
+          minItems: 2
           items:
             type: number
-          minItems: 2
-    multiPoint:
+    multipointGeoJSON:
       type: object
       required:
         - type
@@ -2106,9 +2017,10 @@ components:
           type: array
           items:
             type: array
+            minItems: 2
             items:
               type: number
-    lineString:
+    linestringGeoJSON:
       type: object
       required:
         - type
@@ -2120,11 +2032,13 @@ components:
             - LineString
         coordinates:
           type: array
+          minItems: 2
           items:
             type: array
+            minItems: 2
             items:
               type: number
-    multiLineString:
+    multilinestringGeoJSON:
       type: object
       required:
         - type
@@ -2138,11 +2052,13 @@ components:
           type: array
           items:
             type: array
+            minItems: 2
             items:
               type: array
+              minItems: 2
               items:
                 type: number
-    polygon:
+    polygonGeoJSON:
       type: object
       required:
         - type
@@ -2156,11 +2072,13 @@ components:
           type: array
           items:
             type: array
+            minItems: 4
             items:
               type: array
+              minItems: 2
               items:
                 type: number
-    multiPolygon:
+    multipolygonGeoJSON:
       type: object
       required:
         - type
@@ -2176,150 +2094,22 @@ components:
             type: array
             items:
               type: array
+              minItems: 4
               items:
                 type: array
+                minItems: 2
                 items:
                   type: number
     geometryGeoJSON:
-      title: geometryGeoJSON
       oneOf:
-        - $ref: '#/components/schemas/point'
-        - $ref: '#/components/schemas/multiPoint'
-        - $ref: '#/components/schemas/lineString'
-        - $ref: '#/components/schemas/multiLineString'
-        - $ref: '#/components/schemas/polygon'
-        - $ref: '#/components/schemas/multiPolygon'
-        - $ref: '#/components/schemas/geometryCollection'
-      discriminator:
-        propertyName: type
-        mapping:
-          Point: '#/components/schemas/point'
-          MultiPoint: '#/components/schemas/multiPoint'
-          LineString: '#/components/schemas/lineString'
-          MultiLineString: '#/components/schemas/multiLineString'
-          Polygon: '#/components/schemas/polygon'
-          MultiPolygon: '#/components/schemas/multiPolygon'
-          GeometryCollection: '#/components/schemas/geometryCollection'
-      components:
-        schemas:
-          point:
-            type: object
-            required:
-              - type
-              - coordinates
-            properties:
-              type:
-                type: string
-                enum:
-                  - Point
-              coordinates:
-                type: array
-                items:
-                  type: number
-                minItems: 2
-          multiPoint:
-            type: object
-            required:
-              - type
-              - coordinates
-            properties:
-              type:
-                type: string
-                enum:
-                  - MultiPoint
-              coordinates:
-                type: array
-                items:
-                  type: array
-                  items:
-                    type: number
-          lineString:
-            type: object
-            required:
-              - type
-              - coordinates
-            properties:
-              type:
-                type: string
-                enum:
-                  - LineString
-              coordinates:
-                type: array
-                items:
-                  type: array
-                  items:
-                    type: number
-          multiLineString:
-            type: object
-            required:
-              - type
-              - coordinates
-            properties:
-              type:
-                type: string
-                enum:
-                  - MultiLineString
-              coordinates:
-                type: array
-                items:
-                  type: array
-                  items:
-                    type: array
-                    items:
-                      type: number
-          polygon:
-            type: object
-            required:
-              - type
-              - coordinates
-            properties:
-              type:
-                type: string
-                enum:
-                  - Polygon
-              coordinates:
-                type: array
-                items:
-                  type: array
-                  items:
-                    type: array
-                    items:
-                      type: number
-          multiPolygon:
-            type: object
-            required:
-              - type
-              - coordinates
-            properties:
-              type:
-                type: string
-                enum:
-                  - MultiPolygon
-              coordinates:
-                type: array
-                items:
-                  type: array
-                  items:
-                    type: array
-                    items:
-                      type: array
-                      items:
-                        type: number
-          geometryCollection:
-            type: object
-            required:
-              - type
-              - geometries
-            properties:
-              type:
-                type: string
-                enum:
-                  - GeometryCollection
-              geometries:
-                type: array
-                items:
-                  $ref: '#/components/schemas/geometryGeoJSON'
-    geometryCollection:
+        - $ref: '#/components/schemas/pointGeoJSON'
+        - $ref: '#/components/schemas/multipointGeoJSON'
+        - $ref: '#/components/schemas/linestringGeoJSON'
+        - $ref: '#/components/schemas/multilinestringGeoJSON'
+        - $ref: '#/components/schemas/polygonGeoJSON'
+        - $ref: '#/components/schemas/multipolygonGeoJSON'
+        - $ref: '#/components/schemas/geometrycollectionGeoJSON'
+    geometrycollectionGeoJSON:
       type: object
       required:
         - type
@@ -2333,6 +2123,69 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/geometryGeoJSON'
+    metaGeoJSON:
+      type: object
+      title: featureGeoJSON
+      required:
+        - type
+        - geometry
+        - properties
+      properties:
+        type:
+          type: string
+          enum:
+            - Feature
+        featureType:
+          type: string
+          enum:
+            - IndoorFeatures
+        id:
+          type: string
+        geometry:
+          $ref: '#/components/schemas/geometryGeoJSON'
+        properties:
+          type: object
+          properties:
+            metadata:
+              type: object
+              properties:
+                description:
+                  type: string
+                creationDate:
+                  type: string
+                  format: date-time
+                version:
+                  type: string
+        links:
+          type: array
+          items:
+            $ref: '#/components/schemas/link'
+    featuresGeoJSON:
+      type: object
+      title: featureCollectionGeoJSON
+      required:
+        - type
+        - features
+      properties:
+        type:
+          type: string
+          enum:
+            - FeatureCollection
+        features:
+          type: array
+          items:
+            $ref: '#/components/schemas/metaGeoJSON'
+        numberMatched:
+          type: integer
+        numberReturned:
+          type: integer
+        timeStamp:
+          type: string
+          format: date-time
+        links:
+          type: array
+          items:
+            $ref: '#/components/schemas/link'
     refsys-simpleref:
       type: string
       format: uri-reference
@@ -2860,6 +2713,11 @@ components:
           uniqueItems: true
           items:
             $ref: '#/components/schemas/interLayerConnection'
+    indoorJSON:
+      type: object
+      description: Root schema for IndoorGML 2.0 IndoorFeatures
+      allOf:
+        - $ref: '#/components/schemas/indoorFeature'
     featureGeoJSON:
       type: object
       title: featureGeoJSON
@@ -2895,43 +2753,6 @@ components:
                   type: string
         IndoorFeatures:
           $ref: '#/components/schemas/indoorFeature'
-        links:
-          type: array
-          items:
-            $ref: '#/components/schemas/link'
-    metaGeoJSON:
-      type: object
-      title: featureGeoJSON
-      required:
-        - type
-        - geometry
-        - properties
-      properties:
-        type:
-          type: string
-          enum:
-            - Feature
-        featureType:
-          type: string
-          enum:
-            - IndoorFeatures
-        id:
-          type: string
-        geometry:
-          $ref: '#/components/schemas/geometryGeoJSON'
-        properties:
-          type: object
-          properties:
-            metadata:
-              type: object
-              properties:
-                description:
-                  type: string
-                creationDate:
-                  type: string
-                  format: date-time
-                version:
-                  type: string
         links:
           type: array
           items:
@@ -2999,31 +2820,6 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/interLayerConnection'
-    bbox-2:
-      name: bbox
-      in: query
-      description: |-
-        Spatial filter [minX, minY, maxX, maxY].
-
-        Only features that have a geometry that intersects the bounding box are selected. 
-
-        The bounding box is provided as four numbers, recommended to use with `level`
-
-        Can be used alone not regarding the z axis for 3D geometries.
-      required: false
-      schema:
-        type: array
-        minItems: 4
-        maxItems: 4
-        items:
-          type: number
-      style: form
-      explode: false
-      example:
-        - 129
-        - 35.1
-        - 129.1
-        - 35.2
     thematicLayerSummary:
       type: object
       title: ThematicLayerSummary
@@ -3095,7 +2891,7 @@ components:
           minItems: 4
           maxItems: 4
           items:
-            $ref: '#/components/schemas/bbox-2'
+            type: number
         links:
           type: array
           items:
@@ -3269,7 +3065,7 @@ components:
                 enum:
                   - node
               geometry:
-                $ref: '#/components/schemas/geometryGeoJSON'
+                $ref: '#/components/schemas/Point'
               duality:
                 type: string
                 nullable: true
@@ -3302,98 +3098,95 @@ components:
         application/json:
           schema:
             $ref: '#/components/schemas/collections'
-          examples:
-            collections_example:
-              summary: An example of the collections list
-              value:
-                collections:
-                  - id: indoor-pnu
-                    title: PNU STEMLab Indoor Features
-                    description: Physical rooms and logical nodes from IndoorJSON.
-                    keywords:
-                      - IndoorGML
-                      - PNU
-                    links:
-                      - type: application/json
-                        rel: root
-                        title: The landing page of this server as JSON
-                        href: https://data.example.org?f=json
-                      - type: text/html
-                        rel: root
-                        title: The landing page of this server as HTML
-                        href: https://data.example.org?f=html
-                      - type: application/json
-                        rel: self
-                        title: This document as JSON
-                        href: https://data.example.org/collections/indoor-pnu?f=json
-                      - type: application/ld+json
-                        rel: alternate
-                        title: This document as RDF (JSON-LD)
-                        href: https://data.example.org/collections/indoor-pnu?f=jsonld
-                      - type: text/html
-                        rel: alternate
-                        title: This document as HTML
-                        href: https://data.example.org/collections/indoor-pnu?f=html
-                      - type: application/geo+json
-                        rel: items
-                        title: Items as GeoJSON
-                        href: https://data.example.org/collections/indoor-pnu/items?f=json
-                      - type: text/html
-                        rel: items
-                        title: Items as HTML
-                        href: https://data.example.org/collections/indoor-pnu/items?f=html
-                      - type: application/schema+json
-                        rel: http://www.opengis.net/def/rel/ogc/1.0/queryables
-                        title: Queryables for this collection as JSON
-                        href: https://data.example.org/collections/indoor-pnu/queryables?f=json
-                    extent:
-                      spatial:
-                        bbox:
-                          - - 0
-                            - 0
-                            - 4
-                            - 2
-                        crs: http://www.opengis.net/def/crs/OGC/1.3/CRS84
-                    itemType: feature
-                  - id: aist_waterfront_lab
-                    title: AIST Waterfront Lab IndoorGML
-                    description: IndoorGML data for AIST Waterfront Lab IndoorGML
-                    itemType: indoorfeature
-                    keywords: []
-                    links:
-                      - type: application/schema+json
-                        rel: http://www.opengis.net/def/rel/ogc/1.0/queryables
-                        title: Queryables for this collection as JSON
-                        href: https://data.example.org/collections/aist_waterfront_lab/queryables?f=json
-                      - type: application/json
-                        rel: root
-                        title: The landing page of this server as JSON
-                        href: https://data.example.org?f=json
-                      - type: application/json
-                        rel: self
-                        title: This document as JSON
-                        href: https://data.example.org/collections/aist_waterfront_lab?f=json
-                      - type: application/geo+json
-                        rel: items
-                        title: Items as GeoJSON
-                        href: https://data.example.org/collections/aist_waterfront_lab/items?f=json
-                      - type: text/html
-                        rel: items
-                        title: Items as HTML
-                        href: https://data.example.org/collections/aist_waterfront_lab/items?f=html
+          example:
+            collections:
+              - id: indoor-pnu
+                title: PNU STEMLab Indoor Features
+                description: Physical rooms and logical nodes from IndoorJSON.
+                keywords:
+                  - IndoorGML
+                  - PNU
                 links:
+                  - type: application/json
+                    rel: root
+                    title: The landing page of this server as JSON
+                    href: https://data.example.org?f=json
+                  - type: text/html
+                    rel: root
+                    title: The landing page of this server as HTML
+                    href: https://data.example.org?f=html
                   - type: application/json
                     rel: self
                     title: This document as JSON
-                    href: https://data.example.org/collections?f=json
+                    href: https://data.example.org/collections/indoor-pnu?f=json
                   - type: application/ld+json
                     rel: alternate
                     title: This document as RDF (JSON-LD)
-                    href: https://data.example.org/collections?f=jsonld
+                    href: https://data.example.org/collections/indoor-pnu?f=jsonld
                   - type: text/html
                     rel: alternate
                     title: This document as HTML
-                    href: https://data.example.org/collections?f=html
+                    href: https://data.example.org/collections/indoor-pnu?f=html
+                  - type: application/geo+json
+                    rel: items
+                    title: Items as GeoJSON
+                    href: https://data.example.org/collections/indoor-pnu/items?f=json
+                  - type: text/html
+                    rel: items
+                    title: Items as HTML
+                    href: https://data.example.org/collections/indoor-pnu/items?f=html
+                  - type: application/schema+json
+                    rel: http://www.opengis.net/def/rel/ogc/1.0/queryables
+                    title: Queryables for this collection as JSON
+                    href: https://data.example.org/collections/indoor-pnu/queryables?f=json
+                extent:
+                  spatial:
+                    bbox:
+                      - - 0
+                        - 0
+                        - 4
+                        - 2
+                    crs: http://www.opengis.net/def/crs/OGC/1.3/CRS84
+                itemType: feature
+              - id: aist_waterfront_lab
+                title: AIST Waterfront Lab IndoorGML
+                description: IndoorGML data for AIST Waterfront Lab IndoorGML
+                itemType: indoorfeature
+                keywords: []
+                links:
+                  - type: application/schema+json
+                    rel: http://www.opengis.net/def/rel/ogc/1.0/queryables
+                    title: Queryables for this collection as JSON
+                    href: https://data.example.org/collections/aist_waterfront_lab/queryables?f=json
+                  - type: application/json
+                    rel: root
+                    title: The landing page of this server as JSON
+                    href: https://data.example.org?f=json
+                  - type: application/json
+                    rel: self
+                    title: This document as JSON
+                    href: https://data.example.org/collections/aist_waterfront_lab?f=json
+                  - type: application/geo+json
+                    rel: items
+                    title: Items as GeoJSON
+                    href: https://data.example.org/collections/aist_waterfront_lab/items?f=json
+                  - type: text/html
+                    rel: items
+                    title: Items as HTML
+                    href: https://data.example.org/collections/aist_waterfront_lab/items?f=html
+            links:
+              - type: application/json
+                rel: self
+                title: This document as JSON
+                href: https://data.example.org/collections?f=json
+              - type: application/ld+json
+                rel: alternate
+                title: This document as RDF (JSON-LD)
+                href: https://data.example.org/collections?f=jsonld
+              - type: text/html
+                rel: alternate
+                title: This document as HTML
+                href: https://data.example.org/collections?f=html
     unauthorized:
       description: Authentication credentials were missing or invalid.
       content:
