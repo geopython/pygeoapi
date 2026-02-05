@@ -1,7 +1,8 @@
 {
     "type": "ConnectedNodesResult",
     "start_node": "S1",
-    "connected_nodes": [
+    "connected_nodes":
+    [
         {
             "hop": 1,
             "id": "S2",
