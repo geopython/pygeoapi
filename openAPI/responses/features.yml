@@ -3,4 +3,5 @@ content:
   application/geo+json:
     schema:
       $ref: '../schemas/featuresGeoJSON.yml'
-    
+    example:
+      $ref: '../examples/indoorFeatures.json'

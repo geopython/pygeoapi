@@ -1,17 +1,16 @@
-featuresGeoJSON:
-  type: object
-  title: featureCollectionGeoJSON
-  required: [type, features]
-  properties:
-    type: { type: string, enum: [FeatureCollection] }
-    features:
-      type: array
-      items:
-        $ref: './metaGeoJSON.yml'
-    numberMatched: { type: integer }
-    numberReturned: { type: integer }
-    timeStamp: { type: string, format: date-time }
-    links:
-      type: array
-      items: 
-        $ref: 'https://schemas.opengis.net/ogcapi/features/part1/1.0/openapi/schemas/link.yaml'
+type: object
+title: featuresGeoJSON
+required: [type, features]
+properties:
+  type: { type: string, enum: [FeatureCollection] }
+  features:
+    type: array
+    items:
+      $ref: './metaGeoJSON.yml'
+  numberMatched: { type: integer }
+  numberReturned: { type: integer }
+  timeStamp: { type: string, format: date-time }
+  links:
+    type: array
+    items: 
+      $ref: 'https://schemas.opengis.net/ogcapi/features/part1/1.0/openapi/schemas/link.yaml'

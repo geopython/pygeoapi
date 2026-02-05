@@ -3,8 +3,5 @@ content:
   application/json:
     schema:
       $ref: '../schemas/collections.yml'
-    examples:
-      collections_example:
-        summary: An example of the collections list
-        value:
-          $ref: '../examples/collections.json'
+    example:
+      $ref: '../examples/collections.json'
