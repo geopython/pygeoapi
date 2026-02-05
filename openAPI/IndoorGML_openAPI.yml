@@ -185,7 +185,7 @@ paths:
         '500':
           $ref: './responses/InternalServerError.yml'
   
-  /collections/{collectionId}/items/{fId}:
+  /collections/{collectionId}/items/{featureId}:
     parameters:
       - $ref: './parameters/collectionId.yml'
       - $ref: './parameters/featureId.yml'
@@ -241,7 +241,7 @@ paths:
         '404':
           $ref: './responses/notFound.yml'
 
-  /collections/{collectionId}/items/{fId}/layers:
+  /collections/{collectionId}/items/{featureId}/layers:
     parameters:
       - $ref: './parameters/collectionId.yml'
       - $ref: './parameters/featureId.yml'
@@ -250,7 +250,7 @@ paths:
         - ThematicLayers
       summary: register a new thematic layer
       description: |-
-        Uploads a new thematic layer (e.g., 'Pet-friendly' or 'Furnitures') to a specific `fId`.
+        Uploads a new thematic layer (e.g., 'Pet-friendly' or 'Furnitures') to a specific `featureId`.
         The body must conform to the IndoorJSON ThematicLayer schema.
 
         The `Id`s of the members in each primalSpace and dualSpace must be unique within the layer.
@@ -310,7 +310,7 @@ paths:
         '500':
           $ref: './responses/internalServerError.yml'
   
-  /collections/{collectionId}/items/{fId}/interlayerconnections:
+  /collections/{collectionId}/items/{featureId}}/interlayerconnections:
     parameters:
       - $ref: './parameters/collectionId.yml'
       - $ref: './parameters/featureId.yml'
@@ -369,7 +369,7 @@ paths:
         '500':
           $ref: './responses/internalServerError.yml'
 
-  /collections/{collectionId}/items/{fId}/interlayerconnections/{cnId}:
+  /collections/{collectionId}/items/{featureId}/interlayerconnections/{cnId}:
     parameters:
       - $ref: './parameters/collectionId.yml'
       - $ref: './parameters/featureId.yml'
@@ -393,7 +393,7 @@ paths:
         '500':
           $ref: './responses/internalServerError.yml'
 
-  /collections/{collectionId}/items/{fId}/layers/{tId}:
+  /collections/{collectionId}/items/{featureId}/layers/{tId}:
     parameters:
           - $ref: './parameters/collectionId.yml'
           - $ref: './parameters/featureId.yml'
@@ -450,7 +450,7 @@ paths:
         '500':
           $ref: './responses/internalServerError.yml'
 
-  /collections/{collectionId}/items/{fId}/layers/{tId}/primal:
+  /collections/{collectionId}/items/{featureId}/layers/{tId}/primal:
     parameters:
       - $ref: './parameters/collectionId.yml'
       - $ref: './parameters/featureId.yml'
@@ -528,7 +528,7 @@ paths:
         '500':
           $ref: './responses/internalServerError.yml'
 
-  /collections/{collectionId}/items/{fId}/layers/{tId}/dual:
+  /collections/{collectionId}/items/{featureId}/layers/{tId}/dual:
     parameters:
       - $ref: './parameters/collectionId.yml'
       - $ref: './parameters/featureId.yml'
@@ -611,7 +611,7 @@ paths:
         '500':
           $ref: './responses/internalServerError.yml'
 
-  /collections/{collectionId}/items/{fId}/layers/{tId}/geoquery:
+  /collections/{collectionId}/items/{featureId}/layers/{tId}/geoquery:
     parameters:
       - $ref: './parameters/collectionId.yml'
       - $ref: './parameters/featureId.yml'
@@ -660,7 +660,7 @@ paths:
         '500':
           $ref: './responses/internalServerError.yml'
 
-  /collections/{collectionId}/items/{fId}/layers/{tId}/dual/route:
+  /collections/{collectionId}/items/{featureId}/layers/{tId}/dual/route:
     parameters:
       - $ref: './parameters/collectionId.yml'
       - $ref: './parameters/featureId.yml'
@@ -709,7 +709,7 @@ paths:
         '500':
           $ref: './responses/internalServerError.yml'
 
-  /collections/{collectionId}/items/{fId}/layers/{tId}/primal/{mId}:
+  /collections/{collectionId}/items/{featureId}/layers/{tId}/primal/{mId}:
     parameters:
       - $ref: './parameters/collectionId.yml'
       - $ref: './parameters/featureId.yml'
@@ -790,7 +790,7 @@ paths:
         '500':
           $ref: './responses/internalServerError.yml'
 
-  /collections/{collectionId}/items/{fId}/layers/{tId}/primal/{mId}/bounding:
+  /collections/{collectionId}/items/{featureId}/layers/{tId}/primal/{mId}/bounding:
     parameters:
         - $ref: './parameters/collectionId.yml'
         - $ref: './parameters/featureId.yml'
@@ -799,23 +799,37 @@ paths:
     get:
       tags:
         - Services
-      summary: Retrieve a list of CellSpaces bounded by a specific CellBoundary
+      summary: Retrieve a CellSpace bounded by a specific CellBoundary
       description: |-
-        Returns the set of CellSpaces bounded by a given CellBoundary in the primal space
-      operationId: getBoundingCellSpaces
+        Retrieves the `CellSpace` (Primal Space) that is physically bounded by the specified `CellBoundary` identifier (`mId`).
+        If the `mId` doen't refer to a `cellBoundary`, it returns a 404 error (even for cellSpaces).
+
+        **Topological Logic:**
+        In IndoorGML, a `CellBoundary` defines the geometric and semantic limit of a 3D or 2D `CellSpace`. This endpoint performs a reverse-lookup to identify which space is defined by the provided boundary.
+
+        **Spatial Duality Note:**
+        While this query occurs in the **Primal Space**, the resulting `CellSpace` contains a `duality` field that allows you to identify the corresponding `Node` (State) in the **Dual Space** for navigation purposes.
+
+        **Usage Context:**
+        Useful for identifying rooms or corridors sharing a specific wall, door, or virtual transition.
+      operationId: getBoundingCellSpace
       responses:
         '200':
-          description: Success. Returns the requested a list of CellSpaces.
+          description: Success. Returns the CellSpace associated with the boundary.
           content:
             application/json:
               schema:
                 $ref: './schemas/cellSpace.yml'
+        '400':
+          $ref: './responses/badRequest.yml'
         '404':
-          description: CellBoundary not found.
+          $ref: './responses/notFound.yml'
+        '422':
+          $ref: './responses/unprocessableEntity.yml'
         '500':
-          $ref: './responses/InternalServerError.yml'
+          $ref: './responses/internalServerError.yml'
 
-  /collections/{collectionId}/items/{fId}/layers/{tId}/dual/{mId}/connected:
+  /collections/{collectionId}/items/{featureId}/layers/{tId}/dual/{mId}/connected:
     parameters:
       - $ref: './parameters/collectionId.yml'
       - $ref: './parameters/featureId.yml'
@@ -827,24 +841,37 @@ paths:
         - Services
       summary: Retrieve  connectively reachable nodes and their duality cellspaces from specific node.
       description: |-
-        Returns nodes and their associated cell spaces that are connectively reachable from the given node within the indoor dual graph.
+        Retrieves all nodes within the **Dual Space** graph that are topologically reachable from a specific source node within a defined number of "hops" (edges).
+
+        **Connectivity Logic:**
+        The service performs a **Recursive Common Table Expression (CTE)** query to traverse the graph. It identifies immediate neighbors (1-hop) and continues to iterate until the specified `hop` limit is reached. 
+
+        **Spatial Duality:**
+        For every reachable node found, the response includes its `duality` link, allowing clients to map logical network reachability back to physical `CellSpace` members (rooms or corridors).
+
+        **Use Case:**
+        Ideal for calculating service areas, identifying adjacent rooms, or determining the scope of sensor coverage within an indoor environment.
       operationId: getConnectedNodes
       parameters:
         - $ref: './parameters/limit.yml'
         - $ref: './parameters/hop.yml'
       responses:
         '200':
-          description: Successfully retrieved the Node and CellSpaces.
+          description: Successfully retrieved connected nodes within the specified hop distance.
           content:
             application/json:
               schema:
                 $ref: './schemas/connectedResults.yml'
+              example:
+                $ref: './examples/connectedResults.json'
+        '400':
+          $ref: './responses/badRequest.yml'
         '404':
-          description: Node ID not found in this thematic layer.
+          $ref: './responses/notFound.yml'
         '500':
-          $ref: './responses/InternalServerError.yml'     
+          $ref: './responses/internalServerError.yml'     
 
-  /collections/{collectionId}/items/{fId}/layers/{tId}/dual/{mId}:
+  /collections/{collectionId}/items/{featureId}/layers/{tId}/dual/{mId}:
     parameters:
       - $ref: './parameters/collectionId.yml'
       - $ref: './parameters/featureId.yml'
