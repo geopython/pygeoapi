@@ -2,6 +2,6 @@ description: Unexpected server error.
 content:
   application/json:
     schema:
-      $ref: '../schemas/ApiError.yml'
+      $ref: '../schemas/apiError.yml'
     example:
       $ref: '../examples/internalServerError.json'

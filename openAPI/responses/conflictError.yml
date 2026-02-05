@@ -2,6 +2,6 @@ description: The specified Id already exists.
 content:
   application/json:
     schema:
-      $ref: '../schemas/ApiError.yml'
+      $ref: '../schemas/apiError.yml'
     example:
       $ref: '../examples/conflictError.json'

@@ -2,7 +2,7 @@ description: A JSON object containing the list of available collections and rela
 content:
   application/json:
     schema:
-      $ref: '../responses/collections.yml'
+      $ref: '../schemas/collections.yml'
     examples:
       collections_example:
         summary: An example of the collections list

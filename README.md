@@ -185,6 +185,11 @@ pip install -e .
 # Start Docker Containers
 docker-compose up -d --build
 export PYGEOAPI_CONFIG=pygeoapi-config.yml
-export PYGEOAPI_OPENAPI=local.openapi.yml
-pygeoapi openapi generate $PYGEOAPI_CONFIG --output-file $PYGEOAPI_OPENAPI
+export PYGEOAPI_OPENAPI=openAPI/indoorfeature_api.bundled.yml
+
 pygeoapi serve
+```
+
+### 2. Environment Startup
+We recommend using a swagger UI for testing api.
+
