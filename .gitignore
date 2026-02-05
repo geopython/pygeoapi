@@ -143,3 +143,6 @@ run.sh
 pygeoapi-config.yml
 init_db.py
 my_test.py
+data/*.html
+data/*.png
+*.dbml
