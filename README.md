@@ -180,16 +180,16 @@ cd IndoorGML_API
 python3 -m venv venv
 source venv/bin/activate
 # Install required dependencies
-pip3 install -r requirements-indoor.txt
+pip install -r requirements-indoor.txt
 pip install -e .
 # Start Docker Containers
 docker-compose up -d --build
 export PYGEOAPI_CONFIG=pygeoapi-config.yml
-export PYGEOAPI_OPENAPI=openAPI/indoorfeature_api.bundled.yml
+export PYGEOAPI_OPENAPI=openAPI/indoorgmlapi_bundled.yml
 
 pygeoapi serve
 ```
 
 ### 2. Environment Startup
-We recommend using a swagger UI for testing api.
+We recommand to use a swagger UI for testing api.
 

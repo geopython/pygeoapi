@@ -66,8 +66,6 @@ from pygeoapi.provider.base import (
 
 # --- DATABASE IMPORTS ---
 import functools
-from src.database import get_db
-from src.models import Collection
 
 # --- ENSURE THESE HELPER FUNCTIONS EXIST BEFORE "class API" ---
 # (If they are missing, paste them in. If they exist, leave them alone.)

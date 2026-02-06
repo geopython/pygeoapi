@@ -133,11 +133,19 @@ class PostgresIndoorDB:
                 LOGGER.debug(e)
                 raise e
     
-    def create_collection(self, id_str, title, description, item_type='indoorfeature'):
+    def post_collection(self, collection):
         """
         Creates a new collection.
         Relies on DB to auto-generate the Integer ID.
         """
+        c_id = collection.get('id')
+        title = collection.get('title')
+        description = collection.get('description', '')
+        item_type = collection.get('itemType', 'indoorfeature')
+        if not c_id or not title:
+            raise ValueError("id and title is required.")
+        if item_type != 'indoorfeature':
+            raise TypeError("invalid collection type.")
         properties = {
             'title': title,
             'description': description,
@@ -145,24 +153,21 @@ class PostgresIndoorDB:
         }
         with self.connection.cursor() as cur:
             try:
-                # 1. Check if exists
-                cur.execute("SELECT 1 FROM collection WHERE id_str = %s", (id_str,))
-                if cur.fetchone():
-                    return False
-
                 # 2. Insert (Let Postgres handle the 'id' column automatically)
                 insert_query = """
                     INSERT INTO collection (id_str, collection_property)
                     VALUES (%s, %s)
+                    RETURNING id_str
                 """
-                cur.execute(insert_query, (id_str, json.dumps(properties)))
-                
+                cur.execute(insert_query, (c_id, json.dumps(properties)))
+                new_id = cur.fetchone()[0]
+
                 self.connection.commit()
-                return True
+                return new_id
             except Exception as e:
                 self.connection.rollback()
                 LOGGER.error(f"Error creating collection: {e}")
-                raise e
+                return None
 
     def delete_collection(self, id_str):
         """
@@ -467,11 +472,11 @@ class PostgresIndoorDB:
                     """
                     INSERT INTO indoorfeature (id_str, collection_id, geojson_geometry ,geojson_properties)
                     VALUES (%s, %s, ST_SetSRID(ST_GeomFromGeoJSON(%s), 4326),%s)
-                    RETURNING id
+                    RETURNING id_str
                     """,
                     (feature_str, collection_pk, json.dumps(geometries), Json(properties))
                 )
-                indoorfeature_pk = cur.fetchone()[0]
+                new_ifeature = cur.fetchone()[0]
                 
                 # Iterate and Insert Layers
                 for layer in layers:
@@ -483,12 +488,12 @@ class PostgresIndoorDB:
                 # autocommit is False
                 self.connection.commit()
             
-                return feature_str
+                return new_ifeature
 
             except Exception as e:
                 self.connection.rollback()
                 print(f"Error occurred: {e}. Rolling back changes.")
-                raise e
+                raise None
 
     def delete_indoorfeature(self, collection_str_id, feature_id_str):
         """
@@ -690,7 +695,7 @@ class PostgresIndoorDB:
                         "links": []
                     }
                 else:
-                    raise ValueError()
+                    raise KeyError("Missing required parameter: level or bbox")
             except Exception as e:
                 raise e           
 
@@ -1569,6 +1574,7 @@ class PostgresIndoorDB:
                      connected_cell_a, connected_cell_b,
                      topo_type, comment)
                     VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+                    RETURNING id_str
                 """
                 
                 cur.execute(insert_query, (
@@ -1578,9 +1584,10 @@ class PostgresIndoorDB:
                     c1_pk, c2_pk, 
                     topo, comment
                 ))
+                new_conn = cur.fetchone()[0]
                 
                 self.connection.commit()
-                return new_id_str
+                return new_conn
 
             except Exception as e:
                 self.connection.rollback()
@@ -2648,7 +2655,7 @@ class PostgresIndoorDB:
                 cur.execute(query, (member_str, layer_str, collection_str, item_str))
                 result = cur.fetchone()
                 if not result: 
-                    msg = f"Path parameters are not found."
+                    msg = "requested parameters are not found."
                     LOGGER.debug(msg)
                     raise ValueError(msg)
 
@@ -2702,7 +2709,7 @@ class PostgresIndoorDB:
                 cur.execute(lookup_sql, (member_str, layer_str, collection_str, item_str))
                 target_edge = cur.fetchone()
                 if not target_edge:
-                    msg = f"{member_str} is not found or is not edge."
+                    msg = "requested parameters are not found."
                     LOGGER.debug(msg)
                     raise ValueError(msg)
                 
@@ -2753,7 +2760,7 @@ class PostgresIndoorDB:
                 cur.execute(lookup_sql, (layer_str, collection_str, item_str))
                 layer_row = cur.fetchone()
                 if not layer_row: 
-                    msg = f"{layer_str} is not found."
+                    msg = "requested parameters are not found."
                     LOGGER.debug(msg)
                     raise ValueError(msg)
                 
@@ -2995,12 +3002,12 @@ class PostgresIndoorDB:
             cur.execute(lookup_sql, (sn, collection_str, item_str, layer_str))
             start_node = cur.fetchone()
             if not start_node:
-                msg = f"{sn} is not found."
+                msg = "requested parameters are not found."
                 raise ValueError(msg)
             cur.execute(lookup_sql, (dn, collection_str, item_str, layer_str))
             destination_node = cur.fetchone()
             if not destination_node:
-                msg = f"{dn} is not found."
+                msg = "requested parameters are not found."
                 raise ValueError(msg)
             
             sn_id= start_node['id']
@@ -3046,7 +3053,7 @@ class PostgresIndoorDB:
             row = cur.fetchone()
 
             if not row:
-                msg = f"{boundary_str} is not found."
+                msg = "requested parameters are not found."
                 raise ValueError(msg)
             
             if not row['bounded_by_cell_id']:
@@ -3096,7 +3103,7 @@ class PostgresIndoorDB:
             cur.execute(lookup_sql, (node_str, collection_str, item_str, layer_str))
             row = cur.fetchone()
             if not row:
-                msg = f"{node_str} is not found."
+                msg = "requested parameters are not found."
                 raise ValueError(msg)
             starting_node = row['id']
             nodes_sql = """

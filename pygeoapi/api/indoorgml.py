@@ -60,28 +60,17 @@ def manage_collection(api: API, request: APIRequest, action: str, dataset: str =
                 HTTPStatus.BAD_REQUEST,
                 headers, request.format, 'InvalidParameterValue', msg)
 
-        c_id = data.get('id')
-        title = data.get('title')
-        # Use .get() defaults to prevent errors
-        description = data.get('description', '')
-        item_type = data.get('itemType', 'indoorfeature')
-
-        if not c_id or not title:
-            return api.get_exception(
-                HTTPStatus.BAD_REQUEST, headers, request.format, 
-                'MissingParameterValue', 'Required fields: id, title')
-
         # 2. Call Provider to Create
         try:
             pidb_provider.connect()
-            success = pidb_provider.create_collection(c_id, title, description, item_type)
+            new_id = pidb_provider.post_collection(data)
 
-            if not success:
+            if not new_id:
                 return api.get_exception(
                     HTTPStatus.CONFLICT, headers, request.format,
-                    'Conflict', f'Collection {c_id} already exists')
+                    'Conflict', f'Collection already exists')
 
-            response_data = {'id': c_id, 'status': 'created'}
+            response_data = {'id': new_id, 'status': 'created'}
             return headers, HTTPStatus.CREATED, to_json(response_data, api.pretty_print)
         except Exception as e:
             return api.get_exception(HTTPStatus.INTERNAL_SERVER_ERROR, headers, request.format, 'ServerError', str(e))
@@ -234,6 +223,10 @@ def manage_collection_item(api: API, request: APIRequest, action,
             ifeature_id = pidb_provider.post_indoorfeature(
                 collection_str_id, data
             )
+            if not ifeature_id:
+                return api.get_exception(
+                HTTPStatus.BAD_REQUEST,
+                headers, request.format, 'InvalidParameterValue', "requested feature already exists.") 
         except (Exception, psycopg2.Error) as error:
             msg = str(error)
             return api.get_exception(
