@@ -6,7 +6,6 @@ import pytest
 def context():
     return {}
 
-
 @pytest.fixture()
 def collection_property():
     return {
@@ -16,13 +15,11 @@ def collection_property():
         "itemType": "indoorfeature"
     }
 
-
 @pytest.fixture()
 def update_collection_property():
     return {
     
 }
-
 
 @pytest.fixture()
 def indoorfeature():
@@ -44,7 +41,7 @@ def indoorfeature():
             "id": "C1",
             "featureType": "CellSpace",
             "duality": "TL-1:DS-1:N1",
-            "poi": false,
+            "poi": true,
             "level": "1",
             "cellSpaceGeom": {
               "geometry2D": {
@@ -130,7 +127,6 @@ def indoorfeature():
     }
   ]
 }
-
 
 @pytest.fixture()
 def thematiclayer():
@@ -253,7 +249,6 @@ def interlayerconnection():
   "comment": "Connecting physical node N1 to virtual node 101"
 }
 
-
 @pytest.fixture()
 def cellspace():
     return {
@@ -285,7 +280,7 @@ def cellboundary():
     "featureType": "CellBoundary",
     "id": "boundary-wall-02",
     "isVirtual": true,
-    "duality": "T1",
+    "duality": null,
     "externalReference": {
         "source": "Manual_Input",
         "description": "Wall between corridor and new office"
@@ -324,6 +319,7 @@ def edge():
         "node-100"
     ],
     "weight": 1.5,
+    "duality": "boundary-wall-02",
     "geometry": {
         "type": "LineString",
         "coordinates": [
@@ -457,246 +453,194 @@ def test_query_is_indoor_collection(context):
     result = pidb_provider.is_indoor_collection(context.get('collection_id')) 
 
     assert result
-    
-def test_query_get_features_list():
+
+def test_query_get_collection_items(context):
     pidb_provider = PostgresIndoorDB()
     pidb_provider.connect()
-    result = pmdb_provider.get_features_list()
+    bbox = [1,1,1,1]
+    result, num_matched = pidb_provider.get_collection_items(context.get('collection_id'), bbox=bbox)
 
     assert result
-    assert len(result) > 0
-    mfeature = result[0]
-    l_collection_id = mfeature[0]
-    assert l_collection_id is not None
-    l_mfeature_id = mfeature[1]
-    assert l_mfeature_id is not None
-
-
-def test_query_get_tProperties_name_list():
-    pmdb_provider = PostgresMobilityDB()
-    pmdb_provider.connect()
-    result = pmdb_provider.get_tProperties_name_list()
-
-    assert result
-    assert len(result) > 0
-    tPropertie = result[0]
-    l_collection_id = tPropertie[0]
-    assert l_collection_id is not None
-    l_mfeature_id = tPropertie[1]
-    assert l_mfeature_id is not None
-    tproperties_name = tPropertie[2]
-    assert tproperties_name is not None
-
-
-def test_query_get_features(
-        context,
-        bbox=[
-            100,
-            30,
-            0,
-            200,
-            40,
-            10],
-        datetime='2011-07-14 22:01:01.000,2011-07-14 22:01:01.000',
-        limit=10, offset=0, sub_trajectory=False):
-    pmdb_provider = PostgresMobilityDB()
-    pmdb_provider.connect()
-    result, number_matched, number_returned = pmdb_provider.get_features(
-        context.get('collection_id'), bbox, datetime, limit, offset,
-        sub_trajectory)
-
-    assert result
-    assert number_matched
-    assert number_returned
-    assert len(result) > 0
-    mfeature = result[0]
-    l_collection_id = mfeature[0]
-    assert l_collection_id is not None
-    l_mfeature_id = mfeature[1]
-    assert l_mfeature_id is not None
-    mf_geometry = mfeature[2]
-    assert mf_geometry is not None
-    mf_property = mfeature[3]
-    assert mf_property is not None
-    lifespan = mfeature[4]
-    assert lifespan is not None
-    extent_tGeometry = mfeature[5]
-    assert extent_tGeometry is not None
-    extent_tProperties_value_float = mfeature[6]
-    assert extent_tProperties_value_float is not None
-    extent_tProperties_value_text = mfeature[7]
-    assert extent_tProperties_value_text is not None
-
+    assert num_matched
+    ifeature = result[0]
+    assert ifeature is not None
+    f_type = ifeature[0]
+    assert f_type is not None
+    f_id = ifeature[1]
+    assert f_id is not None
+    f_geom = ifeature[2]
+    assert f_geom is not None
+    f_props = ifeature[3]
+    assert f_props is not None
 
 def test_query_get_feature(context):
-    pmdb_provider = PostgresMobilityDB()
-    pmdb_provider.connect()
-    result = pmdb_provider.get_feature(context.get('collection_id'),
-                                       context.get('mfeature_id'))
-
+    pidb_provider = PostgresIndoorDB()
+    pidb_provider.connect()
+    bbox = [1,1,1,1]
+    level = "1F"
+    result = pidb_provider.get_feature(context.get('collection_id'),
+                                       context.get('ifeature_id'),
+                                       bbox=bbox,
+                                       level=level)
     assert result
-    assert len(result) > 0
-    mfeature = result[0]
-    l_collection_id = mfeature[0]
-    assert l_collection_id is not None
-    l_mfeature_id = mfeature[1]
-    assert l_mfeature_id is not None
-    mf_geometry = mfeature[2]
-    assert mf_geometry is not None
-    mf_property = mfeature[3]
-    assert mf_property is not None
-    lifespan = mfeature[4]
-    assert lifespan is not None
-    extent_tGeometry = mfeature[5]
-    assert extent_tGeometry is not None
+    meta_type = result[0]
+    assert meta_type is not None
+    meta_id = result[1]
+    assert meta_id is not None
+    meta_geom = result[2]
+    assert meta_geom is not None
+    meta_props = result[3]
+    assert meta_props is not None   
+    ifeature = result[4]
+    assert ifeature is not None
+    f_type = ifeature[0]
+    assert f_type is not None
+    layers = ifeature[1]
+    assert layers is not None
+     
+def test_query_get_layer(context):
+    pidb_provider = PostgresIndoorDB()
+    pidb_provider.connect()
+    bbox = [0,0,2,2]
+    level = "1F"
+    result_meta = pidb_provider.get_layer(context.get('collection_id'),
+                                            context.get('ifeature_id'),
+                                            context.get('layer_id')
+                                            )
+    assert result_meta
+    meta_id = result_meta[0]
+    assert meta_id is not None
+    meta_type = result_meta[1]
+    assert meta_type is not None
+    meta_theme = result_meta[2]
+    assert meta_theme is not None
+    meta_ext = result_meta[3]
+    assert meta_ext is not None
+    meta_summary = result_meta[4]
+    assert meta_summary is not None
+    meta_bbox = result_meta[5]
+    assert meta_bbox is not None
 
-
-def test_query_get_temporalgeometries(
-        context,
-        bbox=[
-            100,
-            30,
-            0,
-            200,
-            40,
-            10],
-        leaf='2011-07-14 22:01:01.000',
-        datetime='2011-07-14 22:01:01.000,2011-07-14 22:01:01.000',
-        limit=10,
-        offset=0,
-        sub_trajectory=False):
-    pmdb_provider = PostgresMobilityDB()
-    pmdb_provider.connect()
-    result, number_matched, number_returned = \
-        pmdb_provider.get_temporalgeometries(
-            context.get('collection_id'), context.get('mfeature_id'), bbox,
-            leaf, datetime, limit, offset, sub_trajectory)
-
+    result = pidb_provider.get_layer(context.get('collection_id'),
+                                       context.get('ifeature_id'),
+                                       context.get('layer_id'),
+                                       level=level,
+                                       bbox=bbox)
     assert result
-    assert number_matched
-    assert number_returned
-    assert len(result) > 0
-    tgeometry = result[0]
-    l_collection_id = tgeometry[0]
-    assert l_collection_id is not None
-    l_mfeature_id = tgeometry[1]
-    assert l_mfeature_id is not None
-    tgeometry_id = tgeometry[2]
-    assert tgeometry_id is not None
+    t_id = result[0]
+    assert t_id is not None
+    t_type = result[1]
+    assert t_type is not None
+    t_theme = result[2]
+    assert t_theme is not None
+    t_ext = result[3]
+    assert t_ext is not None    
+    t_primal = result[4]
+    assert t_primal is not None
+    t_dual = result[5]
+    assert t_dual is not None
 
-
-def test_query_get_temporalproperties(
-        context,
-        datetime='2011-07-14 22:01:01.450,2011-07-14 22:01:01.450',
-        limit=10,
-        offset=0,
-        sub_temporal_value=True):
-    pmdb_provider = PostgresMobilityDB()
-    pmdb_provider.connect()
-    result, number_matched, number_returned = \
-        pmdb_provider.get_temporalproperties(
-            context.get('collection_id'), context.get('mfeature_id'),
-            datetime, limit, offset, sub_temporal_value)
-
+def test_query_get_layers(context):
+    pidb_provider = PostgresIndoorDB()
+    pidb_provider.connect()
+    theme = "physical"
+    level = "1F"
+    result = pidb_provider.get_layers(context.get('collection_id'),
+                                       context.get('ifeature_id'),
+                                       level=level,
+                                       theme=theme)
     assert result
-    assert number_matched
-    assert number_returned
-    assert len(result) > 0
-    tproperties = result[0]
-    l_collection_id = tproperties[0]
-    assert l_collection_id is not None
-    l_mfeature_id = tproperties[1]
-    assert l_mfeature_id is not None
-    tgeometry_id = tproperties[2]
-    assert tgeometry_id is not None
-    tproperty = tproperties[3]
-    assert tproperty is not None
+    lvl = result[0]
+    assert lvl is not None
+    layers = result[1]
+    assert layers is not None    
 
-
-def test_query_get_temporalproperties_value(
-        context,
-        datetime='2011-07-16 22:01:01.450,2011-07-16 22:01:01.450',
-        leaf='2011-07-16 22:01:01.450',
-        sub_temporal_value=False):
-    pmdb_provider = PostgresMobilityDB()
-    pmdb_provider.connect()
-    result = pmdb_provider.get_temporalproperties_value(
-        context.get('collection_id'), context.get('mfeature_id'),
-        context.get('tProperty_name'), datetime, leaf, sub_temporal_value)
-
+def test_query_get_interlayer_connections(context):
+    pidb_provider = PostgresIndoorDB()
+    pidb_provider.connect()
+    topo_type = "equals"
+    result = pidb_provider.get_interlayer_connections(context.get('collection_id'),
+                                                      context.get('ifeature_id'),
+                                                      connected_layer_id=context.get('layer_id'),
+                                                      topo_type=topo_type)
     assert result
-    assert len(result) > 0
-    tpropertiesvalue = result[0]
-    l_collection_id = tpropertiesvalue[0]
-    assert l_collection_id is not None
-    l_mfeature_id = tpropertiesvalue[1]
-    assert l_mfeature_id is not None
-    tgeometry_id = tpropertiesvalue[2]
-    assert tgeometry_id is not None
-    tproperty = tpropertiesvalue[3]
-    assert tproperty is not None
-    datetime_group = tpropertiesvalue[4]
-    assert datetime_group is not None
-    pvalue_float = tpropertiesvalue[5]
-    pvalue_text = tpropertiesvalue[6]
-    assert pvalue_float is not None or pvalue_text is not None
+    conn = result[0]
+    assert conn
+    conn_id = conn[0]
+    assert conn_id is not None
+    conn_type = conn[1]
+    assert conn_type is not None
+    conn_topo= conn[2]
+    assert conn_topo is not None
+    conn_layers = conn[3]
+    assert conn_layers is not None
 
+def test_query_get_primal_members(context):
+    pidb_provider = PostgresIndoorDB()
+    pidb_provider.connect()
+    level = "1F"
+    poi = "true"
+    result = pidb_provider.get_primal_members(context.get('collection_id'),
+                                            context.get('ifeature_id'),
+                                            context.get('layer_id'),
+                                            level=level,
+                                            poi=poi)    
+    assert result
+    t_id = result[0]
+    assert t_id is not None
+    p_type = result[1]
+    assert p_type is not None
+    p_create = result[2]
+    assert p_create is not None
+    space_mem = result[4]
+    assert space_mem is not None
+    boundary_mem = result[5]
+    assert boundary_mem is not None
+    cell = space_mem[0]
+    assert cell is not None
+    boundary = boundary_mem[0]
+    assert boundary is not None
 
-def test_query_get_velocity(context,
-                            datetime='2011-07-14 22:01:01.450'):
-    pmdb_provider = PostgresMobilityDB()
-    pmdb_provider.connect()
-    tProperties = pmdb_provider.get_velocity(
-        context.get('collection_id'), context.get('mfeature_id'),
-        context.get('tgeometry_id'), datetime)
+def test_query_get_primal_member(context):
+    pidb_provider = PostgresIndoorDB()
+    pidb_provider.connect()
+    cell = pidb_provider.get_primal_members(context.get('collection_id'),
+                                            context.get('ifeature_id'),
+                                            context.get('layer_id'),
+                                            context.get('cell_space_id'))
+    assert cell
+    cid = cell[0]
+    assert cid is not None
+    c_type = cell[1]
+    assert c_type is not None
+    c_name = cell[2]
+    assert c_name is not None
+    lvl = cell[3]
+    assert lvl is not None
+    poi = cell[4]
+    assert poi is not None
+    c_duality = cell[5]
+    assert c_duality is not None
+    c_geom = cell[6]
+    assert c_geom is not None
+    bounded_by = cell[8]
+    assert bounded_by is not None
 
-    assert tProperties
-    name = tProperties.get('name')
-    assert name is not None
-    type = tProperties.get('type')
-    assert type is not None
-    form = tProperties.get('form')
-    assert form is not None
-    value_sequence = tProperties.get('valueSequence')
-    assert value_sequence is not None
-
-
-def test_query_get_distance(context,
-                            datetime='2011-07-14 22:01:01.450'):
-    pmdb_provider = PostgresMobilityDB()
-    pmdb_provider.connect()
-    tProperties = pmdb_provider.get_distance(
-        context.get('collection_id'), context.get('mfeature_id'),
-        context.get('tgeometry_id'), datetime)
-
-    assert tProperties
-    name = tProperties.get('name')
-    assert name is not None
-    type = tProperties.get('type')
-    assert type is not None
-    form = tProperties.get('form')
-    assert form is not None
-    value_sequence = tProperties.get('valueSequence')
-    assert value_sequence is not None
-
-
-def test_query_get_acceleration(context,
-                                datetime='2011-07-14 22:01:01.450'):
-    pmdb_provider = PostgresMobilityDB()
-    pmdb_provider.connect()
-    tProperties = pmdb_provider.get_acceleration(
-        context.get('collection_id'), context.get('mfeature_id'),
-        context.get('tgeometry_id'), datetime)
-
-    assert tProperties
-    name = tProperties.get('name')
-    assert name is not None
-    type = tProperties.get('type')
-    assert type is not None
-    form = tProperties.get('form')
-    assert form is not None
-    value_sequence = tProperties.get('valueSequence')
-    assert value_sequence is not None
+    boundary = pidb_provider.get_primal_members(context.get('collection_id'),
+                                            context.get('ifeature_id'),
+                                            context.get('layer_id'),
+                                            context.get('cell_boundary_id'))
+    assert boundary
+    bid = boundary[0]
+    assert bid is not None
+    b_type = boundary[1]
+    assert b_type is not None
+    is_virtual = boundary[2]
+    assert is_virtual is not None
+    b_duality = boundary[3]
+    assert b_duality is not None
+    b_geom = boundary[4]
+    assert b_geom is not None
 
 def test_query_put_collection(context, update_collection_property):
     pmdb_provider = PostgresMobilityDB()
