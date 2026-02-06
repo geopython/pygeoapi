@@ -62,7 +62,7 @@ pre{white-space:pre-wrap;word-break:break-word;font-size:12px;background:#fff;bo
   </div>
 
   <div class="block">
-    <div class="label">Overlay query result (GeoJSON or IndoorJSON-shaped)</div>
+    <div class="label">Overlay query result (IndoorJSON-shaped)</div>
     <input id="fileResult" type="file" accept=".json,application/json,.geojson,application/geo+json"/>
     <div id="statusResult" style="margin-top:8px;">No result loaded.</div>
     <div class="checkrow" style="margin-top:8px;">
@@ -71,7 +71,7 @@ pre{white-space:pre-wrap;word-break:break-word;font-size:12px;background:#fff;bo
   </div>
 
   <div class="block">
-    <div class="label">Route result (GeoJSON or IDs)</div>
+    <div class="label">Route result</div>
     <input id="fileRoute" type="file" accept=".json,application/json,.geojson,application/geo+json"/>
     <div id="statusRoute" style="margin-top:8px;">No route loaded.</div>
     <div class="checkrow" style="margin-top:8px;">
@@ -92,11 +92,11 @@ pre{white-space:pre-wrap;word-break:break-word;font-size:12px;background:#fff;bo
 
 
     <div class="tiny">
-      Accepted route shapes (any one):<br/>
-      • GeoJSON LineString / Feature / FeatureCollection<br/>
-      • <span class="pill">coordinates</span>: [[x,y],[x,y,z],...]<br/>
-      • <span class="pill">nodeIds</span>/<span class="pill">nodes</span>: ["S12", ...] (needs base Node geometries)<br/>
-      • <span class="pill">edgeIds</span>/<span class="pill">edges</span>: ["T4", ...] (needs base Edge geometries)
+      Accepted route shapes:<br/>
+      • IndoorJSON routing query results<br/>
+      • <span class="pill">LineString</span>: [[x,y],[x,y,z],...]<br/>
+      • <span class="pill">nodeMember</span>/<span class="pill">hop</span>: ["1", ...]<br/>
+      • <span class="pill">edgeMember</span>/<span class="pill">cost</span>: (weight or length)<br/>
     </div>
   </div>
 
@@ -111,6 +111,12 @@ pre{white-space:pre-wrap;word-break:break-word;font-size:12px;background:#fff;bo
   <div class="block">
     <div class="label">Selection</div>
     <pre id="sel">{}</pre>
+  </div>
+
+  <div class="block">
+    <div class="label">Cursor (2D)</div>
+    <pre id="cursor">Move mouse over the 2D view…</pre>
+    <div class="tiny">Shows data coordinates under the mouse pointer (x, y).</div>
   </div>
 
   <div class="block tiny">
@@ -958,7 +964,7 @@ function render2D(){
   }
 
   }
-  Plotly.newPlot("plot2d",traces,{margin:{l:40,r:10,t:30,b:40},title:{text:"IndoorJSON (2D) + Overlay + Route",x:0.02,y:0.98,xanchor:"left"},xaxis:{scaleanchor:"y",zeroline:false},yaxis:{zeroline:false},showlegend:false},{responsive:true});
+  Plotly.newPlot("plot2d",traces,{margin:{l:40,r:10,t:30,b:40},title:{text:"IndoorJSON (2D) + Overlay + Route",x:0.02,y:0.98,xanchor:"left"},xaxis:{scaleanchor:"y",zeroline:false},yaxis:{zeroline:false},showlegend:false},{responsive:true}).then(()=>{attachCursor2D();});
 }
 function applyLevelFilter(){
   if(!MODEL) return;
@@ -1015,6 +1021,7 @@ const statusEl=document.getElementById("status");
 const statusResultEl=document.getElementById("statusResult");
 const statusRouteEl=document.getElementById("statusRoute");
 const selEl=document.getElementById("sel");
+const cursorEl=document.getElementById("cursor");
 
 document.getElementById("btn3d").addEventListener("click",()=>setMode("3d"));
 document.getElementById("btn2d").addEventListener("click",()=>setMode("2d"));
@@ -1081,12 +1088,87 @@ fileRoute.addEventListener("change",async(e)=>{
   }catch(err){console.error(err); statusRouteEl.textContent=`Failed to load: ${err?.message||err}`;}
 });
 
+
+function attachCursor2D(){
+  // Live cursor readout for 2D plot (even when not hovering a trace)
+  const gd2=document.getElementById("plot2d");
+  if(!gd2 || !cursorEl) return;
+
+  // Avoid stacking multiple listeners when re-rendering
+  if(gd2.__cursorAttached) return;
+  gd2.__cursorAttached = true;
+
+  const fmt = (v)=> (Number.isFinite(v) ? (Math.abs(v) >= 1000 ? v.toFixed(0) : v.toFixed(3)) : "—");
+
+  // 1) When hovering an actual drawn point/segment
+  gd2.on?.("plotly_hover",(ev)=>{
+    if(CURRENT_MODE!=="2d") return;
+    const p=ev?.points?.[0];
+    if(!p) return;
+    cursorEl.textContent = `x: ${fmt(p.x)}\ny: ${fmt(p.y)}`;
+  });
+  gd2.on?.("plotly_unhover",()=>{
+    if(CURRENT_MODE!=="2d") return;
+    // leave last value; mousemove will update
+  });
+
+  // 2) When moving over empty space: convert screen px -> data coords using axis transforms
+  gd2.addEventListener("mousemove",(e)=>{
+    if(CURRENT_MODE!=="2d") return;
+    if(!gd2._fullLayout || !gd2._fullLayout.xaxis || !gd2._fullLayout.yaxis) return;
+
+    const rect = gd2.getBoundingClientRect();
+    const xpx = e.clientX - rect.left;
+    const ypx = e.clientY - rect.top;
+
+    const xa = gd2._fullLayout.xaxis;
+    const ya = gd2._fullLayout.yaxis;
+
+    // Plot area bounds
+    const x0 = xa._offset;
+    const x1 = xa._offset + xa._length;
+    const y0 = ya._offset;
+    const y1 = ya._offset + ya._length;
+
+    if(xpx < x0 || xpx > x1 || ypx < y0 || ypx > y1) return;
+
+    const x = xa.p2c(xpx - xa._offset);
+    const y = ya.p2c(ypx - ya._offset);
+
+    cursorEl.textContent = `x: ${fmt(x)}\ny: ${fmt(y)}`;
+  }, {passive:true});
+
+  // Optional: click on 2D to copy (x,y) to clipboard
+  gd2.addEventListener("click", async (e)=>{
+    if(CURRENT_MODE!=="2d") return;
+    if(!gd2._fullLayout || !gd2._fullLayout.xaxis || !gd2._fullLayout.yaxis) return;
+
+    const rect = gd2.getBoundingClientRect();
+    const xpx = e.clientX - rect.left;
+    const ypx = e.clientY - rect.top;
+
+    const xa = gd2._fullLayout.xaxis;
+    const ya = gd2._fullLayout.yaxis;
+    const x0 = xa._offset, x1 = xa._offset + xa._length;
+    const y0 = ya._offset, y1 = ya._offset + ya._length;
+    if(xpx < x0 || xpx > x1 || ypx < y0 || ypx > y1) return;
+
+    const x = xa.p2c(xpx - xa._offset);
+    const y = ya.p2c(ypx - ya._offset);
+
+    const txt = `${x}, ${y}`;
+    try{ await navigator.clipboard.writeText(txt); }catch(_){}
+    // Also show in Selection panel for convenience
+    selEl.textContent = JSON.stringify({mode:"2d", cursor:{x, y}}, null, 2);
+  });
+}
+
 function attachPick(){
   const gd3=document.getElementById("plot3d"), gd2=document.getElementById("plot2d");
   gd3.on?.("plotly_click",(ev)=>{const p=ev?.points?.[0]; if(!p) return; selEl.textContent=JSON.stringify({mode:"3d",trace:p.data?.name,x:p.x,y:p.y,z:p.z},null,2);});
   gd2.on?.("plotly_click",(ev)=>{const p=ev?.points?.[0]; if(!p) return; selEl.textContent=JSON.stringify({mode:"2d",trace:p.data?.name,x:p.x,y:p.y},null,2);});
 }
-setTimeout(attachPick,800);
+setTimeout(()=>{attachPick(); attachCursor2D();},800);
 </script>
 </body>
 </html>

@@ -363,7 +363,6 @@ class PostgresIndoorDB:
                 "id": feature_id_str,
                 "geometry": geometry,
                 "properties": properties, # Standard metadata properties
-                
                 "links": []
             }
             
@@ -579,6 +578,10 @@ class PostgresIndoorDB:
             """
             params_levels = [collection_id, feature_id]
 
+            if level:
+                sql_levels += " AND cs.level = %s"
+                params_levels.append(level)
+
             if theme:
                 sql_levels += " AND tl.theme = %s"
                 params_levels.append(theme)
@@ -636,7 +639,8 @@ class PostgresIndoorDB:
             cur.execute(sql_layers, tuple(final_params))
 
             rows = cur.fetchall()
-            
+            if not rows:
+                raise ValueError("requested parameters are not found.")
             # E. Process Results
             for row in rows:
                 l_id, l_theme, semantic_extension, feature_id, layer_levels = row
@@ -1689,7 +1693,7 @@ class PostgresIndoorDB:
             
             if poi:
                 spaces_query += " AND cs.poi = %s"
-                spaces_params.append(poi)
+                spaces_params.append(poi.lower())
 
             if cell_space_name:
                 spaces_query += " AND cs.cell_name ILIKE %s"                
