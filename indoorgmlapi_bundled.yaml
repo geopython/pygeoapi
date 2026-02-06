@@ -6,7 +6,7 @@ info:
     An OGC-compliant API for managing IndoorGML 2.0 models using IndoorJSON.
     Optimized for documentation clarity and OGC Features compliance.
 servers:
-  - url: https://localhost:5000
+  - url: http://localhost:5000
 paths:
   /collections:
     post:
@@ -289,10 +289,7 @@ paths:
         - $ref: '#/components/parameters/bbox'
       responses:
         '200':
-          schema: null
           $ref: '#/components/responses/features'
-          example:
-            $ref: ./examples/indoorFeatures.json
         '404':
           $ref: '#/components/responses/notFound'
         '500':
@@ -803,11 +800,48 @@ paths:
               cellSpace:
                 summary: Example of a CellSpace
                 value:
-                  $ref: ./examples/cellSpace.json
+                  featureType: CellSpace
+                  id: cell-office-102
+                  cellSpaceName: Office 102
+                  level: 1F
+                  poi: false
+                  duality: null
+                  boundedBy:
+                    - B5
+                  cellSpaceGeom:
+                    geometry2D:
+                      type: Polygon
+                      coordinates:
+                        - - - 20
+                            - 0
+                          - - 30
+                            - 0
+                          - - 30
+                            - 10
+                          - - 20
+                            - 10
+                          - - 20
+                            - 0
+                    geometry3D: {}
               cellBoundary:
                 summary: Example of a CellBoundary
                 value:
-                  $ref: ./examples/cellBoundary.json
+                  featureType: CellBoundary
+                  id: boundary-wall-02
+                  isVirtual: true
+                  duality: T1
+                  externalReference:
+                    source: Manual_Input
+                    description: Wall between corridor and new office
+                  cellBoundaryGeom:
+                    geometry2D:
+                      type: LineString
+                      coordinates:
+                        - - 20
+                          - 0
+                        - - 20
+                          - 10
+                    geometry3D: {}
       responses:
         '201':
           description: Created successfully.
@@ -844,11 +878,30 @@ paths:
               cellSpace:
                 summary: Example of a Node
                 value:
-                  $ref: ./examples/node.json
+                  featureType: Node
+                  id: node-corridor
+                  duality: cell-office-102
+                  geometry:
+                    type: Point
+                    coordinates:
+                      - 15
+                      - 5
               cellBoundary:
                 summary: Example of an Edge
                 value:
-                  $ref: ./examples/edge.json
+                  featureType: Edge
+                  id: edge-101-100
+                  connects:
+                    - node-101
+                    - node-100
+                  weight: 1.5
+                  geometry:
+                    type: LineString
+                    coordinates:
+                      - - 5
+                        - 5
+                      - - 15
+                        - 5
       responses:
         '201':
           description: Created successfully.
@@ -2125,7 +2178,7 @@ components:
             $ref: '#/components/schemas/geometryGeoJSON'
     metaGeoJSON:
       type: object
-      title: featureGeoJSON
+      title: metaGeoJSON
       required:
         - type
         - geometry
@@ -2691,7 +2744,7 @@ components:
             $ref: '#/components/schemas/link'
     indoorFeature:
       type: object
-      title: IndoorFeatures
+      title: indoorFeature
       required:
         - featureType
         - layers
@@ -3305,6 +3358,32 @@ components:
         application/geo+json:
           schema:
             $ref: '#/components/schemas/featuresGeoJSON'
+          example:
+            type: FeatureCollection
+            numberMatched: 2
+            numberReturned: 2
+            links:
+              - rel: self
+                type: application/geo+json
+                title: This document
+                href: https://data.example.org/collections/aist_waterfront_lab/items?offset=0&limit=10
+            features:
+              - type: Feature
+                id: AIST_Waterfront_Center
+                geometry:
+                  type: Point
+                  coordinates:
+                    - 125.6
+                    - 10.1
+                properties: {}
+              - type: Feature
+                id: u64465b1-3012-0c9e-82e4-cf37470411b5
+                geometry:
+                  type: Point
+                  coordinates:
+                    - 300
+                    - 11
+                properties: {}
     payloadTooLarge:
       description: The request is too large for the server to process.
       content:
