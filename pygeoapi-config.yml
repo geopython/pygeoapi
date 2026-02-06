@@ -38,22 +38,11 @@ metadata:
         url: https://github.com/STEMLab/IndoorGML_API
 
 resources:
-    indoor-pnu:
-        type: collection
-        title: PNU STEMLab Indoor Features
-        description: Physical rooms and logical nodes from IndoorJSON.
-        keywords:
-            - IndoorGML
-            - PNU
-        extents:
-            spatial:
-                bbox: [0, 0, 4, 2] # Matches your dummy coordinates
-                crs: http://www.opengis.net/def/crs/OGC/1.3/CRS84
-        providers:
-            - type: feature
-              name: IndoorGML
-              data: data/sample_indoor.json
-            
+    hello-world:
+        type: process
+        processor:
+            name: HelloWorld
+
 database:
   host: localhost
   port: 5432
