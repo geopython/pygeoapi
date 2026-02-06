@@ -1,5 +1,5 @@
 type: object
-title: IndoorFeatures
+title: indoorFeature
 required:
   - featureType
   - layers

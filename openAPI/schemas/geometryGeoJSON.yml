@@ -1,22 +1,22 @@
 title: geometryGeoJSON
 oneOf:
-  - $ref: './geometryGeoJSON.yml#/components/schemas/point'
-  - $ref: './geometryGeoJSON.yml#/components/schemas/multiPoint'
-  - $ref: './geometryGeoJSON.yml#/components/schemas/lineString'
-  - $ref: './geometryGeoJSON.yml#/components/schemas/multiLineString'
-  - $ref: './geometryGeoJSON.yml#/components/schemas/polygon'
-  - $ref: './geometryGeoJSON.yml#/components/schemas/multiPolygon'
-  - $ref: './geometryGeoJSON.yml#/components/schemas/geometryCollection'
+  - $ref: '#/components/schemas/point'
+  - $ref: '#/components/schemas/multiPoint'
+  - $ref: '#/components/schemas/lineString'
+  - $ref: '#/components/schemas/multiLineString'
+  - $ref: '#/components/schemas/polygon'
+  - $ref: '#/components/schemas/multiPolygon'
+  - $ref: '#/components/schemas/geometryCollection'
 discriminator:
   propertyName: type
   mapping:
-    Point: './geometryGeoJSON.yml#/components/schemas/point'
-    MultiPoint: './geometryGeoJSON.yml#/components/schemas/multiPoint'
-    LineString: './geometryGeoJSON.yml#/components/schemas/lineString'
-    MultiLineString: './geometryGeoJSON.yml#/components/schemas/multiLineString'
-    Polygon: './geometryGeoJSON.yml#/components/schemas/polygon'
-    MultiPolygon: './geometryGeoJSON.yml#/components/schemas/multiPolygon'
-    GeometryCollection: './geometryGeoJSON.yml#/components/schemas/geometryCollection'
+    Point: '#/components/schemas/point'
+    MultiPoint: '#/components/schemas/multiPoint'
+    LineString: '#/components/schemas/lineString'
+    MultiLineString: '#/components/schemas/multiLineString'
+    Polygon: '#/components/schemas/polygon'
+    MultiPolygon: '#/components/schemas/multiPolygon'
+    GeometryCollection: '#/components/schemas/geometryCollection'
 
 components:
   schemas:

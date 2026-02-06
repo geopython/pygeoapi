@@ -1,5 +1,5 @@
 type: object
-title: featureGeoJSON
+title: metaGeoJSON
 required: [type, geometry, properties]
 properties:
   type:

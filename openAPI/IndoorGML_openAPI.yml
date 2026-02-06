@@ -6,7 +6,7 @@ info:
     An OGC-compliant API for managing IndoorGML 2.0 models using IndoorJSON.
     Optimized for documentation clarity and OGC Features compliance.
 servers:
-  - url: https://localhost:5000
+  - url: http://localhost:5000
 
 paths:
   /collections:
@@ -176,10 +176,7 @@ paths:
         - $ref: './parameters/bbox.yml'
       responses:
         '200':
-          schema:
           $ref: './responses/features.yml'
-          example:
-            $ref: './examples/indoorFeatures.json'
         '404':
           $ref: './responses/notFound.yml'
         '500':
