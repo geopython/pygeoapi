@@ -35,7 +35,7 @@ from typing import Callable, Union
 
 import click
 from flask import (Flask, Blueprint, make_response, request,
-                   send_from_directory, Response, Request, jsonify)
+                   send_from_directory, Response, Request, jsonify, render_template)
 
 from pygeoapi.api import API, APIRequest, apply_gzip
 import pygeoapi.api as core_api
@@ -180,7 +180,6 @@ def openapi():
     """
 
     return execute_from_flask(core_api.openapi_, request)
-
 
 @BLUEPRINT.route('/conformance')
 def conformance():

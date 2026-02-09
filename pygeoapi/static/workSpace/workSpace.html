@@ -1,0 +1,101 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1"/>
+  <title>IndoorJSON Preview Viewer (v6) — Overlay + Route</title>
+
+  <!-- External libs -->
+  <script src="https://cdn.plot.ly/plotly-2.30.0.min.js"></script>
+  <script src="https://unpkg.com/earcut@2.2.4/dist/earcut.min.js"></script>
+
+  <!-- App styles -->
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<div id="app">
+  <aside id="side">
+    <div class="block">
+      <div class="label">Load IndoorJSON (base)</div>
+  
+      <input id="file-input" type="file" accept=".json,application/json"/>
+      
+      <button id="upload-button" style="margin-top:8px;">Process File</button>
+      
+      <div id="status" style="margin-top:8px;">No file selected.</div>
+      <div class="tiny">Select a file first, then click process.</div>
+    </div>
+
+    <div class="block">
+      <div class="label">View</div>
+      <div id="tabs">
+        <button id="btn3d" class="active">3D</button>
+        <button id="btn2d">2D</button>
+      </div>
+    </div>
+
+    <div class="block">
+      <div class="label">Level</div>
+      <select id="level">
+        <option value="__all__">All</option>
+      </select>
+      <div class="checkrow" style="margin-top:8px;">
+        <input id="toggleDual" type="checkbox"/>
+        <label for="toggleDual">Show dual graph (nodes & edges)</label>
+      </div>
+    </div>
+
+    <div class="block">
+      <div class="label">Overlay query result</div>
+      <input id="fileResult" type="file"/>
+      <div id="statusResult" style="margin-top:8px;">No result loaded.</div>
+      <div class="checkrow" style="margin-top:8px;">
+        <input id="toggleResult" type="checkbox" checked/>
+        <label>Show result overlay</label>
+      </div>
+    </div>
+
+    <div class="block">
+      <div class="label">Route result</div>
+      <input id="fileRoute" type="file"/>
+      <div id="statusRoute" style="margin-top:8px;">No route loaded.</div>
+
+      <div class="checkrow"><input id="toggleRoute" type="checkbox" checked/> Show route</div>
+      <div class="checkrow"><input id="toggleRouteStitch" type="checkbox"/> Auto-stitch route</div>
+      <div class="checkrow"><input id="toggleSegMarkers" type="checkbox" checked/> Segment markers</div>
+      <div class="checkrow"><input id="toggleSegLabels" type="checkbox"/> Segment labels</div>
+    </div>
+
+    <div class="block">
+      <div class="label">Options</div>
+      <div class="row">
+        <button id="fit">Fit view</button>
+        <button id="reset">Reset</button>
+      </div>
+    </div>
+
+    <div class="block">
+      <div class="label">Selection</div>
+      <pre id="sel">{}</pre>
+    </div>
+
+    <div class="block">
+      <div class="label">Cursor (2D)</div>
+      <pre id="cursor">Move mouse over the 2D view…</pre>
+    </div>
+  </aside>
+
+  <main id="main">
+    <div id="plots">
+      <div id="plot3d" class="plot active"></div>
+      <div id="plot2d" class="plot"></div>
+    </div>
+  </main>
+</div>
+
+<!-- App logic -->
+<script type="module" src="./geometry.js"></script>
+<script type="module" src="./viewer.js"></script>
+</body>
+</html>
