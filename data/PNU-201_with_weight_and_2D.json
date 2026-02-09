@@ -49974,7 +49974,7 @@
         "id": "d7dee6fe-99c8-2489-63fe-52756186bfa2",
         "featureType": "DualSpaceLayer",
         "isLogical": false,
-        "isDirected": false,
+        "isDirected": true,
         "nodeMember": [
           {
             "id": "S1",
