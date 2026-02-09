@@ -44,6 +44,14 @@ def config():
 
 
 @pytest.fixture()
+def config_admin_empty_resources():
+    with open(
+        get_test_file_path('pygeoapi-test-config-admin-empty-resources.yml')
+    ) as fh:
+        return yaml_load(fh)
+
+
+@pytest.fixture()
 def config_hidden_resources():
     filename = 'pygeoapi-test-config-hidden-resources.yml'
     with open(get_test_file_path(filename)) as fh:
@@ -131,3 +139,8 @@ def test_hidden_resources(config_hidden_resources):
 
     assert '/collections/obs' not in openapi_doc['paths']
     assert '/collections/obs/items' not in openapi_doc['paths']
+
+
+def test_admin_empty_resources(config_admin_empty_resources):
+    openapi_doc = get_oas(config_admin_empty_resources)
+    assert '/admin/config' in openapi_doc['paths']

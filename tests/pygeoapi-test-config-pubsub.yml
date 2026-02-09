@@ -2,7 +2,7 @@
 #
 # Authors: Tom Kralidis <tomkralidis@gmail.com>
 #
-# Copyright (c) 2019 Tom Kralidis
+# Copyright (c) 2026 Tom Kralidis
 #
 # Permission is hereby granted, free of charge, to any person
 # obtaining a copy of this software and associated documentation
@@ -52,6 +52,12 @@ server:
         name: TinyDB
         connection: /tmp/pygeoapi-test-process-manager.db
         output_dir: /tmp
+
+pubsub:
+    name: MQTT
+    broker:
+        url: mqtt://everyone:everyone@localhost:1883
+        channel: my/channel
 
 logging:
     level: DEBUG

@@ -9,12 +9,12 @@
 #          Bernhard Mallinger <bernhard.mallinger@eox.at>
 #          Francesco Martinelli <francesco.martinelli@ingv.it>
 #
-# Copyright (c) 2024 Tom Kralidis
+# Copyright (c) 2026 Tom Kralidis
 # Copyright (c) 2025 Francesco Bartoli
 # Copyright (c) 2022 John A Stevenson and Colin Blackburn
 # Copyright (c) 2023 Ricardo Garcia Silva
 # Copyright (c) 2024 Bernhard Mallinger
-# Copyright (c) 2024 Francesco Martinelli
+# Copyright (c) 2026 Francesco Martinelli
 #
 # Permission is hereby granted, free of charge, to any person
 # obtaining a copy of this software and associated documentation
@@ -50,6 +50,7 @@ from typing import Tuple
 
 from pygeoapi import l10n
 from pygeoapi.api import evaluate_limit
+from pygeoapi.api.pubsub import publish_message
 from pygeoapi.process.base import (
     JobNotFoundError,
     JobResultNotFoundError,
@@ -518,18 +519,31 @@ def execute_process(api: API, request: APIRequest,
     else:
         http_status = HTTPStatus.OK
 
-    if mime_type == 'application/json' or requested_response == 'document':
-        response2 = to_json(response, api.pretty_print)
+    if mime_type == 'application/json':
+        if requested_response == 'document':
+            pretty_print_ = api.pretty_print
+        else:  # raw
+            pretty_print_ = False
+        response2 = to_json(response, pretty_print_)
     else:
         response2 = response
 
-    if execution_mode == RequestedProcessExecutionMode.respond_async:
+    if (headers.get('Preference-Applied', '') == RequestedProcessExecutionMode.respond_async.value):  # noqa
         LOGGER.debug('Asynchronous mode detected, returning statusInfo')
         response2 = {
             'jobID': job_id,
             'type': 'process',
             'status': status.value
         }
+
+    if api.pubsub_client is not None:
+        LOGGER.debug('Publishing message')
+        try:
+            publish_message(api.pubsub_client, api.base_url, 'process',
+                            process_id, job_id, response2)
+        except Exception as err:
+            msg = f'Could not publish message {err}'
+            LOGGER.warning(msg)
 
     return headers, http_status, response2
 

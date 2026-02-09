@@ -2,7 +2,7 @@
 #
 # Authors: Tom Kralidis <tomkralidis@gmail.com>
 #
-# Copyright (c) 2025 Tom Kralidis
+# Copyright (c) 2026 Tom Kralidis
 #
 # Permission is hereby granted, free of charge, to any person
 # obtaining a copy of this software and associated documentation
@@ -65,8 +65,7 @@ from pygeoapi import __version__
 from pygeoapi import l10n
 from pygeoapi.models import config as config_models
 from pygeoapi.plugin import load_plugin, PLUGINS
-from pygeoapi.provider.base import ProviderTypeError
-
+from pygeoapi.provider import get_provider_default
 
 LOGGER = logging.getLogger(__name__)
 
@@ -249,7 +248,7 @@ def str2bool(value: Union[bool, str]) -> bool:
 
 def to_json(dict_: dict, pretty: bool = False) -> str:
     """
-    Serialize dict to json
+    Serialize dict to JSON
 
     :param dict_: `dict` of JSON representation
     :param pretty: `bool` of whether to prettify JSON (default is `False`)
@@ -527,61 +526,6 @@ def filter_dict_by_key_value(dict_: dict, key: str, value: str) -> dict:
     return {k: v for (k, v) in dict_.items() if v[key] == value}
 
 
-def filter_providers_by_type(providers: list, type: str) -> dict:
-    """
-    helper function to filter a list of providers by type
-
-    :param providers: ``list``
-    :param type: str
-
-    :returns: filtered ``dict`` provider
-    """
-
-    providers_ = {provider['type']: provider for provider in providers}
-    return providers_.get(type)
-
-
-def get_provider_by_type(providers: list, provider_type: str) -> dict:
-    """
-    helper function to load a provider by a provider type
-
-    :param providers: ``list`` of providers
-    :param provider_type: type of provider (e.g. feature)
-
-    :returns: provider based on type
-    """
-
-    LOGGER.debug(f'Searching for provider type {provider_type}')
-    try:
-        p = (next(d for i, d in enumerate(providers)
-                  if d['type'] == provider_type))
-    except (RuntimeError, StopIteration):
-        raise ProviderTypeError('Invalid provider type requested')
-
-    return p
-
-
-def get_provider_default(providers: list) -> dict:
-    """
-    helper function to get a resource's default provider
-
-    :param providers: ``list`` of providers
-
-    :returns: filtered ``dict``
-    """
-
-    try:
-        default = (next(d for i, d in enumerate(providers) if 'default' in d
-                   and d['default']))
-        LOGGER.debug('found default provider type')
-    except StopIteration:
-        LOGGER.debug('no default provider type.  Returning first provider')
-        default = providers[0]
-
-    LOGGER.debug(f"Default provider: {default['type']}")
-    return default
-
-
 class ProcessExecutionMode(Enum):
     sync_execute = 'sync-execute'
     async_execute = 'async-execute'
@@ -792,3 +736,15 @@ def get_dataset_formatters(dataset: dict) -> dict:
         dataset_formatters[df2.name] = df2
 
     return dataset_formatters
+
+
+def remove_url_auth(url: str) -> str:
+    """
+    Provide a RFC1738 URL without embedded authentication
+    :param url: RFC1738 URL
+    :returns: RFC1738 URL without authentication
+    """
+
+    u = urlparse(url)
+    auth = f'{u.username}:{u.password}@'
+    return url.replace(auth, '')

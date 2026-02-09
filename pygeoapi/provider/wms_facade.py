@@ -2,7 +2,7 @@
 #
 # Authors: Tom Kralidis <tomkralidis@gmail.com>
 #
-# Copyright (c) 2022 Tom Kralidis
+# Copyright (c) 2026 Tom Kralidis
 #
 # Permission is hereby granted, free of charge, to any person
 # obtaining a copy of this software and associated documentation
@@ -66,7 +66,7 @@ class WMSFacadeProvider(BaseProvider):
 
     def query(self, style=None, bbox=[-180, -90, 180, 90], width=500,
               height=300, crs=4326, datetime_=None, transparent=True,
-              bbox_crs=4326, format_='png'):
+              bbox_crs=4326, format_='png', **kwargs):
         """
         Generate map
 

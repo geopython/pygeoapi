@@ -49,6 +49,7 @@ from pyproj.exceptions import CRSError
 
 from pygeoapi import l10n
 from pygeoapi.api import evaluate_limit
+from pygeoapi.api.pubsub import publish_message
 from pygeoapi.crs import (DEFAULT_CRS, DEFAULT_STORAGE_CRS,
                           create_crs_transform_spec, get_supported_crs_list,
                           modify_pygeofilter, transform_bbox,
@@ -57,13 +58,13 @@ from pygeoapi.formatter.base import FormatterSerializationError
 from pygeoapi.linked_data import geojson2jsonld
 from pygeoapi.openapi import get_oas_30_parameters
 from pygeoapi.plugin import load_plugin, PLUGINS
+from pygeoapi.provider import filter_providers_by_type, get_provider_by_type
 from pygeoapi.provider.base import (
-    ProviderGenericError, ProviderTypeError, SchemaType)
+    ProviderGenericError, ProviderItemNotFoundError,
+    ProviderTypeError, SchemaType)
 
-from pygeoapi.util import (filter_providers_by_type, to_json,
-                           filter_dict_by_key_value, str2bool,
-                           get_provider_by_type, render_j2_template,
-                           get_dataset_formatters)
+from pygeoapi.util import (to_json, filter_dict_by_key_value, str2bool,
+                           render_j2_template, get_dataset_formatters)
 
 from . import (
     APIRequest, API, SYSTEM_LOCALE, F_JSON, FORMAT_TYPES, F_HTML, F_JSONLD,
@@ -750,6 +751,9 @@ def manage_collection_item(
     collections = filter_dict_by_key_value(api.config['resources'],
                                            'type', 'collection')
 
+    http_status = HTTPStatus.OK
+    payload = None
+
     if dataset not in collections.keys():
         msg = 'Collection not found'
         return api.get_exception(
@@ -795,7 +799,8 @@ def manage_collection_item(
     if action == 'create':
         LOGGER.debug('Creating item')
         try:
-            identifier = p.create(request.data)
+            payload = request.data
+            identifier = p.create(payload)
         except TypeError as err:
             msg = str(err)
             return api.get_exception(
@@ -808,12 +813,13 @@ def manage_collection_item(
 
         headers['Location'] = f'{api.get_collections_url()}/{dataset}/items/{identifier}'  # noqa
 
-        return headers, HTTPStatus.CREATED, ''
+        http_status = HTTPStatus.CREATED
 
     if action == 'update':
         LOGGER.debug('Updating item')
         try:
-            _ = p.update(identifier, request.data)
+            payload = request.data
+            _ = p.update(identifier, payload)
         except TypeError as err:
             msg = str(err)
             return api.get_exception(
@@ -824,10 +830,17 @@ def manage_collection_item(
                 err.http_status_code, headers, request.format,
                 err.ogc_exception_code, err.message)
 
-        return headers, HTTPStatus.NO_CONTENT, ''
+        http_status = HTTPStatus.NO_CONTENT
 
     if action == 'delete':
         LOGGER.debug('Deleting item')
+        try:
+            _ = p.get(identifier)
+        except ProviderItemNotFoundError as err:
+            return api.get_exception(
+                err.http_status_code, headers, request.format,
+                err.ogc_exception_code, err.message)
+
         try:
             _ = p.delete(identifier)
         except ProviderGenericError as err:
@@ -835,7 +848,14 @@ def manage_collection_item(
                 err.http_status_code, headers, request.format,
                 err.ogc_exception_code, err.message)
 
-        return headers, HTTPStatus.OK, ''
+        http_status = HTTPStatus.OK
+
+    if api.pubsub_client is not None:
+        LOGGER.debug('Publishing message')
+        publish_message(api.pubsub_client, api.base_url, action, dataset,
+                        identifier, payload)
+
+    return headers, http_status, ''
 
 
 def get_collection_item(api: API, request: APIRequest,
@@ -1024,21 +1044,6 @@ def get_oas_30(cfg: dict, locale: str) -> tuple[list[dict[str, str]], dict[str, 
 
     from pygeoapi.openapi import OPENAPI_YAML, get_visible_collections
 
-    properties = {
-        'name': 'properties',
-        'in': 'query',
-        'description': 'The properties that should be included for each feature. The parameter value is a comma-separated list of property names.',  # noqa
-        'required': False,
-        'style': 'form',
-        'explode': False,
-        'schema': {
-            'type': 'array',
-            'items': {
-                'type': 'string'
-            }
-        }
-    }
-
     limit = {
         'name': 'limit',
         'in': 'query',
@@ -1093,8 +1098,9 @@ def get_oas_30(cfg: dict, locale: str) -> tuple[list[dict[str, str]], dict[str, 
             title = l10n.translate(v['title'], locale)
             description = l10n.translate(v['description'], locale)
 
-            coll_properties = deepcopy(properties)
+            oas_30_parameters = get_oas_30_parameters(cfg, locale)
 
+            coll_properties = deepcopy(oas_30_parameters)['properties']
             coll_properties['schema']['items']['enum'] = list(p.fields.keys())
 
             coll_limit = _derive_limit(
@@ -1103,7 +1109,7 @@ def get_oas_30(cfg: dict, locale: str) -> tuple[list[dict[str, str]], dict[str, 
             )
 
             dataset_formatters = get_dataset_formatters(v)
-            coll_f_parameter = deepcopy(get_oas_30_parameters(cfg, locale))['f']  # noqa
+            coll_f_parameter = deepcopy(oas_30_parameters)['f']
             for key, value in dataset_formatters.items():
                 coll_f_parameter['schema']['enum'].append(value.f)
 

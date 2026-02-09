@@ -14,6 +14,7 @@ file whatever you wish; typical filenames end with ``.yml``.
 pygeoapi configuration contains the following core sections:
 
 - ``server``: server-wide settings
+- ``pubsub``: Publish-Subscribe settings (optional)
 - ``logging``: logging configuration
 - ``metadata``: server-wide metadata (contact, licensing, etc.)
 - ``resources``: dataset collections, processes and stac-collections offered by the server
@@ -89,6 +90,23 @@ For more information related to API design rules (the ``api_rules`` property in 
         strict_slashes: true  # trailing slashes will not be allowed and result in a 404
         url_prefix: 'v{api_major}'  # adds a /v1 prefix to all URL paths
         version_header: X-API-Version  # add a response header of this name with the API version
+
+``pubsub``
+^^^^^^^^^^
+
+The ``pubsub`` section provides directives for enabling publication of CloudEvent messaages on item-based transactions
+
+
+.. code-block:: yaml
+
+  pubsub:
+      name: MQTT
+      broker:
+          url: mqtt://localhost:1883
+          channel: my/service/topic
+
+.. seealso::
+   :ref:`pubsub` for more information on Publish-Subscribe capabilities
 
 
 ``logging``
@@ -225,6 +243,12 @@ default.
                   begin: 2000-10-30T18:24:39Z  # start datetime in RFC3339
                   end: 2007-10-30T08:57:29Z  # end datetime in RFC3339
                   trs: http://www.opengis.net/def/uom/ISO-8601/0/Gregorian  # TRS
+              # additional extents can be added as desired (1..n)
+              foo:
+                  url: https://example.org/def  # required URL of the extent
+                  range: [0, 10] # required overall range/extent
+                  units: °C  # optional units
+                  values: [0, 2, 5, 5, 10]  # optional, enumeration of values
           providers:  # list of 1..n required connections information
               - type: feature  # underlying data geospatial type. Allowed values are: feature, coverage, record, tile, edr
                 name: CSV  # required: plugin name or import path. See Plugins section for more information.

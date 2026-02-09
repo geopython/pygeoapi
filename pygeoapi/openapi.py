@@ -4,7 +4,7 @@
 # Authors: Francesco Bartoli <xbartolone@gmail.com>
 # Authors: Ricardo Garcia Silva <ricardo.garcia.silva@geobeyond.it>
 #
-# Copyright (c) 2025 Tom Kralidis
+# Copyright (c) 2026 Tom Kralidis
 # Copyright (c) 2025 Francesco Bartoli
 # Copyright (c) 2023 Ricardo Garcia Silva
 #
@@ -56,7 +56,8 @@ OPENAPI_YAML = {
     'oapif-1': 'https://schemas.opengis.net/ogcapi/features/part1/1.0/openapi/ogcapi-features-1.yaml',  # noqa
     'oapif-2': 'https://schemas.opengis.net/ogcapi/features/part2/1.0/openapi/ogcapi-features-2.yaml', # noqa
     'oapip': 'https://schemas.opengis.net/ogcapi/processes/part1/1.0/openapi',
-    'oacov': 'https://raw.githubusercontent.com/tomkralidis/ogcapi-coverages-1/fix-cis/yaml-unresolved',  # noqa
+    'oacov': 'https://raw.githubusercontent.com/opengeospatial/ogcapi-coverages/refs/heads/master/standard/openapi/ogcapi-coverages-1.yaml',  # noqa
+    'oamaps': 'https://schemas.opengis.net/ogcapi/maps/part1/1.0/openapi/ogcapi-maps-1.yaml',  # noqa
     'oapir': 'https://raw.githubusercontent.com/opengeospatial/ogcapi-records/master/core/openapi',  # noqa
     'oaedr': 'https://schemas.opengis.net/ogcapi/edr/1.0/openapi', # noqa
     'oapit': 'https://schemas.opengis.net/ogcapi/tiles/part1/1.0/openapi/ogcapi-tiles-1.yaml',  # noqa
@@ -537,6 +538,11 @@ def get_oas_30(cfg: dict, fail_on_invalid_collection: bool = True) -> dict:
 
         try:
             sub_tags, sub_paths = api_module.get_oas_30(cfg, locale_)
+
+            if not sub_tags and not sub_paths:
+                LOGGER.debug('Empty content from {api_name}; skipping')
+                continue
+
             oas['paths'].update(sub_paths['paths'])
             oas['tags'].extend(sub_tags)
         except Exception as err:
@@ -666,6 +672,20 @@ def get_oas_30_parameters(cfg: dict, locale_: str):
             'style': 'form',
             'explode': False
         },
+        'properties': {
+            'name': 'properties',
+            'in': 'query',
+            'description': 'The properties that should be included. The parameter value is a comma-separated list of property names.',  # noqa
+            'required': False,
+            'style': 'form',
+            'explode': False,
+            'schema': {
+                'type': 'array',
+                'items': {
+                    'type': 'string'
+                }
+            }
+        },
         'vendorSpecificParameters': {
             'name': 'vendorSpecificParameters',
             'in': 'query',
@@ -716,10 +736,32 @@ def get_admin(cfg: dict) -> dict:
     schema_dict = get_config_schema()
 
     paths = {}
-
-    res_eg_key = next(iter(cfg['resources']))
+    if cfg['resources']:
+        res_eg_key = next(iter(cfg['resources']))
+    else:
+        res_eg_key = 'example'
     res_eg = {
         res_eg_key: cfg['resources'][res_eg_key]
+    } if cfg['resources'] else {
+        'example': {
+            'type': 'collection',
+            'title': 'Example',
+            'description': 'Example',
+            'keywords': ['example'],
+            'links': [],
+            'linked-data': {},
+            'extents': {
+                'spatial': {
+                    'bbox': [-180, -90, 180, 90],
+                    'crs': 'http://www.opengis.net/def/crs/OGC/1.3/CRS84'
+                },
+                'temporal': {
+                    'begin': '2000-10-30T18:24:39Z',
+                    'end': '2007-10-30T08:57:29Z',
+                    'trs': 'http://www.opengis.net/def/uom/ISO-8601/0/Gregorian'  # noqa
+                }
+            }
+        }
     }
     if 'extents' in res_eg[res_eg_key]:
         res_eg_eg_key = 'extents'
@@ -824,7 +866,7 @@ def get_admin(cfg: dict) -> dict:
                 'description': 'Adds resource to configuration',
                 'content': {
                     'application/json': {
-                        'example': {'new-collection': cfg['resources'][res_eg_key]}, # noqa
+                        'example': {'new-collection': cfg['resources'][res_eg_key] if cfg['resources'] else res_eg['example'] }, # noqa
                         'schema': schema_dict['properties']['resources']['patternProperties']['^.*$']  # noqa
                     }
                 },
@@ -957,6 +999,7 @@ def validate_openapi_document(instance_dict: dict) -> bool:
 
     schema_file = SCHEMASDIR / 'openapi' / 'openapi-3.0.x.json'
 
+    LOGGER.debug(f'Validating against {schema_file}')
     with schema_file.open() as fh2:
         schema_dict = json.load(fh2)
         jsonschema_validate(instance_dict, schema_dict)

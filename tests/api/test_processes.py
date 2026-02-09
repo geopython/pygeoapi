@@ -204,6 +204,11 @@ def test_execute_process(config, api_):
         },
         'response': 'document'
     }
+    req_body_9 = {
+        'inputs': {
+            'name': 'Test document'
+        }
+    }
 
     cleanup_jobs = set()
 
@@ -363,6 +368,12 @@ def test_execute_process(config, api_):
     assert code == HTTPStatus.OK
     assert 'outputs' in response
     assert isinstance(response['outputs'], list)
+
+    req = mock_api_request(data=req_body_9)
+    rsp_headers, code, response = execute_process(api_, req, 'hello-world')
+
+    response2 = '{"id":"echo","value":"Hello Test document!"}'
+    assert response == response2
 
     # Cleanup
     time.sleep(2)  # Allow time for any outstanding async jobs

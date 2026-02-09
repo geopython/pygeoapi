@@ -625,6 +625,7 @@ Must have PostGIS installed.
          id_field: osm_id
          table: hotosm_bdi_waterways
          geom_field: foo_geom
+         count: true # Optional; Default true; Enable/disable count for improved performance.
 
 A number of database connection options can be also configured in the provider in order to adjust properly the sqlalchemy engine client.
 These are optional and if not specified, the default from the engine will be used. Please see also `SQLAlchemy docs <https://docs.sqlalchemy.org/en/14/core/engines.html#custom-dbapi-connect-arguments-on-connect-routines>`_.
@@ -662,6 +663,7 @@ These are optional and if not specified, the default from the engine will be use
          id_field: osm_id
          table: hotosm_bdi_waterways
          geom_field: foo_geom
+         count: true # Optional; Default true; Enable/disable count for improved performance.
 
 The PostgreSQL provider is also able to connect to Cloud SQL databases.
 
@@ -677,6 +679,7 @@ The PostgreSQL provider is also able to connect to Cloud SQL databases.
              password: postgres
          id_field: id
          table: states
+         count: true # Optional; Default true; Enable/disable count for improved performance.
 
 This is what a configuration for `Google Cloud SQL`_ connection looks like. The ``host``
 block contains the necessary socket connection information.

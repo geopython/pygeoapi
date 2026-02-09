@@ -133,7 +133,7 @@ ADD . /pygeoapi
 RUN python3 -m venv --system-site-packages /venv \
     && /venv/bin/python3 -m pip install --no-cache-dir -r requirements-docker.txt \
     && /venv/bin/python3 -m pip install --no-cache-dir -r requirements-admin.txt \
-    && /venv/bin/python3 -m pip install --no-cache-dir gunicorn \
+    && /venv/bin/python3 -m pip install --no-cache-dir "gunicorn<24" \
     && /venv/bin/python3 -m pip install --no-cache-dir -e .
 
 # Set default config and entrypoint for Docker Image

@@ -46,15 +46,13 @@ from pygeoapi import l10n
 from pygeoapi.plugin import load_plugin
 from pygeoapi.models.provider.base import (TilesMetadataFormat,
                                            TileMatrixSetEnum)
+from pygeoapi.provider import get_provider_by_type, filter_providers_by_type
 from pygeoapi.provider.base import (
     ProviderGenericError, ProviderTypeError
 )
 from pygeoapi.provider.tile import ProviderTileNotFoundError
 
-from pygeoapi.util import (
-    get_provider_by_type, to_json, filter_dict_by_key_value,
-    filter_providers_by_type, render_j2_template
-)
+from pygeoapi.util import to_json, filter_dict_by_key_value, render_j2_template
 
 from . import (
     APIRequest, API, FORMAT_TYPES, F_JSON, F_HTML, SYSTEM_LOCALE, F_JSONLD

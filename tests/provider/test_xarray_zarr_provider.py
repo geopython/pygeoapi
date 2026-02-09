@@ -73,7 +73,7 @@ def config_no_time(tmp_path):
 def test_provider(config):
     p = XarrayProvider(config)
 
-    assert len(p.fields) == 4
+    assert len(p.fields) == 3
     assert len(p.axes) == 3
     assert p.axes == ['lon', 'lat', 'time']
 
@@ -82,7 +82,7 @@ def test_schema(config):
     p = XarrayProvider(config)
 
     assert isinstance(p.fields, dict)
-    assert len(p.fields) == 4
+    assert len(p.fields) == 3
     assert p.fields['analysed_sst']['title'] == 'analysed sea surface temperature'  # noqa
 
 
@@ -107,7 +107,7 @@ def test_numpy_json_serial():
 def test_no_time(config_no_time):
     p = XarrayProvider(config_no_time)
 
-    assert len(p.fields) == 4
+    assert len(p.fields) == 3
     assert p.axes == ['lon', 'lat']
 
     coverage = p.query(format='json')
