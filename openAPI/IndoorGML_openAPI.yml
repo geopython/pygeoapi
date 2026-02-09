@@ -767,9 +767,10 @@ paths:
     delete:
       tags:
         - PrimalSpaceLayer
-      summary: delete a cell space
+      summary: delete a cellSpace or cellBoundary
       description: |-
-        Permanently removes the CellSpace. 
+        Permanently removes the CellSpace or CellBoundary.
+        
         **Cleanup:** This triggers a cascading delete of the associated DualSpace Node and invalidates connected Edges.
         Also DELETES the `interLayerConnection`(s) referencing the deleted `primalSpaceMember`.
       operationId: deleteCellSpace
