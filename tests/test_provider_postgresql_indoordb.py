@@ -1,5 +1,6 @@
 from pygeoapi.provider.postgresql_indoordb import PostgresIndoorDB
 import pytest
+import json
 
 
 @pytest.fixture(scope="session")
@@ -8,29 +9,27 @@ def context():
 
 @pytest.fixture()
 def collection_property():
-    return {
+    raw_json = """
+    {
         "id": "aist_waterfront_lab",
         "title": "AIST Waterfront Lab IndoorGML",
         "description": "Experimental IndoorGML data for AIST project",
         "itemType": "indoorfeature"
     }
-
-@pytest.fixture()
-def update_collection_property():
-    return {
-    
-}
+    """
+    return json.loads(raw_json)
 
 @pytest.fixture()
 def indoorfeature():
-    return {
+    raw_json = """
+{
   "featureType": "IndoorFeatures",
   "id": "AIST_Waterfront_Center",
   "layers": [
     {
       "id": "TL-1",
       "featureType": "ThematicLayer",
-      "semanticExtension": false,
+      "semanticExtension": "false",
       "theme": "Physical",
       "primalSpace": {
         "id": "PS-1",
@@ -127,10 +126,13 @@ def indoorfeature():
     }
   ]
 }
+"""
+    return json.loads(raw_json)
 
 @pytest.fixture()
 def thematiclayer():
-    return {
+    raw_json = """
+{
     "id": "layer-indoor-nav-f1",
     "featureType": "ThematicLayer",
     "semanticExtension": true,
@@ -184,9 +186,21 @@ def thematiclayer():
             "geometry2D": {
                 "type": "LineString",
                 "coordinates": [[10, 2], [10, 8]]
+                }
             }
+        },
+        {
+            "id": "boundary-wall-03",
+            "featureType": "CellBoundary",
+            "isVirtual": true,
+            "duality": null,
+            "cellBoundaryGeom": {
+            "geometry2D": {
+                "type": "LineString",
+                "coordinates": [[10, 5], [10, 10]]
+                }
             }
-        }
+        },
         ]
     },
     "dualSpace": {
@@ -231,10 +245,13 @@ def thematiclayer():
         ]
     }
 }
+"""
+    return json.loads(raw_json)
 
 @pytest.fixture()
 def interlayerconnection():
-    return {
+    raw_json = """
+{
   "featureType": "InterLayerConnection",
   "id": "conn_01",
   "connectedLayers": [
@@ -248,17 +265,20 @@ def interlayerconnection():
   ],
   "comment": "Connecting physical node N1 to virtual node 101"
 }
+"""
+    return json.loads(raw_json)
 
 @pytest.fixture()
 def cellspace():
-    return {
+    raw_json = """
+{
     "featureType": "CellSpace",
     "id": "cell-office-102",
     "cellSpaceName": "Office 102",
     "level": "1F",
     "poi": false,
     "duality": null,
-    "boundedBy": ["B5"],
+    "boundedBy": ["boundary-wall-02"],
     "cellSpaceGeom": {
         "geometry2D": {
             "type": "Polygon",
@@ -273,10 +293,13 @@ def cellspace():
         "geometry3D": {}
     }
 }
+"""
+    return json.loads(raw_json)
 
 @pytest.fixture()
 def cellboundary():
-    return {
+    raw_json = """
+{
     "featureType": "CellBoundary",
     "id": "boundary-wall-02",
     "isVirtual": true,
@@ -296,10 +319,13 @@ def cellboundary():
         "geometry3D": {}
     }
 }
+"""
+    return json.loads(raw_json)
 
 @pytest.fixture()
 def node():
-    return {
+    raw_json = """
+{
     "featureType": "Node",
     "id": "node-corridor",
     "duality": "cell-office-102",
@@ -308,15 +334,18 @@ def node():
         "coordinates": [15, 5]
     }
 }
+"""
+    return json.loads(raw_json)
 
 @pytest.fixture()
 def edge():
-    return {
+    raw_json = """
+{
     "featureType": "Edge",
-    "id": "edge-101-100",
+    "id": "edge-101-200",
     "connects": [
-        "node-101", 
-        "node-100"
+        "node-corridor",
+        "node-101"
     ],
     "weight": 1.5,
     "duality": "boundary-wall-02",
@@ -328,6 +357,31 @@ def edge():
         ]
     }
 }
+"""
+    return json.loads(raw_json)
+
+@pytest.fixture()
+def update_cellspace_property():
+    raw_json = """
+{
+    "cellSpaceName": "Executive Office 102",
+    "poi": true,
+    "boundedBy": [
+        "boundary-wall-02",
+        "boundary-wall-03"
+    ]
+}
+"""
+    return json.loads(raw_json)
+
+@pytest.fixture()
+def update_edge_property():
+    raw_json = """
+{
+    "weight": 10.0
+}
+"""
+    return json.loads(raw_json)
 
 def test_query_post_collection(context, collection_property):
     pidb_provider = PostgresIndoorDB()
@@ -338,7 +392,7 @@ def test_query_post_collection(context, collection_property):
     context['collection_id'] = collection_id
 
 
-def test_query_post_indoorfeature(context, movingfeature):
+def test_query_post_indoorfeature(context, indoorfeature):
     pidb_provider = PostgresIndoorDB()
     pidb_provider.connect()
     ifeature_id = \
@@ -372,6 +426,16 @@ def test_query_post_interlayerconnection(context, interlayerconnection):
     assert conn_id is not None
     context['conn_id'] = conn_id
 
+def test_query_post_cellboundary(context, cellboundary):
+    pidb_provider = PostgresIndoorDB()
+    pidb_provider.connect()
+    cell_boundary_id = pidb_provider.post_primal_member(context.get('collection_id'),
+                                                 context.get('ifeature_id'),
+                                                 context.get('layer_id'),
+                                                 cellboundary)
+
+    assert cell_boundary_id is not None
+    context['cell_boundary_id'] = cell_boundary_id
 
 def test_query_post_cellspace(context, cellspace):
     pidb_provider = PostgresIndoorDB()
@@ -383,17 +447,6 @@ def test_query_post_cellspace(context, cellspace):
 
     assert cell_space_id is not None
     context['cell_space_id'] = cell_space_id
-
-def test_query_post_cellboundary(context, cellboundary):
-    pidb_provider = PostgresIndoorDB()
-    pidb_provider.connect()
-    cell_boundary_id = pidb_provider.post_primal_member(context.get('collection_id'),
-                                                 context.get('ifeature_id'),
-                                                 context.get('layer_id'),
-                                                 cellboundary)
-
-    assert cell_boundary_id is not None
-    context['cell_boundary_id'] = cell_boundary_id
 
 def test_query_post_node(context, node):
     pidb_provider = PostgresIndoorDB()
@@ -604,7 +657,7 @@ def test_query_get_primal_members(context):
 def test_query_get_primal_member(context):
     pidb_provider = PostgresIndoorDB()
     pidb_provider.connect()
-    cell = pidb_provider.get_primal_members(context.get('collection_id'),
+    cell = pidb_provider.get_primal_member(context.get('collection_id'),
                                             context.get('ifeature_id'),
                                             context.get('layer_id'),
                                             context.get('cell_space_id'))
@@ -626,7 +679,7 @@ def test_query_get_primal_member(context):
     bounded_by = cell[8]
     assert bounded_by is not None
 
-    boundary = pidb_provider.get_primal_members(context.get('collection_id'),
+    boundary = pidb_provider.get_primal_member(context.get('collection_id'),
                                             context.get('ifeature_id'),
                                             context.get('layer_id'),
                                             context.get('cell_boundary_id'))
@@ -642,70 +695,264 @@ def test_query_get_primal_member(context):
     b_geom = boundary[4]
     assert b_geom is not None
 
-def test_query_put_collection(context, update_collection_property):
-    pmdb_provider = PostgresMobilityDB()
-    pmdb_provider.connect()
-    pmdb_provider.put_collection(context.get('collection_id'),
-                                 update_collection_property)
+def test_query_dual_members(context):
+    pidb_provider = PostgresIndoorDB()
+    pidb_provider.connect()
+    minWeight = 1.0
+    maxWeight = 2.5
+    results = pidb_provider.get_dual_members(context.get('collection_id'),
+                                             context.get('ifeature_id'),
+                                             context.get('layer_id'),
+                                             min_weight=minWeight,
+                                             max_weight=maxWeight)
+    assert results
+    d_id = results[0]
+    assert d_id is not None
+    d_type = results[1]
+    assert d_type is not None
+    d_logical = results[2]
+    assert d_logical is not None
+    d_directed = results[3]
+    assert d_directed is not None
+    node_mem = results[6]
+    assert node_mem is not None
+    edge_mem = results[7]
+    assert edge_mem is not None
 
-    result = pmdb_provider.get_collection(context.get('collection_id'))
-    collection = result[0]
-    assert collection[1].get('description') == 'test_update'
+def test_query_get_dual_member(context):
+    pidb_provider = PostgresIndoorDB()
+    pidb_provider.connect()
+    node = pidb_provider.get_dual_member(context.get('collection_id'),
+                                         context.get('ifeature_id'),
+                                         context.get('layer_id'),
+                                         context.get('node_id'))
+    assert node
+    n_id = node[0]
+    assert n_id is not None
+    n_type = node[1]
+    assert n_type is not None
+    n_geom = node[2]
+    assert n_geom is not None
+    n_dual = node[3]
+    assert n_dual is not None
+    n_connect = node[4]
+    assert n_connect is not None
 
-def test_query_delete_temporalvalue(context):
-    restriction = "AND tvalue_id ='{0}'".format(
-        context.get('tvalue_id'))
+    edge = pidb_provider.get_dual_member(context.get('collection_id'),
+                                         context.get('ifeature_id'),
+                                         context.get('layer_id'),
+                                         context.get('edge_id'))
+    
+    assert edge
+    e_id = edge[0]
+    assert e_id is not None
+    e_type = edge[1]
+    assert e_type is not None
+    e_geom = edge[2]
+    assert e_geom is not None
+    e_dual = edge[3]
+    assert e_dual is not None
+    e_weight = edge[4]
+    assert e_weight is not None
+    e_connect = edge[5]
+    assert e_connect is not None
 
-    pmdb_provider = PostgresMobilityDB()
-    pmdb_provider.connect()
-    pmdb_provider.delete_temporalvalue(restriction)
+def test_query_geometric_query(context):
+    geometry = "POINT(10 10)"
+    op = "intersects"
+    level = "1F"
+    pidb_provider = PostgresIndoorDB()
+    pidb_provider.connect()
+    result = pidb_provider.geometric_query(context.get('collection_id'),
+                                           context.get('ifeature_id'),
+                                           context.get('layer_id'),
+                                           op=op,
+                                           geometry=geometry,
+                                           level=level)
+    assert result
+    t_id = result[0]
+    assert t_id is not None
+    t_primal = result[4]
+    assert t_primal is not None
+    t_dual = result[5]
+    assert t_dual is not None
 
-    assert True
+def test_query_routing_query(context):
+    sn = "node-corridor"
+    dn = "node-100"
+    pidb_provider = PostgresIndoorDB()
+    pidb_provider.connect()
+    result = pidb_provider.routing_query(context.get('collection_id'),
+                                         context.get('ifeature_id'),
+                                         context.get('layer_id'),
+                                         sn=sn,
+                                         dn=dn)
+    assert result
+    r_type = result[0]
+    assert r_type is not None
+    r_sn = result[1]
+    assert r_sn is not None
+    r_dn = result[2]
+    assert r_dn is not None
+    r_cost = result[3]
+    assert r_cost is not None
+    r_path = result[4]
+    assert r_path is not None
+    p_seq1 = r_path[0]
+    assert p_seq1 is not None
 
+def test_query_bounding_cell_space(context):
+    pidb_provider = PostgresIndoorDB()
+    pidb_provider.connect()
+    result = pidb_provider.routing_query(context.get('collection_id'),
+                                         context.get('ifeature_id'),
+                                         context.get('layer_id'),
+                                         context.get('cell_boundary_id'))
+    assert result
+    c_id = result[0]
+    assert c_id is not None
+    c_level = result[3]
+    assert c_level is not None
+    c_poi = result[4]
+    assert c_poi is not None
+    c_geom = result[6]
+    assert c_geom is not None
+    c_bounded = result[8]
+    assert c_bounded is not None
 
-def test_query_delete_temporalproperties(context):
-    restriction = """AND collection_id ='{0}' AND mfeature_id ='{1}'
-                AND tproperties_name ='{2}'""".format(
-        context.get('collection_id'),
-        context.get('mfeature_id'),
-        context.get('tProperties_name'))
+def test_query_connected_nodes(context):
+    hop = 1
+    pidb_provider = PostgresIndoorDB()
+    pidb_provider.connect()
+    result = pidb_provider.connected_nodes(context.get('collection_id'),
+                                         context.get('ifeature_id'),
+                                         context.get('layer_id'),
+                                         context.get('node_id'),
+                                         hop=hop)
+    assert result
+    r_type = result[0]
+    assert r_type is not None
+    sn = result[1]
+    assert sn is not None
+    connected = result[2]
+    assert connected is not None
+    n1 = connected[0]
+    assert n1 is not None
 
-    pmdb_provider = PostgresMobilityDB()
-    pmdb_provider.connect()
-    pmdb_provider.delete_temporalproperties(restriction)
+def test_query_patch_primal_member(context, update_cellspace_property):
+    pidb_provider = PostgresIndoorDB()
+    pidb_provider.connect()
+    success = pidb_provider.patch_cell_space(context.get('collection_id'),
+                                            context.get('ifeature_id'),
+                                            context.get('layer_id'),
+                                            context.get('cell_space_id'),
+                                            data=update_cellspace_property)
+    assert success
+    result = pidb_provider.get_primal_member(context.get('collection_id'),
+                                            context.get('ifeature_id'),
+                                            context.get('layer_id'),
+                                            context.get('cell_space_id'))
+    r_bounded = result[8]
+    assert result.get('cellSpaceName') == 'Executive Office 102'
+    assert result.get('poi') == 'true'
+    assert len(r_bounded) == 2
 
-    assert True
+def test_query_patch_edge(context, update_edge_property):
+    pidb_provider = PostgresIndoorDB()
+    pidb_provider.connect()
+    success = pidb_provider.patch_edge(context.get('collection_id'),
+                                         context.get('ifeature_id'),
+                                         context.get('layer_id'),
+                                         context.get('edge_id'),
+                                         data=update_edge_property)
+    assert success
+    result = pidb_provider.get_dual_member(context.get('collection_id'),
+                                         context.get('ifeature_id'),
+                                         context.get('layer_id'),
+                                         context.get('edge_id'))
+    assert result.get('weight') == '10.0'
 
+def test_query_delete_dual_member(context):
+    pidb_provider = PostgresIndoorDB()
+    pidb_provider.connect()
+    success = pidb_provider.delete_dual_member(context.get('collection_id'),
+                                         context.get('ifeature_id'),
+                                         context.get('layer_id'),
+                                         context.get('node_id'))
+    assert success
+    result_e = pidb_provider.get_dual_member(context.get('collection_id'),
+                                         context.get('ifeature_id'),
+                                         context.get('layer_id'),
+                                         context.get('edge_id'))
+    assert result_e is None
+    result_n = pidb_provider.get_dual_member(context.get('collection_id'),
+                                         context.get('ifeature_id'),
+                                         context.get('layer_id'),
+                                         context.get('node_id'))
+    assert result_n is None
 
-def test_query_delete_temporalgeometry(context):
-    restriction = "AND tgeometry_id ='{0}'".format(context.get('tgeometry_id'))
+def test_query_delete_primal_member(context):
+    pidb_provider = PostgresIndoorDB()
+    pidb_provider.connect()
+    success_b = pidb_provider.delete_primal_member(context.get('collection_id'),
+                                         context.get('ifeature_id'),
+                                         context.get('layer_id'),
+                                         context.get('cell_boundary_id'))
+    assert success_b
+    result_b = pidb_provider.get_primal_member(context.get('collection_id'),
+                                         context.get('ifeature_id'),
+                                         context.get('layer_id'),
+                                         context.get('cell_boundary_id'))
+    assert result_b is None
+    success_c = pidb_provider.delete_primal_member(context.get('collection_id'),
+                                         context.get('ifeature_id'),
+                                         context.get('layer_id'),
+                                         context.get('cell_space_id'))
+    assert success_c
+    result_c = pidb_provider.get_primal_member(context.get('collection_id'),
+                                         context.get('ifeature_id'),
+                                         context.get('layer_id'),
+                                         context.get('cell_space_id'))
+    assert result_c is None
 
-    pmdb_provider = PostgresMobilityDB()
-    pmdb_provider.connect()
-    pmdb_provider.delete_temporalgeometry(restriction)
-
-    assert True
-
-
-def test_query_delete_movingfeature(context):
-    restriction = "AND mfeature_id ='{0}'".format(context.get('mfeature_id'))
-
-    pmdb_provider = PostgresMobilityDB()
-    pmdb_provider.connect()
-    pmdb_provider.delete_movingfeature(restriction)
-
-    result = pmdb_provider.get_feature(context.get('collection_id'),
-                                       context.get('mfeature_id'))
+def test_query_delete_interlayer_connection(context):
+    pidb_provider = PostgresIndoorDB()
+    pidb_provider.connect()
+    success = pidb_provider.delete_interlayer_connection(context.get('collection_id'),
+                                         context.get('ifeature_id'),
+                                         context.get('conn_id'))
+    assert success
+    result = pidb_provider.get_interlayer_connections(context.get('collection_id'),
+                                          context.get('ifeature_id'))
     assert len(result) == 0
 
+def test_query_delete_thematic_layer(context):
+    pidb_provider = PostgresIndoorDB()
+    pidb_provider.connect()
+    success = pidb_provider.delete_thematic_layer(context.get('collection_id'),
+                                         context.get('ifeature_id'),
+                                         context.get('layer_id'))
+    assert success
+    result = pidb_provider.get_layer(context.get('collection_id'),
+                                         context.get('ifeature_id'),
+                                         context.get('layer_id'))
+    assert result is None
 
+def test_query_delete_indoorfeature(context):
+    pidb_provider = PostgresIndoorDB()
+    pidb_provider.connect()
+    success = pidb_provider.delete_indoorfeature(context.get('collection_id'),
+                                                context.get('ifeature_id'))
+    assert success
+    result = pidb_provider.get_feature(context.get('collection_id'),
+                                          context.get('ifeature_id'))
+    assert result is None
+    
 def test_query_delete_collection(context):
-    restriction = "AND collection_id ='{0}'".format(
-        context.get('collection_id'))
-
-    pmdb_provider = PostgresMobilityDB()
-    pmdb_provider.connect()
-    pmdb_provider.delete_collection(restriction)
-
-    result = pmdb_provider.get_collection(context.get('collection_id'))
-    assert len(result) == 0
+    pidb_provider = PostgresIndoorDB()
+    pidb_provider.connect()
+    success = pidb_provider.delete_collection(context.get('collection_id'))    
+    assert success
+    result = pidb_provider.get_collection(context.get('collection_id'))
+    assert result is None
+    
