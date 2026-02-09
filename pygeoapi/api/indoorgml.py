@@ -1147,7 +1147,7 @@ def manage_primal(api: API, request: APIRequest, action: str, collection_id: str
 
         try:
             pidb_provider.connect()
-            success = pidb_provider.update_primal_member(collection_id, item_id, layer_id, member_id, data)
+            success = pidb_provider.patch_cell_space(collection_id, item_id, layer_id, member_id, data)
             
             if success:
                 return headers, HTTPStatus.NO_CONTENT, 'update success'
@@ -1225,17 +1225,13 @@ def get_dual(api: API, request: APIRequest, collection_id: str, item_id: str, la
     try:
         pidb_provider.connect()
         # 2. Call the Provider function
-        meta, nodes, edges = pidb_provider.get_dual_members(
+        response = pidb_provider.get_dual_members(
             collection_id, 
             item_id, 
             layer_id, 
             min_weight=min_weight, 
             max_weight=max_weight
         )
-
-        if not meta:
-             return api.get_exception(HTTPStatus.NOT_FOUND, headers, request.format, 'NotFound', 'Layer not found')
-
         # 3. Construct Self Link with Query Params (Robust Method)
         base_url = f"{api.config['server']['url']}/collections/{collection_id}/items/{item_id}/layers/{layer_id}/dual"
 
@@ -1250,18 +1246,7 @@ def get_dual(api: API, request: APIRequest, collection_id: str, item_id: str, la
             self_href += "?" + urllib.parse.urlencode(query_params)
 
         # 4. Construct Response
-        response = {
-            "id": meta['dualspace_id_str'],
-            "featureType": "DualSpaceLayer",
-            "isLogical": meta.get('is_logical', False), 
-            "isDirected": meta.get('is_directed', False),
-            "creationDatetime": meta['d_creation_datetime'].isoformat() if meta.get('d_creation_datetime') else None,
-            "terminationDatetime": meta['d_termination_datetime'].isoformat() if meta.get('d_termination_datetime') else None,
-            
-            "nodeMember": nodes, 
-            "edgeMember": edges,
-            
-            "links": [
+        response["links"] = [
                 {
                     "href": self_href,
                     "rel": "self",
@@ -1269,7 +1254,6 @@ def get_dual(api: API, request: APIRequest, collection_id: str, item_id: str, la
                     "title": "Dual Space Layer"
                 }
             ]
-        }
         
         return headers, HTTPStatus.OK, to_json(response, api.pretty_print)
 
@@ -1394,7 +1378,7 @@ def manage_dual(api: API, request: APIRequest, action: str, collection_id: str, 
                 return api.get_exception(HTTPStatus.BAD_REQUEST, headers, request.format, 'InvalidParameterValue', 'Only "weight" can be updated')
         try:
             pidb_provider.connect()
-            success = pidb_provider.update_dual_member(collection_id, item_id, layer_id, member_id, data)
+            success = pidb_provider.patch_edge(collection_id, item_id, layer_id, member_id, data)
             
             if success:
                 return headers, HTTPStatus.NO_CONTENT, ''
