@@ -639,8 +639,6 @@ class PostgresIndoorDB:
             cur.execute(sql_layers, tuple(final_params))
 
             rows = cur.fetchall()
-            if not rows:
-                raise ValueError("requested parameters are not found.")
             # E. Process Results
             for row in rows:
                 l_id, l_theme, semantic_extension, feature_id, layer_levels = row
@@ -2852,7 +2850,7 @@ class PostgresIndoorDB:
             cur.execute(lookup_sql, (collection_str, item_str, layer_str))
             row = cur.fetchone()
             if not row:
-                return False
+                return {}
             
             primal = self._get_primal_geometric_query(row['id'], row['primalspace_id_str'], row['p_creation_datetime'], op=op, geometry=geometry, level=level)
             dual = self._get_dual_space(row['id'], row['dualspace_id_str'], row['d_creation_datetime'], row['is_logical'], row['is_directed'])
@@ -2962,46 +2960,14 @@ class PostgresIndoorDB:
     def routing_query(self, collection_str, item_str, layer_str, sn, dn):
         # This query gets the full sequence from pgRouting and joins it with your tables
         lookup_sql = """
-            SELECT n.id 
+            SELECT n.id, t.is_directed 
             FROM node_n_edge n
             JOIN collection c ON n.collection_id = c.id
             JOIN indoorfeature i ON n.indoorfeature_id = i.id
             JOIN thematiclayer t ON n.thematiclayer_id = t.id
             WHERE n.id_str = %s AND c.id_str = %s AND i.id_str = %s AND t.id_str = %s
         """
-        network_sql = """
-        SELECT 
-            c.edge_id as id, 
-            c.node_source_id as source, 
-            c.node_target_id as target, 
-            COALESCE(n.weight, ST_Length(n.geometry_val)) as cost  -- fix if weight is exist.
-        FROM connects c
-        JOIN node_n_edge n ON c.edge_id = n.id
-        """
-        routing_sql = f"""
-        WITH route AS (
-            SELECT * FROM pgr_dijkstra(
-                '{network_sql}',
-                %(start)s, 
-                %(dest)s, 
-                directed := true -- Set true if one-way streets exist
-            )
-        )
-        SELECT 
-            r.seq,
-            r.node as node_id,
-            r.edge as edge_id,
-            r.cost,
-            r.agg_cost,
-            n.id_str,
-            n.type,
-            ST_AsText(n.geometry_val) as geometry
-        FROM route r
-        LEFT JOIN node_n_edge n 
-            ON (r.edge = n.id)  -- Join Edge info
-            OR (r.edge = -1 AND r.node = n.id) -- Join Last Node info
-        ORDER BY r.seq;
-        """
+        
         with self.connection.cursor(cursor_factory=RealDictCursor) as cur:
             cur.execute(lookup_sql, (sn, collection_str, item_str, layer_str))
             start_node = cur.fetchone()
@@ -3013,10 +2979,48 @@ class PostgresIndoorDB:
             if not destination_node:
                 msg = "requested parameters are not found."
                 raise ValueError(msg)
-            
+            network_sql = """
+            SELECT 
+                c.edge_id as id, 
+                c.node_source_id as source, 
+                c.node_target_id as target, 
+                COALESCE(n.weight, ST_Length(n.geometry_val)) as cost,  -- fix if weight is exist.
+                CASE 
+                    WHEN t.is_directed = true THEN -1   -- If one-way, block reverse
+                    ELSE COALESCE(n.weight, ST_Length(n.geometry_val))   -- If two-way, reuse the forward cost
+                END as reverse_cost
+            FROM connects c
+            JOIN node_n_edge n ON c.edge_id = n.id
+            JOIN thematiclayer t ON n.thematiclayer_id = t.id
+            """
+            routing_sql = f"""
+            WITH route AS (
+                SELECT * FROM pgr_dijkstra(
+                    '{network_sql}',
+                    %(start)s, 
+                    %(dest)s, 
+                    %(directed)s -- Set true if one-way streets exist
+                )
+            )
+            SELECT 
+                r.seq,
+                r.node as node_id,
+                r.edge as edge_id,
+                r.cost,
+                r.agg_cost,
+                n.id_str,
+                n.type,
+                ST_AsText(n.geometry_val) as geometry
+            FROM route r
+            LEFT JOIN node_n_edge n 
+                ON (r.edge = n.id)  -- Join Edge info
+                OR (r.edge = -1 AND r.node = n.id) -- Join Last Node info
+            ORDER BY r.seq;
+            """
             sn_id= start_node['id']
             dn_id = destination_node['id']
-            cur.execute(routing_sql, {'start': sn_id, 'dest': dn_id})
+            is_directed = start_node['is_directed']
+            cur.execute(routing_sql, {'start': sn_id, 'dest': dn_id, 'directed': is_directed})
             path_rows = cur.fetchall()
             if not path_rows:
                 return {"total_weight": 0, "path": []}
