@@ -105,6 +105,17 @@ function buildBaseModel(indoorjson) {
 
 function renderAll() {
   if (!MODEL) return;
+
+  // Sync Level Dropdown
+  const sel = document.getElementById("level");
+  const currentVal = sel.value; // Save selection if possible
+  sel.innerHTML = '<option value="__all__">All</option>';
+  MODEL.levels.forEach(lvl => {
+    const o = document.createElement("option");
+    o.value = lvl; o.textContent = lvl; sel.appendChild(o);
+  });
+  if (MODEL.levels.includes(currentVal)) sel.value = currentVal;
+  
   render3D();
   render2D();
 }
@@ -303,3 +314,136 @@ toggleDual.addEventListener("change", (e) => {
   SHOW_DUAL = e.target.checked;
   if (MODEL) renderAll();
 });
+
+/* ---------- pygeoAPI Explorer Logic ---------- */
+
+const dbList = document.getElementById("db-list");
+const apiLog = document.getElementById("api-log");
+const apiBack = document.getElementById("api-back");
+const apiStatus = document.getElementById("api-status-right");
+
+// Set this to your local or remote pygeoAPI base URL
+const API_BASE = "http://localhost:5000"; 
+
+// 1. Fetch Collections and Filter for "indoorfeature"
+document.getElementById("api-get-collections").addEventListener("click", async () => {
+  try {
+    apiStatus.textContent = "Fetching catalogs...";
+    const response = await fetch(`${API_BASE}/collections?f=json`);
+    const data = await response.json();
+    
+    // pygeoAPI nests collections under the "collections" key
+    const allCollections = data.collections || [];
+    
+    // Filter for indoor feature collections per your OpenAPI spec
+    const indoorCollections = allCollections.filter(c => c.itemType === "indoorfeature");
+
+    renderCollections(indoorCollections);
+    apiBack.style.display = "none";
+    apiLog.textContent = JSON.stringify(data, null, 2);
+  } catch (err) {
+    console.error(err);
+    apiLog.textContent = "Error: " + err.message;
+  }
+});
+
+// 2. Render the Collections List
+function renderCollections(collections) {
+  dbList.innerHTML = "";
+  if (collections.length === 0) {
+    dbList.innerHTML = '<div class="tiny">No indoorfeature collections found.</div>';
+    return;
+  }
+
+  collections.forEach(col => {
+    // Find the "items" link in the OGC links array
+    const itemsLink = col.links.find(l => l.rel === "items" && l.type === "application/geo+json");
+    
+    const btn = document.createElement("button");
+    btn.className = "db-item-btn";
+    btn.innerHTML = `
+      <strong>🏢 ${col.title}</strong>
+      <small>ID: ${col.id}</small>
+    `;
+    
+    // When clicked, fetch the items using the href from the OGC link
+    btn.onclick = () => loadCollectionItems(itemsLink.href, col.id);
+    dbList.appendChild(btn);
+  });
+}
+
+// 3. Load Items (Listing features in the collection)
+async function loadCollectionItems(url, colId) {
+  try {
+    apiStatus.textContent = `Listing items in ${colId}...`;
+    
+    // For listing, we just need the IDs and basic properties
+    const fetchUrl = url.includes('?') ? `${url}&f=json` : `${url}?f=json`;
+
+    const response = await fetch(fetchUrl);
+    const featureCollection = await response.json();
+
+    // Render the list of buttons
+    renderFeatures(featureCollection.features || [], colId);
+    apiLog.textContent = JSON.stringify(featureCollection, null, 2);
+  } catch (err) {
+    apiLog.textContent = "Error listing items: " + err.message;
+  }
+}
+
+// 4. Render the list and attach the specific BBOX fetch
+function renderFeatures(features, colId) {
+  dbList.innerHTML = "";
+  if (features.length === 0) {
+    dbList.innerHTML = '<div class="tiny">No features found.</div>';
+    return;
+  }
+
+  features.forEach(f => {
+    const btn = document.createElement("button");
+    btn.className = "db-item-btn";
+    
+    const name = f.id || "Unnamed Feature";
+    btn.innerHTML = `<strong>📍 ${name}</strong><small>ID: ${f.id}</small>`;
+    
+    // Trigger the detailed fetch on click
+    btn.onclick = () => fetchSingleFeature(colId, f.id);
+    
+    dbList.appendChild(btn);
+  });
+}
+
+// 5. Fetch a single feature with the required BBOX
+async function fetchSingleFeature(colId, featureId) {
+  try {
+    apiStatus.textContent = `Fetching ${featureId} with BBOX...`;
+    
+    // Construct the specific item URL
+    // pygeoAPI pattern: /collections/{colId}/items/{featureId}
+    const hugeBbox = "-1800,-900,1800,900"; 
+    const url = `${API_BASE}/collections/${colId}/items/${featureId}?f=json&bbox=${hugeBbox}`;
+
+    const response = await fetch(url);
+    if (!response.ok) throw new Error(`HTTP error! Status: ${response.status}`);
+    
+    const featureGeoJSON = await response.json();
+    apiLog.textContent = JSON.stringify(featureGeoJSON, null, 2);
+
+    // Navigate the response: featureGeoJSON -> IndoorFeatures
+    const indoorData = featureGeoJSON.IndoorFeatures;
+
+    if (indoorData) {
+      apiStatus.textContent = `Visualizing: ${featureId}`;
+      
+      // Build and Render
+      MODEL = buildBaseModel(indoorData); 
+      renderAll();
+    } else {
+      apiStatus.textContent = "Error: 'IndoorFeatures' missing in response.";
+      console.error("Structure check:", featureGeoJSON);
+    }
+  } catch (err) {
+    console.error(err);
+    apiLog.textContent = "Error fetching feature: " + err.message;
+  }
+}

@@ -94,6 +94,29 @@
       <div id="plot2d" class="plot"></div>
     </div>
   </main>
+
+  <aside id="side-right">
+    <div class="block">
+      <div class="label">API Explorer</div>
+      <button id="api-get-collections" style="width: 100%;">Load Collections</button>
+      <div id="api-status-right" class="tiny" style="margin-top:4px;">No collections loaded.</div>
+    </div>
+
+    <div class="block">
+      <div class="label">Navigation</div>
+      <button id="api-back" style="width: 100%; display: none; margin-bottom: 8px;">&larr; Back to Collections</button>
+      
+      <div id="db-list" style="max-height: 400px; overflow-y: auto; border: 1px solid #ddd; padding: 4px; border-radius: 4px; background: white;">
+        <div class="tiny">Click "Load Collections" to start.</div>
+      </div>
+    </div>
+
+    <div class="block">
+      <div class="label">API Log</div>
+      <pre id="api-log">{}</pre>
+    </div>
+  </aside>
+</div>
 </div>
 
 <!-- App logic -->
