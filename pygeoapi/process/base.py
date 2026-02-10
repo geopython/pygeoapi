@@ -82,7 +82,7 @@ class BaseProcessor:
                         The value of any key may be an object and include the
                         property `transmissionMode` - defaults to `value`.
         :returns: tuple of MIME type and process response
-                  (string or bytes, or dict)
+                  (string, bytes, list or dict)
         """
 
         raise NotImplementedError()

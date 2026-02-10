@@ -277,6 +277,9 @@ class BaseManager:
             current_status = JobStatus.running
             jfmt, outputs = p.execute(data_dict, **extra_execute_parameters)
 
+            if isinstance(outputs, bytes):
+                outputs = outputs.decode('utf-8')
+
             if requested_response == RequestedResponse.document.value:
                 outputs = {
                     'outputs': [outputs]
@@ -297,6 +300,10 @@ class BaseManager:
                     encoding = 'utf-8'
                 elif isinstance(outputs, bytes):
                     mode = 'wb'
+                    data = outputs
+                    encoding = None
+                elif isinstance(outputs, str):
+                    mode = 'w'
                     data = outputs
                     encoding = None
                 with job_filename.open(mode=mode, encoding=encoding) as fh:
