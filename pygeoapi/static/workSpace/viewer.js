@@ -11,35 +11,38 @@ import {
 
 // Global State
 let MODEL = null;
-let RESULT2D = null;
-let ROUTE = null;
 let CURRENT_LEVEL = "__all__";
 let CURRENT_MODE = "3d";
-let SHOW_RESULT = true;
-let SHOW_ROUTE = true;
 let SHOW_DUAL = false;
-let SHOW_SEG_MARKERS = true;
-let SHOW_SEG_LABELS = false;
-let ROUTE_SEGMENTS = [];
 
 const plot3d = document.getElementById("plot3d");
 const plot2d = document.getElementById("plot2d");
 const statusDiv = document.getElementById("status");
 const fileInput = document.getElementById("file-input");
 const uploadButton = document.getElementById("upload-button");
+const cursorDiv = document.getElementById("cursor");
+const selectionDiv = document.getElementById("sel");
+const levelSelect = document.getElementById("level");
+const btn3d = document.getElementById("btn3d");
+const btn2d = document.getElementById("btn2d");
+const toggleDual = document.getElementById("toggleDual");
 
-/* ---------- Build Model (Enhanced logic from your working version) ---------- */
+/* ---------- Build Model ---------- */
 
 function buildBaseModel(indoorjson) {
   const cells = iterCellSpaces(indoorjson);
   const levels = new Set();
   const byLevel3d = new Map();
   const byLevel2d = new Map();
+  const layers = indoorjson.layers || indoorjson.indoorFeatures?.layers || [];
+  const thematicLayerCount = Array.isArray(layers) ? layers.length : 0;
+  const nodes = iterDualNodes(indoorjson);
+  const edges = iterDualEdges(indoorjson);
 
   const addLevel = (lvl) => {
     levels.add(lvl);
     if (!byLevel3d.has(lvl)) byLevel3d.set(lvl, { x: [], y: [], z: [], i: [], j: [], k: [] });
-    if (!byLevel2d.has(lvl)) byLevel2d.set(lvl, { pairs: [] });
+    if (!byLevel2d.has(lvl)) byLevel2d.set(lvl, { pairs: [], ids: [] }); // Fixed: Ensure ids exist
   };
 
   for (const cs of cells) {
@@ -50,7 +53,6 @@ function buildBaseModel(indoorjson) {
     const g3 = geom.geometry3D || null;
     const g2 = geom.geometry2D || null;
 
-    // 3D Logic
     if (g3 && g3.type === "Polyhedron") {
       const tris = polyhedronToTris(g3);
       const store = byLevel3d.get(lvl);
@@ -63,33 +65,39 @@ function buildBaseModel(indoorjson) {
       }
     }
 
-    // 2D Logic - FIXED TO PREVENT OVERLAP
     const store2 = byLevel2d.get(lvl);
     if (g2 && (g2.type === "Polygon" || g2.type === "MultiPolygon")) {
       const rings = polygon2dToRings(g2);
+      // Ensure every vertex in the ring gets the ID assigned to it
       for (const ring of rings) {
         pushRingPairs(store2.pairs, ring); 
+        ring.forEach(() => {
+          store2.ids.push(cs.id); // Push ID for every coordinate
+        });
+        store2.ids.push(null); // Push null to match the gap in pairs
       }
-    } 
-    // Only use 3D bounding box if 2D is completely missing
-    else if (g3 && g3.type === "Polyhedron") {
+    } else if (g3 && g3.type === "Polyhedron") {
       const tris = polyhedronToTris(g3);
       const pts = tris.flat();
       const bb = bboxFromPoints(pts);
       if (bb) {
-        const [x0, y0] = bb.min;
-        const [x1, y1] = bb.max;
-        pushRingPairs(store2.pairs, [[x0, y0], [x1, y0], [x1, y1], [x0, y1], [x0, y0]]);
+        const [x0, y0] = bb.min; const [x1, y1] = bb.max;
+        const ring = [[x0, y0], [x1, y0], [x1, y1], [x0, y1], [x0, y0]];
+        pushRingPairs(store2.pairs, ring);
+        ring.forEach(() => store2.ids.push(cs.id));
+        store2.ids.push(null);
       }
     }
   }
 
   return {
+    _src: indoorjson,
     levels: Array.from(levels).sort(),
     byLevel3d,
     byLevel2d,
-    dualNodes: iterDualNodes(indoorjson),
-    dualEdges: iterDualEdges(indoorjson)
+    dualNodes: nodes,
+    dualEdges: edges,
+    stats: { thematicLayers: thematicLayerCount, cellSpaces: cells.length, nodes: nodes.length, edges: edges.length }
   };
 }
 
@@ -97,43 +105,74 @@ function buildBaseModel(indoorjson) {
 
 function renderAll() {
   if (!MODEL) return;
-  // Update Level Dropdown
+
+  // Sync Level Dropdown
   const sel = document.getElementById("level");
+  const currentVal = sel.value; // Save selection if possible
   sel.innerHTML = '<option value="__all__">All</option>';
-  for (const lvl of MODEL.levels) {
+  MODEL.levels.forEach(lvl => {
     const o = document.createElement("option");
     o.value = lvl; o.textContent = lvl; sel.appendChild(o);
-  }
-
+  });
+  if (MODEL.levels.includes(currentVal)) sel.value = currentVal;
+  
   render3D();
   render2D();
 }
 
 function render3D() {
   const traces = [];
-  // Use a simple color palette or let Plotly auto-color
+  let zMin = -Infinity, zMax = Infinity;
+
+  if (CURRENT_LEVEL !== "__all__") {
+    const base = MODEL.byLevel3d.get(CURRENT_LEVEL);
+    if (base && base.z.length > 0) {
+      const validZ = base.z.filter(v => v !== null && v !== undefined);
+      zMin = Math.min(...validZ) - 0.1;
+      zMax = Math.max(...validZ);
+    }
+  }
+
   for (const [lvl, s] of MODEL.byLevel3d.entries()) {
     if (!s || !s.i.length) continue;
-    
     traces.push({
-      type: "mesh3d",
-      name: lvl,
-      x: s.x, y: s.y, z: s.z,
-      i: s.i, j: s.j, k: s.k,
-      opacity: 0.5,
-      // Removing hardcoded facecolor lets Plotly give each level a unique color
-      hoverinfo: "name",
-      visible: (CURRENT_LEVEL === "__all__" || CURRENT_LEVEL === lvl)
+      type: "mesh3d", name: lvl, x: s.x, y: s.y, z: s.z, i: s.i, j: s.j, k: s.k,
+      opacity: 0.5, hoverinfo: "name", visible: (CURRENT_LEVEL === "__all__" || CURRENT_LEVEL === lvl)
     });
   }
 
-  const layout = {
-    margin: { l: 0, r: 0, t: 30, b: 0 },
-    scene: { aspectmode: "data" },
-    showlegend: true // Enable legend so you can see which color is which level
-  };
+  if (SHOW_DUAL && MODEL.dualNodes && MODEL.dualEdges) {
+    const nx = [], ny = [], nz = [];
+    const ex = [], ey = [], ez = [];
 
-  Plotly.newPlot(plot3d, traces, layout);
+    MODEL.dualNodes.forEach(n => {
+      const p = n.geometry.coordinates;
+      const z = p[2] || 0;
+      if (CURRENT_LEVEL === "__all__" || (z >= zMin && z < zMax)) {
+        nx.push(p[0]); ny.push(p[1]); nz.push(z);
+      }
+    });
+
+    MODEL.dualEdges.forEach(edge => {
+      const coords = edge.geometry.coordinates;
+      if (!Array.isArray(coords) || coords.length < 2) return;
+      const isInRange = CURRENT_LEVEL === "__all__" || coords.some(p => {
+        const z = p[2] || 0;
+        return z >= zMin && z < zMax;
+      });
+      if (isInRange) {
+        for (const p of coords) {
+          ex.push(p[0]); ey.push(p[1]); ez.push(p[2] || 0);
+        }
+        ex.push(null); ey.push(null); ez.push(null);
+      }
+    });
+
+    if (nx.length) traces.push({ type: "scatter3d", mode: "markers", name: "Nodes", x: nx, y: ny, z: nz, marker: { size: 4, color: "#f1c40f" } });
+    if (ex.length) traces.push({ type: "scatter3d", mode: "lines", name: "Edges", x: ex, y: ey, z: ez, line: { color: "#e74c3c", width: 4 } });
+  }
+
+  Plotly.newPlot(plot3d, traces, { margin: { l: 0, r: 0, t: 30, b: 0 }, scene: { aspectmode: "data" } });
 }
 
 function render2D() {
@@ -143,63 +182,102 @@ function render2D() {
   for (const lvl of MODEL.levels) {
     const s = MODEL.byLevel2d.get(lvl);
     if (!s || !s.pairs.length) continue;
-
-    const xs = s.pairs.map(p => p[0]);
-    const ys = s.pairs.map(p => p[1]);
-
     traces.push({
-      type: "scattergl",
-      mode: "lines",
-      name: lvl,
-      x: xs,
-      y: ys,
-      line: { 
-        width: 1, 
-        color: "#333333", // Solid dark grey, no alpha transparency
-        simplify: false   // Do NOT let Plotly decimate points
-      },
-      hoverinfo: "skip",
-      visible: (CURRENT_LEVEL === "__all__" || CURRENT_LEVEL === lvl)
+      type: "scattergl", mode: "lines", name: lvl, x: s.pairs.map(p => p[0]), y: s.pairs.map(p => p[1]),
+      customdata: s.ids, line: { width: 1, color: "#333333", simplify: false },
+      hoverinfo: "all", visible: (CURRENT_LEVEL === "__all__" || CURRENT_LEVEL === lvl)
     });
   }
-
   const layout = {
-    xaxis: { 
-      scaleanchor: "y", 
-      zeroline: false, 
-      gridcolor: "#f0f0f0",
-      constrain: "domain" 
-    },
-    yaxis: { zeroline: false, gridcolor: "#f0f0f0" },
+    xaxis: { scaleanchor: "y", zeroline: false, constrain: "domain" },
+    yaxis: { zeroline: false },
     margin: { l: 40, r: 10, t: 30, b: 40 },
-    plot_bgcolor: "#ffffff"
+    hovermode: 'closest' // Crucial for clicking thin lines accurately
   };
 
-  Plotly.newPlot(plot2d, traces, layout);
+  Plotly.newPlot(plot2d, traces, layout).then(() => {
+    attachPlotlyClick();
+  });
 }
 
 /* ---------- Events ---------- */
 
+// This listener handles clicks ANYWHERE on the 2D plot
+plot2d.addEventListener('click', function(e) {
+  if (!plot2d._fullLayout || !plot2d._fullLayout.xaxis) return;
+
+  const fullLayout = plot2d._fullLayout;
+  // Convert pixel click (offsetX/Y) to data coordinates (x/y)
+  const x = fullLayout.xaxis.p2c(e.offsetX);
+  const y = fullLayout.yaxis.p2c(e.offsetY);
+
+  // --- ROOM SEARCH LOGIC ---
+  let clickedId = "Outside / No Room";
+  
+  // If you want to find which room was clicked, we can check the MODEL
+  if (MODEL) {
+    clickedId = findRoomAtCoords(x, y);
+  }
+
+  const selectionInfo = {
+    "selection": {
+      "id": clickedId,
+      "level": CURRENT_LEVEL === "__all__" ? "Multiple" : CURRENT_LEVEL,
+    },
+    "cursor": {
+      "x": x,
+      "y": y
+    }
+  };
+
+  selectionDiv.textContent = JSON.stringify(selectionInfo, null, 2);
+});
+
+// Helper function to check which room contains the point (Point-in-Polygon)
+function findRoomAtCoords(x, y) {
+  // We can iterate through the current level's 2D polygons
+  // For now, let's look at the IDs we stored in buildBaseModel
+  // This is a simplified check; a true 'contains' check requires a geometric library
+  return "Detected at " + CURRENT_LEVEL; 
+}
+
 uploadButton.addEventListener("click", async () => {
   const file = fileInput.files[0];
   if (!file) return;
-
   try {
     statusDiv.innerText = "Processing...";
     const json = JSON.parse(await file.text());
     MODEL = buildBaseModel(json);
+    
+    // Populate dropdown
+    levelSelect.innerHTML = '<option value="__all__">All</option>';
+    MODEL.levels.forEach(lvl => {
+      const o = document.createElement("option");
+      o.value = lvl; o.textContent = lvl; levelSelect.appendChild(o);
+    });
+
     renderAll();
-    statusDiv.innerText = `Loaded ${file.name}`;
+    
+    // --- ATTACH CLICK LISTENER HERE ---
+    attachPlotlyClick(); 
+
+    const s = MODEL.stats;
+    statusDiv.innerHTML = `<strong>Loaded: ${file.name}</strong>...`;
   } catch (err) {
     console.error(err);
     statusDiv.innerText = "Error parsing file.";
   }
 });
 
-/* ---------- Mode Switching (3D vs 2D) ---------- */
+plot2d.addEventListener('mousemove', function(e) {
+  if (!plot2d._fullLayout || !plot2d._fullLayout.xaxis) return;
+  const x = plot2d._fullLayout.xaxis.p2c(e.offsetX);
+  const y = plot2d._fullLayout.yaxis.p2c(e.offsetY);
+  cursorDiv.textContent = `X: ${x.toFixed(2)}\nY: ${y.toFixed(2)}`;
+});
 
-const btn3d = document.getElementById("btn3d");
-const btn2d = document.getElementById("btn2d");
+
+/* ---------- UI Toggles ---------- */
 
 function setMode(mode) {
   CURRENT_MODE = mode;
@@ -208,27 +286,164 @@ function setMode(mode) {
   btn3d.classList.toggle("active", mode === "3d");
   btn2d.classList.toggle("active", mode === "2d");
 
-  // 2. Update Plots visibility
-  plot3d.classList.toggle("active", mode === "3d");
-  plot2d.classList.toggle("active", mode === "2d");
+  // 2. Switch Visibility
+  if (mode === "3d") {
+    plot3d.style.display = "block";
+    plot2d.style.display = "none";
+  } else {
+    plot3d.style.display = "none";
+    plot2d.style.display = "block";
+  }
 
-  // 3. Force Plotly to recalculate the size of the newly visible div
-  if (mode === "3d") Plotly.Plots.resize(plot3d);
-  else Plotly.Plots.resize(plot2d);
+  // 3. IMPORTANT: Re-render the specific plot now that it's visible
+  if (MODEL) {
+    if (mode === "3d") render3D();
+    else render2D();
+  }
 }
 
-// Attach listeners to your existing buttons
 btn3d.addEventListener("click", () => setMode("3d"));
 btn2d.addEventListener("click", () => setMode("2d"));
 
-/* ---------- Level Selection ---------- */
-
-document.getElementById("level").addEventListener("change", (e) => {
+levelSelect.addEventListener("change", (e) => {
   CURRENT_LEVEL = e.target.value;
-  
-  // Re-render or Restyle based on the new level
-  if (MODEL) {
-    render3D();
-    render2D();
+  if (MODEL) renderAll();
+});
+
+toggleDual.addEventListener("change", (e) => {
+  SHOW_DUAL = e.target.checked;
+  if (MODEL) renderAll();
+});
+
+/* ---------- pygeoAPI Explorer Logic ---------- */
+
+const dbList = document.getElementById("db-list");
+const apiLog = document.getElementById("api-log");
+const apiBack = document.getElementById("api-back");
+const apiStatus = document.getElementById("api-status-right");
+
+// Set this to your local or remote pygeoAPI base URL
+const API_BASE = "http://localhost:5000"; 
+
+// 1. Fetch Collections and Filter for "indoorfeature"
+document.getElementById("api-get-collections").addEventListener("click", async () => {
+  try {
+    apiStatus.textContent = "Fetching catalogs...";
+    const response = await fetch(`${API_BASE}/collections?f=json`);
+    const data = await response.json();
+    
+    // pygeoAPI nests collections under the "collections" key
+    const allCollections = data.collections || [];
+    
+    // Filter for indoor feature collections per your OpenAPI spec
+    const indoorCollections = allCollections.filter(c => c.itemType === "indoorfeature");
+
+    renderCollections(indoorCollections);
+    apiBack.style.display = "none";
+    apiLog.textContent = JSON.stringify(data, null, 2);
+  } catch (err) {
+    console.error(err);
+    apiLog.textContent = "Error: " + err.message;
   }
 });
+
+// 2. Render the Collections List
+function renderCollections(collections) {
+  dbList.innerHTML = "";
+  if (collections.length === 0) {
+    dbList.innerHTML = '<div class="tiny">No indoorfeature collections found.</div>';
+    return;
+  }
+
+  collections.forEach(col => {
+    // Find the "items" link in the OGC links array
+    const itemsLink = col.links.find(l => l.rel === "items" && l.type === "application/geo+json");
+    
+    const btn = document.createElement("button");
+    btn.className = "db-item-btn";
+    btn.innerHTML = `
+      <strong>🏢 ${col.title}</strong>
+      <small>ID: ${col.id}</small>
+    `;
+    
+    // When clicked, fetch the items using the href from the OGC link
+    btn.onclick = () => loadCollectionItems(itemsLink.href, col.id);
+    dbList.appendChild(btn);
+  });
+}
+
+// 3. Load Items (Listing features in the collection)
+async function loadCollectionItems(url, colId) {
+  try {
+    apiStatus.textContent = `Listing items in ${colId}...`;
+    
+    // For listing, we just need the IDs and basic properties
+    const fetchUrl = url.includes('?') ? `${url}&f=json` : `${url}?f=json`;
+
+    const response = await fetch(fetchUrl);
+    const featureCollection = await response.json();
+
+    // Render the list of buttons
+    renderFeatures(featureCollection.features || [], colId);
+    apiLog.textContent = JSON.stringify(featureCollection, null, 2);
+  } catch (err) {
+    apiLog.textContent = "Error listing items: " + err.message;
+  }
+}
+
+// 4. Render the list and attach the specific BBOX fetch
+function renderFeatures(features, colId) {
+  dbList.innerHTML = "";
+  if (features.length === 0) {
+    dbList.innerHTML = '<div class="tiny">No features found.</div>';
+    return;
+  }
+
+  features.forEach(f => {
+    const btn = document.createElement("button");
+    btn.className = "db-item-btn";
+    
+    const name = f.id || "Unnamed Feature";
+    btn.innerHTML = `<strong>📍 ${name}</strong><small>ID: ${f.id}</small>`;
+    
+    // Trigger the detailed fetch on click
+    btn.onclick = () => fetchSingleFeature(colId, f.id);
+    
+    dbList.appendChild(btn);
+  });
+}
+
+// 5. Fetch a single feature with the required BBOX
+async function fetchSingleFeature(colId, featureId) {
+  try {
+    apiStatus.textContent = `Fetching ${featureId} with BBOX...`;
+    
+    // Construct the specific item URL
+    // pygeoAPI pattern: /collections/{colId}/items/{featureId}
+    const hugeBbox = "-1800,-900,1800,900"; 
+    const url = `${API_BASE}/collections/${colId}/items/${featureId}?f=json&bbox=${hugeBbox}`;
+
+    const response = await fetch(url);
+    if (!response.ok) throw new Error(`HTTP error! Status: ${response.status}`);
+    
+    const featureGeoJSON = await response.json();
+    apiLog.textContent = JSON.stringify(featureGeoJSON, null, 2);
+
+    // Navigate the response: featureGeoJSON -> IndoorFeatures
+    const indoorData = featureGeoJSON.IndoorFeatures;
+
+    if (indoorData) {
+      apiStatus.textContent = `Visualizing: ${featureId}`;
+      
+      // Build and Render
+      MODEL = buildBaseModel(indoorData); 
+      renderAll();
+    } else {
+      apiStatus.textContent = "Error: 'IndoorFeatures' missing in response.";
+      console.error("Structure check:", featureGeoJSON);
+    }
+  } catch (err) {
+    console.error(err);
+    apiLog.textContent = "Error fetching feature: " + err.message;
+  }
+}

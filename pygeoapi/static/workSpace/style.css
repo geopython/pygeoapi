@@ -14,9 +14,11 @@ body {
 }
 
 #app {
-  display:grid;
-  grid-template-columns:390px 1fr;
-  height:100vh;
+  display: grid;
+  /* Left Sidebar | Main Content | Right Sidebar */
+  grid-template-columns: 300px 1fr 300px; 
+  height: 100vh;
+  overflow: hidden;
 }
 
 #side {
@@ -24,6 +26,26 @@ body {
   padding:14px;
   overflow:auto;
   background:var(--panel);
+}
+
+#side, #side-right {
+  background: #f8f9fa;
+  border-right: 1px solid #ccc; /* for left side */
+  border-left: 1px solid #ccc;  /* for right side */
+  padding: 15px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+}
+
+/* Ensure inputs in the sidebar look consistent */
+#side-right input[type="text"] {
+  width: 100%;
+  padding: 6px;
+  box-sizing: border-box;
+  border: 1px solid #ccc;
+  border-radius: 4px;
 }
 
 #main { position:relative; }
@@ -119,4 +141,45 @@ pre {
 
 .checkrow input {
   width:auto;
+}
+
+#sel, #cursor {
+  background: #f4f4f4;
+  padding: 10px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  font-family: 'Monaco', 'Consolas', monospace;
+  font-size: 12px;
+  color: #333;
+  margin-top: 5px;
+  white-space: pre-wrap; /* Wraps text if the coordinates are very long */
+  min-height: 50px;
+}
+
+/* API Log styling (similar to your selection box) */
+#api-log {
+  background: #1e1e1e;
+  color: #00ff00;
+  padding: 8px;
+  font-size: 11px;
+  border-radius: 4px;
+  min-height: 100px;
+  overflow-x: auto;
+  white-space: pre-wrap;
+}
+
+/* Button hover state for the DB list items */
+#db-list button {
+  width: 100%;
+  text-align: left;
+  padding: 5px;
+  margin-bottom: 2px;
+  font-size: 12px;
+  background: #fff;
+  border: 1px solid #eee;
+  cursor: pointer;
+}
+
+#db-list button:hover {
+  background: #e9ecef;
 }
