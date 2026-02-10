@@ -1221,7 +1221,10 @@ def get_dual(api: API, request: APIRequest, collection_id: str, item_id: str, la
         return api.get_exception(
             HTTPStatus.BAD_REQUEST,
             headers, request.format, 'InvalidParameter', "Weights must be valid numbers")
-
+    if min_weight and max_weight and (min_weight > max_weight):
+        return api.get_exception(
+            HTTPStatus.BAD_REQUEST,
+            headers, request.format, 'InvalidParameter', "minWeight must be less than maxWeight")
     try:
         pidb_provider.connect()
         # 2. Call the Provider function

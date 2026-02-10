@@ -355,14 +355,13 @@ paths:
     post:
       tags:
         - ThematicLayers
-      summary: register a new thematic layer
+      summary: create a new thematic layer
       description: |-
         Uploads a new thematic layer (e.g., 'Pet-friendly' or 'Furnitures') to a specific `featureId`.
         The body must conform to the IndoorJSON ThematicLayer schema.
 
-        The `Id`s of the members in each primalSpace and dualSpace must be unique within the layer.
-        Thus, a `cellSpace` can have the same `Id` as a `node` or `edge` even in the same ThematicLayer.
-        (It is recommended to use a consistent naming convention to avoid confusion between them)
+        The `Id`s of the layer and members in each primalSpace and dualSpace must be unique within the IndoorFeature.
+        (It is recommended to use a consistent naming convention to avoid confusion between them.)
       operationId: createThematicLayer
       requestBody:
         required: true
@@ -782,7 +781,7 @@ paths:
 
         **Constraints:**
         - If a `duality` is provided for a `cellBoundary`, the referenced `edge` must already exist and must not already be linked to another feature.
-        - A `cellSpace` cannot have a `duality` link at the moment of creation, as a `node` cannot exist independently without its parent graph.
+        - A `cellSpace` cannot have a `duality` link at the moment of creation, as a `node` cannot exist independently without its duality component.
 
         **Automatic Updates:**
         - When a `node` is later created with a `duality` link to an existing `cellSpace`, the system automatically updates the `cellSpace` record to reflect this bidirectional relationship.
@@ -920,9 +919,9 @@ paths:
     get:
       tags:
         - DualSpaceLayer
-      summary: Retrieve all nodes and edges (Navigation Network)
+      summary: Retrieve all nodes and edges (Dual space members)
       description: |-
-        Retrieves the dual space layer, optionally filtered by edge weights for pathfinding.
+        Retrieves the dual space layer, optionally filtered by edge weights.
         When filtered by weights, the response includes not only the regarding edges, but also only the connected nodes to those edges.
       operationId: getDualSpace
       parameters:
@@ -962,7 +961,7 @@ paths:
     get:
       tags:
         - Services
-      summary: Performs a geometric query agains CellSpace geometries
+      summary: Performs a geometric query against CellSpace geometries
       description: |-
         Performs a spatial query against the **PrimalSpace** of a specific ThematicLayer using 2D geometric predicates.
 
@@ -971,10 +970,10 @@ paths:
 
         **Spatial Duality Logic:**
         - **Primal Space:** Only the `CellSpaceMember` items that satisfy the geometric predicate are returned.
-        - **Dual Space:** The server automatically identifies the `Nodes` (States) corresponding to the filtered CellSpaces via the duality relationship. The resulting `dualSpace` will contain these nodes and any `Edges` (Transitions) that connect them, providing a sub-graph of the indoor navigation network that exists within the queried area.
+        - **Dual Space:** All of the Nodes and Edges in specified ThematicLayer are returned.
 
         **Parameters:**
-        - `op`: The geometric predicate to apply (e.g., `intersects`, `disjoint`, `contains`).
+        - `op`: The geometric predicate to apply (e.g., `intersects`, `within`, `contains`).
         - `geometry`: The reference geometry in WKT (Well-Known Text) format used for the predicate.
         - `level`: (Optional) Restricts the search to a specific floor or vertical level within the IndoorGML model.
 
@@ -1087,18 +1086,17 @@ paths:
         Computes the shortest navigable path between two points within an `IndoorFeature` based on the **Dual Space** graph logic of a specific `ThematicLayer`.
 
         **Routing Logic:**
-        This operation utilizes the **Dijkstra algorithm** (via pgRouting) to traverse the network of `Nodes` (States) and `Edges` (Transitions) defined in the IndoorGML dual graph. It calculates the path with the lowest cumulative weight, where weight typically represents physical distance or travel time.
+        This operation utilizes the **Dijkstra algorithm** (via pgRouting) to traverse the network of `Nodes` and `Edges`. It calculates the path with the lowest cumulative `weight`.
 
         **Spatial Awareness:**
         - **Start/Destination:** The `sn` (Start Node) and `dn` (Destination Node) must exist within the specified `ThematicLayer`. 
-        - **Segments:** The result returns an ordered sequence of `path_segments`. Each segment represents a **Transition** (Edge) in the graph, except for the final segment which identifies the reached **State** (Node).
-        - **Geometry:** Every segment includes GeoJSON geometry derived from the dual space, allowing for immediate visualization of the route on a 2D or 3D map.
+        - **Segments:** The result returns an ordered sequence of `path_segments`. Each segment represents a **Edge** in the graph, except for the final segment which identifies the reached **Node**.
 
         **Duality context:**
         While the route is calculated in the **Dual Space** (the network), the resulting IDs can be used to identify the corresponding **Primal Space** cells (rooms, corridors) that the user will physically pass through, thanks to the IndoorGML duality relationship.
 
         **Usage Note:**
-        If no path exists between the two nodes (e.g., nodes are in disconnected sub-graphs or different buildings), the service returns an empty path with a total cost of zero.
+        If no path exists between the two nodes (e.g., nodes are in disconnected sub-graphs), the service returns an empty path with a total cost of zero.
       operationId: computeIndoorRoute
       parameters:
         - $ref: '#/components/parameters/sn'
@@ -1163,7 +1161,7 @@ paths:
     get:
       tags:
         - PrimalSpaceLayer
-      summary: retrieve a specific cell space
+      summary: retrieve a specific cellSpace or cellBoundary
       description: |-
         Returns the full representation of a primalSpaceMember.
         If the `mId` refers to a `cellSpace`, it returns the whole cellSpace.
@@ -1175,7 +1173,9 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/cellSpace'
+                oneOf:
+                  - $ref: '#/components/schemas/cellSpace'
+                  - $ref: '#/components/schemas/cellBoundary'
         '404':
           $ref: '#/components/responses/notFound'
         '500':
@@ -1184,7 +1184,7 @@ paths:
       tags:
         - PrimalSpaceLayer
       summary: update cell space metadata
-      description: Performs a partial update. Only include the fields you wish to change (cellSpaceName, level, or poi).
+      description: Performs a partial update. Only include the fields you wish to change (cellSpaceName, poi, or boundedBy).
       operationId: patchCellSpace
       requestBody:
         content:
@@ -1193,11 +1193,7 @@ paths:
               $ref: '#/components/schemas/cellSpaceUpdate'
       responses:
         '200':
-          description: Success. Returns the updated CellSpace.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/cellSpace'
+          description: Updated successfully.
         '400':
           $ref: '#/components/responses/badRequest'
         '401':
@@ -1211,12 +1207,13 @@ paths:
     delete:
       tags:
         - PrimalSpaceLayer
-      summary: delete a cell space
+      summary: delete a cellSpace or cellBoundary
       description: |-
-        Permanently removes the CellSpace. 
+        Permanently removes the CellSpace or CellBoundary.
+
         **Cleanup:** This triggers a cascading delete of the associated DualSpace Node and invalidates connected Edges.
         Also DELETES the `interLayerConnection`(s) referencing the deleted `primalSpaceMember`.
-      operationId: deleteCellSpace
+      operationId: deleteCellSpaceMember
       responses:
         '204':
           description: Deleted successfully.
@@ -1241,8 +1238,8 @@ paths:
         - Services
       summary: Retrieve a CellSpace bounded by a specific CellBoundary
       description: |-
-        Retrieves the `CellSpace` (Primal Space) that is physically bounded by the specified `CellBoundary` identifier (`mId`).
-        If the `mId` doen't refer to a `cellBoundary`, it returns a 404 error (even for cellSpaces).
+        Retrieves the `CellSpace` (Primal Space) that is bounded by the specified `CellBoundary` identifier (`mId`).
+        If the `mId` doesn't refer to a `cellBoundary`, it returns a 404 error (even for cellSpaces).
 
         **Topological Logic:**
         In IndoorGML, a `CellBoundary` defines the geometric and semantic limit of a 3D or 2D `CellSpace`. This endpoint performs a reverse-lookup to identify which space is defined by the provided boundary.
@@ -1291,7 +1288,6 @@ paths:
         Ideal for calculating service areas, identifying adjacent rooms, or determining the scope of sensor coverage within an indoor environment.
       operationId: getConnectedNodes
       parameters:
-        - $ref: '#/components/parameters/limit'
         - $ref: '#/components/parameters/hop'
       responses:
         '200':
@@ -1671,33 +1667,31 @@ paths:
     get:
       tags:
         - DualSpaceLayer
-      summary: Get a specific Edge
+      summary: Get a specific Node or Edge.
       description: |-
-        Retrieves a single Edge from the Dual Space. 
-        An Edge represents the topological adjacency/connectivity between two States (Nodes). 
-        **Dependency Logic:** Includes a `duality` link to the corresponding CellBoundary in the Primal Space.
-      operationId: getEdge
+        Retrieves a single Node or Edge from the Dual Space. 
+        A Node represents the abstraction of the cellSpace in Primal Space.
+        **Dependency Logic:** Includes a `duality` link to the corresponding CellSpace in the Primal Space.
+        An Edge represents the topological adjacency/connectivity between two Nodes. 
+      operationId: getDualMember
       responses:
         '200':
-          description: Success. Returns the requested Edge.
+          description: Success. Returns the requested Member.
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/edge'
+                oneOf:
+                  - $ref: '#/components/schemas/edge'
+                  - $ref: '#/components/schemas/node'
               example:
-                featureType: Edge
-                id: edge-101-100
-                connects:
-                  - node-101
-                  - node-100
-                weight: 1.5
+                featureType: Node
+                id: node-corridor
+                duality: cell-office-102
                 geometry:
-                  type: LineString
+                  type: Point
                   coordinates:
-                    - - 5
-                      - 5
-                    - - 15
-                      - 5
+                    - 15
+                    - 5
         '400':
           $ref: '#/components/responses/badRequest'
         '404':
@@ -1718,10 +1712,6 @@ paths:
       responses:
         '200':
           description: Successfully updated the edge weight.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/edge'
         '400':
           description: Bad Request (e.g., invalid weight value).
         '404':
@@ -1731,16 +1721,17 @@ paths:
     delete:
       tags:
         - DualSpaceLayer
-      summary: delete a specific edge
+      summary: delete a specific dualSpaceMember
       description: |-
-        Permanently removes the edge from the navigation network.
-        **Dependency Logic:** The server must update the `connects` array of the two Nodes previously linked by this edge to remove the reference.
-      operationId: deleteEdge
+        Permanently removes the Node or Edge from the Dual space.
+
+        **Cleanup:** Removing a specific node triggers a cascading delete of the its connected Edges and `interLayerConnection`(s).
+      operationId: deleteDualMember
       responses:
         '204':
           description: Successfully deleted.
         '404':
-          description: Edge ID not found.
+          description: some of path parameters are not found.
         '500':
           $ref: '#/components/responses/internalServerError'
 components:
@@ -3065,18 +3056,21 @@ components:
           cellSpaceName:
             type: string
             example: Conference Room A
-          level:
-            type: integer
-            example: 2
           poi:
             type: string
             example: Restroom
+          boundedBy:
+            type: array
+            items:
+              type: string
+            example:
+              - B1
       example:
         cellSpaceName: Executive Office
         poi: true
         boundedBy:
-          - '#boundary-wall-01'
-          - '#boundary-wall-02'
+          - boundary-wall-01
+          - boundary-wall-02
     connectedResults:
       title: ConnectedNodesResult
       type: object
@@ -3103,7 +3097,6 @@ components:
               - hop
               - id
               - featureType
-              - geometry
               - duality
               - connects
             properties:
@@ -3121,7 +3114,6 @@ components:
                 $ref: '#/components/schemas/Point'
               duality:
                 type: string
-                nullable: true
                 description: ID of the corresponding CellSpace in primal space.
               connects:
                 type: array
