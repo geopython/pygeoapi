@@ -4,9 +4,11 @@
 #          John A Stevenson <jostev@bgs.ac.uk>
 #          Colin Blackburn <colb@bgs.ac.uk>
 #          Bernhard Mallinger <bernhard.mallinger@eox.at>
+#          Francesco Bartoli <xbartolone@gmail.com>
 #
 # Copyright (c) 2024 Tom Kralidis
 # Copyright (c) 2022 John A Stevenson and Colin Blackburn
+# Copyright (c) 2026 Francesco Bartoli
 #
 # Permission is hereby granted, free of charge, to any person
 # obtaining a copy of this software and associated documentation
@@ -39,10 +41,10 @@ from pyld import jsonld
 import pytest
 
 from pygeoapi.api import (
-    API, APIRequest, FORMAT_TYPES, F_HTML, F_JSON, F_JSONLD, F_GZIP,
-    __version__, validate_bbox, validate_datetime, evaluate_limit,
-    validate_subset, landing_page, openapi_, conformance, describe_collections,
-    get_collection_schema,
+    API, APIRequest, CONFORMANCE_CLASSES, FORMAT_TYPES, F_HTML, F_JSON,
+    F_JSONLD, F_GZIP, __version__, validate_bbox, validate_datetime,
+    evaluate_limit, validate_subset, landing_page, openapi_, conformance,
+    describe_collections, get_collection_schema,
 )
 from pygeoapi.util import yaml_load, get_api_rules, get_base_url
 
@@ -565,6 +567,37 @@ def test_conformance(config, api_):
     assert rsp_headers['Content-Type'] == FORMAT_TYPES[F_HTML]
     # No language requested: should be set to default from YAML
     assert rsp_headers['Content-Language'] == 'en-US'
+
+
+def test_conformance_does_not_mutate_global_list(config, api_):
+    """Test conformance method does not mutate CONFORMANCE_CLASSES.
+
+    This test verifies that the global CONFORMANCE_CLASSES list is not
+    mutated by calls to the conformance function. The base conformance
+    classes should remain unchanged after multiple calls.
+    """
+
+    # Store the original length and content of the global list
+    original_length = len(CONFORMANCE_CLASSES)
+    original_classes = list(CONFORMANCE_CLASSES)
+
+    req = mock_api_request()
+
+    # Make multiple calls to conformance
+    for _ in range(3):
+        conformance(api_, req)
+
+    # The global list should NOT have been mutated
+    assert len(CONFORMANCE_CLASSES) == original_length, (
+        f'Global CONFORMANCE_CLASSES was mutated! '
+        f'Original length: {original_length}, '
+        f'Current length: {len(CONFORMANCE_CLASSES)}. '
+        f'The conformance() function should create a copy of the list '
+        f'before extending it.'
+    )
+    assert CONFORMANCE_CLASSES == original_classes, (
+        'Global CONFORMANCE_CLASSES content was modified'
+    )
 
 
 def test_describe_collections(config, api_):
