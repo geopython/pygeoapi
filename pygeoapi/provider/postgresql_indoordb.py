@@ -2427,7 +2427,10 @@ class PostgresIndoorDB:
                             ST_GeomFromText(%s, 0), %s, %s
                         ) RETURNING id, id_str
                     """
-                    
+                    if not data.get('weight') or float(data.get('weight')) < 0: 
+                        msg = "weight is required and cannot be negative."
+                        LOGGER.debug(msg)
+                        raise ValueError(msg)
                     cur.execute(insert_edge_sql, (
                         id_str, layer_row['collection_id'], layer_row['indoorfeature_id'], layer_row['id'],
                         geom_wkt, data.get('weight', 0.0), primal_id

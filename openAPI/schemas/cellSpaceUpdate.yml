@@ -6,11 +6,13 @@ CellSpaceUpdate:
         cellSpaceName:
           type: string
           example: "Conference Room A"
-        level:
-          type: integer
-          example: 2
         poi:
           type: string
           example: "Restroom"
+        boundedBy:
+          type: array
+          items: 
+            type: string
+          example: ["B1"]
 example:
   $ref: '../examples/cellSpaceUpdate.json'
