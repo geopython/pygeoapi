@@ -568,11 +568,11 @@ def test_conformance(config, api_):
 
 
 def test_conformance_does_not_mutate_global_list(config, api_):
-    """Test the conformance function does not mutate the global CONFORMANCE_CLASSES.
+    """Test conformance method does not mutate CONFORMANCE_CLASSES.
 
-    This test verifies that the global CONFORMANCE_CLASSES list is not mutated
-    by calls to the conformance function. The base conformance classes should
-    remain unchanged after multiple calls.
+    This test verifies that the global CONFORMANCE_CLASSES list is not
+    mutated by calls to the conformance function. The base conformance
+    classes should remain unchanged after multiple calls.
     """
     from pygeoapi.api import CONFORMANCE_CLASSES
 
