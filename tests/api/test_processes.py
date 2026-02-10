@@ -331,8 +331,10 @@ def test_execute_process(config, api_):
     req = mock_api_request(data=req_body_1, HTTP_Prefer='respond-async')
     rsp_headers, code, response = execute_process(api_, req, 'hello-world')
 
-    assert 'Location' in rsp_headers
+    response = json.loads(response)
     assert code == HTTPStatus.CREATED
+    
+    assert 'Location' in rsp_headers
     assert isinstance(response, dict)
     assert 'jobID' in response
     assert 'type' in response
