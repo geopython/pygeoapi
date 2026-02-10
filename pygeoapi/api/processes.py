@@ -535,6 +535,7 @@ def execute_process(api: API, request: APIRequest,
             'type': 'process',
             'status': status.value
         }
+        response2 = to_json(response2, pretty_print_)
 
     if api.pubsub_client is not None:
         LOGGER.debug('Publishing message')
