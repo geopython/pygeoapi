@@ -333,7 +333,7 @@ def test_execute_process(config, api_):
 
     response = json.loads(response)
     assert code == HTTPStatus.CREATED
-    
+
     assert 'Location' in rsp_headers
     assert isinstance(response, dict)
     assert 'jobID' in response
