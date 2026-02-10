@@ -49,6 +49,7 @@
     <div class="block">
       <div class="label">Overlay query result</div>
       <input id="fileResult" type="file"/>
+      <button id="query-upload-button" style="margin-top:8px;">Process File</button>
       <div id="statusResult" style="margin-top:8px;">No result loaded.</div>
       <div class="checkrow" style="margin-top:8px;">
         <input id="toggleResult" type="checkbox" checked/>
@@ -59,6 +60,7 @@
     <div class="block">
       <div class="label">Route result</div>
       <input id="fileRoute" type="file"/>
+      <button id="route-upload-button" style="margin-top:8px;">Process File</button>
       <div id="statusRoute" style="margin-top:8px;">No route loaded.</div>
 
       <div class="checkrow"><input id="toggleRoute" type="checkbox" checked/> Show route</div>
@@ -69,7 +71,7 @@
 
     <div class="block">
       <div class="label">Options</div>
-      <div class="row">
+      <div id="tabs">
         <button id="fit">Fit view</button>
         <button id="reset">Reset</button>
       </div>

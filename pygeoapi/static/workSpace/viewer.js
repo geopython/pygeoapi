@@ -35,6 +35,10 @@ function buildBaseModel(indoorjson) {
   const levels = new Set();
   const byLevel3d = new Map();
   const byLevel2d = new Map();
+  const layers = indoorjson.layers || indoorjson.indoorFeatures?.layers || [];
+  const thematicLayerCount = Array.isArray(layers) ? layers.length : 0;
+  const nodes = iterDualNodes(indoorjson);
+  const edges = iterDualEdges(indoorjson);
 
   const addLevel = (lvl) => {
     levels.add(lvl);
@@ -85,11 +89,18 @@ function buildBaseModel(indoorjson) {
   }
 
   return {
+    _src: indoorjson,
     levels: Array.from(levels).sort(),
     byLevel3d,
     byLevel2d,
-    dualNodes: iterDualNodes(indoorjson),
-    dualEdges: iterDualEdges(indoorjson)
+    dualNodes: nodes,
+    dualEdges: edges,
+    stats: {
+      thematicLayers: thematicLayerCount,
+      cellSpaces: cells.length,
+      nodes: nodes.length,
+      edges: edges.length
+    }
   };
 }
 
@@ -111,26 +122,103 @@ function renderAll() {
 
 function render3D() {
   const traces = [];
-  // Use a simple color palette or let Plotly auto-color
+  if (!MODEL) return;
+
+  let zMin = -Infinity;
+  let zMax = Infinity;
+
+  // 1. Calculate Z-Bounds for the CURRENT_LEVEL
+  if (CURRENT_LEVEL !== "__all__") {
+    const base = MODEL.byLevel3d.get(CURRENT_LEVEL);
+    if (base && base.z.length > 0) {
+      // Find the min and max Z of the floor's 3D rooms
+      const validZ = base.z.filter(v => v !== null && v !== undefined);
+      zMin = Math.min(...validZ);
+      zMax = Math.max(...validZ);
+      
+      // Padding: allows nodes slightly above or below the floor plane to show
+      const pad = 0.1; 
+      zMin -= pad;
+      // zMax += pad;
+    }
+  }
+
+  // 2. Mesh Rendering (Rooms)
   for (const [lvl, s] of MODEL.byLevel3d.entries()) {
     if (!s || !s.i.length) continue;
-    
     traces.push({
       type: "mesh3d",
       name: lvl,
       x: s.x, y: s.y, z: s.z,
       i: s.i, j: s.j, k: s.k,
       opacity: 0.5,
-      // Removing hardcoded facecolor lets Plotly give each level a unique color
       hoverinfo: "name",
       visible: (CURRENT_LEVEL === "__all__" || CURRENT_LEVEL === lvl)
     });
   }
 
+  // 3. Dual Graph Rendering (Filtered)
+  if (SHOW_DUAL && MODEL.dualNodes && MODEL.dualEdges) {
+    const nx = [], ny = [], nz = [];
+    const ex = [], ey = [], ez = [];
+
+    // Filter Nodes by Z-range
+    MODEL.dualNodes.forEach(n => {
+      const p = n.geometry.coordinates;
+      const z = p[2] || 0;
+      if (CURRENT_LEVEL === "__all__" || (z >= zMin && z < zMax)) {
+        nx.push(p[0]); ny.push(p[1]); nz.push(z);
+      }
+    });
+
+    // Filter Edges by Z-range
+    MODEL.dualEdges.forEach(edge => {
+    const coords = edge.geometry.coordinates; // This is [[x,y,z], [x,y,z], [x,y,z]...]
+    if (!Array.isArray(coords) || coords.length < 2) return;
+
+    // 1. Check if ANY point in this LineString is within the Z-range
+  const isInRange = CURRENT_LEVEL === "__all__" || coords.some(p => {
+    const z = p[2] || 0;
+    return z >= zMin && z < zMax;
+  });
+
+  // 2. If it's in range, render the whole thing
+  if (isInRange) {
+    for (const p of coords) {
+      ex.push(p[0]);
+      ey.push(p[1]);
+      ez.push(p[2] || 0);
+    }
+    // 3. Lift the pen after the full line is drawn
+    ex.push(null);
+    ey.push(null);
+    ez.push(null);
+  }
+});
+
+    // Push Nodes Trace
+    if (nx.length) {
+      traces.push({
+        type: "scatter3d", mode: "markers", name: "Nodes",
+        x: nx, y: ny, z: nz,
+        marker: { size: 4, color: "#f1c40f" }
+      });
+    }
+
+    // Push Edges Trace
+    if (ex.length) {
+      traces.push({
+        type: "scatter3d", mode: "lines", name: "Edges",
+        x: ex, y: ey, z: ez,
+        line: { color: "#e74c3c", width: 4 }
+      });
+    }
+  }
+
   const layout = {
     margin: { l: 0, r: 0, t: 30, b: 0 },
     scene: { aspectmode: "data" },
-    showlegend: true // Enable legend so you can see which color is which level
+    showlegend: true
   };
 
   Plotly.newPlot(plot3d, traces, layout);
@@ -187,9 +275,20 @@ uploadButton.addEventListener("click", async () => {
   try {
     statusDiv.innerText = "Processing...";
     const json = JSON.parse(await file.text());
+    
     MODEL = buildBaseModel(json);
     renderAll();
-    statusDiv.innerText = `Loaded ${file.name}`;
+
+    // Updated status message with notation
+    const s = MODEL.stats;
+    statusDiv.innerHTML = `
+      <strong>Loaded: ${file.name}</strong><br>
+      Layers: ${s.thematicLayers} | 
+      Cells: ${s.cellSpaces} | 
+      Nodes: ${s.nodes} | 
+      Edges: ${s.edges}
+    `;
+    
   } catch (err) {
     console.error(err);
     statusDiv.innerText = "Error parsing file.";
@@ -231,4 +330,12 @@ document.getElementById("level").addEventListener("change", (e) => {
     render3D();
     render2D();
   }
+});
+
+/* ---------- Dual View Toggle ---------- */
+const toggleDual = document.getElementById("toggleDual");
+
+toggleDual.addEventListener("change", (e) => {
+  SHOW_DUAL = e.target.checked; // Update your global state
+  renderAll();                  // Re-run the render loop
 });
