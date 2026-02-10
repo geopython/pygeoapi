@@ -359,7 +359,7 @@ class PostgresIndoorDB:
             interlayer_connections = []
             # Initialize Skeleton
             result_feature = {
-                "featureType": "Feature",
+                "type": "Feature",
                 "id": feature_id_str,
                 "geometry": geometry,
                 "properties": properties, # Standard metadata properties
@@ -430,8 +430,8 @@ class PostgresIndoorDB:
             
             result_indoorfeature = {
                 "featureType": "IndoorFeatures",
-                    "layers": thematic_layers,
-                    "layerConnections": interlayer_connections
+                "layers": thematic_layers,
+                "layerConnections": interlayer_connections
             }
             result_feature["IndoorFeatures"] = result_indoorfeature
         
@@ -758,6 +758,8 @@ class PostgresIndoorDB:
                 cur.execute(sql_meta, (collection_id, feature_id, layer_id))
 
                 row = cur.fetchone()
+                if not row:
+                    return None
                 l_pk, id, theme, is_logical, is_directed, sematic_extension, minx, miny, maxx, maxy = row
 
                 if minx is not None:
@@ -1045,7 +1047,7 @@ class PostgresIndoorDB:
                     p_creation_datetime, p_termination_datetime,
                     d_creation_datetime, d_termination_datetime)
                     VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
-                    RETURNING id
+                    RETURNING id, id_str
                     """,
                     (
                         layer_data.get('id'),
@@ -1072,7 +1074,7 @@ class PostgresIndoorDB:
                 # Insert Dual Members (Nodes/Edges)
                 self._post_dual_members(ifeature['collection_id'], ifeature['id'], layer_pk['id'], dual, d_c, d_b)   
 
-                return True
+                return layer_pk['id_str']
             except Exception as e:
                 # 5. FIX: Rollback on any error (lookup, validation, or insert)
                 #self.connection.rollback()
@@ -1326,10 +1328,13 @@ class PostgresIndoorDB:
         """
         try:
             # Call the internal logic
-            success = self._post_thematic_layer(collection_id, feature_id, layer_data)
+            result = self._post_thematic_layer(collection_id, feature_id, layer_data)
                 
             # Commit the transaction if successful
-            if success: self.connection.commit()
+            if result: 
+                self.connection.commit()
+
+                return result
             else:
                 raise Exception("Internal Server error")
             
@@ -1380,7 +1385,7 @@ class PostgresIndoorDB:
                 cur.execute("DELETE FROM thematiclayer WHERE id = %s", (layer_pk,))
             
                 self.connection.commit()
-            
+                return True
             except Exception as e:
                 self.connection.rollback()
                 # Re-raise the exception to be handled by the API (returns 500 or 400)
@@ -1809,7 +1814,7 @@ class PostgresIndoorDB:
                     FROM thematiclayer t
                     JOIN collection c ON t.collection_id = c.id
                     JOIN indoorfeature i ON t.indoorfeature_id = i.id
-                    WHERE t.id_str = %s and c.id_str = %s, i.id_str = %s
+                    WHERE t.id_str = %s and c.id_str = %s and i.id_str = %s
                 """
                 cur.execute(lookup_sql, (layer_str, collection_str, feature_str))
                 layer_row = cur.fetchone()
@@ -2243,9 +2248,10 @@ class PostgresIndoorDB:
                     cur.execute(update_sql, tuple(values))
 
                 # --- D. Handle 'boundedBy' Relationship ---
+                raw_bounds = []
                 if 'boundedBy' in data:
-                    raw_bounds = data['boundedBy'].split[':'][-1] # e.g., ["a:b:c"]
-                    
+                    for bounds in data['boundedBy']:
+                        raw_bounds.append(bounds.split(':')[-1]) # e.g., ["a:b:c"]
                     # 1. Validation: Ensure all new boundaries exist
                     if raw_bounds:
                         check_refs = list(set(raw_bounds))
@@ -2258,6 +2264,8 @@ class PostgresIndoorDB:
                         if len(rows) != len(check_refs):
                             # Rollback is handled by the except block below
                             print("Validation Failed: One or more boundaries do not exist.")
+                            print(rows)
+                            print(check_refs)
                             raise ValueError("Invalid Boundary References")
                         else:
                             for row in rows:  # if boundary already bounds another cell space, error is occured.
@@ -2298,7 +2306,7 @@ class PostgresIndoorDB:
                     FROM thematiclayer t
                     JOIN collection c ON t.collection_id = c.id
                     JOIN indoorfeature i ON t.indoorfeature_id = i.id
-                    WHERE t.id_str = %s and c.id_str = %s, i.id_str = %s
+                    WHERE t.id_str = %s and c.id_str = %s and i.id_str = %s
                 """
                 cur.execute(lookup_sql, (layer_str, collection_str, feature_str))
                 layer_row = cur.fetchone()
@@ -2309,7 +2317,7 @@ class PostgresIndoorDB:
                 f_type = data.get('featureType')
                 id_str = data.get('id')
                 duplicate_sql = """
-                    SELECT id.str
+                    SELECT id_str
                     FROM cell_space_n_boundary 
                     WHERE indoorfeature_id = %s AND id_str = %s
                 """
@@ -2427,7 +2435,10 @@ class PostgresIndoorDB:
                             ST_GeomFromText(%s, 0), %s, %s
                         ) RETURNING id, id_str
                     """
-                    
+                    if not data.get('weight') or float(data.get('weight')) < 0: 
+                        msg = "weight is required and cannot be negative."
+                        LOGGER.debug(msg)
+                        raise ValueError(msg)
                     cur.execute(insert_edge_sql, (
                         id_str, layer_row['collection_id'], layer_row['indoorfeature_id'], layer_row['id'],
                         geom_wkt, data.get('weight', 0.0), primal_id
@@ -2858,7 +2869,7 @@ class PostgresIndoorDB:
             if not row:
                 return {}
             
-            primal = self._get_primal_geometric_query(row['id'], row['primalspace_id_str'], row['p_creation_datetime'], op=op, geometry=geometry, level=level)
+            primal = self._get_primal_geometric_query(row['id'], row['primalspace_id_str'], op=op, geometry=geometry, level=level)
             dual = self._get_dual_space(row['id'], row['dualspace_id_str'], row['d_creation_datetime'], row['is_logical'], row['is_directed'])
             result_layer = {
                 "id": row['id_str'],
@@ -2872,7 +2883,7 @@ class PostgresIndoorDB:
 
             return result_layer
 
-    def _get_primal_geometric_query(self, layer_id, pSpace_id, p_create, op: str, geometry: str, level: str = None):
+    def _get_primal_geometric_query(self, layer_id, pSpace_id, op: str, geometry: str, level: str = None, p_create=None):
         primal_space = {
             "id": pSpace_id, 
             "featureType": "PrimalSpaceLayer",
@@ -2939,26 +2950,25 @@ class PostgresIndoorDB:
             
             sql_bounds = """
                 SELECT c.id, c.id_str, c.external_reference, 
-                ST_AsText(c."2D_geometry", 0), c."3D_geometry", n.id_str, c.is_virtual
+                ST_AsText(c."2D_geometry", 0) as geom_2d, c."3D_geometry" as geom_3d, n.id_str as duality, c.is_virtual
                 FROM cell_space_n_boundary c
                 LEFT JOIN node_n_edge n ON c.duality_id = n.id
                 WHERE c.id_str = ANY(%s) AND c.thematiclayer_id = %s
             """
             cur.execute(sql_bounds, (boundary_id_list, layer_id))
-                
-            for b_row in cur.fetchall():
-                b_pk, b_id, ext, b_geom2d, b_geom3d, duality, is_virtual = b_row
+            boundary_rows = cur.fetchall()  
+            for row in boundary_rows:
                 boundary = {
-                    "id": b_id,
+                    "id": row['id_str'],
                     "featureType": "CellBoundary",
-                    "duality": duality,
-                    "isVirtual": is_virtual,
+                    "duality": row['duality'],
+                    "isVirtual": row['is_virtual'],
                     "cellBoundaryGeom": {
-                        "geometry2D": self.wkt_to_json(b_geom2d),
-                        "geometry3D": b_geom3d
+                        "geometry2D": self.wkt_to_json(row['geom_2d']),
+                        "geometry3D": row['geom_3d']
                     }
                 }
-                if ext: boundary["externalReference"] = {"uri": ext}
+                if row['external_reference']: boundary["externalReference"] = {"uri": row['external_reference']}
                 primal_space["cellBoundaryMember"].append(boundary)
 
         return primal_space

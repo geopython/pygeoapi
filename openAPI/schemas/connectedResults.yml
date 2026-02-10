@@ -18,7 +18,7 @@ properties:
     description: List of nodes reachable within the specified hop distance.
     items:
       type: object
-      required: [hop, id, featureType, geometry, duality, connects]
+      required: [hop, id, featureType, duality, connects]
       properties:
         hop:
           type: integer
@@ -33,7 +33,6 @@ properties:
           $ref: 'https://beta.schemas.opengis.net/json-fg/geometry-object.json#/$defs/Point'
         duality:
           type: string
-          nullable: true
           description: ID of the corresponding CellSpace in primal space.
         connects:
           type: array
