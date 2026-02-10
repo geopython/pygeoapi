@@ -567,6 +567,38 @@ def test_conformance(config, api_):
     assert rsp_headers['Content-Language'] == 'en-US'
 
 
+def test_conformance_does_not_mutate_global_list(config, api_):
+    """Test the conformance function does not mutate the global CONFORMANCE_CLASSES.
+
+    This test verifies that the global CONFORMANCE_CLASSES list is not mutated
+    by calls to the conformance function. The base conformance classes should
+    remain unchanged after multiple calls.
+    """
+    from pygeoapi.api import CONFORMANCE_CLASSES
+
+    # Store the original length and content of the global list
+    original_length = len(CONFORMANCE_CLASSES)
+    original_classes = list(CONFORMANCE_CLASSES)
+
+    req = mock_api_request()
+
+    # Make multiple calls to conformance
+    for _ in range(3):
+        conformance(api_, req)
+
+    # The global list should NOT have been mutated
+    assert len(CONFORMANCE_CLASSES) == original_length, (
+        f'Global CONFORMANCE_CLASSES was mutated! '
+        f'Original length: {original_length}, '
+        f'Current length: {len(CONFORMANCE_CLASSES)}. '
+        f'The conformance() function should create a copy of the list '
+        f'before extending it.'
+    )
+    assert CONFORMANCE_CLASSES == original_classes, (
+        'Global CONFORMANCE_CLASSES content was modified'
+    )
+
+
 def test_describe_collections(config, api_):
     req = mock_api_request({"f": "html"})
     rsp_headers, code, response = describe_collections(api_, req)

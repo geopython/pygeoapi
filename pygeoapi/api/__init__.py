@@ -886,7 +886,7 @@ def conformance(api: API, request: APIRequest) -> Tuple[dict, int, str]:
 
     apis_dict = all_apis()
 
-    conformance_list = CONFORMANCE_CLASSES
+    conformance_list = list(CONFORMANCE_CLASSES)
 
     for key, value in api.config['resources'].items():
         if value['type'] == 'process':
