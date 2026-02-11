@@ -117,6 +117,20 @@ def test_get(fixture, config):
     assert 'Dinagat' in results['properties']['name']
 
 
+def test_no_count(fixture, config):
+    p = GeoJSONProvider(config)
+
+    results = p.query()
+    assert results['numberMatched'] == 1
+    assert results['numberReturned'] == 1
+
+    config['count'] = False
+    p = GeoJSONProvider(config)
+    results = p.query()
+    assert 'numberMatched' not in results
+    assert results['numberReturned'] == 1
+
+
 def test_get_not_existing_item_raise_exception(
     fixture, config
 ):

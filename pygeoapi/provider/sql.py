@@ -231,6 +231,7 @@ class GenericSQLProvider(BaseProvider):
 
             crs_transform_out = get_transform_from_spec(crs_transform_spec)
 
+            response['numberReturned'] = 0
             for item in (
                 results.order_by(*order_by_clauses).offset(offset).limit(limit)
             ):
