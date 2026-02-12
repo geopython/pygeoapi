@@ -1,6 +1,13 @@
 {
   "featureType": "IndoorFeatures",
   "id": "AIST_Waterfront_Center",
+  "geometry": {
+    "type": "Point",
+    "coordinates": [
+        300, 11
+    ]
+  },
+  "properties": {},
   "layers": [
     {
       "id": "TL-1",

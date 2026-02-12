@@ -58,3 +58,41 @@ export async function deleteIndoorFeature(colId, featureId) {
   // 204 No Content has no body, so we just return true
   return true; 
 }
+
+/** Fetch InterLayerConnections for a specific feature */
+export async function getInterLayerConnections(colId, featureId) {
+  const url = `${API_BASE}/collections/${colId}/items/${featureId}/interlayerconnections?f=json`;
+  const response = await fetch(url);
+  if (!response.ok) throw new Error(`Failed to load connections: ${response.status}`);
+  return await response.json(); // This returns the object containing layerConnections array
+}
+
+/** POST a new InterLayerConnection to a specific feature */
+export async function postInterLayerConnection(colId, featureId, jsonData) {
+  const url = `${API_BASE}/collections/${colId}/items/${featureId}/interlayerconnections`;
+  const response = await fetch(url, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(jsonData)
+  });
+
+  if (!response.ok) {
+    const errorText = await response.text();
+    throw new Error(`ILC Upload Failed (${response.status}): ${errorText}`);
+  }
+  return await response.json();
+}
+
+/** DELETE a specific InterLayerConnection */
+export async function deleteInterLayerConnection(colId, featureId, cnId) {
+  const url = `${API_BASE}/collections/${colId}/items/${featureId}/interlayerconnections/${cnId}`;
+  const response = await fetch(url, {
+    method: 'DELETE'
+  });
+
+  if (!response.ok) {
+    const errorText = await response.text();
+    throw new Error(`Delete Failed (${response.status}): ${errorText}`);
+  }
+  return true;
+}

@@ -18,6 +18,8 @@ let CURRENT_MODE = "3d";
 let SHOW_DUAL = false;
 let selectedCollectionId = null;
 let selectedFeatureId = null;
+let selectedFeatureData = null; // Store the fetched GeoJSON here
+let selectedILCId = null;
 
 const plot3d = document.getElementById("plot3d");
 const plot2d = document.getElementById("plot2d");
@@ -324,7 +326,7 @@ function renderCollections(collections) {
       
       selectedCollectionId = col.id;
       document.getElementById("collection-post-target-name").innerText = col.title;
-
+      document.getElementById("interLayerConnection-collection-name").innerText = col.title;
       // Call API
       try {
         apiStatus.textContent = `Listing items in ${col.id}...`;
@@ -371,25 +373,26 @@ function renderFeatures(features, colId) {
     btn.className = "db-item-btn";
     btn.innerHTML = `<strong>📍 ${f.id || "Unnamed"}</strong>`;
     btn.onclick = async () => {
+      // 1. UI Feedback: Highlight selection
+      document.querySelectorAll('.db-item-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
 
-      // SET THE DELETE TARGET
+      // 2. Set IDs for Delete and Post steps
       selectedFeatureId = f.id;
       document.getElementById("indoorFeature-delete-target-name").innerText = f.id;
-
+      document.getElementById("interLayerConnection-indoorFeature-name").innerText = f.id;
       try {
-        apiStatus.textContent = `Fetching ${f.id}...`;
-        const data = await api.getSingleFeature(colId, f.id);
-        apiLog.textContent = JSON.stringify(data, null, 2);
+        apiStatus.textContent = `Fetching ${f.id} data...`;
+        // Fetch the data and store it globally
+        selectedFeatureData = await api.getSingleFeature(colId, f.id);
         
-        // Your Geometry logic (keep in viewer.js or geometry.js)
-        if (data.IndoorFeatures) {
-          MODEL = buildBaseModel(data.IndoorFeatures); 
-          renderAll();
-        }
+        apiLog.textContent = JSON.stringify(selectedFeatureData, null, 2);
+        apiStatus.textContent = `Selected: ${f.id}. Click 'Visualize' to view.`;
       } catch (err) {
-        apiLog.textContent = "Error: " + err.message;
+        apiLog.textContent = "Error fetching feature: " + err.message;
       }
     };
+    
     dbList.appendChild(btn);
   });
 }
@@ -421,5 +424,167 @@ document.getElementById("indoorFeature-delete-button").addEventListener("click",
     } catch (err) {
       statusDiv.innerHTML = `<span style='color:red;'>❌ ${err.message}</span>`;
     }
+  }
+});
+
+// Visualie button handler
+document.getElementById("visualize").addEventListener("click", () => {
+  const status = document.getElementById("api-status-right");
+
+  if (!selectedFeatureData || !selectedFeatureData.IndoorFeatures) {
+    alert("Please select a feature from the list first!");
+    return;
+  }
+
+  try {
+    status.textContent = "Generating 3D Model...";
+    
+    // 1. Clear existing model if necessary (depends on your geometry.js)
+    // 2. Build the model from the stored data
+    MODEL = buildBaseModel(selectedFeatureData.IndoorFeatures); 
+    
+    // 3. Trigger the 3D Render
+    renderAll();
+    
+    status.textContent = `Visualizing: ${selectedFeatureId}`;
+  } catch (err) {
+    console.error("Visualization Error:", err);
+    status.textContent = "Error during visualization.";
+  }
+});
+
+document.getElementById("api-get-interLayerConnections").addEventListener("click", async () => {
+  const dbListILC = document.getElementById("interLayerConnection-db-list");
+  const status = document.getElementById("interLayerConnections-upload-status");
+
+  // 1. Validation: Do we have a feature selected from the sidebar?
+  if (!selectedCollectionId || !selectedFeatureId) {
+    dbListILC.innerHTML = "<div class='tiny' style='color:red;'>Select a Feature on the right first!</div>";
+    return;
+  }
+
+  try {
+    dbListILC.innerHTML = "<div class='tiny'>Loading...</div>";
+    
+    // 2. Fetch from API
+    const data = await api.getInterLayerConnections(selectedCollectionId, selectedFeatureId);
+    const connections = data.layerConnections || [];
+
+    // 3. Render the ILC list
+    renderILCList(connections);
+    
+    apiLog.textContent = JSON.stringify(data, null, 2);
+  } catch (err) {
+    dbListILC.innerHTML = `<div class='tiny' style='color:red;'>Error: ${err.message}</div>`;
+  }
+});
+
+/** Render the list of InterLayerConnections */
+function renderILCList(connections) {
+  const dbListILC = document.getElementById("interLayerConnection-db-list");
+  dbListILC.innerHTML = "";
+
+  if (connections.length === 0) {
+    dbListILC.innerHTML = '<div class="tiny">No InterLayerConnections found for this feature.</div>';
+    return;
+  }
+
+  connections.forEach(ilc => {
+    const btn = document.createElement("button");
+    btn.className = "db-item-btn";
+    
+    // ILCs link two layers, so let's show that in the label
+    const layers = ilc.connectedLayers ? ilc.connectedLayers.join(" ↔ ") : "Unknown Layers";
+    
+    btn.innerHTML = `
+      <strong>🔗 ${ilc.id}</strong><br>
+      <small>${layers}</small>
+    `;
+
+    btn.onclick = () => {
+      // Highlight selection
+      document.querySelectorAll('#interLayerConnection-db-list .db-item-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+
+      // Set target for DELETE
+      selectedILCId = ilc.id;
+      document.getElementById("interLayerConnections-delete-target-name").innerText = ilc.id;
+      
+      apiLog.textContent = JSON.stringify(ilc, null, 2);
+    };
+
+    dbListILC.appendChild(btn);
+  });
+}
+
+document.getElementById("interLayerConnections-upload-button").addEventListener("click", async () => {
+  const fileInput = document.getElementById("interLayerConnections-file-input");
+  const statusDiv = document.getElementById("interLayerConnections-upload-status");
+
+  // 1. Validation
+  if (!selectedCollectionId || !selectedFeatureId) {
+    statusDiv.innerHTML = "<span style='color:red;'>❌ Error: Select a Feature on the right sidebar first.</span>";
+    return;
+  }
+  if (fileInput.files.length === 0) {
+    statusDiv.innerHTML = "<span style='color:red;'>❌ Error: Please select a JSON file.</span>";
+    return;
+  }
+
+  try {
+    const file = fileInput.files[0];
+    const text = await file.text();
+    const jsonData = JSON.parse(text);
+
+    statusDiv.innerText = "📤 Uploading InterLayerConnection...";
+
+    // 2. Call API
+    const result = await api.postInterLayerConnection(selectedCollectionId, selectedFeatureId, jsonData);
+
+    // 3. Success UI
+    statusDiv.innerHTML = "<span style='color:green;'>✅ ILC uploaded successfully!</span>";
+    apiLog.textContent = JSON.stringify(result, null, 2);
+    
+    // Optional: Auto-refresh the ILC list to show the new connection
+    document.getElementById("api-get-interLayerConnections").click();
+
+  } catch (err) {
+    statusDiv.innerHTML = `<span style='color:red;'>❌ ${err.message}</span>`;
+    console.error(err);
+  }
+});
+
+document.getElementById("interLayerConnections-delete-button").addEventListener("click", async () => {
+  const statusDiv = document.getElementById("interLayerConnections-delete-status");
+
+  // 1. Validation: Ensure all levels of the hierarchy are selected
+  if (!selectedCollectionId || !selectedFeatureId || !selectedILCId) {
+    statusDiv.innerHTML = "<span style='color:red;'>❌ Error: Select a Collection, Feature, and Connection first.</span>";
+    return;
+  }
+
+  // 2. Confirmation
+  const confirmMsg = `Are you sure you want to delete InterLayerConnection: ${selectedILCId}?`;
+  if (!confirm(confirmMsg)) return;
+
+  try {
+    statusDiv.innerText = "🗑️ Deleting Connection...";
+
+    // 3. Call API
+    await api.deleteInterLayerConnection(selectedCollectionId, selectedFeatureId, selectedILCId);
+
+    // 4. Success UI
+    statusDiv.innerHTML = "<span style='color:green;'>✅ Connection deleted successfully.</span>";
+    document.getElementById("interLayerConnections-delete-target-name").innerText = "None";
+    
+    // Clear selection
+    selectedILCId = null;
+
+    // 5. Refresh the ILC list automatically
+    document.getElementById("api-get-interLayerConnections").click();
+
+  } catch (err) {
+    statusDiv.innerHTML = `<span style='color:red;'>❌ ${err.message}</span>`;
+    console.error(err);
   }
 });
