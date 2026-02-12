@@ -7,7 +7,7 @@ from functools import partial
 from dateutil.parser import parse as dateparse
 import pytz
 from pygeoapi.util import format_datetime
-from psycopg2.extras import Json, RealDictCursor
+from psycopg2.extras import Json, RealDictCursor, NamedTupleCursor
 import re
 
 LOGGER = logging.getLogger(__name__)
@@ -276,7 +276,6 @@ class PostgresIndoorDB:
 
             with self.connection.cursor() as cur:
                 # 3. Combined Query: Get Data + Total Count
-                # COUNT(*) OVER() calculates the total count BEFORE Limit/Offset are applied
                 sql = f"""
                     SELECT 
                         count(*) OVER() as full_count,
@@ -327,10 +326,8 @@ class PostgresIndoorDB:
             
     def get_feature(self, collection_id: str, feature_id:str, level:str=None, bbox:list=None):
         """
-        TODO: bbox filtering
-
         Retrieves the actual IndoorFeature when filtered.
-        - If 'level' is None: Returns only metadata (Lightweight).
+        - If 'bbox' and 'level' are None: Returns only metadata (Lightweight).
         - Primal Space (Cells/Boundaries): Filtered by 'level' if provided.
         - Dual Space (Nodes/Edges): ALWAYS returns all members (unfiltered).
         """
@@ -364,10 +361,7 @@ class PostgresIndoorDB:
                 "properties": properties, # Standard metadata properties
                 "links": []
             }
-            
-            # ---------------------------------------------------------
-                # CHECK: If no level and bbox provided, return Metadata only
-            # ---------------------------------------------------------
+            # If no level and bbox provided, return Metadata only
             if not level and not bbox:
                 LOGGER.debug("No query parameter")
                 return result_feature
@@ -908,7 +902,7 @@ class PostgresIndoorDB:
             
         return primal_space
     
-    def _get_dual_space(self, layer_pk:int, dualspace_id:str, d_create:str = None, d_termination:str = None, is_logical: bool = False, is_directed: bool = False):
+    def _get_dual_space(self, layer_pk:int, dualspace_id:str, d_create:str = None, d_terminate:str = None, is_logical: bool = False, is_directed: bool = False):
         """
         Helper: Fetches Nodes, Edges, and resolves 'connects' relationships.
         """
@@ -918,7 +912,7 @@ class PostgresIndoorDB:
             "isLogical": is_logical,
             "isDirected": is_directed,
             "creationDatetime": d_create,
-            "terminationDatetime": d_termination,
+            "terminationDatetime": d_terminate,
             "nodeMember": [],
             "edgeMember": []
         }
@@ -1016,7 +1010,7 @@ class PostgresIndoorDB:
         primal = layer_data.get('primalSpace', {})
         dual = layer_data.get('dualSpace', {})
         LOGGER.debug("Insert thematicLayer")
-        with self.connection.cursor(cursor_factory=RealDictCursor) as cur:
+        with self.connection.cursor() as cur:
             try:
                 cur.execute(
                     """
@@ -1049,12 +1043,12 @@ class PostgresIndoorDB:
                 layer_new = cur.fetchone()
             
                 # Insert Primal Members (Cells/Boundaries) - returns duality dict 
-                d_c, d_b = self._post_primal_members(collection_pk, feature_pk, layer_new['id'], primal)
+                d_c, d_b = self._post_primal_members(collection_pk, feature_pk, layer_new[0], primal)
                 
                 # Insert Dual Members (Nodes/Edges)
-                self._post_dual_members(collection_pk, feature_pk, layer_new['id'], dual, d_c, d_b)   
+                self._post_dual_members(collection_pk, feature_pk, layer_new[0], dual, d_c, d_b)   
 
-                return layer_new['id_str']
+                return layer_new[1]
             except Exception as e:
                 LOGGER.debug(f"Insert Error: {e}")
                 raise e   
@@ -1066,7 +1060,7 @@ class PostgresIndoorDB:
         dual_cell = {}
         dual_boundary = {}
         boundedBy = {}
-        with self.connection.cursor(cursor_factory=RealDictCursor) as cur:
+        with self.connection.cursor() as cur:
             # 1. Cells
             for cell in primal_data.get('cellSpaceMember', []):
                 geom_raw = cell.get('cellSpaceGeom', {})
@@ -1107,12 +1101,12 @@ class PostgresIndoorDB:
                 # Store cell pk for duality
                 cell_pk = cur.fetchone()
                 duality_of_cell = cell.get('duality').split(":")[-1]
-                dual_cell[duality_of_cell] = cell_pk['id']
+                dual_cell[duality_of_cell] = cell_pk[0]
                 # Store cell pk for boundedBy
                 bbs = cell.get('boundedBy')
                 if bbs:
                     for b in bbs:
-                        boundedBy[b.split(":")[-1]] = cell_pk['id']
+                        boundedBy[b.split(":")[-1]] = cell_pk[0]
         
             # 2. Boundaries
             for bound in primal_data.get('cellBoundaryMember', []):
@@ -1156,7 +1150,7 @@ class PostgresIndoorDB:
                 boundary_pk = cur.fetchone()
                 if bound.get('duality'):
                     duality_of_boundary = bound.get('duality').split(":")[-1]
-                    dual_boundary[duality_of_boundary] = boundary_pk['id']
+                    dual_boundary[duality_of_boundary] = boundary_pk[0]
             
             # If there is no 2D geometry but 3D, project 3D to 2D geometry
             LOGGER.debug("Project geometry 3D to 2D ")
@@ -1198,7 +1192,7 @@ class PostgresIndoorDB:
         # 1. Nodes
         LOGGER.debug("Creating Dual members ")
         node_pk_dict = {}
-        with self.connection.cursor(cursor_factory=RealDictCursor) as cur:
+        with self.connection.cursor() as cur:
             for node in dual_data.get('nodeMember', []):
                 duplicate_sql = """
                         SELECT c.id
@@ -1239,8 +1233,8 @@ class PostgresIndoorDB:
                         UPDATE cell_space_n_boundary 
                         SET duality_id = %s 
                         WHERE id = %s
-                    """, (node_pk['id'], dual_cell_pk))
-                node_pk_dict[node.get('id')] = node_pk['id']
+                    """, (node_pk[0], dual_cell_pk))
+                node_pk_dict[node.get('id')] = node_pk[0]
 
             # 2. Edges
             for edge in dual_data.get('edgeMember', []):
@@ -1258,7 +1252,6 @@ class PostgresIndoorDB:
                 
                 geom_edge = edge.get('geometry')
                 dual_boundary_pk = boundary_dict.get(edge.get('id'))
-                #LOGGER.debug(edge.get('id'))
                 sql = """
                     INSERT INTO node_n_edge 
                     (id_str, type, collection_id, indoorfeature_id, thematiclayer_id, geometry_val, weight, duality_id)
@@ -1281,7 +1274,7 @@ class PostgresIndoorDB:
                         UPDATE cell_space_n_boundary 
                         SET duality_id = %s 
                         WHERE id = %s
-                    """, (edge_pk['id'], dual_boundary_pk))
+                    """, (edge_pk[0], dual_boundary_pk))
                 
                 # Insert connects into connects table
                 sql = """
@@ -1307,7 +1300,7 @@ class PostgresIndoorDB:
         primal = layer_data.get('primalSpace', {})
         dual = layer_data.get('dualSpace', {})
         LOGGER.debug("Insert thematicLayer")
-        with self.connection.cursor(cursor_factory=RealDictCursor) as cur:
+        with self.connection.cursor() as cur:
             try:
                 # Check validation and Insert ThematicLayer
                 lookup_sql = """
@@ -1336,8 +1329,8 @@ class PostgresIndoorDB:
                     """,
                     (
                         layer_data.get('id'),
-                        ifeature['collection_id'],
-                        ifeature['id'],
+                        ifeature[1],
+                        ifeature[0],
                         layer_data.get('theme', 'Unknown').lower(),
                         layer_data.get('semanticExtension', False),
                         dual.get('isLogical', False),
@@ -1354,14 +1347,14 @@ class PostgresIndoorDB:
                 layer_new = cur.fetchone()
             
                 # Insert Primal Members (Cells/Boundaries) - returns duality dict 
-                d_c, d_b = self._post_primal_members(ifeature['collection_id'], ifeature['id'], layer_new['id'], primal)
+                d_c, d_b = self._post_primal_members(ifeature[1], ifeature[0], layer_new[0], primal)
                 
                 # Insert Dual Members (Nodes/Edges)
-                self._post_dual_members(ifeature['collection_id'], ifeature['id'], layer_new['id'], dual, d_c, d_b)   
+                self._post_dual_members(ifeature[1], ifeature[0], layer_new[0], dual, d_c, d_b)   
                 
                 self.connection.commit()
                 
-                return layer_new['id_str']
+                return layer_new[1]
                 
             except Exception as e:
                 self.connection.rollback()
@@ -1669,7 +1662,7 @@ class PostgresIndoorDB:
         3. Fetches Boundaries (Filtered by is_virtual AND parent Spaces).
         Returns: layer_row, spaces_list, boundaries_list
         """
-        with self.connection.cursor(cursor_factory=RealDictCursor) as cur:
+        with self.connection.cursor() as cur:
             # STEP 1: Fetch Layer Metadata
             layer_query = """
                 SELECT 
@@ -1688,13 +1681,13 @@ class PostgresIndoorDB:
             if not layer_row:
                 return {}
 
-            layer_pk = layer_row['id']
+            layer_pk = layer_row[0]
 
             primal_space = {
-                "id": layer_row['primalspace_id_str'], 
+                "id": layer_row[1], 
                 "featureType": "PrimalSpaceLayer",
-                "creationDatetime": layer_row['p_creation_datetime'],
-                "terminationDatetime": layer_row['p_termination_datetime'],
+                "creationDatetime": layer_row[2],
+                "terminationDatetime": layer_row[3],
                 "cellSpaceMember": [],
                 "cellBoundaryMember": []
             }
@@ -1797,7 +1790,7 @@ class PostgresIndoorDB:
         
     # Creates a CellSpace or CellBoundary member in the specified layer.
     def post_primal_member(self, collection_id:str, feature_id:str, layer_id:str, data):
-        with self.connection.cursor(cursor_factory=RealDictCursor) as cur:
+        with self.connection.cursor() as cur:
             try:  
                 # --- A. Lookup Context ---
                 lookup_sql = """
@@ -1819,7 +1812,7 @@ class PostgresIndoorDB:
                     FROM node_n_edge
                     WHERE indoorfeature_id = %s and id_str = %s
                 """
-                cur.execute(duplicate_sql, (layer_row['indoorfeature_id'], data.get('id')))
+                cur.execute(duplicate_sql, (layer_row[2], data.get('id')))
                 row = cur.fetchone()
                 if row:
                     LOGGER.debug(f"Invalid data value: {data.get('id')} is already exist.")
@@ -1863,7 +1856,7 @@ class PostgresIndoorDB:
                               AND thematiclayer_id = %s
                               AND type = 'boundary'
                         """
-                        cur.execute(check_sql, (unique_refs, layer_row['id']))
+                        cur.execute(check_sql, (unique_refs, layer_row[0]))
                         rows = cur.fetchall()
                         
                         if len(rows) != len(unique_refs):
@@ -1895,16 +1888,16 @@ class PostgresIndoorDB:
                             FROM node_n_edge
                             WHERE thematiclayer_id=%s AND id_str=%s
                         """
-                        cur.execute(sql_duality, (layer_row['id'], duality_id))
+                        cur.execute(sql_duality, (layer_row[0], duality_id))
                         row = cur.fetchone()
 
                         if not row:
                             LOGGER.debug(f"Validation Failed: Duality edge {duality_id} is not found")
                             return None
-                        elif row['duality_id']:
+                        elif row[1]:
                             LOGGER.debug(f"Validation Failed: Duality edge {duality_id} already has a duality")
                             return None
-                        duality_edge_pk = row['id']        
+                        duality_edge_pk = row[0]        
                 else:
                     LOGGER.debug(f"Invalid member type: {f_type}")
                     return None 
@@ -1924,14 +1917,14 @@ class PostgresIndoorDB:
                 """
                 
                 cur.execute(insert_query, (
-                    id_str, db_type, layer_row['collection_id'], layer_row['indoorfeature_id'], layer_row['id'],
+                    id_str, db_type, layer_row[1], layer_row[2], layer_row[0],
                     geom_2d_wkt, geom_3d_json,
                     cell_name, level, poi, is_virtual, external_ref, duality_edge_pk
                 ))
                 
                 new_row = cur.fetchone()
-                new_internal_id = new_row['id']
-                new_str_id = new_row['id_str']
+                new_internal_id = new_row[0]
+                new_str_id = new_row[1]
 
                 # --- E. Link Boundaries ---
                 if f_type == 'CellSpace' and update_bounded_by:
@@ -1944,7 +1937,7 @@ class PostgresIndoorDB:
                     cur.execute(update_boundaries_sql, (
                         new_internal_id, 
                         update_bounded_by,
-                        layer_row['id']
+                        layer_row[0]
                     ))
                 if f_type == 'CellBoundary' and duality_edge_pk:
                     update_edgeDuality_sql = """
@@ -2341,7 +2334,7 @@ class PostgresIndoorDB:
                     elif space_row['duality_id'] != None:
                         raise ValueError(f"Duality target '{clean_duality}' already has a duality.")
                     
-                    duality_id = space_row['id']
+                    space_id = space_row['id']
 
                     # 2. Insert Node
                     insert_node_sql = """
@@ -2355,13 +2348,13 @@ class PostgresIndoorDB:
                     """
                     cur.execute(insert_node_sql, (
                         id_str, layer_row['collection_id'], layer_row['indoorfeature_id'], layer_row['id'],
-                        geom_wkt, duality_id
+                        geom_wkt, space_id
                     ))
                     new_node = cur.fetchone()
 
                     # 3. Reverse Link: Update Space -> Point to Node
                     update_space_sql = "UPDATE cell_space_n_boundary SET duality_id = %s WHERE id = %s"
-                    cur.execute(update_space_sql, (new_node['id'], duality_id))
+                    cur.execute(update_space_sql, (new_node['id'], space_id))
                     
                     self.connection.commit()
                     return new_node['id_str']
@@ -2376,7 +2369,7 @@ class PostgresIndoorDB:
 
                     # 1. Duality is Optional for Edges
                     duality_ref = data.get('duality')
-                    primal_id = None
+                    boundary_id = None
                     
                     if duality_ref:
                         clean_duality = duality_ref.split(':')[-1]
@@ -2393,7 +2386,7 @@ class PostgresIndoorDB:
                         elif bound_row['duality_id'] != None:
                             raise ValueError(f"Duality target '{clean_duality}' already has a duality.")
 
-                        primal_id = bound_row['id']
+                        boundary_id = bound_row['id']
 
                     # 2. Resolve Connected Nodes (Handling Directionality!)
                     ref_source = connects[0].split(':')[-1]
@@ -2429,7 +2422,7 @@ class PostgresIndoorDB:
                         raise ValueError(msg)
                     cur.execute(insert_edge_sql, (
                         id_str, layer_row['collection_id'], layer_row['indoorfeature_id'], layer_row['id'],
-                        geom_wkt, data.get('weight', 0.0), primal_id
+                        geom_wkt, data.get('weight', 0.0), boundary_id
                     ))
                     new_edge = cur.fetchone()
 
@@ -2438,9 +2431,9 @@ class PostgresIndoorDB:
                     cur.execute(insert_link_sql, (source_id, target_id, new_edge['id']))
                     
                     # 5. Reverse Link (If duality existed)
-                    if primal_id:
+                    if boundary_id:
                         update_bound_sql = "UPDATE cell_space_n_boundary SET duality_id = %s WHERE id = %s"
-                        cur.execute(update_bound_sql, (new_edge['id'], primal_id))
+                        cur.execute(update_bound_sql, (new_edge['id'], boundary_id))
 
                     self.connection.commit()
                     return new_edge['id_str']
@@ -2453,7 +2446,7 @@ class PostgresIndoorDB:
                 # Re-raise so the API knows to return 400/500
                 raise ValueError(f"Failed to create member: {str(e)}")
 
-    def get_dual_members(self, collection_str, item_str, layer_str, min_weight=None, max_weight=None):
+    def get_dual_members(self, collection_id:str, feature_id:str, layer_id:str, min_weight:float=None, max_weight:float=None):
         """
         1. Fetches Layer Metadata.
         2. Fetches Members (Nodes & Edges).
@@ -2475,7 +2468,7 @@ class PostgresIndoorDB:
                     JOIN indoorfeature i ON t.indoorfeature_id = i.id
                     WHERE t.id_str = %s AND c.id_str = %s AND i.id_str = %s
                 """
-                cur.execute(meta_query, (layer_str, collection_str, item_str))
+                cur.execute(meta_query, (layer_id, collection_id, feature_id))
                 meta_row = cur.fetchone()
 
                 if not meta_row:
@@ -2513,13 +2506,13 @@ class PostgresIndoorDB:
                 # even if they have no weight.
                 
                 if min_weight:
-                    members_query += " AND (ne.type = 'node' OR ne.weight > %s)"
+                    members_query += " AND (ne.type = 'node' OR ne.weight >= %s)"
                     params.append(min_weight)
 
                 if max_weight:
-                    members_query += " AND (ne.type = 'node' OR ne.weight < %s)"
+                    members_query += " AND (ne.type = 'node' OR ne.weight <= %s)"
                     params.append(max_weight)
-
+           
                 cur.execute(members_query, tuple(params))
                 member_rows = cur.fetchall()
 
@@ -2621,7 +2614,7 @@ class PostgresIndoorDB:
                 print(f"Dual Layer Error: {e}")
                 return None
             
-    def get_dual_member(self, collection_str, item_str, layer_str, member_str):
+    def get_dual_member(self, collection_id:str, feature_id:str, layer_id:str, member_id:str):
         """
         Fetches a SINGLE Node or Edge.
         1. Resolves Duality String.
@@ -2659,7 +2652,7 @@ class PostgresIndoorDB:
                         WHERE t.id_str = %s AND col.id_str = %s AND i.id_str = %s
                     )
                 """
-                cur.execute(query, (member_str, layer_str, collection_str, item_str))
+                cur.execute(query, (member_id, layer_id, collection_id, feature_id))
                 result = cur.fetchone()
                 if not result: 
                     msg = "requested parameters are not found."
@@ -2677,7 +2670,7 @@ class PostgresIndoorDB:
                 connects = []
                 # 2. Add Edge-Specific Fields
                 if result['type'] == 'edge':
-                    response["weight"] = float(result['weight']) if result['weight'] else 0.0
+                    response["weight"] = result['weight']
                     
                     if result['source_ref']: connects.append(f"{result['source_ref']}")
                     if result['target_ref']: connects.append(f"{result['target_ref']}")
@@ -2693,7 +2686,7 @@ class PostgresIndoorDB:
                 LOGGER.debug(f"Get Dual Member Error: {e}")
                 raise e
 
-    def patch_edge(self, collection_str, item_str, layer_str, edge_str, data):
+    def patch_edge(self, collection_id:str, feature_id:str, layer_id:str, edge_id:str, data):
         """
         Updates an Edge's weight.
         Strictly prevents updates to Nodes.
@@ -2705,6 +2698,9 @@ class PostgresIndoorDB:
                 # 2. Filters by type='edge' to protect Nodes
                 # 3. Updates the weight
                 # 4. Returns the ID to confirm success
+                if not data.get('weight'):
+                    LOGGER.debug("Invalid input data.")
+                    return False
                 lookup_sql = """
                     SELECT n.id, n.id_str
                     FROM node_n_edge n
@@ -2713,7 +2709,7 @@ class PostgresIndoorDB:
                     JOIN thematiclayer t ON n.thematiclayer_id = t.id
                     WHERE n.id_str = %s AND t.id_str = %s AND c.id_str = %s AND i.id_str = %s AND type='edge'
                 """
-                cur.execute(lookup_sql, (edge_str, layer_str, collection_str, item_str))
+                cur.execute(lookup_sql, (edge_id, layer_id, collection_id, feature_id))
                 target_edge = cur.fetchone()
                 if not target_edge:
                     msg = "requested parameters are not found."
@@ -2740,7 +2736,7 @@ class PostgresIndoorDB:
                 print(f"Update Error: {e}")
                 return False
 
-    def delete_dual_member(self, collection_str, item_str, layer_str, member_str):
+    def delete_dual_member(self, collection_id:str, feature_id:str, layer_id:str, member_id:str):
         """
         Deletes a Node or Edge from a Thematic Layer.
         If you delete node, the connected edges are also deleted.
@@ -2764,7 +2760,7 @@ class PostgresIndoorDB:
                     JOIN indoorfeature i ON t.indoorfeature_id = i.id
                     WHERE t.id_str = %s AND c.id_str = %s AND i.id_str = %s
                 """
-                cur.execute(lookup_sql, (layer_str, collection_str, item_str))
+                cur.execute(lookup_sql, (layer_id, collection_id, feature_id))
                 layer_row = cur.fetchone()
                 if not layer_row: 
                     msg = "requested parameters are not found."
@@ -2773,11 +2769,11 @@ class PostgresIndoorDB:
                 
                 # --- Identify the Member ---
                 check_sql = "SELECT id, type FROM node_n_edge WHERE id_str = %s AND thematiclayer_id = %s"
-                cur.execute(check_sql, (member_str, layer_row['id']))
+                cur.execute(check_sql, (member_id, layer_row['id']))
                 target = cur.fetchone()
                 
                 if not target: 
-                    msg = f"{member_str} is not found."
+                    msg = f"{member_id} is not found."
                     LOGGER.debug(msg)
                     raise ValueError(msg)
 
@@ -2836,14 +2832,13 @@ class PostgresIndoorDB:
                 self.connection.rollback()
                 print(f"Delete Dual Member Error: {e}")
                 return False
-
-    
 # endregion      
 
 # region Services
-    def geometric_query(self, collection_str, item_str, layer_str, op=None, geometry=None, level=None):
+    def geometric_query(self, collection_id:str, feature_id:str, layer_id:str, op:str=None, geometry:str=None, level:str=None):
         with self.connection.cursor(cursor_factory=RealDictCursor) as cur:
             if not op or not geometry:
+                LOGGER.debug("The 'op' and 'geometry' parameter are required.")
                 return False
             lookup_sql = """
                 SELECT t.*
@@ -2852,13 +2847,15 @@ class PostgresIndoorDB:
                 JOIN indoorfeature i ON t.indoorfeature_id=i.id
                 WHERE c.id_str = %s AND i.id_str = %s AND t.id_str = %s
             """
-            cur.execute(lookup_sql, (collection_str, item_str, layer_str))
+            cur.execute(lookup_sql, (collection_id, feature_id, layer_id))
             row = cur.fetchone()
             if not row:
                 return {}
             
-            primal = self._get_primal_geometric_query(row['id'], row['primalspace_id_str'], op=op, geometry=geometry, level=level)
-            dual = self._get_dual_space(row['id'], row['dualspace_id_str'], row['d_creation_datetime'], row['is_logical'], row['is_directed'])
+            primal = self._get_primal_geometric_query(row['id'], row['primalspace_id_str'], op=op, geometry=geometry, level=level,
+                                                      p_create=row['p_creation_datetime'], p_terminate=row['p_termination_datetime'])
+            dual = self._get_dual_space(row['id'], row['dualspace_id_str'], d_create=row['d_creation_datetime'], 
+                                        d_terminate=row['d_termination_datetime'], is_logical=row['is_logical'], is_directed=row['is_directed'])
             result_layer = {
                 "id": row['id_str'],
                 "featureType": "ThematicLayer",
@@ -2871,11 +2868,12 @@ class PostgresIndoorDB:
 
             return result_layer
 
-    def _get_primal_geometric_query(self, layer_id, pSpace_id, op: str, geometry: str, level: str = None, p_create=None):
+    def _get_primal_geometric_query(self, layer_id:str, pSpace_id:str, op: str, geometry: str, level: str = None, p_create=None, p_terminate=None):
         primal_space = {
             "id": pSpace_id, 
             "featureType": "PrimalSpaceLayer",
-            "creationDatetime": p_create if p_create else None,
+            "creationDatetime": p_create,
+            "terminationDatetime": p_terminate,
             "cellSpaceMember": [],
             "cellBoundaryMember": []
         }
@@ -2961,7 +2959,7 @@ class PostgresIndoorDB:
 
         return primal_space
 
-    def routing_query(self, collection_str, item_str, layer_str, sn, dn):
+    def routing_query(self, collection_id:str, feature_id:str, layer_id:str, sn:str, dn:str):
         # This query gets the full sequence from pgRouting and joins it with your tables
         lookup_sql = """
             SELECT n.id, t.is_directed 
@@ -2973,12 +2971,12 @@ class PostgresIndoorDB:
         """
         
         with self.connection.cursor(cursor_factory=RealDictCursor) as cur:
-            cur.execute(lookup_sql, (sn, collection_str, item_str, layer_str))
+            cur.execute(lookup_sql, (sn, collection_id, feature_id, layer_id))
             start_node = cur.fetchone()
             if not start_node:
                 msg = "requested parameters are not found."
                 raise ValueError(msg)
-            cur.execute(lookup_sql, (dn, collection_str, item_str, layer_str))
+            cur.execute(lookup_sql, (dn, collection_id, feature_id, layer_id))
             destination_node = cur.fetchone()
             if not destination_node:
                 msg = "requested parameters are not found."
@@ -3050,7 +3048,7 @@ class PostgresIndoorDB:
                 
             return response
 
-    def bounding_cell_space(self, collection_str, item_str, layer_str, boundary_str):
+    def bounding_cell_space(self, collection_id:str, feature_id:str, layer_id:str, boundary_id:str):
         lookup_sql = """
             SELECT b.id, b.bounded_by_cell_id
             FROM cell_space_n_boundary b
@@ -3061,7 +3059,7 @@ class PostgresIndoorDB:
         """
         response = {}
         with self.connection.cursor(cursor_factory=RealDictCursor) as cur:
-            cur.execute(lookup_sql, (boundary_str, collection_str, item_str, layer_str))
+            cur.execute(lookup_sql, (boundary_id, collection_id, feature_id, layer_id))
             row = cur.fetchone()
 
             if not row:
@@ -3101,7 +3099,7 @@ class PostgresIndoorDB:
             
             return response
 
-    def connected_nodes(self, collection_str, item_str, layer_str, node_str, hop = 1):
+    def connected_nodes(self, collection_id:str, feature_id:str, layer_id:str, node_id:str, hop:int = 1):
         lookup_sql = """
             SELECT n.id 
             FROM node_n_edge n
@@ -3111,7 +3109,7 @@ class PostgresIndoorDB:
             WHERE n.id_str = %s AND c.id_str = %s AND i.id_str = %s AND t.id_str = %s
         """
         with self.connection.cursor(cursor_factory=RealDictCursor) as cur:
-            cur.execute(lookup_sql, (node_str, collection_str, item_str, layer_str))
+            cur.execute(lookup_sql, (node_id, collection_id, feature_id, layer_id))
             row = cur.fetchone()
             if not row:
                 msg = "requested parameters are not found."
@@ -3163,7 +3161,7 @@ class PostgresIndoorDB:
             nodes = cur.fetchall()
             response = {
                 "type": "ConnectedNodesResult",
-                "start_node": node_str,
+                "start_node": node_id,
                 "connected_nodes": [
                     {
                         "hop": node['current_hop'],
