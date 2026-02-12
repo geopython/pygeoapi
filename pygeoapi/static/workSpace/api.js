@@ -43,3 +43,18 @@ export async function postIndoorFeature(colId, jsonData) {
   }
   return await response.json();
 }
+
+/** DELETE an indoor feature */
+export async function deleteIndoorFeature(colId, featureId) {
+  const url = `${API_BASE}/collections/${colId}/items/${featureId}`;
+  const response = await fetch(url, {
+    method: 'DELETE'
+  });
+
+  if (!response.ok) {
+    const msg = await response.text();
+    throw new Error(msg || `Delete failed with status ${response.status}`);
+  }
+  // 204 No Content has no body, so we just return true
+  return true; 
+}

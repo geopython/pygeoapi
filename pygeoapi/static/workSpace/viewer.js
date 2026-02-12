@@ -17,6 +17,7 @@ let CURRENT_LEVEL = "__all__";
 let CURRENT_MODE = "3d";
 let SHOW_DUAL = false;
 let selectedCollectionId = null;
+let selectedFeatureId = null;
 
 const plot3d = document.getElementById("plot3d");
 const plot2d = document.getElementById("plot2d");
@@ -322,7 +323,7 @@ function renderCollections(collections) {
       btn.style.border = "2px solid #007bff"; 
       
       selectedCollectionId = col.id;
-      document.getElementById("target-name").innerText = col.title;
+      document.getElementById("collection-post-target-name").innerText = col.title;
 
       // Call API
       try {
@@ -339,9 +340,9 @@ function renderCollections(collections) {
 }
 
 // 3. POST Button Handler
-document.getElementById("upload-button").addEventListener("click", async () => {
+document.getElementById("indoorFeature-upload-button").addEventListener("click", async () => {
   const fileInput = document.getElementById("file-input");
-  const statusDiv = document.getElementById("status");
+  const statusDiv = document.getElementById("indoorFeature-upload-status");
 
   if (!selectedCollectionId || fileInput.files.length === 0) {
     statusDiv.innerHTML = "<span style='color:red;'>❌ Missing selection or file.</span>";
@@ -370,6 +371,11 @@ function renderFeatures(features, colId) {
     btn.className = "db-item-btn";
     btn.innerHTML = `<strong>📍 ${f.id || "Unnamed"}</strong>`;
     btn.onclick = async () => {
+
+      // SET THE DELETE TARGET
+      selectedFeatureId = f.id;
+      document.getElementById("indoorFeature-delete-target-name").innerText = f.id;
+
       try {
         apiStatus.textContent = `Fetching ${f.id}...`;
         const data = await api.getSingleFeature(colId, f.id);
@@ -387,3 +393,33 @@ function renderFeatures(features, colId) {
     dbList.appendChild(btn);
   });
 }
+
+// DELETE BUTTON HANDLER
+document.getElementById("indoorFeature-delete-button").addEventListener("click", async () => {
+  const statusDiv = document.getElementById("indoorFeature-delete-status");
+
+  if (!selectedCollectionId || !selectedFeatureId) {
+    statusDiv.innerHTML = "<span style='color:red;'>❌ Select a collection AND a feature first.</span>";
+    return;
+  }
+
+  const confirmDelete = confirm(`Are you sure you want to permanently delete feature: ${selectedFeatureId}? This will remove all associated layers.`);
+  
+  if (confirmDelete) {
+    try {
+      statusDiv.innerText = "🗑️ Deleting...";
+      await api.deleteIndoorFeature(selectedCollectionId, selectedFeatureId);
+      
+      statusDiv.innerHTML = "<span style='color:green;'>✅ Deleted successfully.</span>";
+      
+      // Reset UI
+      document.getElementById("indoorFeature-delete-target-name").innerText = "None";
+      selectedFeatureId = null;
+      
+      // Optional: Refresh the list so the deleted item disappears
+      // You can trigger the collection click again or clear the list
+    } catch (err) {
+      statusDiv.innerHTML = `<span style='color:red;'>❌ ${err.message}</span>`;
+    }
+  }
+});
