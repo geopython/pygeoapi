@@ -17,15 +17,17 @@
 <div id="app">
   <aside id="side">
     <div class="block">
-      <div class="label">POST an indoorJSON file to a collection</div>
-  
-      <input id="file-input" type="file" accept=".json,application/json"/>
+      <div class="label">Step 1: Select a Collection -> | RIGHT SIDE</div>
       
-      <button id="upload-button" style="margin-top:8px;">POST</button>
-      
-      <div id="status" style="margin-top:8px;">No file selected.</div>
-      <div class="tiny">Select a file first, then click POST.</div>
     </div>
+
+    <div class="block">
+      <div class="label">Step 2: POST to <span id="target-name" style="color:blue;">None</span></div>
+      <input id="file-input" type="file" accept=".json,application/json"/>
+      <button id="upload-button">POST</button>
+      <div id="status"></div>
+    </div>
+    
 
     <div class="block">
       <div class="label">View</div>

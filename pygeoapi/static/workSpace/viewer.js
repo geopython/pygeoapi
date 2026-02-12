@@ -9,17 +9,17 @@ import {
   pushRingPairs
 } from "./geometry.js";
 
+import * as api from './api.js';
+
 // Global State
 let MODEL = null;
 let CURRENT_LEVEL = "__all__";
 let CURRENT_MODE = "3d";
 let SHOW_DUAL = false;
+let selectedCollectionId = null;
 
 const plot3d = document.getElementById("plot3d");
 const plot2d = document.getElementById("plot2d");
-const statusDiv = document.getElementById("status");
-const fileInput = document.getElementById("file-input");
-const uploadButton = document.getElementById("upload-button");
 const cursorDiv = document.getElementById("cursor");
 const selectionDiv = document.getElementById("sel");
 const levelSelect = document.getElementById("level");
@@ -115,7 +115,7 @@ function renderAll() {
     o.value = lvl; o.textContent = lvl; sel.appendChild(o);
   });
   if (MODEL.levels.includes(currentVal)) sel.value = currentVal;
-
+  
   render3D();
   render2D();
 }
@@ -241,34 +241,6 @@ function findRoomAtCoords(x, y) {
   return "Detected at " + CURRENT_LEVEL; 
 }
 
-// uploadButton.addEventListener("click", async () => {
-//   const file = fileInput.files[0];
-//   if (!file) return;
-//   try {
-//     statusDiv.innerText = "Processing...";
-//     const json = JSON.parse(await file.text());
-//     MODEL = buildBaseModel(json);
-    
-//     // Populate dropdown
-//     levelSelect.innerHTML = '<option value="__all__">All</option>';
-//     MODEL.levels.forEach(lvl => {
-//       const o = document.createElement("option");
-//       o.value = lvl; o.textContent = lvl; levelSelect.appendChild(o);
-//     });
-
-//     renderAll();
-    
-//     // --- ATTACH CLICK LISTENER HERE ---
-//     attachPlotlyClick(); 
-
-//     const s = MODEL.stats;
-//     statusDiv.innerHTML = `<strong>Loaded: ${file.name}</strong>...`;
-//   } catch (err) {
-//     console.error(err);
-//     statusDiv.innerText = "Error parsing file.";
-//   }
-// });
-
 plot2d.addEventListener('mousemove', function(e) {
   if (!plot2d._fullLayout || !plot2d._fullLayout.xaxis) return;
   const x = plot2d._fullLayout.xaxis.p2c(e.offsetX);
@@ -322,128 +294,96 @@ const apiLog = document.getElementById("api-log");
 const apiBack = document.getElementById("api-back");
 const apiStatus = document.getElementById("api-status-right");
 
-// Set this to your local or remote pygeoAPI base URL
-const API_BASE = "http://localhost:5000"; 
-
-// 1. Fetch Collections and Filter for "indoorfeature"
+// 1. Get Collections Handler
 document.getElementById("api-get-collections").addEventListener("click", async () => {
   try {
     apiStatus.textContent = "Fetching catalogs...";
-    const response = await fetch(`${API_BASE}/collections?f=json`);
-    const data = await response.json();
+    const data = await api.getIndoorCollections();
     
-    // pygeoAPI nests collections under the "collections" key
-    const allCollections = data.collections || [];
-    
-    // Filter for indoor feature collections per your OpenAPI spec
-    const indoorCollections = allCollections.filter(c => c.itemType === "indoorfeature");
-
-    renderCollections(indoorCollections);
-    apiBack.style.display = "none";
-    apiLog.textContent = JSON.stringify(data, null, 2);
+    renderCollections(data.filtered);
+    apiLog.textContent = JSON.stringify(data.raw, null, 2);
   } catch (err) {
-    console.error(err);
     apiLog.textContent = "Error: " + err.message;
   }
 });
 
-// 2. Render the Collections List
+// 2. Render Collections (UI Creation)
 function renderCollections(collections) {
   dbList.innerHTML = "";
-  if (collections.length === 0) {
-    dbList.innerHTML = '<div class="tiny">No indoorfeature collections found.</div>';
-    return;
-  }
-
   collections.forEach(col => {
-    // Find the "items" link in the OGC links array
     const itemsLink = col.links.find(l => l.rel === "items" && l.type === "application/geo+json");
-    
     const btn = document.createElement("button");
     btn.className = "db-item-btn";
-    btn.innerHTML = `
-      <strong>🏢 ${col.title}</strong>
-      <small>ID: ${col.id}</small>
-    `;
+    btn.innerHTML = `<strong>🏢 ${col.title}</strong><small>ID: ${col.id}</small>`;
     
-    // When clicked, fetch the items using the href from the OGC link
-    btn.onclick = () => loadCollectionItems(itemsLink.href, col.id);
+    btn.onclick = async () => {
+      // UI feedback
+      document.querySelectorAll('.db-item-btn').forEach(b => b.style.border = "1px solid #ccc");
+      btn.style.border = "2px solid #007bff"; 
+      
+      selectedCollectionId = col.id;
+      document.getElementById("target-name").innerText = col.title;
+
+      // Call API
+      try {
+        apiStatus.textContent = `Listing items in ${col.id}...`;
+        const featureCollection = await api.getCollectionItems(itemsLink.href);
+        renderFeatures(featureCollection.features || [], col.id);
+        apiLog.textContent = JSON.stringify(featureCollection, null, 2);
+      } catch (err) {
+        apiLog.textContent = "Error: " + err.message;
+      }
+    };
     dbList.appendChild(btn);
   });
 }
 
-// 3. Load Items (Listing features in the collection)
-async function loadCollectionItems(url, colId) {
-  try {
-    apiStatus.textContent = `Listing items in ${colId}...`;
-    
-    // For listing, we just need the IDs and basic properties
-    const fetchUrl = url.includes('?') ? `${url}&f=json` : `${url}?f=json`;
+// 3. POST Button Handler
+document.getElementById("upload-button").addEventListener("click", async () => {
+  const fileInput = document.getElementById("file-input");
+  const statusDiv = document.getElementById("status");
 
-    const response = await fetch(fetchUrl);
-    const featureCollection = await response.json();
-
-    // Render the list of buttons
-    renderFeatures(featureCollection.features || [], colId);
-    apiLog.textContent = JSON.stringify(featureCollection, null, 2);
-  } catch (err) {
-    apiLog.textContent = "Error listing items: " + err.message;
-  }
-}
-
-// 4. Render the list and attach the specific BBOX fetch
-function renderFeatures(features, colId) {
-  dbList.innerHTML = "";
-  if (features.length === 0) {
-    dbList.innerHTML = '<div class="tiny">No features found.</div>';
+  if (!selectedCollectionId || fileInput.files.length === 0) {
+    statusDiv.innerHTML = "<span style='color:red;'>❌ Missing selection or file.</span>";
     return;
   }
 
+  try {
+    const fileText = await fileInput.files[0].text();
+    const jsonData = JSON.parse(fileText);
+    statusDiv.innerText = "📤 Uploading...";
+
+    const result = await api.postIndoorFeature(selectedCollectionId, jsonData);
+    
+    statusDiv.innerHTML = "<span style='color:green;'>✅ Success!</span>";
+    apiLog.textContent = JSON.stringify(result, null, 2);
+  } catch (err) {
+    statusDiv.innerHTML = `<span style='color:red;'>❌ ${err.message}</span>`;
+  }
+});
+
+// 4. Render Features & Fetch Single
+function renderFeatures(features, colId) {
+  dbList.innerHTML = "";
   features.forEach(f => {
     const btn = document.createElement("button");
     btn.className = "db-item-btn";
-    
-    const name = f.id || "Unnamed Feature";
-    btn.innerHTML = `<strong>📍 ${name}</strong><small>ID: ${f.id}</small>`;
-    
-    // Trigger the detailed fetch on click
-    btn.onclick = () => fetchSingleFeature(colId, f.id);
-    
+    btn.innerHTML = `<strong>📍 ${f.id || "Unnamed"}</strong>`;
+    btn.onclick = async () => {
+      try {
+        apiStatus.textContent = `Fetching ${f.id}...`;
+        const data = await api.getSingleFeature(colId, f.id);
+        apiLog.textContent = JSON.stringify(data, null, 2);
+        
+        // Your Geometry logic (keep in viewer.js or geometry.js)
+        if (data.IndoorFeatures) {
+          MODEL = buildBaseModel(data.IndoorFeatures); 
+          renderAll();
+        }
+      } catch (err) {
+        apiLog.textContent = "Error: " + err.message;
+      }
+    };
     dbList.appendChild(btn);
   });
-}
-
-// 5. Fetch a single feature with the required BBOX
-async function fetchSingleFeature(colId, featureId) {
-  try {
-    apiStatus.textContent = `Fetching ${featureId} with BBOX...`;
-    
-    // Construct the specific item URL
-    // pygeoAPI pattern: /collections/{colId}/items/{featureId}
-    const hugeBbox = "-1800,-900,1800,900"; 
-    const url = `${API_BASE}/collections/${colId}/items/${featureId}?f=json&bbox=${hugeBbox}`;
-
-    const response = await fetch(url);
-    if (!response.ok) throw new Error(`HTTP error! Status: ${response.status}`);
-    
-    const featureGeoJSON = await response.json();
-    apiLog.textContent = JSON.stringify(featureGeoJSON, null, 2);
-
-    // Navigate the response: featureGeoJSON -> IndoorFeatures
-    const indoorData = featureGeoJSON.IndoorFeatures;
-
-    if (indoorData) {
-      apiStatus.textContent = `Visualizing: ${featureId}`;
-      
-      // Build and Render
-      MODEL = buildBaseModel(indoorData); 
-      renderAll();
-    } else {
-      apiStatus.textContent = "Error: 'IndoorFeatures' missing in response.";
-      console.error("Structure check:", featureGeoJSON);
-    }
-  } catch (err) {
-    console.error(err);
-    apiLog.textContent = "Error fetching feature: " + err.message;
-  }
 }

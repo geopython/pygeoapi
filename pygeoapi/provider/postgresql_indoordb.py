@@ -472,7 +472,7 @@ class PostgresIndoorDB:
                 
                 # Iterate and Insert Layers
                 for layer in layers:
-                    self._post_thematic_layer(collection_pk, ifeature_new['id'], layer)
+                    self._post_thematic_layer(collection_pk, ifeature_new[0], layer)
                 if interlayerconnections:
                     for connection in interlayerconnections:
                         self.post_interlayer_connection(collection_id, feature_str_id, connection)
@@ -480,7 +480,7 @@ class PostgresIndoorDB:
                 # autocommit is False
                 self.connection.commit()
             
-                return ifeature_new['id_str']
+                return ifeature_new[1]
 
             except Exception as e:
                 self.connection.rollback()
