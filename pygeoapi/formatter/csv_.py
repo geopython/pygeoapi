@@ -96,7 +96,8 @@ class CSVFormatter(BaseFormatter):
             LOGGER.debug('Including point geometry')
             if data['features'][0]['geometry']['type'] == 'Point':
                 LOGGER.debug('point geometry detected, adding x,y columns')
-                fields.extend(['x', 'y'])
+                fields.insert(0, 'x')
+                fields.insert(1, 'y')
                 is_point = True
             else:
                 LOGGER.debug('not a point geometry, adding wkt column')
@@ -126,7 +127,8 @@ class CSVFormatter(BaseFormatter):
         try:
             if self.geom:
                 if is_point:
-                    [fp['x'], fp['y']] = feature['geometry']['coordinates']
+                    fp['x'] = feature['geometry']['coordinates'][0]
+                    fp['y'] = feature['geometry']['coordinates'][1]
                 else:
                     geom = geojson_to_geom(feature['geometry'])
                     fp['wkt'] = geom.wkt
