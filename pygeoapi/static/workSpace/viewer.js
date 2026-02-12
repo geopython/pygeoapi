@@ -115,7 +115,7 @@ function renderAll() {
     o.value = lvl; o.textContent = lvl; sel.appendChild(o);
   });
   if (MODEL.levels.includes(currentVal)) sel.value = currentVal;
-  
+
   render3D();
   render2D();
 }
@@ -241,33 +241,33 @@ function findRoomAtCoords(x, y) {
   return "Detected at " + CURRENT_LEVEL; 
 }
 
-uploadButton.addEventListener("click", async () => {
-  const file = fileInput.files[0];
-  if (!file) return;
-  try {
-    statusDiv.innerText = "Processing...";
-    const json = JSON.parse(await file.text());
-    MODEL = buildBaseModel(json);
+// uploadButton.addEventListener("click", async () => {
+//   const file = fileInput.files[0];
+//   if (!file) return;
+//   try {
+//     statusDiv.innerText = "Processing...";
+//     const json = JSON.parse(await file.text());
+//     MODEL = buildBaseModel(json);
     
-    // Populate dropdown
-    levelSelect.innerHTML = '<option value="__all__">All</option>';
-    MODEL.levels.forEach(lvl => {
-      const o = document.createElement("option");
-      o.value = lvl; o.textContent = lvl; levelSelect.appendChild(o);
-    });
+//     // Populate dropdown
+//     levelSelect.innerHTML = '<option value="__all__">All</option>';
+//     MODEL.levels.forEach(lvl => {
+//       const o = document.createElement("option");
+//       o.value = lvl; o.textContent = lvl; levelSelect.appendChild(o);
+//     });
 
-    renderAll();
+//     renderAll();
     
-    // --- ATTACH CLICK LISTENER HERE ---
-    attachPlotlyClick(); 
+//     // --- ATTACH CLICK LISTENER HERE ---
+//     attachPlotlyClick(); 
 
-    const s = MODEL.stats;
-    statusDiv.innerHTML = `<strong>Loaded: ${file.name}</strong>...`;
-  } catch (err) {
-    console.error(err);
-    statusDiv.innerText = "Error parsing file.";
-  }
-});
+//     const s = MODEL.stats;
+//     statusDiv.innerHTML = `<strong>Loaded: ${file.name}</strong>...`;
+//   } catch (err) {
+//     console.error(err);
+//     statusDiv.innerText = "Error parsing file.";
+//   }
+// });
 
 plot2d.addEventListener('mousemove', function(e) {
   if (!plot2d._fullLayout || !plot2d._fullLayout.xaxis) return;
