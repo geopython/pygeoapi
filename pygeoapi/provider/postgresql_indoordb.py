@@ -1661,8 +1661,8 @@ class PostgresIndoorDB:
 
 # region PrimalSpaceLayer
             
-    def get_primal_members(self, collection_id, item_id, layer_str_id, 
-                                         level=None, poi=None, is_virtual=None, cell_space_name=None):
+    def get_primal_members(self, collection_id:str, feature_id:str, layer_id:str, 
+                                         level:str=None, poi:str=None, is_virtual:str=None, cell_space_name:str=None):
         """
         1. Resolves layer metadata.
         2. Fetches Spaces (Filtered by level, poi, name).
@@ -1682,7 +1682,7 @@ class PostgresIndoorDB:
                 JOIN indoorfeature i ON t.indoorfeature_id = i.id
                 WHERE t.id_str = %s AND c.id_str = %s AND i.id_str = %s
             """
-            cur.execute(layer_query, (layer_str_id, collection_id, item_id))
+            cur.execute(layer_query, (layer_id, collection_id, feature_id))
             layer_row = cur.fetchone()
 
             if not layer_row:
@@ -1774,7 +1774,7 @@ class PostgresIndoorDB:
 
             if is_virtual:
                 boundary_query += " AND c.is_virtual = %s"
-                boundary_params.append(is_virtual)
+                boundary_params.append(is_virtual.lower())
 
             cur.execute(boundary_query, tuple(boundary_params))
             boundary_rows = cur.fetchall() 
@@ -1796,7 +1796,7 @@ class PostgresIndoorDB:
             return primal_space
         
     # Creates a CellSpace or CellBoundary member in the specified layer.
-    def post_primal_member(self, collection_str, feature_str, layer_str, data):
+    def post_primal_member(self, collection_id:str, feature_id:str, layer_id:str, data):
         with self.connection.cursor(cursor_factory=RealDictCursor) as cur:
             try:  
                 # --- A. Lookup Context ---
@@ -1807,11 +1807,11 @@ class PostgresIndoorDB:
                     JOIN indoorfeature i ON t.indoorfeature_id = i.id
                     WHERE t.id_str = %s and c.id_str = %s and i.id_str = %s
                 """
-                cur.execute(lookup_sql, (layer_str, collection_str, feature_str))
+                cur.execute(lookup_sql, (layer_id, collection_id, feature_id))
                 layer_row = cur.fetchone()
                 
                 if not layer_row:
-                    LOGGER.debug(f"Layer context not found for {layer_str}")
+                    LOGGER.debug(f"Layer context not found for {layer_id}")
                     return None
 
                 duplicate_sql = """
@@ -1824,7 +1824,6 @@ class PostgresIndoorDB:
                 if row:
                     LOGGER.debug(f"Invalid data value: {data.get('id')} is already exist.")
                     return None
-
 
                 # --- B. Parse Data ---
                 f_type = data.get('featureType')
@@ -1868,12 +1867,12 @@ class PostgresIndoorDB:
                         rows = cur.fetchall()
                         
                         if len(rows) != len(unique_refs):
-                            LOGGER.debug(f"Validation Failed: Missing boundaries in layer {layer_str}")
+                            LOGGER.debug(f"Validation Failed: Missing boundaries in layer {layer_id}")
                             return None 
                         else: # validation check: CellBoundary can bound only if it bounds nothing
                             for row in rows:
                                 if row['bounded_by_cell_id']:
-                                    LOGGER.debug(f"Validation Failed: Bounding boundary {row['id_str']} already bound another cellSpace.")
+                                    LOGGER.debug(f"Validation Failed: Bounding boundary {row['id_str']} already bounds another cellSpace.")
                                     return None
                                 else:
                                     update_bounded_by.append(row['id'])
@@ -1995,7 +1994,7 @@ class PostgresIndoorDB:
                 LOGGER.debug(f"Insert Error: {e}")
                 raise e
             
-    def delete_primal_member(self, collection_str, item_str, layer_str, member_str):
+    def delete_primal_member(self, collection_id:str, feature_id:str, layer_id:str, member_id:str):
         """
         Deletes a CellSpace.
         1. Finds the Dual Node.
@@ -2016,11 +2015,11 @@ class PostgresIndoorDB:
                     WHERE c.id_str = %s AND t.id_str = %s AND col.id_str = %s AND i.id_str = %s
                     
                 """
-                cur.execute(check_sql, (member_str, layer_str, collection_str, item_str))
+                cur.execute(check_sql, (member_id, layer_id, collection_id, feature_id))
                 row = cur.fetchone()
                 
                 if not row:
-                    LOGGER.debug(f"Not Found error: {member_str} is not found.")
+                    LOGGER.debug(f"Not Found error: {member_id} is not found.")
                     return False
                 
                 if row['type'] == 'space': # if member type is space..
@@ -2107,7 +2106,7 @@ class PostgresIndoorDB:
                 LOGGER.debug(f"Delete Primal Error: {e}")
                 return False
         
-    def get_primal_member(self, collection_str, item_str, layer_str, member_str):
+    def get_primal_member(self, collection_id:str, feature_id:str, layer_id:str, member_id:str):
         """
         Fetches a single Primal Member.
         Ensures SQL alias 'duality' matches API handler expectations.
@@ -2133,11 +2132,11 @@ class PostgresIndoorDB:
         with self.connection.cursor(cursor_factory=RealDictCursor) as cur:
             try:
                 # Ensure params match SQL order: member, layer, item, collection
-                cur.execute(sql, (member_str, layer_str, collection_str, item_str))
+                cur.execute(sql, (member_id, layer_id, collection_id, feature_id))
                 result = cur.fetchone()
                 
                 if not result:
-                    LOGGER.debug(f"Not Found {member_str}")
+                    LOGGER.debug(f"Not Found {member_id}")
                     return None
                 if not result.get('bounded_by_list'):
                     result['bounded_by_list'] = []
@@ -2179,7 +2178,7 @@ class PostgresIndoorDB:
                 LOGGER.debug(f"Get Member Error: {e}")
                 return None
 
-    def patch_cell_space(self, collection_str, item_str, layer_str, cellspace_str, data):
+    def patch_cell_space(self, collection_id:str, feature_id:str, layer_id:str, cellspace_id:str, data):
         """
         Updates a CellSpace. 
         Strictly ignores Geometry, level and external_reference updates. duality
@@ -2196,31 +2195,32 @@ class PostgresIndoorDB:
                     JOIN indoorfeature i ON t.indoorfeature_id = i.id
                     WHERE t.id_str = %s AND i.id_str = %s AND col.id_str = %s
                 """
-                cur.execute(lookup_sql, (layer_str, item_str, collection_str))
+                cur.execute(lookup_sql, (layer_id, feature_id, collection_id))
                 layer_row = cur.fetchone()
                 
                 if not layer_row:
-                    LOGGER.debug(f"Not found {layer_str}")
+                    LOGGER.debug(f"Not found {layer_id}")
                     return False 
 
                 # --- B. Check Member Existence ---
                 # We also verify it is a 'space' here
-                check_sql = "SELECT id, type FROM cell_space_n_boundary WHERE id_str = %s AND thematiclayer_id = %s"
-                cur.execute(check_sql, (cellspace_str, layer_row['id']))
+                check_sql = "SELECT id FROM cell_space_n_boundary WHERE id_str = %s AND thematiclayer_id = %s AND type = 'space'"
+                cur.execute(check_sql, (cellspace_id, layer_row['id']))
                 target_row = cur.fetchone()
 
-                if not target_row or target_row['type'] != 'space':
-                    LOGGER.debug(f"{cellspace_str} is not found or not cell space.")
+                if not target_row:
+                    LOGGER.debug(f"{cellspace_id} is not found or not cell space.")
                     return False 
 
-                internal_id = target_row['id']
+                cellspace_pk = target_row['id']
                 
                 # --- C. Dynamic Field Construction ---
                 fields = []
                 values = []
+                forbidden_keys = {'cellSpaceGeom', 'duality', 'external_reference', 'level'}
                 
-                if 'cellSpaceGeom' in data or 'duality' in data or 'external_reference' in data or 'level' in data:
-                    LOGGER.debug("Invalid body value.")
+                if not forbidden_keys.isdisjoint(data):
+                    LOGGER.debug("Invalid body value: Found forbidden keys.")
                     return False
 
                 # Handle client typo/legacy support
@@ -2230,12 +2230,12 @@ class PostgresIndoorDB:
                     
                 if 'poi' in data:
                     fields.append("poi = %s")
-                    values.append(data['poi'])
+                    values.append(data['poi'].lower())
 
                 # execute Update if we have fields
                 if fields:
                     update_sql = f"UPDATE cell_space_n_boundary SET {', '.join(fields)} WHERE id = %s"
-                    values.append(internal_id)
+                    values.append(cellspace_pk)
                     cur.execute(update_sql, tuple(values))
 
                 # --- D. Handle 'boundedBy' Relationship ---
@@ -2255,12 +2255,10 @@ class PostgresIndoorDB:
                         if len(rows) != len(check_refs):
                             # Rollback is handled by the except block below
                             print("Validation Failed: One or more boundaries do not exist.")
-                            print(rows)
-                            print(check_refs)
                             raise ValueError("Invalid Boundary References")
                         else:
                             for row in rows:  # if boundary already bounds another cell space, error is occured.
-                                if row['bounded_by_cell_id'] and row['bounded_by_cell_id']!=internal_id:
+                                if row['bounded_by_cell_id'] and row['bounded_by_cell_id']!=cellspace_pk:
                                     LOGGER.debug(f"{row['id_str']} already bounds another cell space.")
                                     raise ValueError(f"Invalid boundedBy data: {row['id_str']}")
                         # update new bounded by cell id
@@ -2269,14 +2267,13 @@ class PostgresIndoorDB:
                             SET bounded_by_cell_id = %s
                             WHERE id_str = ANY(%s) AND thematiclayer_id = %s
                         """
-                        cur.execute(link_new_sql, (internal_id, raw_bounds, layer_row['id']))
+                        cur.execute(link_new_sql, (cellspace_pk, raw_bounds, layer_row['id']))
 
                 self.connection.commit()
                 return True
 
             except Exception as e:
-                if self.connection:
-                    self.connection.rollback()
+                self.connection.rollback()
                 print(f"Update failed: {e}")
                 return False
 
@@ -2284,7 +2281,7 @@ class PostgresIndoorDB:
 
 # region DualSpaceLayer 
 
-    def post_dual_member(self, collection_str, feature_str, layer_str, data): 
+    def post_dual_member(self, collection_id:str, feature_id:str, layer_id:str, data): 
         """
         Create a single Node or Edge. 
         The created data id_str has to be unique in thematiclayer.
@@ -2299,7 +2296,7 @@ class PostgresIndoorDB:
                     JOIN indoorfeature i ON t.indoorfeature_id = i.id
                     WHERE t.id_str = %s and c.id_str = %s and i.id_str = %s
                 """
-                cur.execute(lookup_sql, (layer_str, collection_str, feature_str))
+                cur.execute(lookup_sql, (layer_id, collection_id, feature_id))
                 layer_row = cur.fetchone()
                 if not layer_row: 
                     LOGGER.debug("Layer not found.")
@@ -2315,7 +2312,7 @@ class PostgresIndoorDB:
                 cur.execute(duplicate_sql, (layer_row['indoorfeature_id'], id_str))
                 row = cur.fetchone()
                 if row:
-                    LOGGER.debug(f"{id_str} is already exist. id_str must be unique in layer.")
+                    LOGGER.debug(f"{id_str} is already exist.")
                     return None
                 
                 geom_wkt = self.json_to_wkt(data.get('geometry'))
@@ -2344,7 +2341,7 @@ class PostgresIndoorDB:
                     elif space_row['duality_id'] != None:
                         raise ValueError(f"Duality target '{clean_duality}' already has a duality.")
                     
-                    primal_id = space_row['id']
+                    duality_id = space_row['id']
 
                     # 2. Insert Node
                     insert_node_sql = """
@@ -2358,13 +2355,13 @@ class PostgresIndoorDB:
                     """
                     cur.execute(insert_node_sql, (
                         id_str, layer_row['collection_id'], layer_row['indoorfeature_id'], layer_row['id'],
-                        geom_wkt, primal_id
+                        geom_wkt, duality_id
                     ))
                     new_node = cur.fetchone()
 
                     # 3. Reverse Link: Update Space -> Point to Node
                     update_space_sql = "UPDATE cell_space_n_boundary SET duality_id = %s WHERE id = %s"
-                    cur.execute(update_space_sql, (new_node['id'], primal_id))
+                    cur.execute(update_space_sql, (new_node['id'], duality_id))
                     
                     self.connection.commit()
                     return new_node['id_str']
