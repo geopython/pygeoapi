@@ -1,0 +1,101 @@
+{
+  "id": "layer-indoor-nav-f1",
+  "featureType": "ThematicLayer",
+  "semanticExtension": true,
+  "theme": "Virtual",
+  "primalSpace": {
+    "id": "primal-space-f1",
+    "featureType": "PrimalSpaceLayer",
+    "creationDatetime": "2024-01-16T15:00:00Z",
+    "cellSpaceMember": [
+      {
+        "id": "cell-room-101",
+        "featureType": "CellSpace",
+        "cellSpaceName": "Server Room",
+        "level": "1F",
+        "poi": true,
+        "duality": "node-101",
+        "cellSpaceGeom": {
+          "geometry2D": {
+            "type": "Polygon",
+            "coordinates": [
+              [[0, 0], [10, 0], [10, 10], [0, 10], [0, 0]]
+            ]
+          }
+        },
+        "boundedBy": ["boundary-wall-01"]
+      },
+      {
+        "id": "cell-corridor-100",
+        "featureType": "CellSpace",
+        "cellSpaceName": "Main Corridor",
+        "level": "1F",
+        "poi": false,
+        "duality": "node-100",
+        "cellSpaceGeom": {
+          "geometry2D": {
+            "type": "Polygon",
+            "coordinates": [
+              [[10, 0], [20, 0], [20, 10], [10, 10], [10, 0]]
+            ]
+          }
+        }
+      }
+    ],
+    "cellBoundaryMember": [
+      {
+        "id": "boundary-wall-01",
+        "featureType": "CellBoundary",
+        "isVirtual": true,
+        "duality": "edge-101-100",
+        "cellBoundaryGeom": {
+          "geometry2D": {
+            "type": "LineString",
+            "coordinates": [[10, 2], [10, 8]]
+          }
+        }
+      }
+    ]
+  },
+  "dualSpace": {
+    "id": "dual-space-f1",
+    "featureType": "DualSpaceLayer",
+    "isLogical": true,
+    "isDirected": true,
+    "nodeMember": [
+      {
+        "id": "node-101",
+        "featureType": "Node",
+        "duality": "cell-room-101",
+        "geometry": {
+          "type": "Point",
+          "coordinates": [5, 5]
+        },
+        "connects": ["edge-101-100"]
+      },
+      {
+        "id": "node-100",
+        "featureType": "Node",
+        "duality": "cell-corridor-100",
+        "geometry": {
+          "type": "Point",
+          "coordinates": [15, 5]
+        },
+        "connects": ["edge-101-100"]
+      }
+    ],
+    "edgeMember": [
+      {
+        "id": "edge-101-100",
+        "featureType": "Edge",
+        "weight": 1.5,
+        "duality": "boundary-wall-01",
+        "connects": ["node-101", "node-100"],
+        "geometry": {
+          "type": "LineString",
+          "coordinates": [[5, 5], [15, 5]]
+        }
+      }
+    ]
+  }
+}

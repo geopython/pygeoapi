@@ -16,16 +16,6 @@
 
 <div id="app">
   <aside id="side">
-    <div class="block">
-      <div class="label">POST an indoorJSON file to a collection</div>
-  
-      <input id="file-input" type="file" accept=".json,application/json"/>
-      
-      <button id="upload-button" style="margin-top:8px;">POST</button>
-      
-      <div id="status" style="margin-top:8px;">No file selected.</div>
-      <div class="tiny">Select a file first, then click POST.</div>
-    </div>
 
     <div class="block">
       <div class="label">View</div>
@@ -47,29 +37,6 @@
     </div>
 
     <div class="block">
-      <div class="label">Overlay query result</div>
-      <input id="fileResult" type="file"/>
-      <button id="query-upload-button" style="margin-top:8px;">Process File</button>
-      <div id="statusResult" style="margin-top:8px;">No result loaded.</div>
-      <div class="checkrow" style="margin-top:8px;">
-        <input id="toggleResult" type="checkbox" checked/>
-        <label>Show result overlay</label>
-      </div>
-    </div>
-
-    <div class="block">
-      <div class="label">Route result</div>
-      <input id="fileRoute" type="file"/>
-      <button id="route-upload-button" style="margin-top:8px;">Process File</button>
-      <div id="statusRoute" style="margin-top:8px;">No route loaded.</div>
-
-      <div class="checkrow"><input id="toggleRoute" type="checkbox" checked/> Show route</div>
-      <div class="checkrow"><input id="toggleRouteStitch" type="checkbox"/> Auto-stitch route</div>
-      <div class="checkrow"><input id="toggleSegMarkers" type="checkbox" checked/> Segment markers</div>
-      <div class="checkrow"><input id="toggleSegLabels" type="checkbox"/> Segment labels</div>
-    </div>
-
-    <div class="block">
       <div class="label">Options</div>
       <div id="tabs">
         <button id="fit">Fit view</button>
@@ -85,6 +52,138 @@
     <div class="block">
       <div class="label">Cursor (2D)</div>
       <pre id="cursor">Move mouse over the 2D view…</pre>
+    </div>
+
+    <div class="block">
+      <details false>
+        <summary style="cursor: pointer; font-weight: bold; font-size: 1.1em; color: #2c3e50;">
+          IndoorFeatures
+        </summary>
+        
+        <div style="margin-top: 15px; padding-left: 10px; border-left: 2px solid #eee;">
+          
+          <div class="label">POST to: <span id="collection-post-target-name" style="color:blue;">select on right side bar</span> </div>
+          <input id="file-input" type="file" accept=".json,application/json" style="width: 100%;"/>
+          <button id="indoorFeature-upload-button" style="margin-top: 8px; width: 100%;">Upload Feature</button>
+          <div id="indoorFeature-upload-status" class="tiny"></div>
+
+          <hr style="margin: 15px 0; border: 0; border-top: 1px solid #eee;">
+
+          <div class="label">DELETE: <span id="indoorFeature-delete-target-name" style="color:blue;">select on right side bar</span></div>
+          <button id="indoorFeature-delete-button" class="btn-danger" style="width: 100%;">Delete Selected Feature</button>
+          <div id="indoorFeature-delete-status" class="tiny"></div>
+          
+        </div>
+      </details>
+    </div>
+    <div class="block">
+      <details false>
+        <summary style="cursor: pointer; font-weight: bold; font-size: 1.1em; color: #2c3e50;">
+          InterLayerConnections
+        </summary>
+        <div class="label">Collection: <span id="interLayerConnection-collection-name" style="color:blue;">select on right side bar</span> </div>
+        <div class="label">IndoorFeature: <span id="interLayerConnection-indoorFeature-name" style="color:blue;">select on right side bar</span> </div>
+        <button id="api-get-interLayerConnections" style="margin-top: 8px; width: 100%;">Load interLayerconnections</button>
+        <div class="label">Navigation</div>
+        <button id="interLayerConnection-api-back" style="width: 100%; display: none; margin-bottom: 8px;">&larr; Back to Collections</button>
+
+        <div id="interLayerConnection-db-list" style="max-height: 400px; overflow-y: auto; border: 1px solid #ddd; padding: 4px; border-radius: 4px; background: white;">
+          <div class="tiny">Click "Load interLayerConnections" to start.</div>
+        </div>
+        <div style="margin-top: 15px; padding-left: 10px; border-left: 2px solid #eee;">
+          
+          <div class="label">POST to: <span id="collection-post-target-name" style="color:blue;">select on right side bar</span> </div>
+          <input id="interLayerConnections-file-input" type="file" accept=".json,application/json" style="width: 100%;"/>
+          <button id="interLayerConnections-upload-button" style="margin-top: 8px; width: 100%;">Upload Feature</button>
+          <div id="interLayerConnections-upload-status" class="tiny"></div>
+
+          <hr style="margin: 15px 0; border: 0; border-top: 1px solid #eee;">
+
+          <div class="label">DELETE: <span id="interLayerConnections-delete-target-name" style="color:blue;">select on right side bar</span></div>
+          <button id="interLayerConnections-delete-button" class="btn-danger" style="width: 100%;">Delete Selected Feature</button>
+          <div id="interLayerConnections-delete-status" class="tiny"></div>
+
+        </div>
+      </details>
+    </div>
+    <div class="block">
+      <details false>
+        <summary style="cursor: pointer; font-weight: bold; font-size: 1.1em; color: #2c3e50;">
+          ThematicLayers
+        </summary>
+        <div class="label">Collection: <span id="thematicLayer-collection-name" style="color:blue;">select on right side bar</span> </div>
+        <div class="label">IndoorFeature: <span id="thematicLayer-indoorFeature-name" style="color:blue;">select on right side bar</span> </div>
+        <button id="api-get-thematicLayers" style="margin-top: 8px; width: 100%;">Load ThematicLayers</button>
+        <div class="label">Navigation</div>
+        <button id="thematicLayers-api-back" style="width: 100%; display: none; margin-bottom: 8px;">&larr; Back to Collections</button>
+        
+        <div id="thematicLayers-db-list" style="max-height: 400px; overflow-y: auto; border: 1px solid #ddd; padding: 4px; border-radius: 4px; background: white;">
+          <div class="tiny">Click "Load ThematicLayers" to start.</div>
+        </div>
+        <div style="margin-top: 15px; padding-left: 10px; border-left: 2px solid #eee;">
+          
+          <div class="label">POST to: <span id="collection-post-target-name" style="color:blue;">select on right side bar</span> </div>
+          <input id="thematicLayers-file-input" type="file" accept=".json,application/json" style="width: 100%;"/>
+          <button id="thematicLayers-upload-button" style="margin-top: 8px; width: 100%;">Upload Feature</button>
+          <div id="thematicLayers-upload-status" class="tiny"></div>
+
+          <hr style="margin: 15px 0; border: 0; border-top: 1px solid #eee;">
+
+          <div class="label">DELETE: <span id="thematicLayers-delete-target-name" style="color:blue;">select on right side bar</span></div>
+          <button id="thematicLayers-delete-button" class="btn-danger" style="width: 100%;">Delete Selected Feature</button>
+          <div id="thematicLayers-delete-status" class="tiny"></div>
+          <details false>
+            <summary style="cursor: pointer; font-weight: bold; font-size: 1.1em; color: #2c3e50;">
+              PrimalSpaceLayer
+            </summary>
+            <button id="api-get-primalSpaceLayer" style="margin-top: 8px; width: 100%;">Load PrimalSpaceLayer</button>
+            <div class="label">Navigation</div>
+            <button id="primalSpaceLayer-api-back" style="width: 100%; display: none; margin-bottom: 8px;">&larr; Back to Collections</button>
+
+            <div id="primalSpaceLayer-db-list" style="max-height: 400px; overflow-y: auto; border: 1px solid #ddd; padding: 4px; border-radius: 4px; background: white;">
+              <div class="tiny">Click "Load PrimalSpaceLayer" to start.</div>
+            </div>
+            <div style="margin-top: 15px; padding-left: 10px; border-left: 2px solid #eee;">
+              
+              <div class="label">POST to: <span id="collection-post-target-name" style="color:blue;">select on right side bar</span> </div>
+              <input id="primalSpaceLayer-file-input" type="file" accept=".json,application/json" style="width: 100%;"/>
+              <button id="primalSpaceLayer-upload-button" style="margin-top: 8px; width: 100%;">Upload Feature</button>
+              <div id="primalSpaceLayer-upload-status" class="tiny"></div>
+
+              <hr style="margin: 15px 0; border: 0; border-top: 1px solid #eee;">
+
+              <div class="label">DELETE: <span id="primalSpaceLayer-delete-target-name" style="color:blue;">select on right side bar</span></div>
+              <button id="primalSpaceLayer-delete-button" class="btn-danger" style="width: 100%;">Delete Selected Feature</button>
+              <div id="primalSpaceLayer-delete-status" class="tiny"></div>
+            </div>
+          </details>
+          <details false>
+            <summary style="cursor: pointer; font-weight: bold; font-size: 1.1em; color: #2c3e50;">
+              DualSpaceLayer
+            </summary>
+            <button id="api-get-dualSpaceLayer" style="margin-top: 8px; width: 100%;">Load DualSpaceLayer</button>
+            <div class="label">Navigation</div>
+            <button id="dualSpaceLayer-api-back" style="width: 100%; display: none; margin-bottom: 8px;">&larr; Back to Collections</button>
+
+            <div id="dualSpaceLayer-db-list" style="max-height: 400px; overflow-y: auto; border: 1px solid #ddd; padding: 4px; border-radius: 4px; background: white;">
+              <div class="tiny">Click "Load DualSpaceLayer" to start.</div>
+            </div>
+            <div style="margin-top: 15px; padding-left: 10px; border-left: 2px solid #eee;">
+              
+              <div class="label">POST to: <span id="collection-post-target-name" style="color:blue;">select on right side bar</span> </div>
+              <input id="dualSpaceLayer-file-input" type="file" accept=".json,application/json" style="width: 100%;"/>
+              <button id="dualSpaceLayer-upload-button" style="margin-top: 8px; width: 100%;">Upload Feature</button>
+              <div id="dualSpaceLayer-upload-status" class="tiny"></div>
+
+              <hr style="margin: 15px 0; border: 0; border-top: 1px solid #eee;">
+
+              <div class="label">DELETE: <span id="dualSpaceLayer-delete-target-name" style="color:blue;">select on right side bar</span></div>
+              <button id="dualSpaceLayer-delete-button" class="btn-danger" style="width: 100%;">Delete Selected Feature</button>
+              <div id="dualSpaceLayer-delete-status" class="tiny"></div>
+            </div>
+          </details>
+        </div>
+      </details>
     </div>
   </aside>
 
@@ -109,6 +208,8 @@
       <div id="db-list" style="max-height: 400px; overflow-y: auto; border: 1px solid #ddd; padding: 4px; border-radius: 4px; background: white;">
         <div class="tiny">Click "Load Collections" to start.</div>
       </div>
+
+      <button id="visualize" style="margin-top: 8px; width: 100%;">Visualize</button>
     </div>
 
     <div class="block">

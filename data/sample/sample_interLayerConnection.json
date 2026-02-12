@@ -1,0 +1,14 @@
+{
+  "featureType": "InterLayerConnection",
+  "id": "conn_physical_to_virtual_01",
+  "connectedLayers": [
+    "TL-1",
+    "layer-indoor-nav-f1"
+  ],
+  "typeOfTopoExpression": "equals",
+  "connectedNodes": [
+    "N1",
+    "node-101"
+  ],
+  "comment": "Connecting physical node N1 to virtual node 101"
+}
