@@ -133,10 +133,10 @@
           <button id="thematicLayers-delete-button" class="btn-danger" style="width: 100%;">Delete Selected Feature</button>
           <div id="thematicLayers-delete-status" class="tiny"></div>
           <details false>
-            <summary style="cursor: pointer; font-weight: bold; font-size: 1.1em; color: #2c3e50;">
+            <summary style="cursor: pointer; font-weight: bold; font-size: 1.1em; color: #f10a16;">
               PrimalSpaceLayer
             </summary>
-            <button id="api-get-primalSpaceLayer" style="margin-top: 8px; width: 100%;">Load PrimalSpaceLayer</button>
+            <button id="api-get-primalSpaceLayer" style="margin-top: 8px; width: 100%; color:aquamarine;">Load PrimalSpaceLayer</button>
             <div class="label">Navigation</div>
             <button id="primalSpaceLayer-api-back" style="width: 100%; display: none; margin-bottom: 8px;">&larr; Back to Collections</button>
 
@@ -147,21 +147,25 @@
               
               <div class="label">POST to: <span id="collection-post-target-name" style="color:blue;">select on right side bar</span> </div>
               <input id="primalSpaceLayer-file-input" type="file" accept=".json,application/json" style="width: 100%;"/>
-              <button id="primalSpaceLayer-upload-button" style="margin-top: 8px; width: 100%;">Upload Feature</button>
+              <div style="display: flex; gap: 8px;">
+                <button id="primalSpaceLayer-upload-button" style="margin-top: 8px; width: 100%; color:aquamarine;">POST</button>
+                <button id="primalSpaceLayer-patch-button" style="margin-top: 8px; width: 100%; color:aquamarine;">PATCH</button>
+              </div>
+              
               <div id="primalSpaceLayer-upload-status" class="tiny"></div>
 
               <hr style="margin: 15px 0; border: 0; border-top: 1px solid #eee;">
 
               <div class="label">DELETE: <span id="primalSpaceLayer-delete-target-name" style="color:blue;">select on right side bar</span></div>
-              <button id="primalSpaceLayer-delete-button" class="btn-danger" style="width: 100%;">Delete Selected Feature</button>
+              <button id="primalSpaceLayer-delete-button" class="btn-danger" style="width: 100%;color:aquamarine;">Delete Selected PrimalSpace Member</button>
               <div id="primalSpaceLayer-delete-status" class="tiny"></div>
             </div>
           </details>
           <details false>
-            <summary style="cursor: pointer; font-weight: bold; font-size: 1.1em; color: #2c3e50;">
+            <summary style="cursor: pointer; font-weight: bold; font-size: 1.1em; color: #f10a16;">
               DualSpaceLayer
             </summary>
-            <button id="api-get-dualSpaceLayer" style="margin-top: 8px; width: 100%;">Load DualSpaceLayer</button>
+            <button id="api-get-dualSpaceLayer" style="margin-top: 8px; width: 100%; color:aquamarine;">Load DualSpaceLayer</button>
             <div class="label">Navigation</div>
             <button id="dualSpaceLayer-api-back" style="width: 100%; display: none; margin-bottom: 8px;">&larr; Back to Collections</button>
 
@@ -172,13 +176,17 @@
               
               <div class="label">POST to: <span id="collection-post-target-name" style="color:blue;">select on right side bar</span> </div>
               <input id="dualSpaceLayer-file-input" type="file" accept=".json,application/json" style="width: 100%;"/>
-              <button id="dualSpaceLayer-upload-button" style="margin-top: 8px; width: 100%;">Upload Feature</button>
+              <div style="display: flex; gap: 8px;">
+                <button id="dualSpaceLayer-upload-button" style="margin-top: 8px; width: 100%; color:aquamarine;">POST</button>
+                <button id="dualSpaceLayer-patch-button" style="margin-top: 8px; width: 100%; color:aquamarine;">PATCH</button>
+              </div>
+              
               <div id="dualSpaceLayer-upload-status" class="tiny"></div>
 
               <hr style="margin: 15px 0; border: 0; border-top: 1px solid #eee;">
 
               <div class="label">DELETE: <span id="dualSpaceLayer-delete-target-name" style="color:blue;">select on right side bar</span></div>
-              <button id="dualSpaceLayer-delete-button" class="btn-danger" style="width: 100%;">Delete Selected Feature</button>
+              <button id="dualSpaceLayer-delete-button" class="btn-danger" style="width: 100%; color:aquamarine;">Delete Selected DualSpace Member</button>
               <div id="dualSpaceLayer-delete-status" class="tiny"></div>
             </div>
           </details>
