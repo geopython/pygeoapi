@@ -586,8 +586,8 @@ def manage_collection_item_layer(api: API, request: APIRequest, action, dataset,
         
         try:
             pidb_provider.connect()
-            pidb_provider.delete_thematic_layer(collection_str_id, feature_str_id, layer_str_id)
-
+            success = pidb_provider.delete_thematic_layer(collection_str_id, feature_str_id, layer_str_id)
+            
         except (Exception, psycopg2.Error) as error:
             msg = str(error)
             return api.get_exception(
@@ -994,7 +994,7 @@ def get_primal(api: API, request: APIRequest, collection_id: str, item_id: str, 
         # 2. Call Provider with Filters
         # ---------------------------------------------------------
         pidb_provider.connect()
-        layer_meta, spaces, boundaries = pidb_provider.get_primal_members(
+        response = pidb_provider.get_primal_members(
             collection_id, 
             item_id, 
             layer_id,
@@ -1004,18 +1004,8 @@ def get_primal(api: API, request: APIRequest, collection_id: str, item_id: str, 
             cell_space_name=cell_space_name
         )
 
-        if layer_meta is None:
+        if response is None:
             return api.get_exception(HTTPStatus.NOT_FOUND, headers, request.format, 'NotFound', 'Layer not found')
-        
-        # 3. Construct Response
-        response = {
-            "id": layer_meta['primalspace_id_str'],
-            "featureType": "PrimalSpaceLayer",
-            "creationDatetime": layer_meta['p_creation_datetime'].isoformat() if layer_meta['p_creation_datetime'] else None,
-            "terminationDatetime": layer_meta['p_termination_datetime'].isoformat() if layer_meta['p_termination_datetime'] else None,
-            "cellSpaceMember": spaces,
-            "cellBoundaryMember": boundaries
-        }
 
         # 4. Construct Self Link (Persisting filters is good practice)
         base_url = f"{api.config['server']['url']}/collections/{collection_id}/items/{item_id}/layers/{layer_id}/primal"
