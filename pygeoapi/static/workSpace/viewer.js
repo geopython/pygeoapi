@@ -20,6 +20,7 @@ let selectedCollectionId = null;
 let selectedFeatureId = null;
 let selectedFeatureData = null; // Store the fetched GeoJSON here
 let selectedILCId = null;
+let selectedLayerId = null;
 
 const plot3d = document.getElementById("plot3d");
 const plot2d = document.getElementById("plot2d");
@@ -327,6 +328,7 @@ function renderCollections(collections) {
       selectedCollectionId = col.id;
       document.getElementById("collection-post-target-name").innerText = col.title;
       document.getElementById("interLayerConnection-collection-name").innerText = col.title;
+      document.getElementById("thematicLayer-collection-name").innerText = col.title;
       // Call API
       try {
         apiStatus.textContent = `Listing items in ${col.id}...`;
@@ -381,6 +383,14 @@ function renderFeatures(features, colId) {
       selectedFeatureId = f.id;
       document.getElementById("indoorFeature-delete-target-name").innerText = f.id;
       document.getElementById("interLayerConnection-indoorFeature-name").innerText = f.id;
+      document.getElementById("thematicLayer-indoorFeature-name").innerText = f.id;
+
+      // Inside your renderFeatures function (right sidebar click):
+      selectedLayerId = null;
+      const layerDeleteName = document.getElementById("thematicLayers-delete-target-name");
+      if (layerDeleteName) layerDeleteName.innerText = "None";
+      document.getElementById("thematicLayers-db-list").innerHTML = '<div class="tiny">Click "Load" to see layers.</div>';
+
       try {
         apiStatus.textContent = `Fetching ${f.id} data...`;
         // Fetch the data and store it globally
@@ -586,5 +596,149 @@ document.getElementById("interLayerConnections-delete-button").addEventListener(
   } catch (err) {
     statusDiv.innerHTML = `<span style='color:red;'>❌ ${err.message}</span>`;
     console.error(err);
+  }
+});
+
+document.getElementById("api-get-thematicLayers").addEventListener("click", async () => {
+  const dbListLayers = document.getElementById("thematicLayers-db-list");
+
+  if (!selectedCollectionId || !selectedFeatureId) {
+    dbListLayers.innerHTML = "<div class='tiny' style='color:red;'>Select a Feature on the right sidebar first!</div>";
+    return;
+  }
+
+  try {
+    dbListLayers.innerHTML = "<div class='tiny'>Loading layers...</div>";
+    
+    const data = await api.getThematicLayers(selectedCollectionId, selectedFeatureId);
+    
+    // 1. Log the full response
+    apiLog.textContent = JSON.stringify(data, null, 2);
+
+    // 2. Render the layers list
+    renderThematicLayerList(data.layers || [], data.levels || []);
+    
+  } catch (err) {
+    dbListLayers.innerHTML = `<div class='tiny' style='color:red;'>Error: ${err.message}</div>`;
+  }
+});
+
+/** Render the list of Thematic Layers */
+function renderThematicLayerList(layers, levels) {
+  const dbListLayers = document.getElementById("thematicLayers-db-list");
+  dbListLayers.innerHTML = "";
+
+  // Optional: Display available floor levels at the top
+  if (levels.length > 0) {
+    const levelInfo = document.createElement("div");
+    levelInfo.className = "tiny";
+    levelInfo.style = "background: #f8f9fa; padding: 5px; margin-bottom: 8px; border-radius: 4px;";
+    levelInfo.innerHTML = `<strong>Available Levels:</strong> ${levels.join(", ")}`;
+    dbListLayers.appendChild(levelInfo);
+  }
+
+  if (layers.length === 0) {
+    const emptyMsg = document.createElement("div");
+    emptyMsg.className = "tiny";
+    emptyMsg.innerText = "No Thematic Layers found.";
+    dbListLayers.appendChild(emptyMsg);
+    return;
+  }
+
+  layers.forEach(layer => {
+    const btn = document.createElement("button");
+    btn.className = "db-item-btn";
+    
+    // Display theme and ID
+    btn.innerHTML = `
+      <strong>🎨 ${layer.theme || 'Unnamed Theme'}</strong><br>
+      <small>ID: ${layer.id}</small>
+    `;
+
+    btn.onclick = () => {
+      // Highlight UI
+      document.querySelectorAll('#thematicLayers-db-list .db-item-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+
+      // Set target for DELETE
+      selectedLayerId = layer.id;
+      document.getElementById("thematicLayers-delete-target-name").innerText = layer.id;
+      
+      apiLog.textContent = JSON.stringify(layer, null, 2);
+    };
+
+    dbListLayers.appendChild(btn);
+  });
+}
+
+document.getElementById("thematicLayers-upload-button").addEventListener("click", async () => {
+  const fileInput = document.getElementById("thematicLayers-file-input");
+  const statusDiv = document.getElementById("thematicLayers-upload-status");
+
+  // 1. Validation
+  if (!selectedCollectionId || !selectedFeatureId) {
+    statusDiv.innerHTML = "<span style='color:red;'>❌ Error: Select a Feature on the right sidebar first.</span>";
+    return;
+  }
+  if (fileInput.files.length === 0) {
+    statusDiv.innerHTML = "<span style='color:red;'>❌ Error: Please select a JSON file.</span>";
+    return;
+  }
+
+  try {
+    const file = fileInput.files[0];
+    const text = await file.text();
+    const jsonData = JSON.parse(text);
+
+    statusDiv.innerText = "📤 Uploading Thematic Layer...";
+
+    // 2. Call API
+    const result = await api.postThematicLayer(selectedCollectionId, selectedFeatureId, jsonData);
+
+    // 3. Success UI
+    statusDiv.innerHTML = "<span style='color:green;'>✅ Layer uploaded successfully!</span>";
+    apiLog.textContent = JSON.stringify(result, null, 2);
+    
+    // Auto-refresh the Layer list to show the new connection
+    document.getElementById("api-get-thematicLayers").click();
+
+  } catch (err) {
+    statusDiv.innerHTML = `<span style='color:red;'>❌ ${err.message}</span>`;
+    console.error("POST Error:", err);
+  }
+});
+
+document.getElementById("thematicLayers-delete-button").addEventListener("click", async () => {
+  const statusDiv = document.getElementById("thematicLayers-delete-status");
+
+  // 1. Validation: Ensure we have the full path (Collection -> Feature -> Layer)
+  if (!selectedCollectionId || !selectedFeatureId || !selectedLayerId) {
+    statusDiv.innerHTML = "<span style='color:red;'>❌ Error: Select a Feature and a Layer first.</span>";
+    return;
+  }
+
+  // 2. Confirmation
+  const confirmMsg = `Are you sure you want to delete Thematic Layer: ${selectedLayerId}? This cannot be undone.`;
+  if (!confirm(confirmMsg)) return;
+
+  try {
+    statusDiv.innerText = "🗑️ Deleting Layer...";
+
+    // 3. Call API
+    await api.deleteThematicLayer(selectedCollectionId, selectedFeatureId, selectedLayerId);
+
+    // 4. Success UI
+    statusDiv.innerHTML = "<span style='color:green;'>✅ Layer deleted successfully.</span>";
+    document.getElementById("thematicLayers-delete-target-name").innerText = "None";
+    
+    // Reset local state
+    selectedLayerId = null;
+
+    // 5. Refresh the list so the UI reflects the deletion
+    document.getElementById("api-get-thematicLayers").click();
+
+  } catch (err) {
+    statusDiv.innerHTML = `<span style='color:red;'>❌ ${err.message}</span>`;
+    console.error("Delete Error:", err);
   }
 });

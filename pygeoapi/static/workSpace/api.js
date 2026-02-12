@@ -96,3 +96,41 @@ export async function deleteInterLayerConnection(colId, featureId, cnId) {
   }
   return true;
 }
+
+/** Fetch ThematicLayers for a specific feature */
+export async function getThematicLayers(colId, featureId) {
+  const url = `${API_BASE}/collections/${colId}/items/${featureId}/layers?f=json`;
+  const response = await fetch(url);
+  if (!response.ok) throw new Error(`Failed to load layers: ${response.status}`);
+  return await response.json(); // Returns { levels: [], layers: [] }
+}
+
+/** POST a new ThematicLayer to a specific feature */
+export async function postThematicLayer(colId, featureId, jsonData) {
+  const url = `${API_BASE}/collections/${colId}/items/${featureId}/layers`;
+  const response = await fetch(url, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(jsonData)
+  });
+
+  if (!response.ok) {
+    const errorText = await response.text();
+    throw new Error(`Layer Upload Failed (${response.status}): ${errorText}`);
+  }
+  return await response.json();
+}
+
+/** DELETE a specific ThematicLayer */
+export async function deleteThematicLayer(colId, featureId, tId) {
+  const url = `${API_BASE}/collections/${colId}/items/${featureId}/layers/${tId}`;
+  const response = await fetch(url, {
+    method: 'DELETE'
+  });
+
+  if (!response.ok) {
+    const errorText = await response.text();
+    throw new Error(`Delete Failed (${response.status}): ${errorText}`);
+  }
+  return true;
+}
