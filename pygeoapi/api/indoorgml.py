@@ -989,6 +989,11 @@ def get_primal(api: API, request: APIRequest, collection_id: str, item_id: str, 
     cell_space_name = request.params.get('cellSpaceName')
     poi = request.params.get('poi')
     is_virtual = request.params.get('isVirtual')
+    if poi is not None and poi.lower() not in ["true", "false"]:
+        return api.get_exception(HTTPStatus.BAD_REQUEST, headers, request.format, 'ValueError', 'Invalid value for "poi". Expected "true" or "false".')
+    if is_virtual is not None and is_virtual.lower() not in ["true", "false"]:
+        return api.get_exception(HTTPStatus.BAD_REQUEST, headers, request.format, 'ValueError', 'Invalid value for "isVirtual". Expected "true" or "false".')
+        
     try:
         # ---------------------------------------------------------
         # 2. Call Provider with Filters
