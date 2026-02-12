@@ -11,9 +11,9 @@ def context():
 def collection_property():
     raw_json = """
     {
-        "id": "aist_waterfront_lab",
-        "title": "AIST Waterfront Lab IndoorGML",
-        "description": "Experimental IndoorGML data for AIST project",
+        "id": "test_collection",
+        "title": "test_collection for test api",
+        "description": "test sample indoorfeature collection data",
         "itemType": "indoorfeature"
     }
     """
@@ -24,7 +24,14 @@ def indoorfeature():
     raw_json = """
 {
   "featureType": "IndoorFeatures",
-  "id": "AIST_Waterfront_Center",
+  "id": "test_indoorfeature",
+  "geometry": {
+    "type": "Point",
+    "coordinates": [
+        1, 1
+    ]
+  },
+  "properties": {},
   "layers": [
     {
       "id": "TL-1",
@@ -133,7 +140,7 @@ def indoorfeature():
 def thematiclayer():
     raw_json = """
 {
-    "id": "layer-indoor-nav-f1",
+    "id": "layer-f1",
     "featureType": "ThematicLayer",
     "semanticExtension": true,
     "theme": "Virtual",
@@ -200,7 +207,7 @@ def thematiclayer():
                 "coordinates": [[10, 5], [10, 10]]
                 }
             }
-        },
+        }
         ]
     },
     "dualSpace": {
@@ -256,7 +263,7 @@ def interlayerconnection():
   "id": "conn_01",
   "connectedLayers": [
     "TL-1",
-    "layer-indoor-nav-f1"
+    "layer-f1"
   ],
   "typeOfTopoExpression": "equals",
   "connectedNodes": [
@@ -478,8 +485,8 @@ def test_query_get_collections_list():
     assert result
     assert len(result) > 0
     collection = result[0]
-    l_collection_id = collection[0]
-    itemType = collection[2]
+    l_collection_id = collection['id']
+    itemType = collection['itemType']
     assert l_collection_id is not None
     assert itemType is not None
 
@@ -489,16 +496,14 @@ def test_query_get_collection(context):
     result = pidb_provider.get_collection(context.get('collection_id'))
 
     assert result
-    assert len(result) == 1
-    collection = result[0]
-    l_collection_id = collection[0]
-    assert l_collection_id is not None
-    collection_property = collection[1]
-    assert collection_property is not None
-    extentLifespan = collection[2]
-    assert extentLifespan is not None
-    extentTGeometry = collection[3]
-    assert extentTGeometry is not None
+    collection_id = result['id']
+    assert collection_id is not None
+    collection_type = result['itemType']
+    assert collection_type is not None
+    col_title = result['title']
+    assert col_title is not None
+    col_desc = result['description']
+    assert col_desc is not None
 
 def test_query_is_indoor_collection(context):
     pidb_provider = PostgresIndoorDB()
@@ -517,13 +522,13 @@ def test_query_get_collection_items(context):
     assert num_matched
     ifeature = result[0]
     assert ifeature is not None
-    f_type = ifeature[0]
+    f_type = ifeature['type']
     assert f_type is not None
-    f_id = ifeature[1]
+    f_id = ifeature['id']
     assert f_id is not None
-    f_geom = ifeature[2]
+    f_geom = ifeature['geometry']
     assert f_geom is not None
-    f_props = ifeature[3]
+    f_props = ifeature['properties']
     assert f_props is not None
 
 def test_query_get_feature(context):
@@ -536,19 +541,19 @@ def test_query_get_feature(context):
                                        bbox=bbox,
                                        level=level)
     assert result
-    meta_type = result[0]
+    meta_type = result['type']
     assert meta_type is not None
-    meta_id = result[1]
+    meta_id = result['id']
     assert meta_id is not None
-    meta_geom = result[2]
+    meta_geom = result['geometry']
     assert meta_geom is not None
-    meta_props = result[3]
+    meta_props = result['properties']
     assert meta_props is not None   
-    ifeature = result[4]
+    ifeature = result['IndoorFeatures']
     assert ifeature is not None
-    f_type = ifeature[0]
+    f_type = ifeature['featureType']
     assert f_type is not None
-    layers = ifeature[1]
+    layers = ifeature['layers']
     assert layers is not None
      
 def test_query_get_layer(context):
@@ -561,17 +566,17 @@ def test_query_get_layer(context):
                                             context.get('layer_id')
                                             )
     assert result_meta
-    meta_id = result_meta[0]
+    meta_id = result_meta['id']
     assert meta_id is not None
-    meta_type = result_meta[1]
+    meta_type = result_meta['featureType']
     assert meta_type is not None
-    meta_theme = result_meta[2]
+    meta_theme = result_meta['theme']
     assert meta_theme is not None
-    meta_ext = result_meta[3]
+    meta_ext = result_meta['semanticExtension']
     assert meta_ext is not None
-    meta_summary = result_meta[4]
+    meta_summary = result_meta['summary']
     assert meta_summary is not None
-    meta_bbox = result_meta[5]
+    meta_bbox = result_meta['bbox']
     assert meta_bbox is not None
 
     result = pidb_provider.get_layer(context.get('collection_id'),
@@ -580,17 +585,17 @@ def test_query_get_layer(context):
                                        level=level,
                                        bbox=bbox)
     assert result
-    t_id = result[0]
+    t_id = result['id']
     assert t_id is not None
-    t_type = result[1]
+    t_type = result['featureType']
     assert t_type is not None
-    t_theme = result[2]
+    t_theme = result['theme']
     assert t_theme is not None
-    t_ext = result[3]
+    t_ext = result['semanticExtension']
     assert t_ext is not None    
-    t_primal = result[4]
+    t_primal = result['primalSpace']
     assert t_primal is not None
-    t_dual = result[5]
+    t_dual = result['dualSpace']
     assert t_dual is not None
 
 def test_query_get_layers(context):
@@ -603,9 +608,9 @@ def test_query_get_layers(context):
                                        level=level,
                                        theme=theme)
     assert result
-    lvl = result[0]
+    lvl = result['levels']
     assert lvl is not None
-    layers = result[1]
+    layers = result['layers']
     assert layers is not None    
 
 def test_query_get_interlayer_connections(context):
@@ -617,15 +622,16 @@ def test_query_get_interlayer_connections(context):
                                                       connected_layer_id=context.get('layer_id'),
                                                       topo_type=topo_type)
     assert result
-    conn = result[0]
-    assert conn
-    conn_id = conn[0]
+    li_of_connections = result['layerConnections']
+    assert li_of_connections is not None
+    conn = li_of_connections[0]
+    conn_id = conn['id']
     assert conn_id is not None
-    conn_type = conn[1]
+    conn_type = conn['featureType']
     assert conn_type is not None
-    conn_topo= conn[2]
+    conn_topo= conn['typeOfTopoExpression']
     assert conn_topo is not None
-    conn_layers = conn[3]
+    conn_layers = conn['connectedLayers']
     assert conn_layers is not None
 
 def test_query_get_primal_members(context):
@@ -639,15 +645,15 @@ def test_query_get_primal_members(context):
                                             level=level,
                                             poi=poi)    
     assert result
-    t_id = result[0]
+    t_id = result['id']
     assert t_id is not None
-    p_type = result[1]
+    p_type = result['featureType']
     assert p_type is not None
-    p_create = result[2]
+    p_create = result['creationDatetime']
     assert p_create is not None
-    space_mem = result[4]
+    space_mem = result['cellSpaceMember']
     assert space_mem is not None
-    boundary_mem = result[5]
+    boundary_mem = result['cellBoundaryMember']
     assert boundary_mem is not None
     cell = space_mem[0]
     assert cell is not None
@@ -662,21 +668,21 @@ def test_query_get_primal_member(context):
                                             context.get('layer_id'),
                                             context.get('cell_space_id'))
     assert cell
-    cid = cell[0]
+    cid = cell['id']
     assert cid is not None
-    c_type = cell[1]
+    c_type = cell['featureType']
     assert c_type is not None
-    c_name = cell[2]
+    c_name = cell['cellSpaceName']
     assert c_name is not None
-    lvl = cell[3]
+    lvl = cell['level']
     assert lvl is not None
-    poi = cell[4]
+    poi = cell['poi']
     assert poi is not None
-    c_duality = cell[5]
+    c_duality = cell['duality']
     assert c_duality is not None
-    c_geom = cell[6]
+    c_geom = cell['cellSpaceGeom']
     assert c_geom is not None
-    bounded_by = cell[8]
+    bounded_by = cell['boundedBy']
     assert bounded_by is not None
 
     boundary = pidb_provider.get_primal_member(context.get('collection_id'),
@@ -684,15 +690,15 @@ def test_query_get_primal_member(context):
                                             context.get('layer_id'),
                                             context.get('cell_boundary_id'))
     assert boundary
-    bid = boundary[0]
+    bid = boundary['id']
     assert bid is not None
-    b_type = boundary[1]
+    b_type = boundary['featureType']
     assert b_type is not None
-    is_virtual = boundary[2]
+    is_virtual = boundary['isVirtual']
     assert is_virtual is not None
-    b_duality = boundary[3]
+    b_duality = boundary['duality']
     assert b_duality is not None
-    b_geom = boundary[4]
+    b_geom = boundary['cellBoundaryGeom']
     assert b_geom is not None
 
 def test_query_dual_members(context):
@@ -706,17 +712,17 @@ def test_query_dual_members(context):
                                              min_weight=minWeight,
                                              max_weight=maxWeight)
     assert results
-    d_id = results[0]
+    d_id = results['id']
     assert d_id is not None
-    d_type = results[1]
+    d_type = results['featureType']
     assert d_type is not None
-    d_logical = results[2]
+    d_logical = results['isLogical']
     assert d_logical is not None
-    d_directed = results[3]
+    d_directed = results['isDirected']
     assert d_directed is not None
-    node_mem = results[6]
+    node_mem = results['nodeMember']
     assert node_mem is not None
-    edge_mem = results[7]
+    edge_mem = results['edgeMember']
     assert edge_mem is not None
 
 def test_query_get_dual_member(context):
@@ -727,15 +733,15 @@ def test_query_get_dual_member(context):
                                          context.get('layer_id'),
                                          context.get('node_id'))
     assert node
-    n_id = node[0]
+    n_id = node['id']
     assert n_id is not None
-    n_type = node[1]
+    n_type = node['featureType']
     assert n_type is not None
-    n_geom = node[2]
+    n_geom = node['geometry']
     assert n_geom is not None
-    n_dual = node[3]
+    n_dual = node['duality']
     assert n_dual is not None
-    n_connect = node[4]
+    n_connect = node['connects']
     assert n_connect is not None
 
     edge = pidb_provider.get_dual_member(context.get('collection_id'),
@@ -744,17 +750,17 @@ def test_query_get_dual_member(context):
                                          context.get('edge_id'))
     
     assert edge
-    e_id = edge[0]
+    e_id = edge['id']
     assert e_id is not None
-    e_type = edge[1]
+    e_type = edge['featureType']
     assert e_type is not None
-    e_geom = edge[2]
+    e_geom = edge['geometry']
     assert e_geom is not None
-    e_dual = edge[3]
+    e_dual = edge['duality']
     assert e_dual is not None
-    e_weight = edge[4]
+    e_weight = edge['weight']
     assert e_weight is not None
-    e_connect = edge[5]
+    e_connect = edge['connects']
     assert e_connect is not None
 
 def test_query_geometric_query(context):
@@ -770,11 +776,11 @@ def test_query_geometric_query(context):
                                            geometry=geometry,
                                            level=level)
     assert result
-    t_id = result[0]
+    t_id = result['id']
     assert t_id is not None
-    t_primal = result[4]
+    t_primal = result['primalSpace']
     assert t_primal is not None
-    t_dual = result[5]
+    t_dual = result['dualSpace']
     assert t_dual is not None
 
 def test_query_routing_query(context):
@@ -788,15 +794,15 @@ def test_query_routing_query(context):
                                          sn=sn,
                                          dn=dn)
     assert result
-    r_type = result[0]
+    r_type = result['type']
     assert r_type is not None
-    r_sn = result[1]
+    r_sn = result['start_node']
     assert r_sn is not None
-    r_dn = result[2]
+    r_dn = result['destination_node']
     assert r_dn is not None
-    r_cost = result[3]
+    r_cost = result['cost']
     assert r_cost is not None
-    r_path = result[4]
+    r_path = result['path_segments']
     assert r_path is not None
     p_seq1 = r_path[0]
     assert p_seq1 is not None
@@ -804,20 +810,20 @@ def test_query_routing_query(context):
 def test_query_bounding_cell_space(context):
     pidb_provider = PostgresIndoorDB()
     pidb_provider.connect()
-    result = pidb_provider.routing_query(context.get('collection_id'),
+    result = pidb_provider.bounding_cell_space(context.get('collection_id'),
                                          context.get('ifeature_id'),
                                          context.get('layer_id'),
                                          context.get('cell_boundary_id'))
     assert result
-    c_id = result[0]
+    c_id = result['id']
     assert c_id is not None
-    c_level = result[3]
+    c_level = result['level']
     assert c_level is not None
-    c_poi = result[4]
+    c_poi = result['poi']
     assert c_poi is not None
-    c_geom = result[6]
+    c_geom = result['cellSpaceGeom']
     assert c_geom is not None
-    c_bounded = result[8]
+    c_bounded = result['boundedBy']
     assert c_bounded is not None
 
 def test_query_connected_nodes(context):
@@ -830,16 +836,16 @@ def test_query_connected_nodes(context):
                                          context.get('node_id'),
                                          hop=hop)
     assert result
-    r_type = result[0]
+    r_type = result['type']
     assert r_type is not None
-    sn = result[1]
+    sn = result['start_node']
     assert sn is not None
-    connected = result[2]
+    connected = result['connected_nodes']
     assert connected is not None
     n1 = connected[0]
     assert n1 is not None
 
-def test_query_patch_primal_member(context, update_cellspace_property):
+def test_query_patch_cell_space(context, update_cellspace_property):
     pidb_provider = PostgresIndoorDB()
     pidb_provider.connect()
     success = pidb_provider.patch_cell_space(context.get('collection_id'),
@@ -852,9 +858,9 @@ def test_query_patch_primal_member(context, update_cellspace_property):
                                             context.get('ifeature_id'),
                                             context.get('layer_id'),
                                             context.get('cell_space_id'))
-    r_bounded = result[8]
+    r_bounded = result['boundedBy']
     assert result.get('cellSpaceName') == 'Executive Office 102'
-    assert result.get('poi') == 'true'
+    assert result.get('poi') == True
     assert len(r_bounded) == 2
 
 def test_query_patch_edge(context, update_edge_property):
@@ -870,7 +876,7 @@ def test_query_patch_edge(context, update_edge_property):
                                          context.get('ifeature_id'),
                                          context.get('layer_id'),
                                          context.get('edge_id'))
-    assert result.get('weight') == '10.0'
+    assert float(result['weight']) == 10.0
 
 def test_query_delete_dual_member(context):
     pidb_provider = PostgresIndoorDB()
