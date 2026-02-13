@@ -1662,7 +1662,7 @@ class PostgresIndoorDB:
         3. Fetches Boundaries (Filtered by is_virtual AND parent Spaces).
         Returns: layer_row, spaces_list, boundaries_list
         """
-        with self.connection.cursor() as cur:
+        with self.connection.cursor(cursor_factory=NamedTupleCursor) as cur:
             # STEP 1: Fetch Layer Metadata
             layer_query = """
                 SELECT 
@@ -1730,23 +1730,23 @@ class PostgresIndoorDB:
             all_referenced_boundaries = set()
 
             for row in space_rows:
-                if row['bounded_by_list']:
+                if row.bounded_by_list:
                     all_referenced_boundaries.update(row['bounded_by_list'])
-                geom_2d = self.wkt_to_json(row['geom_wkt'])
+                geom_2d = self.wkt_to_json(row.geom_wkt)
                 cell = {
-                        "id": row['id_str'],
+                        "id": row.id_str,
                         "featureType": "CellSpace",
-                        "cellSpaceName": row['cell_name'],
-                        "level": row['level'],
-                        "poi": row['poi'] if row['poi'] else False,
-                        "duality": row['duality'],
+                        "cellSpaceName": row.cell_name,
+                        "level": row.level,
+                        "poi": row.poi,
+                        "duality": row.duality,
                         "cellSpaceGeom": {
                             "geometry2D": geom_2d,
-                            "geometry3D": row['geom_3d']
+                            "geometry3D": row.geom_3d
                         },
-                        "boundedBy": row['bounded_by_list']
+                        "boundedBy": row.bounded_by_list
                     }
-                if row['external_reference']: cell["externalReference"] = row['external_reference']
+                if row.external_reference: cell["externalReference"] = row.external_reference
                 primal_space["cellSpaceMember"].append(cell)
 
             boundary_id_list = list(all_referenced_boundaries)
@@ -1774,16 +1774,16 @@ class PostgresIndoorDB:
 
             for row in boundary_rows:
                 boundary = {
-                    "id": row['id_str'],
+                    "id": row.id_str,
                     "featureType": "CellBoundary",
-                    "duality": row['duality'],
-                    "isVirtual": row['is_virtual'],
+                    "duality": row.duality,
+                    "isVirtual": row.is_virtual,
                     "cellBoundaryGeom": {
-                        "geometry2D": self.wkt_to_json(row['geom_wkt']),
-                        "geometry3D": row['geom_3d']
+                        "geometry2D": self.wkt_to_json(row.geom_wkt),
+                        "geometry3D": row.geom_3d
                     }
                 }
-                if row['external_reference']: boundary["externalReference"] = {"uri": row['external_reference']}
+                if row.external_reference: boundary["externalReference"] = {"uri": row.external_reference}
                 primal_space["cellBoundaryMember"].append(boundary)
         
             return primal_space
