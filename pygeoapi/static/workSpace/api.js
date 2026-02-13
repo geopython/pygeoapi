@@ -134,3 +134,42 @@ export async function deleteThematicLayer(colId, featureId, tId) {
   }
   return true;
 }
+
+/** GET full PrimalSpaceLayer */
+export async function getPrimalSpaceLayer(colId, featId, tId) {
+  const url = `${API_BASE}/collections/${colId}/items/${featId}/layers/${tId}/primal?f=json`;
+  const response = await fetch(url);
+  if (!response.ok) throw new Error(`Failed to load PrimalSpace: ${response.status}`);
+  return await response.json();
+}
+
+/** POST to PrimalSpaceLayer */
+export async function postPrimalMember(colId, featId, tId, jsonData) {
+  const url = `${API_BASE}/collections/${colId}/items/${featId}/layers/${tId}/primal`;
+  const response = await fetch(url, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(jsonData)
+  });
+
+  // IMPORTANT: This is what triggers the 'catch' in your UI
+  if (!response.ok) {
+    const errorText = await response.text();
+    throw new Error(`Server Error (${response.status}): ${errorText || 'Not Found'}`);
+  }
+
+  return await response.json();
+}
+
+/** Single Member: PATCH or DELETE */
+export async function managePrimalMember(colId, featId, tId, mId, method, jsonData = null) {
+  const url = `${API_BASE}/collections/${colId}/items/${featId}/layers/${tId}/primal/${mId}`;
+  const options = { method: method };
+  if (jsonData) {
+    options.headers = { 'Content-Type': 'application/json' };
+    options.body = JSON.stringify(jsonData);
+  }
+  const response = await fetch(url, options);
+  if (!response.ok) throw new Error(`${method} failed: ${response.status}`);
+  return method === 'DELETE' ? true : await response.json();
+}
