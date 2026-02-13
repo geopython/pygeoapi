@@ -1212,14 +1212,15 @@ def get_dual(api: API, request: APIRequest, collection_id: str, item_id: str, la
     try:
         min_weight = float(min_weight_param) if min_weight_param else None
         max_weight = float(max_weight_param) if max_weight_param else None
+        if min_weight and max_weight and (min_weight > max_weight):
+            return api.get_exception(
+                HTTPStatus.BAD_REQUEST,
+                headers, request.format, 'InvalidParameter', "minWeight must be less than maxWeight")
     except ValueError:
         return api.get_exception(
             HTTPStatus.BAD_REQUEST,
             headers, request.format, 'InvalidParameter', "Weights must be valid numbers")
-    if min_weight and max_weight and (min_weight > max_weight):
-        return api.get_exception(
-            HTTPStatus.BAD_REQUEST,
-            headers, request.format, 'InvalidParameter', "minWeight must be less than maxWeight")
+    
     try:
         pidb_provider.connect()
         # 2. Call the Provider function
@@ -1381,7 +1382,7 @@ def manage_dual(api: API, request: APIRequest, action: str, collection_id: str, 
             if success:
                 return headers, HTTPStatus.NO_CONTENT, ''
             else:
-                return api.get_exception(HTTPStatus.BAD_REQUEST, headers, request.format, 'InvalidParameterValue', 'Update failed: Item is not a Transition, or ID not found')
+                return api.get_exception(HTTPStatus.BAD_REQUEST, headers, request.format, 'InvalidParameterValue', 'Invalid parameters or invalid values')
         except Exception as e:
             return api.get_exception(HTTPStatus.INTERNAL_SERVER_ERROR, headers, request.format, 'ServerError', str(e))
         finally:
@@ -1449,7 +1450,7 @@ def get_geometric_query(api: API, request: APIRequest, collection_id: str, item_
     
     try:
         pidb_provider.connect()
-        result = pidb_provider.geometric_query(collection_id, item_id, layer_id, op=op_param, geometry=geom, level=level)
+        result = pidb_provider.geometric_query(collection_id, item_id, layer_id, op=op_param.lower(), geometry=geom, level=level)
         if not result:
             raise Exception()
         base_url = f"{api.config['server']['url']}/collections/{collection_id}/items/{item_id}/layers/{layer_id}/geoquery"
