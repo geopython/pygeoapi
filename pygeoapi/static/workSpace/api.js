@@ -173,3 +173,36 @@ export async function managePrimalMember(colId, featId, tId, mId, method, jsonDa
   if (!response.ok) throw new Error(`${method} failed: ${response.status}`);
   return method === 'DELETE' ? true : await response.json();
 }
+
+/** GET full DualSpaceLayer */
+export async function getDualSpaceLayer(colId, featId, tId) {
+  const url = `${API_BASE}/collections/${colId}/items/${featId}/layers/${tId}/dual?f=json`;
+  const response = await fetch(url);
+  if (!response.ok) throw new Error(`DualSpace Load Failed: ${response.status}`);
+  return await response.json();
+}
+
+/** POST to DualSpaceLayer */
+export async function postDualMember(colId, featId, tId, jsonData) {
+  const url = `${API_BASE}/collections/${colId}/items/${featId}/layers/${tId}/dual`;
+  const response = await fetch(url, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(jsonData)
+  });
+  if (!response.ok) throw new Error(`Dual POST Failed: ${response.status}`);
+  return await response.json();
+}
+
+/** Dual Member: PATCH or DELETE */
+export async function manageDualMember(colId, featId, tId, mId, method, jsonData = null) {
+  const url = `${API_BASE}/collections/${colId}/items/${featId}/layers/${tId}/dual/${mId}`;
+  const options = { method: method };
+  if (jsonData) {
+    options.headers = { 'Content-Type': 'application/json' };
+    options.body = JSON.stringify(jsonData);
+  }
+  const response = await fetch(url, options);
+  if (!response.ok) throw new Error(`${method} Failed: ${response.status}`);
+  return method === 'DELETE' ? true : await response.json();
+}

@@ -1,0 +1,16 @@
+{
+    "featureType": "Edge",
+    "id": "edge-101-100",
+    "connects": [
+        "node-101", 
+        "node-100"
+    ],
+    "weight": 1.5,
+    "geometry": {
+        "type": "LineString",
+        "coordinates": [
+            [5, 5], 
+            [15, 5]
+        ]
+    }
+}

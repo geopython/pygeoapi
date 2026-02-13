@@ -1731,7 +1731,7 @@ class PostgresIndoorDB:
 
             for row in space_rows:
                 if row.bounded_by_list:
-                    all_referenced_boundaries.update(row['bounded_by_list'])
+                    all_referenced_boundaries.update(row.bounded_by_list)
                 geom_2d = self.wkt_to_json(row.geom_wkt)
                 cell = {
                         "id": row.id_str,
@@ -1757,7 +1757,7 @@ class PostgresIndoorDB:
                 ST_AsText(c."2D_geometry", 0) as geom_wkt, c."3D_geometry" as geom_3d, n.id_str as duality, c.is_virtual
                 FROM cell_space_n_boundary c
                 LEFT JOIN node_n_edge n ON c.duality_id = n.id
-                WHERE c.thematiclayer_id = %s
+                WHERE c.thematiclayer_id = %s AND c.type = 'boundary'
             """
             boundary_params = [layer_pk]
             # if cell spaces are filtered, select only its bounded by boundaries.

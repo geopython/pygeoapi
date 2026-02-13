@@ -2,7 +2,6 @@
     "featureType": "CellBoundary",
     "id": "boundary-wall-02",
     "isVirtual": true,
-    "duality": "T1",
     "externalReference": {
         "source": "Manual_Input",
         "description": "Wall between corridor and new office"

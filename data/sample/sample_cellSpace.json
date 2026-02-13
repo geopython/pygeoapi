@@ -5,7 +5,6 @@
     "level": "1F",
     "poi": false,
     "duality": null,
-    "boundedBy": ["B5"],
     "cellSpaceGeom": {
         "geometry2D": {
             "type": "Polygon",
