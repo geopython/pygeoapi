@@ -378,7 +378,7 @@ def json_serial(obj: Any) -> str:
             return obj.decode('utf-8')
         except UnicodeDecodeError:
             LOGGER.debug('Returning as base64 encoded JSON object')
-            return base64.b64encode(obj)
+            return base64.b64encode(obj).decode('utf-8')
     elif isinstance(obj, Decimal):
         return float(obj)
     elif type(obj).__name__ in ['int32', 'int64']:
