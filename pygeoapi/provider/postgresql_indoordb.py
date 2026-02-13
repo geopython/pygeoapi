@@ -280,7 +280,7 @@ class PostgresIndoorDB:
                     SELECT 
                         count(*) OVER() as full_count,
                         i.id_str, 
-                        ST_AsGeoJSON(i.geojson_geometry) as geom,
+                        ST_AsGeoJSON(i.geojson_geometry,4326) as geom,
                         i.geojson_properties
                     FROM indoorfeature i
                     JOIN collection c ON i.collection_id = c.id
@@ -1290,7 +1290,7 @@ class PostgresIndoorDB:
                 cur.execute(sql, (
                     n_pk[0],
                     n_pk[1],
-                    edge_pk['id']
+                    edge_pk[0]
                 ))    
               
     def post_thematic_layer(self, collection_id:str, feature_id:str, layer_data):
@@ -1864,11 +1864,11 @@ class PostgresIndoorDB:
                             return None 
                         else: # validation check: CellBoundary can bound only if it bounds nothing
                             for row in rows:
-                                if row['bounded_by_cell_id']:
+                                if row[2]:
                                     LOGGER.debug(f"Validation Failed: Bounding boundary {row['id_str']} already bounds another cellSpace.")
                                     return None
                                 else:
-                                    update_bounded_by.append(row['id'])
+                                    update_bounded_by.append(row[0])
 
                     geom_root = data.get('cellSpaceGeom', {})
                     geom_2d_wkt = self.json_to_wkt(geom_root['geometry2D'])
