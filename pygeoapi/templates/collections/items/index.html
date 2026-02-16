@@ -33,28 +33,30 @@
     {% if data['itemtype'] == 'record' %}
     <div class="row">
       <div class="col-sm-12 col-md-6">
-        <div class="row">
-          <div class="col-sm-4">
-            <label for="q">Search</label>
-            <input name="q" id="q" type="text" class="form-control search-input" placeholder="Search">
+        <form id="searchForm">
+          <div class="row">
+            <div class="col-sm-4">
+              <label for="q">Search</label>
+              <input name="q" id="q" type="text" class="form-control search-input" placeholder="Search">
+            </div>
+            <div class="col-sm-4">
+              <label for="datetime_begin">Start date</label>
+              <input name="datetime_begin" id="datetime_begin" type="date" class="form-control" />
+            </div>
+            <div class="col-sm-4">
+              <label for="datetime_end">End date</label>
+              <input name="datetime_end" id="datetime_end" type="date" class="form-control" />
+            </div>
           </div>
-          <div class="col-sm-4">
-            <label for="datetime_begin">Start date</label>
-            <input name="datetime_begin" id="datetime_begin" type="date" class="form-control" />
+          <div class="row">
+            <div class="col-sm-12">
+              <input class="form-check-input" onchange="checkSpatialFilter()"  type="checkbox" id="spatial_filter_check">
+              <label class="form-check-label" for="spatial_filter_check">Spatial filter</label>
+              <button type="button" class="btn btn-primary" onclick="submitForm();">Search</button>
+              <button type="reset" class="btn btn-secondary" onclick="document.getElementById('searchForm').reset();">Reset</button>
+            </div>
           </div>
-          <div class="col-sm-4">
-            <label for="datetime_end">End date</label>
-            <input name="datetime_end" id="datetime_end" type="date" class="form-control" />
-          </div>
-        </div>
-        <div class="row">
-          <div class="col-sm-12">
-            <input class="form-check-input" onchange="checkSpatialFilter()"  type="checkbox" id="spatial_filter_check">
-            <label class="form-check-label" for="spatial_filter_check">Spatial filter</label>
-            <button type="button" class="btn btn-primary" onclick="submitForm();">Search</button>
-            <button type="reset" class="btn btn-secondary">Reset</button>
-          </div>
-        </div>
+        </form>
       </div>
     </div>
     {% endif %}
@@ -205,12 +207,12 @@
         if (q) {
             query_string.push('q=' + encodeURIComponent(q));
         }
-        if (datetime_begin) {
+        if (datetime_begin !== "") {
             datetime.push(datetime_begin + 'T00:00:00Z');
         } else {
             datetime.push('..');
         }
-        if (datetime_end) {
+        if (datetime_end !== "") {
             datetime.push(datetime_end + 'T23:59:59Z');
         } else {
             datetime.push('..');
