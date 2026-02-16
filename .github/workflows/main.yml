@@ -24,6 +24,7 @@ jobs:
           - python-version: '3.12'
     env:
       PYGEOAPI_CONFIG: "$(pwd)/pygeoapi-config.yml"
+      DOCKER_API_VERSION: "1.44"
 
     services:
       postgres:
