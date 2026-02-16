@@ -5,7 +5,7 @@
 #          Francesco Bartoli <xbartolone@gmail.com>
 #          Angelos Tzotsos <gcpp.kalxas@gmail.com>
 #
-# Copyright (c) 2025 Tom Kralidis
+# Copyright (c) 2026 Tom Kralidis
 # Copyright (c) 2019 Just van den Broecke
 # Copyright (c) 2025 Francesco Bartoli
 # Copyright (c) 2025 Angelos Tzotsos
@@ -34,7 +34,7 @@
 #
 # =================================================================
 
-FROM ubuntu:noble-20251013
+FROM ubuntu:noble-20260113
 
 LABEL maintainer="Just van den Broecke <justb4@gmail.com>"
 
