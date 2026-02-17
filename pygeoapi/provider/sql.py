@@ -597,7 +597,9 @@ def store_db_parameters(
     self.db_user = connection_data.get('user')
     self.db_host = connection_data.get('host')
     self.db_port = connection_data.get('port', self.default_port)
-    self.db_name = connection_data.get('dbname')
+    self.db_name = (
+        connection_data.get('dbname') or connection_data.get('database')
+    )
     self.db_query = connection_data.get('query')
     self._db_password = connection_data.get('password')
     # db_search_path gets converted to a tuple here in order to ensure it
