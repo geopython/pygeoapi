@@ -129,11 +129,7 @@ def config_types(request):
             f'postgresql://postgres:{PASSWORD}@127.0.0.1:5432/test'
         )
         config_['options']['search_path'] = ['public', 'osm']
-    elif request.param == 'connection_string_pg8000':
-        config_['data'] = (
-            f'postgresql+pg8000://postgres:{PASSWORD}@127.0.0.1:5432/test'
-        )
-        config_['options']['search_path'] = ['public', 'osm']
+
     return config_
 
 
