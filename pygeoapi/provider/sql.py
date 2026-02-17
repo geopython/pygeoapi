@@ -418,10 +418,10 @@ class GenericSQLProvider(BaseProvider):
                              options: dict[str, str]):
         """
         Store database connection parameters
-        
+
         :param connection_data: connection string or dict of connection params
         :param options: additional connection options
-        
+
         :returns: None
         """
         if isinstance(connection_data, str):
