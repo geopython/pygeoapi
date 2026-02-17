@@ -39,19 +39,6 @@
 #
 # =================================================================
 
-# Testing local postgis with docker:
-# docker run --name "postgis" \
-# -v postgres_data:/var/lib/postgresql -p 5432:5432 \
-# -e ALLOW_IP_RANGE=0.0.0.0/0 \
-# -e POSTGRES_USER=postgres \
-# -e POSTGRES_PASS=postgres \
-# -e POSTGRES_DBNAME=test \
-# -d -t kartoza/postgis
-
-# Import dump:
-# gunzip < tests/data/hotosm_bdi_waterways.sql.gz |
-#  psql -U postgres -h 127.0.0.1 -p 5432 test
-
 from copy import deepcopy
 from datetime import datetime
 from decimal import Decimal
@@ -135,7 +122,7 @@ class GenericSQLProvider(BaseProvider):
         LOGGER.debug(f'Configured Storage CRS: {self.storage_crs}')
 
         # Read table information from database
-        options = provider_def.get('options', {})
+        options = provider_def.get('options', {}) | extra_conn_args
         self._store_db_parameters(provider_def['data'], options)
         self._engine = get_engine(
             driver_name,
@@ -144,13 +131,14 @@ class GenericSQLProvider(BaseProvider):
             self.db_name,
             self.db_user,
             self._db_password,
-            **self.db_options | extra_conn_args
+            self.db_conn,
+            **self.db_options
         )
+        LOGGER.debug(f'DB connection: {repr(self._engine.url)}')
         self.table_model = get_table_model(
             self.table, self.id_field, self.db_search_path, self._engine
         )
 
-        LOGGER.debug(f'DB connection: {repr(self._engine.url)}')
         self.get_fields()
 
     def query(
@@ -426,16 +414,35 @@ class GenericSQLProvider(BaseProvider):
 
         return result.rowcount > 0
 
-    def _store_db_parameters(self, parameters, options):
-        self.db_user = parameters.get('user')
-        self.db_host = parameters.get('host')
-        self.db_port = parameters.get('port', self.default_port)
-        self.db_name = parameters.get('dbname')
+    def _store_db_parameters(self, connection_data: str | dict[str],
+                             options: dict[str, str]):
+        """
+        Store database connection parameters
+        
+        :param connection_data: connection string or dict of connection params
+        :param options: additional connection options
+        
+        :returns: None
+        """
+        if isinstance(connection_data, str):
+            self.db_conn = connection_data
+            connection_data = {}
+        else:
+            self.db_conn = None
+        # OR
+        self.db_user = connection_data.get('user')
+        self.db_host = connection_data.get('host')
+        self.db_port = connection_data.get('port', self.default_port)
+        self.db_name = connection_data.get('dbname')
+        self.db_query = connection_data.get('query')
+        self._db_password = connection_data.get('password')
         # db_search_path gets converted to a tuple here in order to ensure it
         # is hashable - which allows us to use functools.cache() when
         # reflecting the table definition from the DB
-        self.db_search_path = tuple(parameters.get('search_path', ['public']))
-        self._db_password = parameters.get('password')
+        self.db_search_path = tuple(
+            connection_data.get('search_path') or
+            options.pop('search_path', ['public'])
+        )
         self.db_options = {
             k: v
             for k, v in options.items()
@@ -610,17 +617,20 @@ def get_engine(
     database: str,
     user: str,
     password: str,
+    conn_str: Optional[str] = None,
     **connect_args
 ):
-    """Create SQL Alchemy engine."""
-    conn_str = URL.create(
-        drivername=driver_name,
-        username=user,
-        password=password,
-        host=host,
-        port=int(port),
-        database=database
-    )
+    """Get SQL Alchemy engine."""
+    if conn_str is None:
+        conn_str = URL.create(
+            drivername=driver_name,
+            username=user,
+            password=password,
+            host=host,
+            port=int(port),
+            database=database
+        )
+
     engine = create_engine(
         conn_str, connect_args=connect_args, pool_pre_ping=True
     )

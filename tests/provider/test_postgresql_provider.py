@@ -37,7 +37,19 @@
 # =================================================================
 
 # Needs to be run like: python3 -m pytest
-# See pygeoapi/provider/postgresql.py for instructions on setting up
+# Testing local postgis with docker:
+'''
+docker run --name "postgis" \
+--rm \
+-v ./tests/data/hotosm_bdi_waterways.sql.gz:/docker-entrypoint-initdb.d/hotosm_bdi_waterways.sql.gz \
+-v ./tests/data/dummy_types_data.sql:/docker-entrypoint-initdb.d/dummy_types_data.sql \
+-p 5432:5432 \
+-e ALLOW_IP_RANGE=0.0.0.0/0 \
+-e POSTGRES_USER=postgres \
+-e POSTGRES_PASS=postgres \
+-e POSTGRES_DBNAME=test \
+-d -t kartoza/postgis
+'''
 # test database in Docker
 
 from http import HTTPStatus
@@ -69,44 +81,63 @@ from ..util import get_test_file_path, mock_api_request
 PASSWORD = os.environ.get('POSTGRESQL_PASSWORD', 'postgres')
 
 
-@pytest.fixture()
-def config():
-    return {
+@pytest.fixture(params=['default', 'connection_string'])
+def config(request):
+    config_ = {
         'name': 'PostgreSQL',
         'type': 'feature',
-        'data': {'host': '127.0.0.1',
-                 'dbname': 'test',
-                 'user': 'postgres',
-                 'password': PASSWORD,
-                 'search_path': ['osm', 'public']
-                 },
-        'options': {
-            'connect_timeout': 10
-        },
+        'options': {'connect_timeout': 10},
         'id_field': 'osm_id',
         'table': 'hotosm_bdi_waterways',
         'geom_field': 'foo_geom'
     }
+    if request.param == 'default':
+        config_['data']= {
+            'host': '127.0.0.1',
+            'dbname': 'test',
+            'user': 'postgres',
+            'password': PASSWORD,
+            'search_path': ['osm', 'public']
+        }
+    elif request.param == 'connection_string':
+        config_['data'] = (
+            f'postgresql://postgres:{PASSWORD}@127.0.0.1:5432/test'
+        )
+        config_['options']['search_path'] = ['osm', 'public']
+    
+    return config_
 
 
-@pytest.fixture()
-def config_types():
-    return {
+
+@pytest.fixture(params=['default', 'connection_string'])
+def config_types(request):
+    config_ = {
         'name': 'PostgreSQL',
         'type': 'feature',
-        'data': {'host': '127.0.0.1',
-                 'dbname': 'test',
-                 'user': 'postgres',
-                 'password': PASSWORD,
-                 'search_path': ['public']
-                 },
-        'options': {
-            'connect_timeout': 10
-        },
+        'options': {'connect_timeout': 10},
         'id_field': 'id',
         'table': 'foo',
         'geom_field': 'the_geom'
     }
+    if request.param == 'default':
+        config_['data'] = {
+            'host': '127.0.0.1',
+            'dbname': 'test',
+            'user': 'postgres',
+            'password': PASSWORD,
+            'search_path': ['public', 'osm']
+        }
+    elif request.param == 'connection_string':
+        config_['data'] = (
+            f'postgresql://postgres:{PASSWORD}@127.0.0.1:5432/test'
+        )
+        config_['options']['search_path'] = ['public', 'osm']
+    elif request.param == 'connection_string_pg8000':
+        config_['data'] = (
+            f'postgresql+pg8000://postgres:{PASSWORD}@127.0.0.1:5432/test'
+        )
+        config_['options']['search_path'] = ['public', 'osm']
+    return config_
 
 
 @pytest.fixture()
@@ -148,14 +179,20 @@ def test_valid_connection_options(config):
         for key in keys:
             assert key in ['connect_timeout', 'tcp_user_timeout', 'keepalives',
                            'keepalives_idle', 'keepalives_count',
-                           'keepalives_interval']
+                           'keepalives_interval', 'search_path']
 
 
 def test_schema_path_search(config):
-    config['data']['search_path'] = ['public', 'osm']
+    if isinstance(config['data'], dict):
+        config['data']['search_path'] = ['public', 'osm']
+    else:
+        config['options']['search_path'] = ['public', 'osm']
     PostgreSQLProvider(config)
 
-    config['data']['search_path'] = ['public', 'notosm']
+    if isinstance(config['data'], dict):
+        config['data']['search_path'] = ['public', 'notosm']
+    else:
+        config['options']['search_path'] = ['public', 'notosm']
     with pytest.raises(ProviderQueryError):
         PostgreSQLProvider(config)
 
@@ -484,8 +521,14 @@ def test_instantiation_with_bad_config(config, bad_data, exception, match):
 
 def test_instantiation_with_bad_credentials(config):
     # Arrange
-    config['data'].update({'user': 'bad_user'})
-    match = r'Could not connect to .*bad_user:\*\*\*@'
+    if isinstance(config['data'], dict):
+        config['data'].update({'user': 'bad_user'})
+        match = r'Could not connect to .*bad_user:\*\*\*@'
+
+    else:
+        config['data'] = config['data'].replace('postgres:', 'bad_user:')
+        match = r'Could not connect to .*bad_user:\*\*\*@'
+
     # Make sure we don't use a cached connection in the tests
     postgresql_provider_module._ENGINE_STORE = {}
 
@@ -515,7 +558,10 @@ def test_engine_and_table_model_stores(config):
     # and also a different table_model, as two databases may have different
     # tables with the same name
     different_host = config.copy()
-    different_host["data"]["host"] = "localhost"
+    if isinstance(config['data'], dict):
+        different_host["data"]["host"] = "localhost"
+    else:
+        different_host["data"] = config['data'].replace('127.0.0.1', 'localhost')
     provider3 = PostgreSQLProvider(different_host)
     assert provider3._engine is not provider0._engine
     assert provider3.table_model is not provider0.table_model
