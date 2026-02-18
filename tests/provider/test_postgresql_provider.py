@@ -37,7 +37,17 @@
 # =================================================================
 
 # Needs to be run like: python3 -m pytest
-# See pygeoapi/provider/postgresql.py for instructions on setting up
+# Testing local postgis with docker:
+'''
+docker run --name postgis \
+    --rm \
+    -p 5432:5432 \
+    -e ALLOW_IP_RANGE=0.0.0.0/0 \
+    -e POSTGRES_USER=postgres \
+    -e POSTGRES_PASS=postgres \
+    -e POSTGRES_DBNAME=test \
+    -d -t kartoza/postgis
+'''
 # test database in Docker
 
 from http import HTTPStatus
@@ -69,44 +79,58 @@ from ..util import get_test_file_path, mock_api_request
 PASSWORD = os.environ.get('POSTGRESQL_PASSWORD', 'postgres')
 
 
-@pytest.fixture()
-def config():
-    return {
+@pytest.fixture(params=['default', 'connection_string'])
+def config(request):
+    config_ = {
         'name': 'PostgreSQL',
         'type': 'feature',
-        'data': {'host': '127.0.0.1',
-                 'dbname': 'test',
-                 'user': 'postgres',
-                 'password': PASSWORD,
-                 'search_path': ['osm', 'public']
-                 },
-        'options': {
-            'connect_timeout': 10
-        },
+        'options': {'connect_timeout': 10},
         'id_field': 'osm_id',
         'table': 'hotosm_bdi_waterways',
         'geom_field': 'foo_geom'
     }
+    if request.param == 'default':
+        config_['data'] = {
+            'host': '127.0.0.1',
+            'dbname': 'test',
+            'user': 'postgres',
+            'password': PASSWORD,
+            'search_path': ['osm', 'public']
+        }
+    elif request.param == 'connection_string':
+        config_['data'] = (
+            f'postgresql://postgres:{PASSWORD}@127.0.0.1:5432/test'
+        )
+        config_['options']['search_path'] = ['osm', 'public']
+
+    return config_
 
 
-@pytest.fixture()
-def config_types():
-    return {
+@pytest.fixture(params=['default', 'connection_string'])
+def config_types(request):
+    config_ = {
         'name': 'PostgreSQL',
         'type': 'feature',
-        'data': {'host': '127.0.0.1',
-                 'dbname': 'test',
-                 'user': 'postgres',
-                 'password': PASSWORD,
-                 'search_path': ['public']
-                 },
-        'options': {
-            'connect_timeout': 10
-        },
+        'options': {'connect_timeout': 10},
         'id_field': 'id',
         'table': 'foo',
         'geom_field': 'the_geom'
     }
+    if request.param == 'default':
+        config_['data'] = {
+            'host': '127.0.0.1',
+            'dbname': 'test',
+            'user': 'postgres',
+            'password': PASSWORD,
+            'search_path': ['public', 'osm']
+        }
+    elif request.param == 'connection_string':
+        config_['data'] = (
+            f'postgresql://postgres:{PASSWORD}@127.0.0.1:5432/test'
+        )
+        config_['options']['search_path'] = ['public', 'osm']
+
+    return config_
 
 
 @pytest.fixture()
@@ -148,14 +172,20 @@ def test_valid_connection_options(config):
         for key in keys:
             assert key in ['connect_timeout', 'tcp_user_timeout', 'keepalives',
                            'keepalives_idle', 'keepalives_count',
-                           'keepalives_interval']
+                           'keepalives_interval', 'search_path']
 
 
 def test_schema_path_search(config):
-    config['data']['search_path'] = ['public', 'osm']
+    if isinstance(config['data'], dict):
+        config['data']['search_path'] = ['public', 'osm']
+    else:
+        config['options']['search_path'] = ['public', 'osm']
     PostgreSQLProvider(config)
 
-    config['data']['search_path'] = ['public', 'notosm']
+    if isinstance(config['data'], dict):
+        config['data']['search_path'] = ['public', 'notosm']
+    else:
+        config['options']['search_path'] = ['public', 'notosm']
     with pytest.raises(ProviderQueryError):
         PostgreSQLProvider(config)
 
@@ -189,13 +219,13 @@ def test_query_materialised_view(config):
     provider = PostgreSQLProvider(config_materialised_view)
 
     # Only ID, width and depth properties should be available
-    assert set(provider.get_fields().keys()) == {"osm_id", "width", "depth"}
+    assert set(provider.get_fields().keys()) == {'osm_id', 'width', 'depth'}
 
 
 def test_query_with_property_filter(config):
     """Test query valid features when filtering by property"""
     p = PostgreSQLProvider(config)
-    feature_collection = p.query(properties=[("waterway", "stream")])
+    feature_collection = p.query(properties=[('waterway', 'stream')])
     features = feature_collection.get('features')
     stream_features = list(
         filter(lambda feature: feature['properties']['waterway'] == 'stream',
@@ -246,19 +276,19 @@ def test_query_with_config_properties(config):
     feature = result.get('features')[0]
     properties = feature.get('properties')
     for property_name in properties.keys():
-        assert property_name in config["properties"]
+        assert property_name in config['properties']
 
 
-@pytest.mark.parametrize("property_filter, expected", [
+@pytest.mark.parametrize('property_filter, expected', [
     ([], 14776),
-    ([("waterway", "stream")], 13930),
-    ([("waterway", "this does not exist")], 0),
+    ([('waterway', 'stream')], 13930),
+    ([('waterway', 'this does not exist')], 0),
 ])
 def test_query_hits_with_property_filter(config, property_filter, expected):
     """Test query resulttype=hits"""
     provider = PostgreSQLProvider(config)
-    results = provider.query(properties=property_filter, resulttype="hits")
-    assert results["numberMatched"] == expected
+    results = provider.query(properties=property_filter, resulttype='hits')
+    assert results['numberMatched'] == expected
 
 
 def test_query_bbox(config):
@@ -337,7 +367,7 @@ def test_get_with_config_properties(config):
     result = provider.get(80835483)
     properties = result.get('properties')
     for property_name in properties.keys():
-        assert property_name in config["properties"]
+        assert property_name in config['properties']
 
 
 def test_get_not_existing_item_raise_exception(config):
@@ -376,7 +406,7 @@ def test_query_cql(config, cql, expected_ids):
     assert feature_collection.get('type') == 'FeatureCollection'
 
     features = feature_collection.get('features')
-    ids = [feature["id"] for feature in features]
+    ids = [feature['id'] for feature in features]
     assert ids == expected_ids
 
 
@@ -385,7 +415,7 @@ def test_query_cql_properties_bbox_filters(config):
     # Arrange
     properties = [('waterway', 'stream')]
     bbox = [29, -2.8, 29.2, -2.9]
-    filterq = parse("osm_id BETWEEN 80800000 AND 80900000")
+    filterq = parse('osm_id BETWEEN 80800000 AND 80900000')
     expected_ids = [80835470]
 
     # Act
@@ -395,7 +425,7 @@ def test_query_cql_properties_bbox_filters(config):
                                         bbox=bbox)
 
     # Assert
-    ids = [feature["id"] for feature in feature_collection.get('features')]
+    ids = [feature['id'] for feature in feature_collection.get('features')]
     assert ids == expected_ids
 
 
@@ -457,9 +487,9 @@ def test_instantiation(config):
     provider = PostgreSQLProvider(config)
 
     # Assert
-    assert provider.name == "PostgreSQL"
-    assert provider.table == "hotosm_bdi_waterways"
-    assert provider.id_field == "osm_id"
+    assert provider.name == 'PostgreSQL'
+    assert provider.table == 'hotosm_bdi_waterways'
+    assert provider.id_field == 'osm_id'
 
 
 @pytest.mark.parametrize('bad_data, exception, match', [
@@ -484,8 +514,14 @@ def test_instantiation_with_bad_config(config, bad_data, exception, match):
 
 def test_instantiation_with_bad_credentials(config):
     # Arrange
-    config['data'].update({'user': 'bad_user'})
-    match = r'Could not connect to .*bad_user:\*\*\*@'
+    if isinstance(config['data'], dict):
+        config['data'].update({'user': 'bad_user'})
+        match = r'Could not connect to .*bad_user:\*\*\*@'
+
+    else:
+        config['data'] = config['data'].replace('postgres:', 'bad_user:')
+        match = r'Could not connect to .*bad_user:\*\*\*@'
+
     # Make sure we don't use a cached connection in the tests
     postgresql_provider_module._ENGINE_STORE = {}
 
@@ -505,7 +541,7 @@ def test_engine_and_table_model_stores(config):
 
     # Same database connection details, but different table
     different_table = config.copy()
-    different_table.update(table="hotosm_bdi_drains")
+    different_table.update(table='hotosm_bdi_drains')
     provider2 = PostgreSQLProvider(different_table)
     assert repr(provider2._engine) == repr(provider0._engine)
     assert provider2._engine is provider0._engine
@@ -515,7 +551,11 @@ def test_engine_and_table_model_stores(config):
     # and also a different table_model, as two databases may have different
     # tables with the same name
     different_host = config.copy()
-    different_host["data"]["host"] = "localhost"
+    if isinstance(config['data'], dict):
+        different_host['data']['host'] = 'localhost'
+    else:
+        different_host['data'] = config['data'].replace(
+            '127.0.0.1', 'localhost')
     provider3 = PostgreSQLProvider(different_host)
     assert provider3._engine is not provider0._engine
     assert provider3.table_model is not provider0.table_model
@@ -584,7 +624,7 @@ def test_get_collection_items_postgresql_cql_invalid_filter_language(pg_api_):
     assert error_response['description'] == 'Invalid filter language'
 
 
-@pytest.mark.parametrize("bad_cql", [
+@pytest.mark.parametrize('bad_cql', [
     'id IN (1, ~)',
     'id EATS (1, 2)',  # Valid CQL relations only
     'id IN (1, 2'  # At some point this may return UnexpectedEOF
@@ -664,7 +704,7 @@ def test_get_collection_items_postgresql_cql_json_invalid_filter_language(pg_api
     """
     # Arrange
     # CQL should never be parsed
-    cql = {"in": {"value": {"property": "id"}, "list": [1, 2]}}
+    cql = {'in': {'value': {'property': 'id'}, 'list': [1, 2]}}
     headers = {'CONTENT_TYPE': 'application/query-cql-json'}
 
     # Act
@@ -681,9 +721,9 @@ def test_get_collection_items_postgresql_cql_json_invalid_filter_language(pg_api
     assert error_response['description'] == 'Bad CQL JSON'
 
 
-@pytest.mark.parametrize("bad_cql", [
+@pytest.mark.parametrize('bad_cql', [
     # Valid CQL relations only
-    {"eats": {"value": {"property": "id"}, "list": [1, 2]}},
+    {'eats': {'value': {'property': 'id'}, 'list': [1, 2]}},
     # At some point this may return UnexpectedEOF
     '{"in": {"value": {"property": "id"}, "list": [1, 2}}'
 ])
@@ -939,7 +979,7 @@ def test_provider_count_false_with_resulttype_hits(config):
     provider = PostgreSQLProvider(config)
 
     # Act
-    results = provider.query(resulttype="hits")
+    results = provider.query(resulttype='hits')
 
     # Assert
     assert results['numberMatched'] == 14776

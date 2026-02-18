@@ -39,25 +39,12 @@
 #
 # =================================================================
 
-# Testing local postgis with docker:
-# docker run --name "postgis" \
-# -v postgres_data:/var/lib/postgresql -p 5432:5432 \
-# -e ALLOW_IP_RANGE=0.0.0.0/0 \
-# -e POSTGRES_USER=postgres \
-# -e POSTGRES_PASS=postgres \
-# -e POSTGRES_DBNAME=test \
-# -d -t kartoza/postgis
-
-# Import dump:
-# gunzip < tests/data/hotosm_bdi_waterways.sql.gz |
-#  psql -U postgres -h 127.0.0.1 -p 5432 test
-
 from copy import deepcopy
 from datetime import datetime
 from decimal import Decimal
 import functools
 import logging
-from typing import Optional
+from typing import Optional, Any
 
 from geoalchemy2 import Geometry  # noqa - this isn't used explicitly but is needed to process Geometry columns
 from geoalchemy2.functions import ST_MakeEnvelope, ST_Intersects
@@ -73,7 +60,7 @@ from sqlalchemy import (
     desc,
     delete
 )
-from sqlalchemy.engine import URL
+from sqlalchemy.engine import URL, Engine
 from sqlalchemy.exc import (
     ConstraintColumnNotFoundError,
     InvalidRequestError,
@@ -82,6 +69,7 @@ from sqlalchemy.exc import (
 from sqlalchemy.ext.automap import automap_base
 from sqlalchemy.orm import Session, load_only
 from sqlalchemy.sql.expression import and_
+from sqlalchemy.schema import Table
 
 from pygeoapi.crs import get_transform_from_spec, get_srid
 from pygeoapi.provider.base import (
@@ -135,8 +123,8 @@ class GenericSQLProvider(BaseProvider):
         LOGGER.debug(f'Configured Storage CRS: {self.storage_crs}')
 
         # Read table information from database
-        options = provider_def.get('options', {})
-        self._store_db_parameters(provider_def['data'], options)
+        options = provider_def.get('options', {}) | extra_conn_args
+        store_db_parameters(self, provider_def['data'], options)
         self._engine = get_engine(
             driver_name,
             self.db_host,
@@ -144,13 +132,13 @@ class GenericSQLProvider(BaseProvider):
             self.db_name,
             self.db_user,
             self._db_password,
-            **self.db_options | extra_conn_args
+            self.db_conn,
+            **self.db_options
         )
         self.table_model = get_table_model(
             self.table, self.id_field, self.db_search_path, self._engine
         )
 
-        LOGGER.debug(f'DB connection: {repr(self._engine.url)}')
         self.get_fields()
 
     def query(
@@ -426,22 +414,6 @@ class GenericSQLProvider(BaseProvider):
 
         return result.rowcount > 0
 
-    def _store_db_parameters(self, parameters, options):
-        self.db_user = parameters.get('user')
-        self.db_host = parameters.get('host')
-        self.db_port = parameters.get('port', self.default_port)
-        self.db_name = parameters.get('dbname')
-        # db_search_path gets converted to a tuple here in order to ensure it
-        # is hashable - which allows us to use functools.cache() when
-        # reflecting the table definition from the DB
-        self.db_search_path = tuple(parameters.get('search_path', ['public']))
-        self._db_password = parameters.get('password')
-        self.db_options = {
-            k: v
-            for k, v in options.items()
-            if not isinstance(v, dict)
-        }
-
     def _sqlalchemy_to_feature(self, item, crs_transform_out=None,
                                select_properties=[]):
         """
@@ -602,6 +574,48 @@ class GenericSQLProvider(BaseProvider):
         return selected_properties_clause
 
 
+def store_db_parameters(
+    self: GenericSQLProvider | Any,
+    connection_data: str | dict[str],
+    options: dict[str, str]
+) -> None:
+    """
+    Store database connection parameters
+
+    :self: instance of provider or manager class
+    :param connection_data: connection string or dict of connection params
+    :param options: additional connection options
+
+    :returns: None
+    """
+    if isinstance(connection_data, str):
+        self.db_conn = connection_data
+        connection_data = {}
+    else:
+        self.db_conn = None
+    # OR
+    self.db_user = connection_data.get('user')
+    self.db_host = connection_data.get('host')
+    self.db_port = connection_data.get('port', self.default_port)
+    self.db_name = (
+        connection_data.get('dbname') or connection_data.get('database')
+    )
+    self.db_query = connection_data.get('query')
+    self._db_password = connection_data.get('password')
+    # db_search_path gets converted to a tuple here in order to ensure it
+    # is hashable - which allows us to use functools.cache() when
+    # reflecting the table definition from the DB
+    self.db_search_path = tuple(
+        connection_data.get('search_path') or
+        options.pop('search_path', ['public'])
+    )
+    self.db_options = {
+        k: v
+        for k, v in options.items()
+        if not isinstance(v, dict)
+    }
+
+
 @functools.cache
 def get_engine(
     driver_name: str,
@@ -610,20 +624,38 @@ def get_engine(
     database: str,
     user: str,
     password: str,
+    conn_str: Optional[str] = None,
     **connect_args
-):
-    """Create SQL Alchemy engine."""
-    conn_str = URL.create(
-        drivername=driver_name,
-        username=user,
-        password=password,
-        host=host,
-        port=int(port),
-        database=database
-    )
+) -> Engine:
+    """
+    Get SQL Alchemy engine.
+
+    :param driver_name: database driver name
+    :param host: database host
+    :param port: database port
+    :param database: database name
+    :param user: database user
+    :param password: database password
+    :param conn_str: optional connection URL
+    :param connect_args: custom connection arguments to pass to create_engine()
+
+    :returns: SQL Alchemy engine
+    """
+    if conn_str is None:
+        conn_str = URL.create(
+            drivername=driver_name,
+            username=user,
+            password=password,
+            host=host,
+            port=int(port),
+            database=database
+        )
+
     engine = create_engine(
         conn_str, connect_args=connect_args, pool_pre_ping=True
     )
+
+    LOGGER.debug(f'Created engine for {repr(engine.url)}.')
     return engine
 
 
@@ -632,14 +664,25 @@ def get_table_model(
     table_name: str,
     id_field: str,
     db_search_path: tuple[str],
-    engine
-):
-    """Reflect table."""
+    engine: Engine
+) -> Table:
+    """
+    Reflect table using SQLAlchemy Automap.
+
+    :param table_name: name of table to reflect
+    :param id_field: name of primary key field
+    :param db_search_path: tuple of database schemas to search for the table
+    :param engine: SQLAlchemy engine to use for reflection
+
+    :returns: SQLAlchemy model of the reflected table
+    """
+    LOGGER.debug('Reflecting table definition from database')
     metadata = MetaData()
 
     # Look for table in the first schema in the search path
     schema = db_search_path[0]
     try:
+        LOGGER.debug(f'Looking for table {table_name} in schema {schema}')
         metadata.reflect(
             bind=engine, schema=schema, only=[table_name], views=True
         )

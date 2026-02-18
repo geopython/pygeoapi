@@ -627,6 +627,18 @@ Must have PostGIS installed.
          geom_field: foo_geom
          count: true # Optional; Default true; Enable/disable count for improved performance.
 
+This can be represented as a connection dictionary or as a connection string as follows:
+
+.. code-block:: yaml
+
+   providers:
+       - type: feature
+         name: PostgreSQL
+         data: postgresql://postgres:postgres@127.0.0.1:3010/test
+         id_field: osm_id
+         table: hotosm_bdi_waterways
+         geom_field: foo_geom
+
 A number of database connection options can be also configured in the provider in order to adjust properly the sqlalchemy engine client.
 These are optional and if not specified, the default from the engine will be used. Please see also `SQLAlchemy docs <https://docs.sqlalchemy.org/en/14/core/engines.html#custom-dbapi-connect-arguments-on-connect-routines>`_.
 
