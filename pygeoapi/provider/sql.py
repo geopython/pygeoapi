@@ -676,11 +676,13 @@ def get_table_model(
 
     :returns: SQLAlchemy model of the reflected table
     """
+    LOGGER.debug('Reflecting table definition from database')
     metadata = MetaData()
 
     # Look for table in the first schema in the search path
     schema = db_search_path[0]
     try:
+        LOGGER.debug(f'Looking for table {table_name} in schema {schema}')
         metadata.reflect(
             bind=engine, schema=schema, only=[table_name], views=True
         )

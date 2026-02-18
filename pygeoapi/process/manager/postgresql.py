@@ -96,7 +96,7 @@ class PostgreSQLManager(BaseManager):
             self.db_conn,
             **self.db_options
         )
-        LOGGER.error(self._db_password)
+
         try:
             LOGGER.debug('Getting table model')
             self.table_model = get_table_model(
