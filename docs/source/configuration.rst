@@ -271,6 +271,7 @@ default.
                 include_extra_query_parameters: false  # include extra query parameters that are not part of the collection properties (default: false)
                 # editable transactions: DO NOT ACTIVATE unless you have setup access control beyond pygeoapi
                 editable: true  # optional: if backend is writable, default is false
+                count: true  # optional: perform a count query for collection queries, default is true
                 # coordinate reference systems (CRS) section is optional
                 # default CRSs are http://www.opengis.net/def/crs/OGC/1.3/CRS84 (coordinates without height)
                 # and http://www.opengis.net/def/crs/OGC/1.3/CRS84h (coordinates with ellipsoidal height)

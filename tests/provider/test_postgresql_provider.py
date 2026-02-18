@@ -216,6 +216,20 @@ def test_query_with_property_filter(config):
     assert feature_collection['numberReturned'] == 50
 
 
+def test_no_count(config):
+    """Test query with count disabled"""
+    p = PostgreSQLProvider(config)
+    results = p.query()
+    assert results['numberMatched'] == 14776
+    assert results['numberReturned'] == 10
+
+    config['count'] = False
+    p = PostgreSQLProvider(config)
+    results = p.query()
+    assert 'numberMatched' not in results
+    assert results['numberReturned'] == 10
+
+
 def test_query_with_paging(config):
     """Test query valid features with paging"""
     p = PostgreSQLProvider(config)
