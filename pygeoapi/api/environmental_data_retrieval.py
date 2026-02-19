@@ -494,8 +494,14 @@ def get_collection_edr_query(api: API, request: APIRequest,
                 HTTPStatus.INTERNAL_SERVER_ERROR, headers, request.format,
                 'NoApplicableCode', msg)
 
+        headers['Content-Type'] = formatter.mimetype
+
         if formatter.attachment:
-            filename = f'{dataset}.{formatter.extension}'
+            if p.filename is None:
+                filename = f'{dataset}.{formatter.extension}'
+            else:
+                filename = f'{p.filename}'
+
             cd = f'attachment; filename="{filename}"'
             headers['Content-Disposition'] = cd
 
