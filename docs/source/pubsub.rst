@@ -85,6 +85,11 @@ Brokers
 
 The following protocols are supported:
 
+.. note::
+
+   Pub/Sub client dependencies will vary based on the selected broker.  ``requirements-pubsub.txt`` contains all requirements for supported brokers, as a reference point.
+
+
 MQTT
 ^^^^
 
@@ -98,6 +103,23 @@ Example directive:
            url: mqtt://localhost:1883
            channel: messages/a/data  # optional
            hidden: false # default
+
+Kafka
+^^^^^
+
+Example directive:
+
+.. code-block:: yaml
+
+   pubsub:
+       name: Kafka
+       broker:
+           url: tcp://localhost:9092
+           channel: messages-a-data
+           # if using authentication:
+           # sasl_mechanism: PLAIN  # default PLAIN
+           # sasl_security_protocol: SASL_PLAINTEXT  # default SASL_PLAINTEXT
+           hidden: true  # default false
 
 HTTP
 ^^^^
@@ -113,12 +135,16 @@ Example directive:
            channel: messages-a-data  # optional
            hidden: true  # default false
 
+Additional information
+----------------------
+
 .. note::
 
    For any Pub/Sub endpoints requiring authentication, encode the ``url`` value as follows:
 
    * ``mqtt://username:password@localhost:1883``
    * ``https://username:password@localhost``
+   * ``tcp://username:password@localhost:9092``
 
    As with any section of the pygeoapi configuration, environment variables may be used as needed, for example
    to set username/password information in a URL.  If ``pubsub.broker.url`` contains authentication, and
@@ -130,6 +156,7 @@ Example directive:
    If a ``channel`` is defined, it is used as a prefix to the relevant OGC API endpoint used.
 
    If a ``channel`` is not defined, only the relevant OGC API endpoint is used.
+
 
 .. _`OGC API Publish-Subscribe Workflow - Part 1: Core`: https://docs.ogc.org/DRAFTS/25-030.html
 .. _`AsyncAPI`: https://www.asyncapi.com

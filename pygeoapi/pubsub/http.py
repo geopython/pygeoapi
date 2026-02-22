@@ -41,7 +41,7 @@ LOGGER = logging.getLogger(__name__)
 class HTTPPubSubClient(BasePubSubClient):
     """HTTP client"""
 
-    def __init__(self, broker_url):
+    def __init__(self, publisher_def):
         """
         Initialize object
 
@@ -50,7 +50,7 @@ class HTTPPubSubClient(BasePubSubClient):
         :returns: pygeoapi.pubsub.http.HTTPPubSubClient
         """
 
-        super().__init__(broker_url)
+        super().__init__(publisher_def)
         self.name = 'HTTP'
         self.type = 'http'
         self.auth = None

@@ -29,15 +29,16 @@
 
 import logging
 
-from paho.mqtt import client as mqtt_client
+from kafka import errors, KafkaProducer
 
 from pygeoapi.pubsub.base import BasePubSubClient, PubSubClientConnectionError
+from pygeoapi.util import to_json
 
 LOGGER = logging.getLogger(__name__)
 
 
-class MQTTPubSubClient(BasePubSubClient):
-    """MQTT client"""
+class KafkaPubSubClient(BasePubSubClient):
+    """Kafka client"""
 
     def __init__(self, publisher_def):
         """
@@ -45,55 +46,49 @@ class MQTTPubSubClient(BasePubSubClient):
 
         :param publisher_def: provider definition
 
-        :returns: pycsw.pubsub.mqtt.MQTTPubSubClient
+        :returns: pygeoapi.pubsub.kafka.KafkaPubSubClient
         """
 
         super().__init__(publisher_def)
-        self.type = 'mqtt'
-        self.port = self.broker_url.port
+        self.name = 'Kafka'
+        self.type = 'kafka'
+        self.sasl_mechanism = publisher_def.get('sasl.mechanism', 'PLAIN')
+        self.security_protocol = publisher_def.get('security.protocol', 'SASL_SSL')  # noqa
 
-        self.userdata = {}
-
-        msg = f'Connecting to broker {self.broker_safe_url} with id {self.client_id}'  # noqa
+        msg = f'Initializing to broker {self.broker_safe_url} with id {self.client_id}'  # noqa
         LOGGER.debug(msg)
-        self.conn = mqtt_client.Client(mqtt_client.CallbackAPIVersion.VERSION2,
-                                       client_id=self.client_id)
-
-        self.conn.enable_logger(logger=LOGGER)
-
-        if None not in [self.broker_url.username, self.broker_url.password]:
-            LOGGER.debug('Setting credentials')
-            self.conn.username_pw_set(
-                self.broker_url.username,
-                self.broker_url.password)
-
-        if self.port is None:
-            if self.broker_url.scheme == 'mqtts':
-                self.port = 8883
-            else:
-                self.port = 1883
-
-        if self.broker_url.scheme == 'mqtts':
-            self.conn.tls_set(tls_version=2)
 
     def connect(self) -> None:
         """
-        Connect to an MQTT broker
+        Connect to an Kafka broker
 
         :returns: None
         """
 
+        args = {
+            'bootstrap_servers': f'{self.broker_url.hostname}:{self.broker_url.port}',  # noqa
+            'client_id': self.client_id,
+            'value_serializer': lambda v: to_json(v).encode('utf-8')
+        }
+        if None not in [self.broker_url.username, self.broker_url.password]:
+            args.update({
+                'security.protocol': self.security_protocol,
+                'sasl.mechanism': self.sasl_mechanism,
+                'sasl.username': self.broker_url.username,
+                'sasl.password': self.broker_url.password
+            })
+
+        LOGGER.debug('Creating Kafka producer')
         try:
-            self.conn.connect(self.broker_url.hostname, self.port)
-            LOGGER.debug('Connected to broker')
-        except Exception as err:
+            self.producer = KafkaProducer(**args)
+        except errors.NoBrokersAvailable as err:
             raise PubSubClientConnectionError(err)
 
-    def pub(self, channel: str, message: str, qos: int = 1) -> bool:
+    def pub(self, channel: str, message: str) -> bool:
         """
         Publish a message to a broker/channel
 
-        :param channel: `str` of channel
+        :param channel: `str` of topic
         :param message: `str` of message
 
         :returns: `bool` of publish result
@@ -102,20 +97,13 @@ class MQTTPubSubClient(BasePubSubClient):
         LOGGER.debug(f'Publishing to broker {self.broker_safe_url}')
         LOGGER.debug(f'Channel: {channel}')
         LOGGER.debug(f'Message: {message}')
+        LOGGER.debug('Sanitizing channel for HTTP')
+        channel = channel.replace('/', '-')
+        channel = channel.replace(':', '-')
+        LOGGER.debug(f'Sanitized channel for Kafka: {channel}')
 
-        result = self.conn.publish(channel, message, qos)
-        LOGGER.debug(f'Result: {result}')
-
-        # TODO: investigate implication
-        # result.wait_for_publish()
-
-        if result.is_published:
-            LOGGER.debug('Message published')
-            return True
-        else:
-            msg = f'Publishing error code: {result[1]}'
-            LOGGER.warning(msg)
-            return False
+        self.producer.send(channel, value=message)
+        self.producer.flush()
 
     def __repr__(self):
-        return f'<MQTTPubSubClient> {self.broker_safe_url}'
+        return f'<HTTPPubSubClient> {self.broker_safe_url}'
