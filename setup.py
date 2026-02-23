@@ -2,7 +2,7 @@
 #
 # Authors: Tom Kralidis <tomkralidis@gmail.com>
 #
-# Copyright (c) 2025 Tom Kralidis
+# Copyright (c) 2026 Tom Kralidis
 #
 # Permission is hereby granted, free of charge, to any person
 # obtaining a copy of this software and associated documentation
@@ -84,26 +84,7 @@ class PyTest(Command):
 
     def run(self):
         import subprocess
-        errno = subprocess.call(['pytest', 'tests/test_api.py'])
-        raise SystemExit(errno)
-
-
-class PyCoverage(Command):
-    user_options = []
-
-    def initialize_options(self):
-        pass
-
-    def finalize_options(self):
-        pass
-
-    def run(self):
-        import subprocess
-
-        errno = subprocess.call(['coverage', 'run', '--source=pygeoapi',
-                                 '-m', 'unittest',
-                                 'pygeoapi.tests.run_tests'])
-        errno = subprocess.call(['coverage', 'report', '-m'])
+        errno = subprocess.call(['pytest', 'tests/api/test_api.py'])
         raise SystemExit(errno)
 
 
@@ -169,14 +150,12 @@ setup(
         'Environment :: Console',
         'Intended Audience :: Developers',
         'Intended Audience :: Science/Research',
-        'License :: OSI Approved :: MIT License',
         'Operating System :: OS Independent',
         'Programming Language :: Python',
         'Topic :: Scientific/Engineering :: GIS'
     ],
     cmdclass={
         'test': PyTest,
-        'coverage': PyCoverage,
         'cleanbuild': PyCleanBuild
     }
 )
