@@ -477,6 +477,12 @@ properties:
                                               type: string
                                               description: temporal reference system of features
                                               default: 'http://www.opengis.net/def/uom/ISO-8601/0/Gregorian'
+                                          resolution:
+                                              type: string
+                                              description: temporal resolution
+                                          default:
+                                              type: string
+                                              description: default time value
                               patternProperties:
                                   "^(?!spatial$|temporal$).*":
                                       type: object

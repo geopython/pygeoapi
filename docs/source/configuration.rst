@@ -243,6 +243,8 @@ default.
                   begin: 2000-10-30T18:24:39Z  # start datetime in RFC3339
                   end: 2007-10-30T08:57:29Z  # end datetime in RFC3339
                   trs: http://www.opengis.net/def/uom/ISO-8601/0/Gregorian  # TRS
+                  resolution: P1D  # ISO 8601 duration
+                  default: 2000-10-30T18:24:39Z  # default time
               # additional extents can be added as desired (1..n)
               foo:
                   url: https://example.org/def  # required URL of the extent

@@ -6,7 +6,7 @@
 #          Bernhard Mallinger <bernhard.mallinger@eox.at>
 #          Francesco Bartoli <xbartolone@gmail.com>
 #
-# Copyright (c) 2024 Tom Kralidis
+# Copyright (c) 2026 Tom Kralidis
 # Copyright (c) 2022 John A Stevenson and Colin Blackburn
 # Copyright (c) 2026 Francesco Bartoli
 #
@@ -635,7 +635,11 @@ def test_describe_collections(config, api_):
             'interval': [
                 ['2000-10-30T18:24:39+00:00', '2007-10-30T08:57:29+00:00']
             ],
-            'trs': 'http://www.opengis.net/def/uom/ISO-8601/0/Gregorian'
+            'trs': 'http://www.opengis.net/def/uom/ISO-8601/0/Gregorian',
+            'grid': {
+                'resolution': 'P1D'
+            },
+            'default': '2000-10-30T18:24:39+00:00'
         }
     }
 

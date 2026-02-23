@@ -2,7 +2,7 @@
 #
 # Authors: Tom Kralidis <tomkralidis@gmail.com>
 #
-# Copyright (c) 2019 Tom Kralidis
+# Copyright (c) 2026 Tom Kralidis
 #
 # Permission is hereby granted, free of charge, to any person
 # obtaining a copy of this software and associated documentation
@@ -142,6 +142,8 @@ resources:
                 begin: 2000-10-30T18:24:39Z
                 end: 2007-10-30T08:57:29Z
                 trs: http://www.opengis.net/def/uom/ISO-8601/0/Gregorian
+                resolution: P1D
+                default: 2000-10-30T18:24:39Z
         providers:
             - type: feature
               name: CSV

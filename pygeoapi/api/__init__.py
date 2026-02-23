@@ -1008,6 +1008,12 @@ def describe_collections(api: API, request: APIRequest,
             }
             if 'trs' in t_ext:
                 collection['extent']['temporal']['trs'] = t_ext['trs']
+            if 'resolution' in t_ext:
+                collection['extent']['temporal']['grid'] = {
+                    'resolution': t_ext['resolution']
+                }
+            if 'default' in t_ext:
+                collection['extent']['temporal']['default'] = t_ext['default']
 
         _ = extents.pop('spatial', None)
         _ = extents.pop('temporal', None)
