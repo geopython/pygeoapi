@@ -52,7 +52,7 @@
             <div class="col-sm-12">
               <input class="form-check-input" onchange="checkSpatialFilter()"  type="checkbox" id="spatial_filter_check">
               <label class="form-check-label" for="spatial_filter_check">Spatial filter</label>
-              <button type="button" class="btn btn-primary" onclick="submitForm();">Search</button>
+              <button type="submit" class="btn btn-primary" onclick="submitForm();">Search</button>
               <button type="reset" class="btn btn-secondary" onclick="document.getElementById('searchForm').reset();">Reset</button>
             </div>
           </div>
@@ -192,6 +192,7 @@
 
     document.getElementById("q").addEventListener("keydown", function(event) {
         if (event.key === "Enter") {
+            event.preventDefault();
             submitForm();
         }
     });
@@ -288,6 +289,9 @@
             setRectangle(map.getBounds().pad(-0.95));
         }
     }
+
+    var form = document.getElementById("searchForm");
+    form.addEventListener("submit", submitForm);
     {% endif %}
     </script>
 {% endif %}
