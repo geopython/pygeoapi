@@ -278,7 +278,8 @@ def crs_transform_feature(feature: dict, transform_func: Callable):
         )
 
 
-def transform_bbox(bbox: list, from_crs: Union[str, pyproj.CRS], to_crs: Union[str, pyproj.CRS]) -> list:
+def transform_bbox(bbox: list, from_crs: Union[str, pyproj.CRS], 
+                   to_crs: Union[str, pyproj.CRS]) -> list:
     """
     helper function to transform a bounding box (bbox) from
     a source to a target CRS. CRSs in URI str format.
