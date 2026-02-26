@@ -278,7 +278,7 @@ def crs_transform_feature(feature: dict, transform_func: Callable):
         )
 
 
-def transform_bbox(bbox: list, from_crs: Union[str, pyproj.CRS], 
+def transform_bbox(bbox: list, from_crs: Union[str, pyproj.CRS],
                    to_crs: Union[str, pyproj.CRS]) -> list:
     """
     helper function to transform a bounding box (bbox) from
