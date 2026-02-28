@@ -2,7 +2,7 @@
 #
 # Authors: Tom Kralidis <tomkralidis@gmail.com>
 #
-# Copyright (c) 2025 Tom Kralidis
+# Copyright (c) 2026 Tom Kralidis
 #
 # Permission is hereby granted, free of charge, to any person
 # obtaining a copy of this software and associated documentation
@@ -31,8 +31,8 @@ import json
 
 import pytest
 
-from pygeoapi.api import FORMAT_TYPES, F_JSON
 from pygeoapi.api.stac import search, landing_page
+from pygeoapi.formats import FORMAT_TYPES, F_JSON
 from pygeoapi.util import yaml_load
 
 from tests.util import get_test_file_path, mock_api_request

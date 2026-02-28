@@ -41,11 +41,11 @@ from pyld import jsonld
 import pytest
 
 from pygeoapi.api import (
-    API, APIRequest, CONFORMANCE_CLASSES, FORMAT_TYPES, F_HTML, F_JSON,
-    F_JSONLD, F_GZIP, __version__, validate_bbox, validate_datetime,
-    evaluate_limit, validate_subset, landing_page, openapi_, conformance,
-    describe_collections, get_collection_schema,
-)
+    API, APIRequest, CONFORMANCE_CLASSES, __version__, validate_bbox,
+    validate_datetime, evaluate_limit, validate_subset, landing_page, openapi_,
+    conformance, describe_collections, get_collection_schema)
+
+from pygeoapi.formats import FORMAT_TYPES, F_GZIP, F_JSON, F_JSONLD, F_HTML
 from pygeoapi.util import yaml_load, get_api_rules, get_base_url
 
 from tests.util import (get_test_file_path, mock_api_request, mock_flask,
@@ -80,6 +80,13 @@ def config_hidden_resources():
 
 
 @pytest.fixture()
+def config_failing_collection():
+    filename = 'pygeoapi-test-config-failing-collection.yml'
+    with open(get_test_file_path(filename)) as fh:
+        return yaml_load(fh)
+
+
+@pytest.fixture()
 def enclosure_api(config_enclosure, openapi):
     """ Returns an API instance with a collection with enclosure links. """
     return API(config_enclosure, openapi)
@@ -96,6 +103,11 @@ def rules_api(config_with_rules, openapi):
 @pytest.fixture()
 def api_hidden_resources(config_hidden_resources, openapi):
     return API(config_hidden_resources, openapi)
+
+
+@pytest.fixture()
+def api_failing_collection(config_failing_collection, openapi):
+    return API(config_failing_collection, openapi)
 
 
 def test_apirequest(api_):
@@ -727,6 +739,22 @@ def test_describe_collections_hidden_resources(
 
     collections = json.loads(response)
     assert len(collections['collections']) == 1
+
+
+def test_describe_collections_failing_collection(
+        config_failing_collection, api_failing_collection):
+    req = mock_api_request({})
+    rsp_headers, code, response = describe_collections(api_failing_collection, req)  # noqa
+    assert code == HTTPStatus.OK
+
+    assert len(config_failing_collection['resources']) == 3
+
+    collections = json.loads(response)
+    assert len(collections['collections']) == 2
+
+    req = mock_api_request({})
+    rsp_headers, code, response = describe_collections(api_failing_collection, req, 'cmip5')  # noqa
+    assert code == HTTPStatus.INTERNAL_SERVER_ERROR
 
 
 def test_describe_collections_json_ld(config, api_):

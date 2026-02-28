@@ -5,7 +5,7 @@
 #          Colin Blackburn <colb@bgs.ac.uk>
 #          Bernhard Mallinger <bernhard.mallinger@eox.at>
 #
-# Copyright (c) 2024 Tom Kralidis
+# Copyright (c) 2026 Tom Kralidis
 # Copyright (c) 2022 John A Stevenson and Colin Blackburn
 #
 # Permission is hereby granted, free of charge, to any person
@@ -37,10 +37,10 @@ from http import HTTPStatus
 import time
 from unittest import mock
 
-from pygeoapi.api import FORMAT_TYPES, F_HTML, F_JSON
 from pygeoapi.api.processes import (
     describe_processes, execute_process, delete_job, get_job_result, get_jobs
 )
+from pygeoapi.formats import FORMAT_TYPES, F_HTML, F_JSON
 
 from tests.util import mock_api_request
 

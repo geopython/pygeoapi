@@ -44,6 +44,7 @@ import logging
 from typing import Tuple
 
 from pygeoapi.crs import transform_bbox
+from pygeoapi.formats import F_JSON, FORMAT_TYPES
 from pygeoapi.openapi import get_oas_30_parameters
 from pygeoapi.plugin import load_plugin
 from pygeoapi.provider import filter_providers_by_type, get_provider_by_type
@@ -52,9 +53,7 @@ from pygeoapi.provider.base import (
 )
 from pygeoapi.util import to_json, filter_dict_by_key_value
 
-from . import (
-    APIRequest, API, F_JSON, FORMAT_TYPES, validate_datetime, validate_subset
-)
+from . import APIRequest, API, validate_datetime, validate_subset
 
 LOGGER = logging.getLogger(__name__)
 

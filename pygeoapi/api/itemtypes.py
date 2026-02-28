@@ -54,6 +54,7 @@ from pygeoapi.crs import (DEFAULT_CRS, DEFAULT_STORAGE_CRS,
                           create_crs_transform_spec, get_supported_crs_list,
                           modify_pygeofilter, transform_bbox,
                           set_content_crs_header)
+from pygeoapi.formats import F_JSON, FORMAT_TYPES, F_HTML, F_JSONLD
 from pygeoapi.formatter.base import FormatterSerializationError
 from pygeoapi.linked_data import geojson2jsonld
 from pygeoapi.openapi import get_oas_30_parameters
@@ -66,10 +67,7 @@ from pygeoapi.provider.base import (
 from pygeoapi.util import (to_json, filter_dict_by_key_value, str2bool,
                            render_j2_template, get_dataset_formatters)
 
-from . import (
-    APIRequest, API, SYSTEM_LOCALE, F_JSON, FORMAT_TYPES, F_HTML, F_JSONLD,
-    validate_bbox, validate_datetime
-)
+from . import APIRequest, API, SYSTEM_LOCALE, validate_bbox, validate_datetime
 
 LOGGER = logging.getLogger(__name__)
 

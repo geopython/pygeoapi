@@ -49,6 +49,7 @@ from http import HTTPStatus
 from typing import Tuple
 
 from pygeoapi import l10n
+from pygeoapi.formats import FORMAT_TYPES, F_HTML, F_JSON, F_JSONLD
 from pygeoapi.api import evaluate_limit
 from pygeoapi.api.pubsub import publish_message
 from pygeoapi.process.base import (
@@ -61,9 +62,7 @@ from pygeoapi.util import (
     json_serial, render_j2_template, JobStatus, RequestedProcessExecutionMode,
     to_json, DATETIME_FORMAT)
 
-from . import (
-    APIRequest, API, SYSTEM_LOCALE, F_JSON, FORMAT_TYPES, F_HTML, F_JSONLD,
-)
+from . import APIRequest, API, SYSTEM_LOCALE
 
 LOGGER = logging.getLogger(__name__)
 
@@ -136,6 +135,7 @@ def describe_processes(api: API, request: APIRequest,
                 p2['jobControlOptions'].append('async-execute')
 
             p2['outputTransmission'] = ['value']
+
             p2['links'] = p2.get('links', [])
 
             jobs_url = f"{api.base_url}/jobs"

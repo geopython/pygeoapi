@@ -1,8 +1,10 @@
 # =================================================================
 #
 # Authors: Alexander Pilz <a.pilz@52north.org>
+#          Tom Kralidis <tomkralidis@gmail.com>
 #
 # Copyright (c) 2023 Alexander Pilz
+# Copyright (c) 2026 Alexander Pilz
 #
 # Permission is hereby granted, free of charge, to any person
 # obtaining a copy of this software and associated documentation
@@ -32,11 +34,11 @@ import traceback
 
 from pymongo import MongoClient
 
-from pygeoapi.api import FORMAT_TYPES, F_JSON, F_JSONLD
 from pygeoapi.process.base import (
     JobNotFoundError,
     JobResultNotFoundError,
 )
+from pygeoapi.formats import FORMAT_TYPES, F_JSON, F_JSONLD
 from pygeoapi.process.manager.base import BaseManager
 
 LOGGER = logging.getLogger(__name__)
