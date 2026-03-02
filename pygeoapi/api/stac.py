@@ -8,7 +8,7 @@
 #          Ricardo Garcia Silva <ricardo.garcia.silva@geobeyond.it>
 #          Bernhard Mallinger <bernhard.mallinger@eox.at>
 #
-# Copyright (c) 2025 Tom Kralidis
+# Copyright (c) 2026 Tom Kralidis
 # Copyright (c) 2025 Francesco Bartoli
 # Copyright (c) 2022 John A Stevenson and Colin Blackburn
 # Copyright (c) 2023 Ricardo Garcia Silva
@@ -47,6 +47,7 @@ from urllib.parse import urlencode
 from shapely import from_geojson
 
 from pygeoapi import l10n
+from pygeoapi.formats import FORMAT_TYPES, F_JSON, F_HTML
 from pygeoapi import api as ogc_api
 from pygeoapi.api import itemtypes as itemtypes_api
 from pygeoapi.plugin import load_plugin
@@ -58,7 +59,7 @@ from pygeoapi.provider.base import (
 from pygeoapi.util import (filter_dict_by_key_value, get_current_datetime,
                            render_j2_template, to_json)
 
-from . import APIRequest, API, FORMAT_TYPES, F_JSON, F_HTML
+from . import APIRequest, API
 
 
 LOGGER = logging.getLogger(__name__)

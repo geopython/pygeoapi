@@ -49,6 +49,7 @@ from shapely.wkt import loads as shapely_loads
 
 from pygeoapi import l10n
 from pygeoapi.api import evaluate_limit
+from pygeoapi.formats import F_COVERAGEJSON, F_HTML, F_JSON, F_JSONLD
 from pygeoapi.formatter.base import FormatterSerializationError
 from pygeoapi.crs import (create_crs_transform_spec, set_content_crs_header)
 from pygeoapi.openapi import get_oas_30_parameters
@@ -60,8 +61,7 @@ from pygeoapi.util import (get_dataset_formatters, get_typed_value,
                            render_j2_template, to_json,
                            filter_dict_by_key_value)
 
-from . import (APIRequest, API, F_COVERAGEJSON, F_HTML, F_JSON, F_JSONLD,
-               validate_datetime, validate_bbox)
+from . import APIRequest, API, validate_datetime, validate_bbox
 
 LOGGER = logging.getLogger(__name__)
 

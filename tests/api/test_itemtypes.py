@@ -5,7 +5,7 @@
 #          Colin Blackburn <colb@bgs.ac.uk>
 #          Francesco Bartoli <xbartolone@gmail.com>
 #
-# Copyright (c) 2025 Tom Kralidis
+# Copyright (c) 2026 Tom Kralidis
 # Copyright (c) 2022 John A Stevenson and Colin Blackburn
 # Copyright (c) 2025 Francesco Bartoli
 #
@@ -42,12 +42,12 @@ import pytest
 import pyproj
 from shapely.geometry import Point
 
-from pygeoapi.api import (API, FORMAT_TYPES, F_GZIP, F_HTML, F_JSONLD,
-                          apply_gzip)
+from pygeoapi.api import API, apply_gzip
 from pygeoapi.api.itemtypes import (
     get_collection_queryables, get_collection_item,
     get_collection_items, manage_collection_item)
 from pygeoapi.crs import get_crs
+from pygeoapi.formats import FORMAT_TYPES, F_GZIP, F_HTML, F_JSONLD
 from pygeoapi.util import yaml_load
 
 from tests.util import get_test_file_path, mock_api_request

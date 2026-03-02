@@ -3,7 +3,7 @@
 # Authors: Tom Kralidis <tomkralidis@gmail.com>
 #          Benjamin Webb <benjamin.miller.webb@gmail.com>
 #
-# Copyright (c) 2024 Tom Kralidis
+# Copyright (c) 2026 Tom Kralidis
 # Copyright (c) 2023 Benjamin Webb
 #
 # Permission is hereby granted, free of charge, to any person
@@ -39,8 +39,9 @@ from dateutil.parser import parse as parse_date
 from jsonpatch import make_patch
 from jsonschema.exceptions import ValidationError
 
-from pygeoapi.api import API, APIRequest, F_HTML
+from pygeoapi.api import API, APIRequest
 from pygeoapi.config import get_config, validate_config
+from pygeoapi.formats import F_HTML
 from pygeoapi.openapi import get_oas
 from pygeoapi.util import to_json, render_j2_template, yaml_dump
 

@@ -5,7 +5,7 @@
 #          Colin Blackburn <colb@bgs.ac.uk>
 #          Bernhard Mallinger <bernhard.mallinger@eox.at>
 #
-# Copyright (c) 2024 Tom Kralidis
+# Copyright (c) 2026 Tom Kralidis
 # Copyright (c) 2022 John A Stevenson and Colin Blackburn
 # Copyright (c) 2025 Joana Simoes
 #
@@ -37,12 +37,12 @@ import json
 from http import HTTPStatus
 import pytest
 
-from pygeoapi.api import FORMAT_TYPES, F_HTML
 from pygeoapi.api.tiles import (
     get_collection_tiles, tilematrixset,
     tilematrixsets, get_collection_tiles_metadata,
     get_collection_tiles_data
 )
+from pygeoapi.formats import FORMAT_TYPES, F_HTML
 from pygeoapi.models.provider.base import TileMatrixSetEnum
 
 from tests.util import mock_api_request

@@ -1,8 +1,10 @@
 # =================================================================
 #
 # Authors: Francesco Martinelli <francesco.martinelli@ingv.it>
+#          Tom Kralidis <tomkralidis@gmail.com>
 #
 # Copyright (c) 2024 Francesco Martinelli
+# Copyright (c) 2026 Tom Kralidis
 #
 # Permission is hereby granted, free of charge, to any person
 # obtaining a copy of this software and associated documentation
@@ -48,12 +50,12 @@ from typing import Any, Tuple
 from sqlalchemy import insert, update, delete
 from sqlalchemy.orm import Session
 
-from pygeoapi.api import FORMAT_TYPES, F_JSON, F_JSONLD
 from pygeoapi.process.base import (
     JobNotFoundError,
     JobResultNotFoundError,
     ProcessorGenericError
 )
+from pygeoapi.formats import FORMAT_TYPES, F_JSON, F_JSONLD
 from pygeoapi.process.manager.base import BaseManager
 from pygeoapi.provider.sql import (
     get_engine, get_table_model, store_db_parameters
