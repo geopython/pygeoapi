@@ -323,8 +323,8 @@ class ParquetProvider(BaseProvider):
                 if not self.has_geometry:
                     raise ProviderQueryError(
                         (
-                            "Dataset does not have a geometry field, "
-                            "querying by bbox is not supported."
+                            'Dataset does not have a geometry field, '
+                            'querying by bbox is not supported.'
                         )
                     )
 
