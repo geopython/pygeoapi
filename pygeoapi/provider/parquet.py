@@ -160,7 +160,7 @@ class ParquetProvider(BaseProvider):
                     ' may cause slow full scans'
                 )
 
-        LOGGER.debug("Grabbing field information")
+        LOGGER.debug('Grabbing field information')
         self.get_fields()  # Must be set to visualise queryables
 
         # Get the CRS of the data
