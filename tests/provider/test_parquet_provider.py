@@ -97,14 +97,13 @@ class TestParquetProviderWithNaiveOrMissingGeometry:
         """Testing field types"""
 
         p = ParquetProvider(config_parquet)
-        assert p.bbox_filterable 
+        assert p.bbox_filterable
         assert p.has_geometry
-        assert not p.has_bbox_column 
+        assert not p.has_bbox_column
         results = p.get_fields()
         assert results['lat']['type'] == 'number'
         assert results['lon']['format'] == 'double'
         assert results['time']['format'] == 'date-time'
-
 
     def test_get(self, config_parquet):
         """Testing query for a specific object"""
@@ -114,7 +113,6 @@ class TestParquetProviderWithNaiveOrMissingGeometry:
         assert result['id'] == '42'
         assert result['properties']['lon'] == 4.947447
 
-
     def test_get_not_existing_feature_raise_exception(
         self, config_parquet
     ):
@@ -122,7 +120,6 @@ class TestParquetProviderWithNaiveOrMissingGeometry:
         p = ParquetProvider(config_parquet)
         with pytest.raises(ProviderItemNotFoundError):
             p.get(-1)
-
 
     def test_query_hits(self, config_parquet):
         """Testing query on entire collection for hits"""
@@ -135,7 +132,6 @@ class TestParquetProviderWithNaiveOrMissingGeometry:
         hits = feature_collection.get('numberMatched')
         assert hits is not None
         assert hits == 100
-
 
     def test_query_bbox_hits(self, config_parquet):
         """Testing query for a valid JSON object with geometry"""
@@ -150,7 +146,6 @@ class TestParquetProviderWithNaiveOrMissingGeometry:
         hits = feature_collection.get('numberMatched')
         assert hits is not None
         assert hits == 6
-
 
     def test_query_with_limit(self, config_parquet):
         """Testing query for a valid JSON object with geometry"""
@@ -167,7 +162,6 @@ class TestParquetProviderWithNaiveOrMissingGeometry:
         assert properties is not None
         geometry = feature.get('geometry')
         assert geometry is not None
-
 
     def test_query_with_offset(self, config_parquet):
         """Testing query for a valid JSON object with geometry"""
@@ -187,7 +181,6 @@ class TestParquetProviderWithNaiveOrMissingGeometry:
         geometry = feature.get('geometry')
         assert geometry is not None
 
-
     def test_query_with_property(self, config_parquet):
         """Testing query for a valid JSON object with property filter"""
 
@@ -201,7 +194,6 @@ class TestParquetProviderWithNaiveOrMissingGeometry:
         for feature in features:
             assert feature['properties']['lon'] == -12.855022
 
-
     def test_query_with_skip_geometry(self, config_parquet):
         """Testing query for a valid JSON object with property filter"""
 
@@ -209,7 +201,6 @@ class TestParquetProviderWithNaiveOrMissingGeometry:
         feature_collection = p.query(skip_geometry=True)
         for feature in feature_collection['features']:
             assert feature.get('geometry') is None
-
 
     def test_query_with_datetime(self, config_parquet):
         """Testing query for a valid JSON object with time"""
@@ -225,7 +216,6 @@ class TestParquetProviderWithNaiveOrMissingGeometry:
             assert time.year == 2022
             assert time.month == 5
 
-
     def test_query_nogeom(self, config_parquet_nogeom_notime):
         """Testing query for a valid JSON object without geometry"""
 
@@ -237,7 +227,6 @@ class TestParquetProviderWithNaiveOrMissingGeometry:
         assert len(feature_collection.get('features')) > 0
         for feature in feature_collection['features']:
             assert feature.get('geometry') is None
-
 
     def test_query_nocrs(self, config_parquet_nocrs):
         """Testing a parquet provider without CRS"""
@@ -260,7 +249,7 @@ def geoparquet_no_bbox():
     # As CSV:
     # "col","geometry"
     # 0,"POLYGON ((30 10, 40 40, 20 40, 10 20, 30 10))"
-    # 1,"POLYGON ((35 10, 45 45, 15 40, 10 20, 35 10), (20 30, 35 35, 30 20, 20 30))"
+    # 1,"POLYGON ((35 10, 45 45, 15 40, 10 20, 35 10), (20 30, 35 35, 30 20, 20 30))" # noqa
     # 2,"POLYGON EMPTY"
     # 3,
     return {
@@ -268,15 +257,16 @@ def geoparquet_no_bbox():
         'type': 'feature',
         'data': {
             'source': get_test_file_path(
-                "data/parquet/geoparquet1.1/data-polygon-encoding_wkb_no_bbox.parquet"
+                "data/parquet/geoparquet1.1/data-polygon-encoding_wkb_no_bbox.parquet" # noqa
             ),
         },
     }
 
+
 @pytest.fixture
 def geoparquet_with_bbox():
     # Geneated with the overture python CLI
-    # overturemaps download --bbox=-74,40.98,-73.98,41 -f geoparquet --type=building -o nyc_subset_overture.parquet
+    # overturemaps download --bbox=-74,40.98,-73.98,41 -f geoparquet --type=building -o nyc_subset_overture.parquet # noqa
     return {
         "name": "GeoparquetWithBbox",
         "type": "feature",
@@ -301,7 +291,7 @@ class TestParquetProviderWithGeoparquetMetadata:
 
         feature_collection = p.query(resulttype="results")
         assert feature_collection.get("type") == "FeatureCollection"
-        assert feature_collection["features"][0]["geometry"]["coordinates"] == (
+        assert feature_collection["features"][0]["geometry"]["coordinates"] == ( # noqa
             (
                 ((30, 10), (40, 40), (20, 40), (10, 20), (30, 10)),)
         )
@@ -320,7 +310,7 @@ class TestParquetProviderWithGeoparquetMetadata:
 
         feature_collection = p.query(resulttype="results")
         assert feature_collection.get("type") == "FeatureCollection"
-        assert feature_collection["features"][0]["geometry"]["coordinates"] == (
+        assert feature_collection["features"][0]["geometry"]["coordinates"] == ( # noqa
             (((30, 10), (40, 40), (20, 40), (10, 20), (30, 10)),)
         )
         assert feature_collection["features"][0]["properties"]["col"] == 0
@@ -351,7 +341,6 @@ class TestParquetProviderWithGeoparquetMetadata:
         huge_bbox = p.query(bbox=[-90, -90, 90, 90], resulttype="hits")[
             "numberMatched"
         ]
-        dataset_bounds = p.query(bbox=[-74.1, 40.97, -73.95, 41.1], resulttype="hits")[
-            "numberMatched"
-        ]
+        dataset_bounds = p.query(bbox=[-74.1, 40.97, -73.95, 41.1],
+                                 resulttype="hits")["numberMatched"]
         assert huge_bbox == dataset_bounds
