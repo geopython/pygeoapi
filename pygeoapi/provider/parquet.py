@@ -141,7 +141,7 @@ class ParquetProvider(BaseProvider):
         # Build pyarrow dataset pointing to the data
         self.ds = pyarrow.dataset.dataset(self.source, filesystem=self.fs)
 
-        LOGGER.debug('Finished loading dataset')
+        LOGGER.debug("Grabbing field information")
         if not self.id_field:
             LOGGER.info(
                 'No "id_field" specified in parquet provider config'
