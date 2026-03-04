@@ -156,8 +156,8 @@ class ParquetProvider(BaseProvider):
             ):
                 LOGGER.warning(
                     f'id_field is of type {id_type},'
-                    ' and not numeric; this is harder to query andmay cause'
-                    ' slow full scans'
+                    ' and not numeric; this is harder to query and'
+                    ' may cause slow full scans'
                 )
 
         LOGGER.debug("Grabbing field information")
