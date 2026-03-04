@@ -29,6 +29,8 @@
 #
 # =================================================================
 
+from copy import copy
+
 import pytest
 
 from pygeoapi.provider.base import ProviderItemNotFoundError
@@ -36,17 +38,15 @@ from pygeoapi.provider.parquet import ParquetProvider
 
 from ..util import get_test_file_path
 
-path = get_test_file_path(
+naive_random = get_test_file_path(
     'data/parquet/naive/random.parquet')
 
-path_nogeom = get_test_file_path(
+naive_nogeom = get_test_file_path(
     'data/parquet/naive/random_nogeom.parquet')
 
-path_nocrs = get_test_file_path(
+naive_nocrs = get_test_file_path(
     'data/parquet/naive/random_nocrs.parquet')
 
-
-# https://github.com/opengeospatial/geoparquet/blob/main/test_data/data-polygon-encoding_wkb.parquet
 
 @pytest.fixture()
 def config_parquet():
@@ -54,8 +54,7 @@ def config_parquet():
         'name': 'Parquet',
         'type': 'feature',
         'data': {
-            'source_type': 'Parquet',
-            'source': path,
+            'source': naive_random,
         },
         'id_field': 'id',
         'time_field': 'time',
@@ -70,8 +69,7 @@ def config_parquet_nogeom_notime():
         'name': 'ParquetNoGeomNoTime',
         'type': 'feature',
         'data': {
-            'source_type': 'Parquet',
-            'source': path_nogeom,
+            'source': naive_nogeom,
         },
         'id_field': 'id'
     }
@@ -83,8 +81,7 @@ def config_parquet_nocrs():
         'name': 'ParquetNoCrs',
         'type': 'feature',
         'data': {
-            'source_type': 'Parquet',
-            'source': path_nocrs,
+            'source': naive_nocrs,
         },
         'id_field': 'id',
         'time_field': 'time',
@@ -100,6 +97,9 @@ class TestParquetProviderWithNaiveOrMissingGeometry:
         """Testing field types"""
 
         p = ParquetProvider(config_parquet)
+        assert p.bbox_filterable 
+        assert p.has_geometry
+        assert not p.has_bbox_column 
         results = p.get_fields()
         assert results['lat']['type'] == 'number'
         assert results['lon']['format'] == 'double'
@@ -230,6 +230,8 @@ class TestParquetProviderWithNaiveOrMissingGeometry:
         """Testing query for a valid JSON object without geometry"""
 
         p = ParquetProvider(config_parquet_nogeom_notime)
+        assert not p.has_geometry
+        assert not p.bbox_filterable
         feature_collection = p.query(resulttype='results')
         assert feature_collection.get('type') == 'FeatureCollection'
         assert len(feature_collection.get('features')) > 0
@@ -241,7 +243,115 @@ class TestParquetProviderWithNaiveOrMissingGeometry:
         """Testing a parquet provider without CRS"""
 
         p = ParquetProvider(config_parquet_nocrs)
+        assert p.bbox_filterable
+        assert p.has_geometry
+        assert not p.has_bbox_column
         results = p.get_fields()
         assert results['lat']['type'] == 'number'
         assert results['lon']['format'] == 'double'
         assert results['time']['format'] == 'date-time'
+
+
+@pytest.fixture
+def geoparquet_no_bbox():
+    # Data originating from
+    # https://github.com/opengeospatial/geoparquet/blob/main/test_data/data-polygon-encoding_wkb.parquet
+
+    # As CSV:
+    # "col","geometry"
+    # 0,"POLYGON ((30 10, 40 40, 20 40, 10 20, 30 10))"
+    # 1,"POLYGON ((35 10, 45 45, 15 40, 10 20, 35 10), (20 30, 35 35, 30 20, 20 30))"
+    # 2,"POLYGON EMPTY"
+    # 3,
+    return {
+        'name': 'GeoparquetNoBbox',
+        'type': 'feature',
+        'data': {
+            'source': get_test_file_path(
+                "data/parquet/geoparquet1.1/data-polygon-encoding_wkb_no_bbox.parquet"
+            ),
+        },
+    }
+
+@pytest.fixture
+def geoparquet_with_bbox():
+    # Geneated with the overture python CLI
+    # overturemaps download --bbox=-74,40.98,-73.98,41 -f geoparquet --type=building -o nyc_subset_overture.parquet
+    return {
+        "name": "GeoparquetWithBbox",
+        "type": "feature",
+        "data": {
+            "source": get_test_file_path(
+                "data/parquet/geoparquet1.1/nyc_subset_overture.parquet"
+            ),
+        },
+    }
+
+
+class TestParquetProviderWithGeoparquetMetadata:
+
+    def test_file_without_bbox_without_id_specified(self, geoparquet_no_bbox):
+
+        p = ParquetProvider(geoparquet_no_bbox)
+        assert not p.bbox_filterable
+        assert not p.has_bbox_column
+        assert p.id_field is None
+        results = p.get_fields()
+        assert results['col']['type'] == 'integer'
+
+        feature_collection = p.query(resulttype="results")
+        assert feature_collection.get("type") == "FeatureCollection"
+        assert feature_collection["features"][0]["geometry"]["coordinates"] == (
+            (
+                ((30, 10), (40, 40), (20, 40), (10, 20), (30, 10)),)
+        )
+        assert feature_collection["features"][0]["properties"]["col"] == 0
+
+    def test_file_without_bbox_with_id_specified(self, geoparquet_no_bbox):
+        config = copy(geoparquet_no_bbox)
+        config["id_field"] = "col"
+
+        p = ParquetProvider(
+            config
+        )
+        results = p.get_fields()
+        assert p.id_field == "col"
+        assert results["col"]["type"] == "integer"
+
+        feature_collection = p.query(resulttype="results")
+        assert feature_collection.get("type") == "FeatureCollection"
+        assert feature_collection["features"][0]["geometry"]["coordinates"] == (
+            (((30, 10), (40, 40), (20, 40), (10, 20), (30, 10)),)
+        )
+        assert feature_collection["features"][0]["properties"]["col"] == 0
+        assert feature_collection["features"][0]["id"] == "0"
+
+    def test_get_by_id(self, geoparquet_no_bbox):
+
+        config = copy(geoparquet_no_bbox)
+        config["id_field"] = "col"
+        p = ParquetProvider(
+            config
+        )
+
+        feature = p.get("2")
+        assert feature.get("type") == "Feature"
+        assert feature["geometry"] is None
+
+    def test_file_with_bbox(self, geoparquet_with_bbox):
+
+        p = ParquetProvider(geoparquet_with_bbox)
+        assert p.has_bbox_column
+        assert p.bbox_filterable
+        assert p.has_geometry
+
+        hits = p.query(resulttype="hits")["numberMatched"]
+        assert hits == 679
+
+        huge_bbox = p.query(bbox=[-90, -90, 90, 90], resulttype="hits")[
+            "numberMatched"
+        ]
+        dataset_bounds = p.query(bbox=[-74.1, 40.97, -73.95, 41.1], resulttype="hits")[
+            "numberMatched"
+        ]
+        assert huge_bbox == dataset_bounds

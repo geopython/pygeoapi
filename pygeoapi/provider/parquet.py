@@ -38,7 +38,6 @@ import pyarrow
 import pyarrow.compute as pc
 import pyarrow.dataset
 import s3fs
-import pyarrow as pa
 import pyarrow.types as pat
 from pygeoapi.crs import crs_transform
 from pygeoapi.provider.base import (
@@ -87,7 +86,17 @@ def has_geoparquet_bbox_column(pyarrow_geo_metadata: dict, primary_geometry_colu
 
 class ParquetProvider(BaseProvider):
 
-    has_geoparquet_bbox_column: bool
+    # Whether or not we can resolve a bbox request
+    # against the data, either by using an explicit
+    # bbox column or by using x_field and y_field
+    # columns
+    bbox_filterable: bool
+
+    # Whether or not the data has the geoparquet
+    # standardized bbox column
+    has_bbox_column: bool
+
+    # Whether or not the data has a geometry column
     has_geometry: bool
 
     def __init__(self, provider_def):
@@ -160,19 +169,25 @@ class ParquetProvider(BaseProvider):
             self.crs = (geo_metadata['columns'][geom_column].get('crs')
                         or 'OGC:CRS84')
             
-            self.has_geoparquet_bbox_column = has_geoparquet_bbox_column(geo_metadata, geom_column)
-
-            if self.has_geoparquet_bbox_column:
+            self.bbox_filterable = has_geoparquet_bbox_column(geo_metadata, geom_column)
+            if self.bbox_filterable:
+                self.has_bbox_column = True
                 # if there is a bbox column we 
                 # don't need to parse the x_fields and y_fields
                 # and can just return early
                 return 
+            else:
+                self.has_bbox_column = False
+        else:
+            self.has_geometry = False
+            self.has_bbox_column = False
         
         for field_name, field_value in [("x_field", self.x_field), ("y_field", self.y_field)]:
             if not field_value:
                 LOGGER.warning(f"No geometry for {self.source};" 
                               f"missing {field_name} in parquet provider config")
-                self.has_geometry = False
+                self.bbox_filterable = False
+                self.has_bbox_column = False
                 return
 
         # If there is not a geoparquet bbox column,
@@ -190,6 +205,8 @@ class ParquetProvider(BaseProvider):
             self.maxy = self.y_field
         else:
             self.miny, self.maxy = self.y_field
+
+        self.bbox_filterable = True
 
 
     def _read_parquet(self, return_scanner=False, **kwargs):
@@ -226,7 +243,7 @@ class ParquetProvider(BaseProvider):
                 # of any type, either double or float, then we skip it since it isn't
                 # meant to be a queryable field, rather just metadata
                 if field_name == 'bbox' and "struct" in str(field_type):
-                    self.has_geoparquet_bbox_column = True
+                    self.bbox_filterable = True
                     continue
 
                 field_type = str(field_type)
@@ -291,15 +308,20 @@ class ParquetProvider(BaseProvider):
 
             if bbox:
                 if not self.has_geometry:
-                    msg = (
+                    raise ProviderQueryError((
                         'Dataset does not have a geometry field, '
                         'querying by bbox is not supported.'
-                    )
-                    raise ProviderQueryError(msg)
+                    ))
+                
+                if not self.bbox_filterable:
+                    raise ProviderQueryError((
+                        'Dataset does not have a proper bbox metadata, '
+                        'querying by bbox is not supported.'
+                    ))
                 
                 minx, miny, maxx, maxy = [float(b) for b in bbox]
                 
-                if self.has_geoparquet_bbox_column:
+                if self.has_bbox_column:
                     # GeoParquet bbox column is a struct with xmin, ymin, xmax, ymax
                     filter = filter & (
                         (pc.field("bbox", "xmin") >= pc.scalar(minx)) &
@@ -309,10 +331,10 @@ class ParquetProvider(BaseProvider):
                     )
                 else:
                     filter = (
-                        (pc.field(self.minx) > pc.scalar(minx))
-                        & (pc.field(self.miny) > pc.scalar(miny))
-                        & (pc.field(self.maxx) < pc.scalar(maxx))
-                        & (pc.field(self.maxy) < pc.scalar(maxy))
+                        (pc.field(self.minx) >= pc.scalar(minx))
+                        & (pc.field(self.miny) >= pc.scalar(miny))
+                        & (pc.field(self.maxx) <= pc.scalar(maxx))
+                        & (pc.field(self.maxy) <= pc.scalar(maxy))
                     )
 
             if datetime_ is not None:
