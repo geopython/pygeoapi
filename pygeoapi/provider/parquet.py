@@ -144,7 +144,7 @@ class ParquetProvider(BaseProvider):
         LOGGER.debug('Finished loading dataset')
         if not self.id_field:
             LOGGER.info(
-                'No 'id_field' specified in parquet provider config'
+                'No "id_field" specified in parquet provider config'
                 ' will use pandas index as the identifier'
             )
         else:
@@ -155,9 +155,9 @@ class ParquetProvider(BaseProvider):
                 or pat.is_float_value(id_type)
             ):
                 LOGGER.warning(
-                    f"id_field is of type {id_type},"
-                    " and not numeric; this is harder to query andmay cause"
-                    " slow full scans"
+                    f'id_field is of type {id_type},'
+                    ' and not numeric; this is harder to query andmay cause'
+                    ' slow full scans'
                 )
 
         LOGGER.debug("Grabbing field information")
