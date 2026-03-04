@@ -68,11 +68,11 @@ def has_geoparquet_bbox_column(
     Check if the metadata on the parquet dataset
     indicates there is a geoparquet bbox column
     """
-    primary_column = pyarrow_geo_metadata.get("primary_column")
+    primary_column = pyarrow_geo_metadata.get('primary_column')
     if not primary_column:
         return False
 
-    columns = pyarrow_geo_metadata.get("columns")
+    columns = pyarrow_geo_metadata.get('columns')
     if not columns:
         return False
 
@@ -80,11 +80,11 @@ def has_geoparquet_bbox_column(
     if not geometry_column_metadata:
         return False
 
-    geometry_covering = geometry_column_metadata.get("covering")
+    geometry_covering = geometry_column_metadata.get('covering')
     if not geometry_covering:
         return False
 
-    return geometry_covering.get("bbox") is not None
+    return geometry_covering.get('bbox') is not None
 
 
 class ParquetProvider(BaseProvider):
@@ -123,17 +123,17 @@ class ParquetProvider(BaseProvider):
         super().__init__(provider_def)
 
         # Source url is required
-        self.source = self.data.get("source")
+        self.source = self.data.get('source')
         if not self.source:
-            msg = "Need explicit 'source' attr in data" \
-                  " field of provider config"
+            msg = 'Need explicit "source" attr in data' \
+                  ' field of provider config'
             LOGGER.error(msg)
             raise ProviderGenericError(msg)
 
         # Manage AWS S3 sources
-        if self.source.startswith("s3"):
-            self.source = self.source.split("://", 1)[1]
-            self.fs = s3fs.S3FileSystem(default_cache_type="none")
+        if self.source.startswith('s3'):
+            self.source = self.source.split('://', 1)[1]
+            self.fs = s3fs.S3FileSystem(default_cache_type='none')
         else:
             # If none, pyarrow will attempt to auto-detect
             self.fs = None
@@ -141,11 +141,11 @@ class ParquetProvider(BaseProvider):
         # Build pyarrow dataset pointing to the data
         self.ds = pyarrow.dataset.dataset(self.source, filesystem=self.fs)
 
-        LOGGER.debug("Finished loading dataset")
+        LOGGER.debug('Finished loading dataset')
         if not self.id_field:
             LOGGER.info(
-                "No 'id_field' specified in parquet provider config"
-                " will use pandas index as the identifier"
+                'No 'id_field' specified in parquet provider config'
+                ' will use pandas index as the identifier'
             )
         else:
             id_type = self.ds.schema.field(self.id_field).type
@@ -164,17 +164,17 @@ class ParquetProvider(BaseProvider):
         self.get_fields()  # Must be set to visualise queryables
 
         # Get the CRS of the data
-        if b"geo" in self.ds.schema.metadata:
-            geo_metadata = json.loads(self.ds.schema.metadata[b"geo"])
+        if b'geo' in self.ds.schema.metadata:
+            geo_metadata = json.loads(self.ds.schema.metadata[b'geo'])
 
-            geom_column = geo_metadata["primary_column"]
+            geom_column = geo_metadata['primary_column']
 
             if geom_column:
                 self.has_geometry = True
 
             # if the CRS is not set default to EPSG:4326, per geoparquet spec
-            self.crs = geo_metadata["columns"][geom_column].get("crs") \
-                or "OGC:CRS84"
+            self.crs = geo_metadata['columns'][geom_column].get('crs') \
+                or 'OGC:CRS84'
 
             self.bbox_filterable = \
                 has_geoparquet_bbox_column(geo_metadata, geom_column)
@@ -191,13 +191,13 @@ class ParquetProvider(BaseProvider):
             self.has_bbox_column = False
 
         for field_name, field_value in [
-            ("x_field", self.x_field),
-            ("y_field", self.y_field),
+            ('x_field', self.x_field),
+            ('y_field', self.y_field),
         ]:
             if not field_value:
                 LOGGER.warning(
-                    f"No geometry for {self.source};"
-                    f"missing {field_name} in parquet provider config"
+                    f'No geometry for {self.source};'
+                    f'missing {field_name} in parquet provider config'
                 )
                 self.bbox_filterable = False
                 self.has_bbox_column = False
@@ -331,8 +331,8 @@ class ParquetProvider(BaseProvider):
                 if not self.bbox_filterable:
                     raise ProviderQueryError(
                         (
-                            "Dataset does not have a proper bbox metadata, "
-                            "querying by bbox is not supported."
+                            'Dataset does not have a proper bbox metadata, '
+                            'querying by bbox is not supported.'
                         )
                     )
 
@@ -342,10 +342,10 @@ class ParquetProvider(BaseProvider):
                     # GeoParquet bbox column is a struct
                     # with xmin, ymin, xmax, ymax
                     filter = filter & (
-                        (pc.field("bbox", "xmin") >= pc.scalar(minx))
-                        & (pc.field("bbox", "ymin") >= pc.scalar(miny))
-                        & (pc.field("bbox", "xmax") <= pc.scalar(maxx))
-                        & (pc.field("bbox", "ymax") <= pc.scalar(maxy))
+                        (pc.field('bbox', 'xmin') >= pc.scalar(minx))
+                        & (pc.field('bbox', 'ymin') >= pc.scalar(miny))
+                        & (pc.field('bbox', 'xmax') <= pc.scalar(maxx))
+                        & (pc.field('bbox', 'ymax') <= pc.scalar(maxy))
                     )
                 else:
                     filter = (
@@ -358,17 +358,17 @@ class ParquetProvider(BaseProvider):
             if datetime_ is not None:
                 if self.time_field is None:
                     msg = (
-                        "Dataset does not have a time field, "
-                        "querying by datetime is not supported."
+                        'Dataset does not have a time field, '
+                        'querying by datetime is not supported.'
                     )
                     raise ProviderQueryError(msg)
                 timefield = pc.field(self.time_field)
-                if "/" in datetime_:
-                    begin, end = datetime_.split("/")
-                    if begin != "..":
+                if '/' in datetime_:
+                    begin, end = datetime_.split('/')
+                    if begin != '..':
                         begin = isoparse(begin)
                         filter = filter & (timefield >= begin)
-                    if end != "..":
+                    if end != '..':
                         end = isoparse(end)
                         filter = filter & (timefield <= end)
                 else:
