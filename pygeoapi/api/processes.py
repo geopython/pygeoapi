@@ -760,7 +760,7 @@ def get_oas_30(cfg: dict, locale: str
                     'description': 'Indicates client preferences, including whether the client is capable of asynchronous processing.',  # noqa
                     'schema': {
                         'type': 'string',
-                        'enum': ['respond-async']
+                        'enum': []
                     }
                 }],
                 'responses': {
@@ -783,6 +783,12 @@ def get_oas_30(cfg: dict, locale: str
                 }
             }
         }
+
+        jco = p.metadata.get('jobControlOptions', ['sync-execute'])
+        if 'sync-execute' in jco:
+            paths[f'{process_name_path}/execution']['post']['parameters'][0]['schema']['enum'].append('respond-sync')  # noqa
+        if 'async-execute' in jco:
+            paths[f'{process_name_path}/execution']['post']['parameters'][0]['schema']['enum'].append('respond-async')  # noqa
 
         try:
             first_key = list(p.metadata['outputs'])[0]
