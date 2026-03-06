@@ -34,7 +34,7 @@
 #
 # =================================================================
 
-FROM ubuntu:noble-20260113
+FROM ubuntu:noble
 
 LABEL maintainer="Just van den Broecke <justb4@gmail.com>"
 
