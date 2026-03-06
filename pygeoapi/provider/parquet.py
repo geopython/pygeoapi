@@ -1,8 +1,9 @@
 # =================================================================
 #
 # Authors: Leo Ghignone <leo.ghignone@gmail.com>
+#          Colton Loftus <cloftus@lincolninst.edu>
 #
-# Copyright (c) 2024 Leo Ghignone
+# Copyright (c) 2026 Leo Ghignone, Colton Loftus
 #
 # Permission is hereby granted, free of charge, to any person
 # obtaining a copy of this software and associated documentation
@@ -37,7 +38,7 @@ import pyarrow
 import pyarrow.compute as pc
 import pyarrow.dataset
 import s3fs
-
+import pyarrow.types as pat
 from pygeoapi.crs import crs_transform
 from pygeoapi.provider.base import (
     BaseProvider,
@@ -60,7 +61,46 @@ def arrow_to_pandas_type(arrow_type):
     return pd_type
 
 
+def has_geoparquet_bbox_column(
+    pyarrow_geo_metadata: dict, primary_geometry_column_name: str
+) -> bool:
+    """
+    Check if the metadata on the parquet dataset
+    indicates there is a geoparquet bbox column
+    """
+    primary_column = pyarrow_geo_metadata.get('primary_column')
+    if not primary_column:
+        return False
+
+    columns = pyarrow_geo_metadata.get('columns')
+    if not columns:
+        return False
+
+    geometry_column_metadata = columns.get(primary_geometry_column_name)
+    if not geometry_column_metadata:
+        return False
+
+    geometry_covering = geometry_column_metadata.get('covering')
+    if not geometry_covering:
+        return False
+
+    return geometry_covering.get('bbox') is not None
+
+
 class ParquetProvider(BaseProvider):
+    # Whether or not we can resolve a bbox request
+    # against the data, either by using an explicit
+    # bbox column or by using x_field and y_field
+    # columns
+    bbox_filterable: bool
+
+    # Whether or not the data has the geoparquet
+    # standardized bbox column
+    has_bbox_column: bool
+
+    # Whether or not the data has a geometry column
+    has_geometry: bool
+
     def __init__(self, provider_def):
         """
         Initialize object
@@ -85,48 +125,100 @@ class ParquetProvider(BaseProvider):
         # Source url is required
         self.source = self.data.get('source')
         if not self.source:
-            msg = "Need explicit 'source' attr " \
-                    "in data field of provider config"
+            msg = 'Need explicit "source" attr in data' \
+                  ' field of provider config'
             LOGGER.error(msg)
-            raise Exception(msg)
+            raise ProviderGenericError(msg)
 
         # Manage AWS S3 sources
         if self.source.startswith('s3'):
             self.source = self.source.split('://', 1)[1]
             self.fs = s3fs.S3FileSystem(default_cache_type='none')
         else:
+            # If none, pyarrow will attempt to auto-detect
             self.fs = None
 
         # Build pyarrow dataset pointing to the data
         self.ds = pyarrow.dataset.dataset(self.source, filesystem=self.fs)
 
+        if not self.id_field:
+            LOGGER.info(
+                'No "id_field" specified in parquet provider config'
+                ' will use pandas index as the identifier'
+            )
+        else:
+            id_type = self.ds.schema.field(self.id_field).type
+            if (
+                pat.is_integer(id_type)
+                or pat.is_decimal(id_type)
+                or pat.is_float_value(id_type)
+            ):
+                LOGGER.warning(
+                    f'id_field is of type {id_type},'
+                    ' and not numeric; this is harder to query and'
+                    ' may cause slow full scans'
+                )
+
         LOGGER.debug('Grabbing field information')
         self.get_fields()  # Must be set to visualise queryables
 
-        # Column names for bounding box data.
-        if None in [self.x_field, self.y_field]:
-            self.has_geometry = False
-        else:
-            self.has_geometry = True
-            if isinstance(self.x_field, str):
-                self.minx = self.x_field
-                self.maxx = self.x_field
-            else:
-                self.minx, self.maxx = self.x_field
-
-            if isinstance(self.y_field, str):
-                self.miny = self.y_field
-                self.maxy = self.y_field
-            else:
-                self.miny, self.maxy = self.y_field
-            self.bb = [self.minx, self.miny, self.maxx, self.maxy]
-
-            # Get the CRS of the data
+        # Get the CRS of the data
+        if b'geo' in self.ds.schema.metadata:
             geo_metadata = json.loads(self.ds.schema.metadata[b'geo'])
+
             geom_column = geo_metadata['primary_column']
+
+            if geom_column:
+                self.has_geometry = True
+
             # if the CRS is not set default to EPSG:4326, per geoparquet spec
-            self.crs = (geo_metadata['columns'][geom_column].get('crs')
-                        or 'OGC:CRS84')
+            self.crs = geo_metadata['columns'][geom_column].get('crs') \
+                or 'OGC:CRS84'
+
+            self.bbox_filterable = \
+                has_geoparquet_bbox_column(geo_metadata, geom_column)
+            if self.bbox_filterable:
+                self.has_bbox_column = True
+                # if there is a bbox column we
+                # don't need to parse the x_fields and y_fields
+                # and can just return early
+                return
+            else:
+                self.has_bbox_column = False
+        else:
+            self.has_geometry = False
+            self.has_bbox_column = False
+
+        for field_name, field_value in [
+            ('x_field', self.x_field),
+            ('y_field', self.y_field),
+        ]:
+            if not field_value:
+                LOGGER.warning(
+                    f'No geometry for {self.source};'
+                    f'missing {field_name} in parquet provider config'
+                )
+                self.bbox_filterable = False
+                self.has_bbox_column = False
+                return
+
+        # If there is not a geoparquet bbox column,
+        # then we fall back to reading fields for minx, maxx, miny, maxy
+        # as direct column names; these can be set and use regardless of
+        # whether or not there is 'geo' metadata
+        if isinstance(self.x_field, str):
+            self.minx = self.x_field
+            self.maxx = self.x_field
+        else:
+            self.minx, self.maxx = self.x_field
+
+        if isinstance(self.y_field, str):
+            self.miny = self.y_field
+            self.maxy = self.y_field
+        else:
+            self.miny, self.maxy = self.y_field
+
+        self.bbox_filterable = True
 
     def _read_parquet(self, return_scanner=False, **kwargs):
         """
@@ -134,7 +226,10 @@ class ParquetProvider(BaseProvider):
 
         :returns: generator of RecordBatch with the queried values
         """
-        scanner = pyarrow.dataset.Scanner.from_dataset(self.ds, **kwargs)
+        scanner = self.ds.scanner(
+            use_threads=True,
+            **kwargs,
+        )
         batches = scanner.to_batches()
         if return_scanner:
             return batches, scanner
@@ -149,11 +244,18 @@ class ParquetProvider(BaseProvider):
         """
 
         if not self._fields:
-
-            for field_name, field_type in zip(self.ds.schema.names,
-                                              self.ds.schema.types):
+            for field_name, field_type in zip(
+                self.ds.schema.names, self.ds.schema.types
+            ):
                 # Geometry is managed as a special case by pygeoapi
                 if field_name == 'geometry':
+                    continue
+                # if we find the geoparquet bbox column and the
+                # type is a struct of any type, either double or
+                # float, then we skip it since it isn't
+                # meant to be a queryable field, rather just metadata
+                if field_name == 'bbox' and 'struct' in str(field_type):
+                    self.bbox_filterable = True
                     continue
 
                 field_type = str(field_type)
@@ -213,28 +315,44 @@ class ParquetProvider(BaseProvider):
 
         :returns: dict of 0..n GeoJSON features
         """
-        result = None
         try:
             filter = pc.scalar(True)
+
             if bbox:
-                if self.has_geometry is False:
-                    msg = (
-                        'Dataset does not have a geometry field, '
-                        'querying by bbox is not supported.'
+                if not self.has_geometry:
+                    raise ProviderQueryError(
+                        (
+                            'Dataset does not have a geometry field, '
+                            'querying by bbox is not supported.'
+                        )
                     )
-                    raise ProviderQueryError(msg)
-                LOGGER.debug('processing bbox parameter')
-                if any(b is None for b in bbox):
-                    msg = 'Dataset does not support bbox filtering'
-                    raise ProviderQueryError(msg)
+
+                if not self.bbox_filterable:
+                    raise ProviderQueryError(
+                        (
+                            'Dataset does not have a proper bbox metadata, '
+                            'querying by bbox is not supported.'
+                        )
+                    )
 
                 minx, miny, maxx, maxy = [float(b) for b in bbox]
-                filter = (
-                    (pc.field(self.minx) > pc.scalar(minx))
-                    & (pc.field(self.miny) > pc.scalar(miny))
-                    & (pc.field(self.maxx) < pc.scalar(maxx))
-                    & (pc.field(self.maxy) < pc.scalar(maxy))
-                )
+
+                if self.has_bbox_column:
+                    # GeoParquet bbox column is a struct
+                    # with xmin, ymin, xmax, ymax
+                    filter = filter & (
+                        (pc.field('bbox', 'xmin') >= pc.scalar(minx))
+                        & (pc.field('bbox', 'ymin') >= pc.scalar(miny))
+                        & (pc.field('bbox', 'xmax') <= pc.scalar(maxx))
+                        & (pc.field('bbox', 'ymax') <= pc.scalar(maxy))
+                    )
+                else:
+                    filter = (
+                        (pc.field(self.minx) >= pc.scalar(minx))
+                        & (pc.field(self.miny) >= pc.scalar(miny))
+                        & (pc.field(self.maxx) <= pc.scalar(maxx))
+                        & (pc.field(self.maxy) <= pc.scalar(maxy))
+                    )
 
             if datetime_ is not None:
                 if self.time_field is None:
@@ -279,10 +397,10 @@ class ParquetProvider(BaseProvider):
             # Make response based on resulttype specified
             if resulttype == 'hits':
                 LOGGER.debug('hits only specified')
-                result = self._response_feature_hits(filter)
+                return self._response_feature_hits(filter)
             elif resulttype == 'results':
                 LOGGER.debug('results specified')
-                result = self._response_feature_collection(
+                return self._response_feature_collection(
                     filter, offset, limit, columns=select_properties
                 )
             else:
@@ -298,8 +416,6 @@ class ParquetProvider(BaseProvider):
             LOGGER.error(err)
             raise ProviderGenericError(err)
 
-        return result
-
     @crs_transform
     def get(self, identifier, **kwargs):
         """
@@ -309,22 +425,22 @@ class ParquetProvider(BaseProvider):
 
         :returns: a single feature
         """
-        result = None
         try:
             LOGGER.debug(f'Fetching identifier {identifier}')
             id_type = arrow_to_pandas_type(
-                self.ds.schema.field(self.id_field).type)
+                self.ds.schema.field(self.id_field).type
+            )
             batches = self._read_parquet(
                 filter=(
-                    pc.field(self.id_field) == pc.scalar(id_type(identifier))
-                )
+                    pc.field(self.id_field) == pc.scalar(id_type(identifier)
+                                                         ))
             )
 
             for batch in batches:
                 if batch.num_rows > 0:
-                    assert (
-                        batch.num_rows == 1
-                    ), f'Multiple items found with ID {identifier}'
+                    assert batch.num_rows == 1, (
+                        f'Multiple items found with ID {identifier}'
+                    )
                     row = batch.to_pandas()
                     break
             else:
@@ -335,10 +451,14 @@ class ParquetProvider(BaseProvider):
             else:
                 geom = [None]
             gdf = gpd.GeoDataFrame(row, geometry=geom)
+            # If there is an id field, set it as index
+            # instead of the default numeric index
+            if self.id_field in gdf.columns:
+                gdf = gdf.set_index(self.id_field, drop=False)
             LOGGER.debug('results computed')
 
             # Grab the collection from geopandas geo_interface
-            result = gdf.__geo_interface__['features'][0]
+            return gdf.__geo_interface__['features'][0]
 
         except RuntimeError as err:
             LOGGER.error(err)
@@ -353,13 +473,11 @@ class ParquetProvider(BaseProvider):
             LOGGER.error(err)
             raise ProviderGenericError(err)
 
-        return result
-
     def __repr__(self):
         return f'<ParquetProvider> {self.data}'
 
-    def _response_feature_collection(self, filter, offset, limit,
-                                     columns=None):
+    def _response_feature_collection(self, filter, offset,
+                                     limit, columns=None):
         """
         Assembles output from query as
         GeoJSON FeatureCollection structure.
@@ -426,6 +544,10 @@ class ParquetProvider(BaseProvider):
                 geom = gpd.GeoSeries.from_wkb(rp['geometry'], crs=self.crs)
 
             gdf = gpd.GeoDataFrame(rp, geometry=geom)
+            # If there is an id_field in the data, set it as index
+            # instead of the default numerical index
+            if self.id_field in gdf.columns:
+                gdf = gdf.set_index(self.id_field, drop=False)
             LOGGER.debug('results computed')
             result = gdf.__geo_interface__
 
@@ -446,8 +568,9 @@ class ParquetProvider(BaseProvider):
         """
 
         try:
-            scanner = pyarrow.dataset.Scanner.from_dataset(self.ds,
-                                                           filter=filter)
+            scanner = pyarrow.dataset.Scanner.from_dataset(
+                self.ds, filter=filter
+            )
             return {
                 'type': 'FeatureCollection',
                 'numberMatched': scanner.count_rows(),
