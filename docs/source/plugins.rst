@@ -410,6 +410,7 @@ Below is a sample process definition as a Python dictionary:
                       'it back as output. Intended to demonstrate a simple '
                       'process with a single literal input.',
        'jobControlOptions': ['sync-execute', 'async-execute'],  # whether the process can be executed in sync or async mode
+       'outputTransmission': ['value', 'reference'],  # whether the process can return inline data or URL references
        'keywords': ['hello world', 'example', 'echo'],  # keywords associated with the process
        'links': [{  # a list of 1..n  # link objects relevant to the process
            'type': 'text/html',

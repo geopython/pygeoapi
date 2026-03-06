@@ -130,11 +130,15 @@ def describe_processes(api: API, request: APIRequest,
                 p2.pop('outputs')
                 p2.pop('example', None)
 
-            p2['jobControlOptions'] = ['sync-execute']
-            if api.manager.is_async:
+            jco = p.metadata.get('jobControlOptions', ['sync-execute'])
+            p2['jobControlOptions'] = jco
+
+            if api.manager.is_async and 'async-execute' not in jco:
+                LOGGER.debug('Adding async capability')
                 p2['jobControlOptions'].append('async-execute')
 
-            p2['outputTransmission'] = ['value']
+            p2['outputTransmission'] = p.metadata.get(
+                'outputTransmission', ['value'])
 
             p2['links'] = p2.get('links', [])
 
