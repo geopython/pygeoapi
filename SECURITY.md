@@ -13,5 +13,5 @@ The pygeoapi Project Steering Committee (PSC) will release patches for security 
 
 | Version | Supported          |
 | ------- | ------------------ |
-| 0.10.x  | :white_check_mark: |
-| < 0.10  | :x:                |
+| 0.2x.x  | :white_check_mark: |
+| < 0.20  | :x:                |
