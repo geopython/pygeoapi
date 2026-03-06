@@ -31,6 +31,8 @@ import csv
 import io
 import logging
 
+from shapely.geometry import shape as geojson_to_geom
+
 from pygeoapi.formatter.base import BaseFormatter, FormatterSerializationError
 
 LOGGER = logging.getLogger(__name__)
@@ -60,12 +62,30 @@ class CSVFormatter(BaseFormatter):
         Generate data in CSV format
 
         :param options: CSV formatting options
-        :param data: dict of GeoJSON data
+        :param data: dict of data
 
         :returns: string representation of format
         """
+        type = data.get('type') or ''
+        LOGGER.debug(f'Formatting CSV from data type: {type}')
 
-        is_point = False
+        if 'Feature' in type or 'features' in data:
+            return self._write_from_geojson(options, data)
+        elif 'Coverage' in type or 'coverages' in data:
+            return self._write_from_covjson(options, data)
+
+    def _write_from_geojson(
+        self, options: dict = {}, data: dict = None, is_point=False
+    ) -> str:
+        """
+        Generate GeoJSON data in CSV format
+
+        :param options: CSV formatting options
+        :param data: dict of GeoJSON data
+        :param is_point: whether the features are point geometries
+
+        :returns: string representation of format
+        """
         try:
             fields = list(data['features'][0]['properties'].keys())
         except IndexError:
@@ -75,32 +95,123 @@ class CSVFormatter(BaseFormatter):
         if self.geom:
             LOGGER.debug('Including point geometry')
             if data['features'][0]['geometry']['type'] == 'Point':
+                LOGGER.debug('point geometry detected, adding x,y columns')
                 fields.insert(0, 'x')
                 fields.insert(1, 'y')
                 is_point = True
             else:
-                # TODO: implement wkt geometry serialization
-                LOGGER.debug('not a point geometry, skipping')
+                LOGGER.debug('not a point geometry, adding wkt column')
+                fields.append('wkt')
 
         LOGGER.debug(f'CSV fields: {fields}')
+        output = io.StringIO()
+        writer = csv.DictWriter(output, fields, extrasaction='ignore')
+        writer.writeheader()
 
+        for feature in data['features']:
+            self._add_feature(writer, feature, is_point)
+
+        return output.getvalue().encode('utf-8')
+
+    def _add_feature(
+        self, writer: csv.DictWriter, feature: dict, is_point: bool
+    ) -> None:
+        """
+        Add feature data to CSV writer
+
+        :param writer: CSV DictWriter
+        :param feature: dict of GeoJSON feature
+        :param is_point: whether the feature is a point geometry
+        """
+        fp = feature['properties']
         try:
-            output = io.StringIO()
-            writer = csv.DictWriter(output, fields)
-            writer.writeheader()
-
-            for feature in data['features']:
-                fp = feature['properties']
+            if self.geom:
                 if is_point:
                     fp['x'] = feature['geometry']['coordinates'][0]
                     fp['y'] = feature['geometry']['coordinates'][1]
-                LOGGER.debug(fp)
-                writer.writerow(fp)
+                else:
+                    geom = geojson_to_geom(feature['geometry'])
+                    fp['wkt'] = geom.wkt
+
+            LOGGER.debug(f'Writing feature to row: {fp}')
+            writer.writerow(fp)
         except ValueError as err:
             LOGGER.error(err)
             raise FormatterSerializationError('Error writing CSV output')
 
+    def _write_from_covjson(
+        self, options: dict = {}, data: dict = None
+    ) -> str:
+        """
+        Generate CovJSON data in CSV format
+
+        :param options: CSV formatting options
+        :param data: dict of CovJSON data
+
+        :returns: string representation of format
+        """
+        LOGGER.debug('Processing CovJSON data for CSV output')
+        units = {}
+        for p, v in data['parameters'].items():
+            unit = v['unit']['symbol']
+            if isinstance(unit, dict):
+                unit = unit.get('value')
+
+            units[p] = unit
+
+        fields = ['parameter', 'datetime', 'value', 'unit', 'x', 'y']
+        LOGGER.debug(f'CSV fields: {fields}')
+        output = io.StringIO()
+        writer = csv.DictWriter(output, fields)
+        writer.writeheader()
+
+        if data['type'] == 'Coverage':
+            is_point = 'point' in data['domain']['domainType'].lower()
+            self._add_coverage(writer, units, data, is_point)
+        else:
+            [
+                self._add_coverage(writer, units, coverage, True)
+                for coverage in data['coverages']
+                if 'point' in coverage['domain']['domainType'].lower()
+            ]
         return output.getvalue().encode('utf-8')
+
+    @staticmethod
+    def _add_coverage(
+        writer: csv.DictWriter, units: dict, data: dict, is_point: bool = False
+    ) -> None:
+        """
+        Add coverage data to CSV writer
+
+        :param writer: CSV DictWriter
+        :param units: dict of parameter units
+        :param data: dict of CovJSON coverage data
+        :param is_point: whether the coverage is a point coverage
+        """
+
+        if is_point is False:
+            LOGGER.warning('Non-point coverages not supported for CSV output')
+            return
+
+        axes = data['domain']['axes']
+        time_range = range(len(axes['t']['values']))
+
+        try:
+            [
+                writer.writerow({
+                    'parameter': parameter,
+                    'datetime': axes['t']['values'][time_value],
+                    'value': data['ranges'][parameter]['values'][time_value],
+                    'unit': units[parameter],
+                    'x': axes['x']['values'][-1],
+                    'y': axes['y']['values'][-1]
+                })
+                for parameter in data['ranges']
+                for time_value in time_range
+            ]
+        except ValueError as err:
+            LOGGER.error(err)
+            raise FormatterSerializationError('Error writing CSV output')
 
     def __repr__(self):
         return f'<CSVFormatter> {self.name}'
