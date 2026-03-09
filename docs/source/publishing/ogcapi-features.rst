@@ -616,7 +616,7 @@ For GeoParquet data which complies to spec version 1.1, all geometry metadata wi
 detected. 
 
 Note that for any version of parquet, you may optionally specify ``batch_size`` and ``batch_readahead`` in the ``data`` section of the parquet provider config.
-``batch_size`` controls how many rows are fetched per batch. Large batch sizes speed up data processing, but add more I/O, increase latency when fetching data from an object store, and increase memory usage. If not defined it will 
+``batch_size`` controls how many rows are fetched per batch. Large batch sizes speed up data processing, but add more I/O time like increased latency when fetching data from an object store, and . If not defined it will 
 default to 20,000 rows. 
 
 ``batch_readahead`` controls how many batches are buffered in memory. If not specified it will default to 2. 

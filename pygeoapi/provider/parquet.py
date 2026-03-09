@@ -124,17 +124,17 @@ class ParquetProvider(BaseProvider):
         self.source = self.data.get('source')
         # When iterating over a dataset, the batch size
         # controls how many records are read at a time;
-        # a larger batch size can reduce latency for large
-        # requests the cost of memory and potentially overfetching
-        # the default batch size for pyarrow is 131_072 as specified
-        # by the following link:
+        # a larger batch size can reduce latency for large/complex
+        # requests at the cost of more memory usage
+        # and potentially overfetching;
+        # More information on batching can be found here:
         # https://arrow.apache.org/docs/python/generated/pyarrow.dataset.Dataset.html#pyarrow.dataset.Dataset.scanner # noqa
-        # This can potentially be reduced if fetching the dataset from
-        # an object store
+        # This value can be reduced to decrease network transfer
+        # if fetching data from an object store
         self.batch_size = self.data.get('batch_size', 20_000)
 
-        # Batch readahead is the number of batches to prefetch
-        # this adds extra memory but can reduce latency for large
+        # batch_readahead is the number of batches to prefetch;
+        # This adds extra memory but can reduce latency for large
         # or complicated queries; in an OGC API Features context,
         # it generally makes sense to have some buffering but keep it
         # low since most responses are small
