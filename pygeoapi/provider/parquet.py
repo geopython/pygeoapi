@@ -3,7 +3,8 @@
 # Authors: Leo Ghignone <leo.ghignone@gmail.com>
 #          Colton Loftus <cloftus@lincolninst.edu>
 #
-# Copyright (c) 2026 Leo Ghignone, Colton Loftus
+# Copyright (c) 2026 Leo Ghignone
+# Copyright (c) 2026 Colton Loftus
 #
 # Permission is hereby granted, free of charge, to any person
 # obtaining a copy of this software and associated documentation
@@ -37,8 +38,9 @@ import geopandas as gpd
 import pyarrow
 import pyarrow.compute as pc
 import pyarrow.dataset
-import s3fs
 import pyarrow.types as pat
+import s3fs
+
 from pygeoapi.crs import crs_transform
 from pygeoapi.provider.base import (
     BaseProvider,
@@ -67,39 +69,34 @@ def has_geoparquet_bbox_column(
     """
     Check if the metadata on the parquet dataset
     indicates there is a geoparquet bbox column
+
+    :param pyarrow_geo_metadata: dict serialized version of the 'geo'
+        key within the pyarrow metadata json
+    :param primary_geometry_column_name: name of the primary geometry column
+        where the geometry is stored as specified in the 'geo' metadata
+
+    :returns: bool whether or not the dataset has a geoparquet bbox column
     """
     primary_column = pyarrow_geo_metadata.get('primary_column')
-    if not primary_column:
+    if primary_column is None:
         return False
 
     columns = pyarrow_geo_metadata.get('columns')
-    if not columns:
+    if columns is None:
         return False
 
     geometry_column_metadata = columns.get(primary_geometry_column_name)
-    if not geometry_column_metadata:
+    if geometry_column_metadata is None:
         return False
 
     geometry_covering = geometry_column_metadata.get('covering')
-    if not geometry_covering:
+    if geometry_covering is None:
         return False
 
     return geometry_covering.get('bbox') is not None
 
 
 class ParquetProvider(BaseProvider):
-    # Whether or not we can resolve a bbox request
-    # against the data, either by using an explicit
-    # bbox column or by using x_field and y_field
-    # columns
-    bbox_filterable: bool
-
-    # Whether or not the data has the geoparquet
-    # standardized bbox column
-    has_bbox_column: bool
-
-    # Whether or not the data has a geometry column
-    has_geometry: bool
 
     def __init__(self, provider_def):
         """
@@ -175,9 +172,16 @@ class ParquetProvider(BaseProvider):
             self.crs = geo_metadata['columns'][geom_column].get('crs') \
                 or 'OGC:CRS84'
 
+            # self.bbox_filterable indicates whether or not
+            # we can resolve a bbox request
+            # against the data, either by using an explicit
+            # bbox column or by using x_field and y_field
+            # columns
             self.bbox_filterable = \
                 has_geoparquet_bbox_column(geo_metadata, geom_column)
             if self.bbox_filterable:
+                # Whether or not the data has the geoparquet
+                # standardized bbox column
                 self.has_bbox_column = True
                 # if there is a bbox column we
                 # don't need to parse the x_fields and y_fields
@@ -191,7 +195,7 @@ class ParquetProvider(BaseProvider):
 
         for field_name, field_value in [
             ('x_field', self.x_field),
-            ('y_field', self.y_field),
+            ('y_field', self.y_field)
         ]:
             if not field_value:
                 LOGGER.warning(
@@ -228,7 +232,7 @@ class ParquetProvider(BaseProvider):
         """
         scanner = self.ds.scanner(
             use_threads=True,
-            **kwargs,
+            **kwargs
         )
         batches = scanner.to_batches()
         if return_scanner:
@@ -316,7 +320,7 @@ class ParquetProvider(BaseProvider):
         :returns: dict of 0..n GeoJSON features
         """
         try:
-            filter = pc.scalar(True)
+            filter_ = pc.scalar(True)
 
             if bbox:
                 if not self.has_geometry:
@@ -340,14 +344,14 @@ class ParquetProvider(BaseProvider):
                 if self.has_bbox_column:
                     # GeoParquet bbox column is a struct
                     # with xmin, ymin, xmax, ymax
-                    filter = filter & (
+                    filter_ = filter_ & (
                         (pc.field('bbox', 'xmin') >= pc.scalar(minx))
                         & (pc.field('bbox', 'ymin') >= pc.scalar(miny))
                         & (pc.field('bbox', 'xmax') <= pc.scalar(maxx))
                         & (pc.field('bbox', 'ymax') <= pc.scalar(maxy))
                     )
                 else:
-                    filter = (
+                    filter_ = (
                         (pc.field(self.minx) >= pc.scalar(minx))
                         & (pc.field(self.miny) >= pc.scalar(miny))
                         & (pc.field(self.maxx) <= pc.scalar(maxx))
@@ -366,13 +370,13 @@ class ParquetProvider(BaseProvider):
                     begin, end = datetime_.split('/')
                     if begin != '..':
                         begin = isoparse(begin)
-                        filter = filter & (timefield >= begin)
+                        filter_ = filter_ & (timefield >= begin)
                     if end != '..':
                         end = isoparse(end)
-                        filter = filter & (timefield <= end)
+                        filter_ = filter_ & (timefield <= end)
                 else:
                     target_time = isoparse(datetime_)
-                    filter = filter & (timefield == target_time)
+                    filter_ = filter_ & (timefield == target_time)
 
             if properties:
                 LOGGER.debug('processing properties')
@@ -381,7 +385,7 @@ class ParquetProvider(BaseProvider):
                     pd_type = arrow_to_pandas_type(field.type)
                     expr = pc.field(name) == pc.scalar(pd_type(value))
 
-                    filter = filter & expr
+                    filter_ = filter_ & expr
 
             if len(select_properties) == 0:
                 select_properties = self.ds.schema.names
@@ -397,11 +401,11 @@ class ParquetProvider(BaseProvider):
             # Make response based on resulttype specified
             if resulttype == 'hits':
                 LOGGER.debug('hits only specified')
-                return self._response_feature_hits(filter)
+                return self._response_feature_hits(filter_)
             elif resulttype == 'results':
                 LOGGER.debug('results specified')
                 return self._response_feature_collection(
-                    filter, offset, limit, columns=select_properties
+                    filter_, offset, limit, columns=select_properties
                 )
             else:
                 LOGGER.error(f'Invalid resulttype: {resulttype}')
