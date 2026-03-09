@@ -131,7 +131,7 @@ class ParquetProvider(BaseProvider):
         # https://arrow.apache.org/docs/python/generated/pyarrow.dataset.Dataset.html#pyarrow.dataset.Dataset.scanner # noqa
         # This can potentially be reduced if fetching the dataset from
         # an object store
-        self.batch_size = self.data.get("batch_size", 20_000)
+        self.batch_size = self.data.get('batch_size', 20_000)
 
         # Batch readahead is the number of batches to prefetch
         # this adds extra memory but can reduce latency for large
