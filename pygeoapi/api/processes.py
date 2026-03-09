@@ -724,7 +724,7 @@ def get_oas_30(cfg: dict, locale: str
             'externalDocs': {}
         }
         for link in p.metadata.get('links', []):
-            if link['type'] == 'information':
+            if link.get('type', '') == 'information':
                 translated_link = l10n.translate(link, locale)
                 tag['externalDocs']['description'] = translated_link[
                     'type']
