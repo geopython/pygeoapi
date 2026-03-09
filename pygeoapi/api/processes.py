@@ -724,11 +724,11 @@ def get_oas_30(cfg: dict, locale: str
             'externalDocs': {}
         }
         for link in p.metadata.get('links', []):
-            if link.get('type', '') == 'information':
+            if link.get('rel', '') == 'information':
                 translated_link = l10n.translate(link, locale)
                 tag['externalDocs']['description'] = translated_link[
-                    'type']
-                tag['externalDocs']['url'] = translated_link['url']
+                    'rel']
+                tag['externalDocs']['url'] = translated_link['href']
                 break
         if len(tag['externalDocs']) == 0:
             del tag['externalDocs']
