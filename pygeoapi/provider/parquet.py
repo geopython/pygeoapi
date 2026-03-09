@@ -108,7 +108,8 @@ class ParquetProvider(BaseProvider):
             name: Parquet
             data:
                 source: s3://example.com/parquet_directory/
-
+                batch_size: 10000
+                batch_readahead: 2
             id_field: gml_id
 
 
@@ -121,6 +122,23 @@ class ParquetProvider(BaseProvider):
 
         # Source url is required
         self.source = self.data.get('source')
+        # When iterating over a dataset, the batch size
+        # controls how many records are read at a time;
+        # a larger batch size can reduce latency for large
+        # requests the cost of memory and potentially overfetching
+        # the default batch size for pyarrow is 131_072 as specified
+        # by the following link:
+        # https://arrow.apache.org/docs/python/generated/pyarrow.dataset.Dataset.html#pyarrow.dataset.Dataset.scanner # noqa
+        # This can potentially be reduced if fetching the dataset from
+        # an object store
+        self.batch_size = self.data.get("batch_size", 20_000)
+
+        # Batch readahead is the number of batches to prefetch
+        # this adds extra memory but can reduce latency for large
+        # or complicated queries; in an OGC API Features context,
+        # it generally makes sense to have some buffering but keep it
+        # low since most responses are small
+        self.batch_readahead = self.data.get('batch_readahead', 2)
         if not self.source:
             msg = 'Need explicit "source" attr in data' \
                   ' field of provider config'
@@ -136,7 +154,8 @@ class ParquetProvider(BaseProvider):
             self.fs = None
 
         # Build pyarrow dataset pointing to the data
-        self.ds = pyarrow.dataset.dataset(self.source, filesystem=self.fs)
+        self.ds: pyarrow.dataset.Dataset = \
+            pyarrow.dataset.dataset(self.source, filesystem=self.fs)
 
         if not self.id_field:
             LOGGER.info(
@@ -231,6 +250,11 @@ class ParquetProvider(BaseProvider):
         :returns: generator of RecordBatch with the queried values
         """
         scanner = self.ds.scanner(
+            batch_size=self.batch_size,
+            # default batch readahead is 16 which is generally
+            # far too high in a server context; we can safely set it
+            # to 2 which allows for queueing without excessive reads
+            batch_readahead=self.batch_readahead,
             use_threads=True,
             **kwargs
         )
@@ -573,7 +597,9 @@ class ParquetProvider(BaseProvider):
 
         try:
             scanner = pyarrow.dataset.Scanner.from_dataset(
-                self.ds, filter=filter
+                self.ds, filter=filter,
+                batch_size=self.batch_size,
+                batch_readahead=self.batch_readahead
             )
             return {
                 'type': 'FeatureCollection',
