@@ -41,6 +41,23 @@ from pygeoapi.api.environmental_data_retrieval import get_collection_edr_query
 from tests.util import mock_api_request
 
 
+def test_describe_collection_edr(config, api_):
+    req = mock_api_request()
+    rsp_headers, code, response = describe_collections(api_, req, 'icoads-sst')
+    collection = json.loads(response)
+    parameter_names = list(collection['parameter_names'].keys())
+    parameter_names.sort()
+    assert len(parameter_names) == 4
+    assert parameter_names == ['AIRT', 'SST', 'UWND', 'VWND']
+
+    sst = collection['parameter_names']['SST']
+    assert sst['id'] == 'SST'
+    assert sst['type'] == 'Parameter'
+    assert sst['observedProperty']['label']['en'] == 'SEA SURFACE TEMPERATURE'
+    assert sst['unit']['label']['en'] == 'SEA SURFACE TEMPERATURE'
+    assert sst['unit']['symbol']['value'] == 'Deg C'
+
+
 def test_get_collection_edr_query(config, api_):
     # edr resource
     req = mock_api_request()

@@ -404,15 +404,15 @@ def gen_collection(api, request, dataset: str,
         if parameters:
             data['parameter_names'] = {}
             for key, value in parameters.items():
+                p_label = value.get('title')
+                p_description = value.get('description')
                 data['parameter_names'][key] = {
                     'id': key,
                     'type': 'Parameter',
-                    'name': value['title'],
                     'observedProperty': {
                         'label': {
-                            'id': key,
-                            'en': value['title']
-                        },
+                            'en': p_label
+                        }
                     },
                     'unit': {
                         'label': {
@@ -425,10 +425,12 @@ def gen_collection(api, request, dataset: str,
                     }
                 }
 
-                data['parameter_names'][key].update({
-                    'description': value['description']}
-                        if 'description' in value else {}
-                )
+                if p_description is not None:
+                    data['parameter_names'][key]['observedProperty'].update({
+                        'description': {
+                            'en': p_description
+                        }
+                    })
 
         for qt in p.get_query_types():
             data_query = {

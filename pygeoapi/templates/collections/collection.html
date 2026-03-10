@@ -98,7 +98,7 @@
         {% for parameter in data['parameter_names'].values() %}
         <tr>
           <td>{{ parameter['id'] }}</td>
-          <td>{{ parameter['name'] }}</td>
+          <td>{{ parameter['observedProperty']['label'].values()|first }}{% if parameter['observedProperty']['description'] %}<br/><i>{{ parameter['observedProperty']['description'].values()|first }}</i>{% endif %}</td>
           <td>{{ parameter['unit']['symbol']['value'] }}</td>
         </tr>
         {% endfor %}
