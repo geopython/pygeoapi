@@ -85,6 +85,19 @@ def test_query(config):
     assert results['numberMatched'] == 406
 
 
+def test_no_count(config):
+    p = ESRIServiceProvider(config)
+    results = p.query()
+    assert results['numberMatched'] == 406
+    assert results['numberReturned'] == 10
+
+    config['count'] = False
+    p = ESRIServiceProvider(config)
+    results = p.query()
+    assert 'numberMatched' not in results
+    assert results['numberReturned'] == 10
+
+
 def test_geometry(config):
     p = ESRIServiceProvider(config)
 
