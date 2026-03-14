@@ -62,6 +62,7 @@ from sqlalchemy import (
 )
 from sqlalchemy.engine import URL, Engine
 from sqlalchemy.exc import (
+    SQLAlchemyError,
     ConstraintColumnNotFoundError,
     InvalidRequestError,
     OperationalError
@@ -312,8 +313,15 @@ class GenericSQLProvider(BaseProvider):
         # Execute query within self-closing database Session context
         with Session(self._engine) as session:
             # Retrieve data from database as feature
-            item = session.get(self.table_model, identifier)
-            if item is None:
+            try:
+                item = session.get(self.table_model, identifier)
+                # Ensure that item is not None
+                assert item is not None
+                # Ensure that retrieved item has exact identifier match
+                feature_id = getattr(item, self.id_field)
+                assert str(feature_id) == str(identifier)
+            except (AssertionError, SQLAlchemyError) as e:
+                LOGGER.debug(e, exc_info=True)
                 msg = f'No such item: {self.id_field}={identifier}.'
                 raise ProviderItemNotFoundError(msg)
             crs_transform_out = get_transform_from_spec(crs_transform_spec)
