@@ -129,7 +129,7 @@
             attribution: '{{ config['server']['map']['attribution'] | safe }}'
         }
     ));
-    var geojson_data = {{ data | to_json | safe }};
+    var geojson_data = {{ data | tojson }};
     var items = new L.GeoJSON(geojson_data);
 
     map.addLayer(items);
