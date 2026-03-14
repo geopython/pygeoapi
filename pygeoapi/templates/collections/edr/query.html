@@ -72,7 +72,7 @@
         }
       })
 
-    var covjson_data = {{ data | to_json | safe }};
+    var covjson_data = {{ data | tojson }};
     displayCovJSON(covjson_data, {display: true})
 
     const truncateString = (str, maxLength) => {
@@ -266,7 +266,7 @@
       }
     })
     {% elif data.type == "Feature" or data.type == "FeatureCollection" %}
-    var geojson_data = {{ data | to_json | safe }};
+    var geojson_data = {{ data | tojson }};
 
     var items = new L.GeoJSON(geojson_data, {
         onEachFeature: function (feature, layer) {
