@@ -317,9 +317,6 @@ class GenericSQLProvider(BaseProvider):
                 item = session.get(self.table_model, identifier)
                 # Ensure that item is not None
                 assert item is not None
-                # Ensure that retrieved item has exact identifier match
-                feature_id = getattr(item, self.id_field)
-                assert str(feature_id) == str(identifier)
             except (AssertionError, SQLAlchemyError) as e:
                 LOGGER.debug(e, exc_info=True)
                 msg = f'No such item: {self.id_field}={identifier}.'
@@ -835,3 +832,67 @@ class MySQLProvider(GenericSQLProvider):
             func.ST_GeomFromText(polygon_wkt), geom_column
         )
         return bbox_filter
+
+    def get(self, identifier, crs_transform_spec=None, **kwargs):
+        """
+        Query the provider for a specific
+        feature id e.g: /collections/hotosm_bdi_waterways/items/13990765
+
+        :param identifier: feature id
+        :param crs_transform_spec: `CrsTransformSpec` instance, optional
+
+        :returns: GeoJSON FeatureCollection
+        """
+        LOGGER.debug(f'Get item by ID: {identifier}')
+
+        # Execute query within self-closing database Session context
+        with Session(self._engine) as session:
+            # Retrieve data from database as feature
+            try:
+                item = session.get(self.table_model, identifier)
+                # Ensure that item is not None
+                assert item is not None
+                # Ensure returned row has exact match
+                feature_id = getattr(item, self.id_field)
+                assert str(feature_id) == identifier
+            except (AssertionError, SQLAlchemyError) as e:
+                LOGGER.debug(e, exc_info=True)
+                msg = f'No such item: {self.id_field}={identifier}.'
+                raise ProviderItemNotFoundError(msg)
+            crs_transform_out = get_transform_from_spec(crs_transform_spec)
+            feature = self._sqlalchemy_to_feature(item, crs_transform_out)
+
+            # Drop non-defined properties
+            if self.properties:
+                props = feature['properties']
+                dropping_keys = deepcopy(props).keys()
+                for item in dropping_keys:
+                    if item not in self.properties:
+                        props.pop(item)
+
+            # Add fields for previous and next items
+            id_field = getattr(self.table_model, self.id_field)
+            prev_item = (
+                session.query(self.table_model)
+                .order_by(id_field.desc())
+                .filter(id_field < feature_id)
+                .first()
+            )
+            next_item = (
+                session.query(self.table_model)
+                .order_by(id_field.asc())
+                .filter(id_field > feature_id)
+                .first()
+            )
+            feature['prev'] = (
+                getattr(prev_item, self.id_field)
+                if prev_item is not None
+                else feature_id
+            )
+            feature['next'] = (
+                getattr(next_item, self.id_field)
+                if next_item is not None
+                else feature_id
+            )
+
+        return feature
