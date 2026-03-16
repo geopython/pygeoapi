@@ -62,10 +62,10 @@ from sqlalchemy import (
 )
 from sqlalchemy.engine import URL, Engine
 from sqlalchemy.exc import (
-    SQLAlchemyError,
     ConstraintColumnNotFoundError,
     InvalidRequestError,
-    OperationalError
+    OperationalError,
+    SQLAlchemyError
 )
 from sqlalchemy.ext.automap import automap_base
 from sqlalchemy.orm import Session, load_only
