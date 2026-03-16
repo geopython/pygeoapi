@@ -74,6 +74,17 @@ def test_get_typed_value():
     assert isinstance(value, bool)
 
 
+@pytest.mark.parametrize('data,minified,pretty_printed', [
+    [{'foo': 'bar'}, '{"foo":"bar"}', '{\n    "foo":"bar"\n}'],
+    [{'foo<script>alert("hi")</script>': 'bar'},
+     '{"foo&ltscript&gtalert(\\"hi\\")&lt/script&gt":"bar"}',
+     '{\n    "foo&ltscript&gtalert(\\"hi\\")&lt/script&gt":"bar"\n}']
+])
+def test_to_json(data, minified, pretty_printed):
+    assert util.to_json(data) == minified
+    assert util.to_json(data, pretty=True) == pretty_printed
+
+
 def test_yaml_load(config):
     assert isinstance(config, dict)
     with pytest.raises(FileNotFoundError):
