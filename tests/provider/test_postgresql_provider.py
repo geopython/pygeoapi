@@ -354,6 +354,19 @@ def test_get_simple(config, id_, prev, next_):
     assert result['next'] == next_
 
 
+def test_get_with_injection(config):
+    """Testing query for injection attack string"""
+    p = PostgreSQLProvider(config)
+    feature = p.get('29701937')
+    assert feature.get('type') == 'Feature'
+
+    with pytest.raises(ProviderItemNotFoundError):
+        p.get('29701937; DROP TABLE location;')
+
+    with pytest.raises(ProviderItemNotFoundError):
+        p.get('29701937<script>alert("We love pygeoapi")</script>')
+
+
 def test_get_with_config_properties(config):
     """
     Test that get is restricted by properties in the config.
