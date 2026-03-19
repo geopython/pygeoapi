@@ -701,11 +701,6 @@ def landing_page(api: API,
         'title': l10n.translate('Processes', request.locale),
         'href': f"{api.base_url}/processes"
     }, {
-        'rel': f'{OGC_RELTYPES_BASE}/job-list',
-        'type': FORMAT_TYPES[F_JSON],
-        'title': l10n.translate('Jobs', request.locale),
-        'href': f"{api.base_url}/jobs"
-    }, {
         'rel': f'{OGC_RELTYPES_BASE}/tiling-schemes',
         'type': FORMAT_TYPES[F_JSON],
         'title': l10n.translate('The list of supported tiling schemes as JSON', request.locale),  # noqa
@@ -729,6 +724,20 @@ def landing_page(api: API,
             pubsub_link['channel'] = api.pubsub_client.channel
 
         fcm['links'].append(pubsub_link)
+
+    if api.manager.is_async:
+        fcm['links'].append({
+            'rel': f'{OGC_RELTYPES_BASE}/job-list',
+            'type': FORMAT_TYPES[F_JSON],
+            'title': l10n.translate('Jobs', request.locale),
+            'href': f"{api.base_url}/jobs"
+        })
+        fcm['links'].append({
+            'rel': f'{OGC_RELTYPES_BASE}/job-list',
+            'type': FORMAT_TYPES[F_HTML],
+            'title': l10n.translate('Jobs', request.locale),
+            'href': f"{api.base_url}/jobs?f=html"
+        })
 
     if api.asyncapi:
         fcm['links'].append({
@@ -759,6 +768,9 @@ def landing_page(api: API,
                         if filter_providers_by_type(value['providers'],
                                                     'tile'):
                             fcm['tile'] = True
+
+        if api.manager.is_async:
+            fcm['jobs'] = True
 
         if api.pubsub_client is not None and not api.pubsub_client.hidden:
             fcm['pubsub'] = {

@@ -75,12 +75,14 @@
         <a href="{{ config['server']['url'] }}/processes?f=html">{% trans %}View the processes in this service{% endtrans %}</a>
       </p>
   </section>
+  {% if data['jobs'] %}
   <section id="jobs">
       <h2>{% trans %}Jobs{% endtrans %}</h2>
       <p>
         <a title="Browse jobs" href="{{config.server.url}}/jobs">{% trans %}Browse jobs{% endtrans %}</a>
       </p>
   </section>
+  {% endif %}
   {% endif %}
   {% if data['tile'] %}
   <section id="tilematrixsets">
