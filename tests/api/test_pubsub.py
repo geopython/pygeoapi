@@ -54,7 +54,7 @@ def test_landing_page(config, openapi, asyncapi):
 
     content = json.loads(response)
 
-    assert len(content['links']) == 15
+    assert len(content['links']) == 16
 
     for link in content['links']:
         if link.get('rel') == 'hub':
@@ -76,7 +76,7 @@ def test_landing_page(config, openapi, asyncapi):
 
     content = json.loads(response)
 
-    assert len(content['links']) == 12
+    assert len(content['links']) == 13
 
     for link in content['links']:
         if link.get('rel') == 'hub':
@@ -96,7 +96,7 @@ def test_landing_page(config, openapi, asyncapi):
 
     content = json.loads(response)
 
-    assert len(content['links']) == 15
+    assert len(content['links']) == 16
 
     for link in content['links']:
         if link.get('rel') == 'hub':
