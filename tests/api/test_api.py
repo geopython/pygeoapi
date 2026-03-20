@@ -520,7 +520,7 @@ def test_root(config, api_):
                for link in root['links'])
     assert any(link['href'].endswith('f=html') and link['rel'] == 'alternate'
                for link in root['links'])
-    assert len(root['links']) == 12
+    assert len(root['links']) == 13
     assert 'title' in root
     assert root['title'] == 'pygeoapi default instance'
     assert 'description' in root
@@ -622,6 +622,7 @@ def test_describe_collections(config, api_):
     collections = json.loads(response)
 
     assert len(collections) == 2
+    print(json.dumps(collections['collections']))
     assert len(collections['collections']) == 10
     assert len(collections['links']) == 3
 
