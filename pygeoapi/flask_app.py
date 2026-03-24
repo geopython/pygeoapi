@@ -399,8 +399,8 @@ def get_collection_tiles_data(collection_id: str | None = None,
     )
 
 
-@BLUEPRINT.route('/collections/<collection_id>/map')
-@BLUEPRINT.route('/collections/<collection_id>/styles/<style_id>/map')
+@BLUEPRINT.route('/collections/<path:collection_id>/map')
+@BLUEPRINT.route('/collections/<path:collection_id>/styles/<style_id>/map')
 def collection_map(collection_id: str, style_id: str | None = None):
     """
     OGC API - Maps map render endpoint
