@@ -31,7 +31,7 @@ import logging
 from functools import reduce
 import operator
 import os
-import re  # noqa
+import re
 from typing import Union
 import uuid
 
