@@ -28,8 +28,11 @@
 # =================================================================
 
 import logging
-import re  # noqa
+from functools import reduce
+import operator
 import os
+import re  # noqa
+from typing import Union
 import uuid
 
 from dateutil.parser import parse as parse_date
@@ -157,9 +160,7 @@ class TinyDBProvider(BaseProvider):
         """
 
         Q = Query()
-        LOGGER.debug(f'Query initiated: {Q}')
-
-        QUERY = []
+        predicates = []
 
         feature_collection = {
             'type': 'FeatureCollection',
@@ -173,58 +174,60 @@ class TinyDBProvider(BaseProvider):
         if bbox:
             LOGGER.debug('processing bbox parameter')
             bbox_as_string = ','.join(str(s) for s in bbox)
-            QUERY.append(f"Q.geometry.test(bbox_intersects, '{bbox_as_string}')")  # noqa
+            predicates.append(Q.geometry.test(bbox_intersects, bbox_as_string))
 
         if datetime_ is not None:
             LOGGER.debug('processing datetime parameter')
             if self.time_field is None:
                 LOGGER.error('time_field not enabled for collection')
                 LOGGER.error('Using default time property')
-                time_field2 = 'time'
+                time_field2 = Q.time
             else:
                 LOGGER.error(f'Using properties.{self.time_field}')
-                time_field2 = f"properties['{self.time_field}']"
+                time_field2 = getattr(Q.properties, self.time_field)
 
             if '/' in datetime_:  # envelope
                 LOGGER.debug('detected time range')
                 time_begin, time_end = datetime_.split('/')
 
                 if time_begin != '..':
-                    QUERY.append(f"(Q.{time_field2}>='{time_begin}')")  # noqa
+                    predicates.append(time_field2 >= time_begin)
                 if time_end != '..':
-                    QUERY.append(f"(Q.{time_field2}<='{time_end}')")  # noqa
+                    predicates.append(time_field2 <= time_end)
 
             else:  # time instant
                 LOGGER.debug('detected time instant')
-                QUERY.append(f"(Q.{time_field2}=='{datetime_}')")  # noqa
+                predicates.append(getattr(Q, time_field2) == datetime_)
 
         if properties:
             LOGGER.debug('processing properties')
             for prop in properties:
-                if isinstance(prop[1], str):
-                    value = f"'{prop[1]}'"
-                else:
-                    value = prop[1]
-                QUERY.append(f"(Q.properties['{prop[0]}']=={value})")
+                if prop[0] not in self.fields:
+                    msg = 'Invalid query: invalid property name'
+                    LOGGER.error(msg)
+                    raise ProviderInvalidQueryError(msg)
 
-        QUERY = self._add_search_query(QUERY, q)
+                predicates.append(getattr(Q.properties, prop[0]) == prop[1])
 
-        QUERY_STRING = '&'.join(QUERY)
-        LOGGER.debug(f'QUERY_STRING: {QUERY_STRING}')
-        SEARCH_STRING = f'self.db.search({QUERY_STRING})'
-        LOGGER.debug(f'SEARCH_STRING: {SEARCH_STRING}')
-
-        LOGGER.debug('querying database')
-        if len(QUERY) > 0:
-            LOGGER.debug(f'running eval on {SEARCH_STRING}')
-            try:
-                results = eval(SEARCH_STRING)
-            except SyntaxError as err:
-                msg = 'Invalid query'
-                LOGGER.error(f'{msg}: {err}')
-                raise ProviderInvalidQueryError(msg)
+        PQ = reduce(operator.and_, predicates) if predicates else None
+        if q:
+            SQ = self._add_search_query(Q, q)
         else:
-            results = self.db.all()
+            SQ = None
+
+        try:
+            if PQ and SQ:
+                results = self.db.search(PQ & SQ)
+            elif PQ and not SQ:
+                results = self.db.search(PQ)
+            elif not PQ and SQ is not None:
+                results = self.db.search(SQ)
+            else:
+                results = self.db.all()
+        except SyntaxError as err:
+            msg = 'Invalid query'
+            LOGGER.error(f'{msg}: {err}')
+            raise ProviderInvalidQueryError(msg)
 
         feature_collection['numberMatched'] = len(results)
 
@@ -355,17 +358,29 @@ class TinyDBProvider(BaseProvider):
 
         return json_data
 
-    def _add_search_query(self, query: list, search_term: str = None) -> str:
+    def _add_search_query(self, search_object,
+                          search_term: str = None) -> Union[str, None]:
         """
-        Helper function to add extra query predicates
+        Create a search query according to the OGC API - Records specification.
 
-        :param query: `list` of query predicates
-        :param search_term: `str` of search term
+        https://docs.ogc.org/is/20-004r1/20-004r1.html (Listing 14)
 
-        :returns: `list` of updated query predicates
+        Examples (f is shorthand for Q.properties["_metadata-anytext"]):
+        +-------------+-----------------------------------+
+        | search term | TinyDB search                     |
+        +-------------+-----------------------------------+
+        | 'aa'        | f.search('aa')                    |
+        | 'aa,bb'     | f.search('aa')|f.search('bb')     |
+        | 'aa,bb cc'  | f.search('aa')|f.search('bb +cc') |
+        +-------------+-----------------------------------+
+
+        :param Q: TinyDB search object
+        :param s: `str` of q parameter value
+
+        :returns: `Query` object or `None`
         """
 
-        return query
+        return search_object
 
     def __repr__(self):
         return f'<TinyDBProvider> {self.data}'
@@ -402,7 +417,7 @@ class TinyDBCatalogueProvider(TinyDBProvider):
 
         return json_data
 
-    def _prepare_q_param_with_spaces(self, s: str) -> str:
+    def _prepare_q_param_with_spaces(self, Q: Query, s: str) -> str:
         """
         Prepare a search statement for the search term `s`.
         The term `s` might have spaces.
@@ -415,12 +430,18 @@ class TinyDBCatalogueProvider(TinyDBProvider):
         | 'aa bb'       | f.search('aa +bb') |
         | '  aa   bb  ' | f.search('aa +bb') |
         +---------------+--------------------+
-        """
-        return 'Q.properties["_metadata-anytext"].search("' \
-            + ' +'.join(s.split()) \
-            + '", flags=re.IGNORECASE)'
 
-    def _add_search_query(self, query: list, search_term: str = None) -> str:
+        :param Q: TinyDB `Query` object
+        :param s: `str` of q parameter value
+
+        :returns: `Query` object
+        """
+
+        return Q.properties["_metadata-anytext"].search(
+            ' +'.join(s.split()), flags=re.IGNORECASE)
+
+    def _add_search_query(self, search_object,
+                          search_term: str = None) -> Union[str, None]:
         """
         Create a search query according to the OGC API - Records specification.
 
@@ -434,15 +455,22 @@ class TinyDBCatalogueProvider(TinyDBProvider):
         | 'aa,bb'     | f.search('aa')|f.search('bb')     |
         | 'aa,bb cc'  | f.search('aa')|f.search('bb +cc') |
         +-------------+-----------------------------------+
+
+        :param Q: TinyDB search object
+        :param s: `str` of q parameter value
+
+        :returns: `Query` object or `None`
         """
+
         if search_term is not None and len(search_term) > 0:
             LOGGER.debug('catalogue q= query')
             terms = [s for s in search_term.split(',') if len(s) > 0]
-            query.append('|'.join(
-                [self._prepare_q_param_with_spaces(t) for t in terms]
-            ))
+            terms2 = [self._prepare_q_param_with_spaces(search_object, t)
+                      for t in terms]
 
-        return query
+            return reduce(operator.or_, terms2)
+        else:
+            return None
 
     def __repr__(self):
         return f'<TinyDBCatalogueProvider> {self.data}'
