@@ -129,6 +129,7 @@ jobs:
         pip3 install -r requirements-pubsub.txt
         pip3 install .
         pip3 install GDAL==`gdal-config --version`
+        pip3 install https://github.com/geopython/pygeofilter/archive/main.zip
     - name: setup test data ⚙️
       run: |
         python3 tests/load_es_data.py tests/data/ne_110m_populated_places_simple.geojson geonameid
