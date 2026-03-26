@@ -61,8 +61,16 @@ CONFORMANCE_CLASSES = [
     'http://www.opengis.net/spec/ogcapi-maps-1/1.0/conf/core'
 ]
 
-
 DEFAULT_CRS = 'http://www.opengis.net/def/crs/EPSG/0/4326'
+
+CRS_CODES = {
+    '4326': 'http://www.opengis.net/def/crs/EPSG/0/4326',
+    '3857': 'http://www.opengis.net/def/crs/EPSG/0/3857',
+    'http://www.opengis.net/def/crs/EPSG/0/4326': 'http://www.opengis.net/def/crs/EPSG/0/4326',  # noqa
+    'http://www.opengis.net/def/crs/EPSG/0/3857': 'http://www.opengis.net/def/crs/EPSG/0/3857',  # noqa
+    'EPSG:4326': 'http://www.opengis.net/def/crs/EPSG/0/4326',
+    'EPSG:3857': 'http://www.opengis.net/def/crs/EPSG/0/3857',
+}
 
 
 def get_collection_map(api: API, request: APIRequest,
@@ -106,10 +114,10 @@ def get_collection_map(api: API, request: APIRequest,
 
     query_args['format_'] = request.params.get('f', 'png')
     query_args['style'] = style
-    query_args['crs'] = collection_def.get('crs', DEFAULT_CRS)
-    query_args['bbox_crs'] = request.params.get(
-        'bbox-crs', DEFAULT_CRS
-    )
+    query_args['crs'] = CRS_CODES[request.params.get(
+        'crs', collection_def.get('crs', DEFAULT_CRS))]
+    query_args['bbox_crs'] = CRS_CODES[request.params.get(
+        'bbox-crs', collection_def.get('crs', DEFAULT_CRS))]
     query_args['transparent'] = request.params.get('transparent', True)
 
     try:
@@ -151,6 +159,7 @@ def get_collection_map(api: API, request: APIRequest,
         return headers, HTTPStatus.BAD_REQUEST, to_json(
             exception, api.pretty_print)
 
+    # the transformer function expects the crs to be in a uri format
     if query_args['bbox_crs'] != query_args['crs']:
         LOGGER.debug(f'Reprojecting bbox CRS: {query_args["crs"]}')
         bbox = transform_bbox(bbox, query_args['bbox_crs'], query_args['crs'])

@@ -42,7 +42,6 @@ OUTPUT_FORMATS = {
 }
 
 CRS_CODES = {
-    4326: 'EPSG:4326',
     'http://www.opengis.net/def/crs/EPSG/0/4326': 'EPSG:4326',
     'http://www.opengis.net/def/crs/EPSG/0/3857': 'EPSG:3857'
 }
