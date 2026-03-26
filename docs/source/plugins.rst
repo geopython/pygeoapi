@@ -306,11 +306,11 @@ The below template provides a minimal example (let's call the file ``mycooledrda
 
            self.covjson = {...}
 
-       def get_instances(self):
+       def instances(self):
            return ['foo', 'bar']
 
-       def get_instance(self, instance):
-           return instance in get_instances()
+       def instance(self, instance):
+           return instance in instances()
 
        def position(self, **kwargs):
            return self.covjson
@@ -320,8 +320,8 @@ The below template provides a minimal example (let's call the file ``mycooledrda
 
 
 For brevity, the ``position`` function returns ``self.covjson`` which is a
-dictionary of a CoverageJSON representation.  ``get_instances`` returns a list
-of instances associated with the collection/plugin, and ``get_instance`` returns
+dictionary of a CoverageJSON representation.  ``instances`` returns a list
+of instances associated with the collection/plugin, and ``instance`` returns
 a boolean of whether a given instance exists/is valid.  EDR query types are subject
 to the query functions defined in the plugin.  In the example above, the plugin
 implements ``position`` and ``trajectory`` queries, which will be advertised as
