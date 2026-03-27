@@ -31,6 +31,7 @@ import logging
 from urllib.parse import urlencode
 
 import pyproj
+from pyproj import crs
 import requests
 
 from pygeoapi.provider.base import BaseProvider, ProviderQueryError
@@ -84,9 +85,13 @@ class WMSFacadeProvider(BaseProvider):
 
         self._transparent = 'TRUE'
 
+        # Validate bbox for EPSG:4326
+        if bbox[0] < -180 or bbox[1] < -90 or bbox[2] > 180 or bbox[3] > 90:
+            raise ProviderQueryError("Invalid bounding box")
+
         version = self.options.get('version', '1.3.0')
 
-        if version == '1.3.0' and CRS_CODES[bbox_crs] == 'EPSG:4326':
+        if version == '1.3.0' and CRS_CODES.get('bbox_crs') == 'EPSG:4326':
             bbox = [bbox[1], bbox[0], bbox[3], bbox[2]]
         bbox2 = ','.join(map(str, bbox))
 
@@ -99,7 +104,7 @@ class WMSFacadeProvider(BaseProvider):
             'service': 'WMS',
             'request': 'GetMap',
             'bbox': bbox2,
-            crs_param: CRS_CODES[crs],
+            crs_param: CRS_CODES.get(crs) or 'EPSG:4326',
             'layers': self.options['layer'],
             'styles': self.options.get('style', 'default'),
             'width': width,
