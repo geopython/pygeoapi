@@ -31,7 +31,6 @@ import logging
 from urllib.parse import urlencode
 
 import pyproj
-from pyproj import crs
 import requests
 
 from pygeoapi.provider.base import BaseProvider, ProviderQueryError

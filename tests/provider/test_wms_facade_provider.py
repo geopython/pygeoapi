@@ -33,6 +33,7 @@ import pytest
 from pygeoapi.provider.base import ProviderQueryError
 from pygeoapi.provider.wms_facade import WMSFacadeProvider
 
+
 @pytest.fixture()
 def config():
     return {
@@ -49,6 +50,7 @@ def config():
         }
     }
 
+
 def test_query(config):
     p = WMSFacadeProvider(config)
 
@@ -61,6 +63,7 @@ def test_query(config):
 
     results3 = p.query(crs='http://www.opengis.net/def/crs/EPSG/0/3857')
     assert len(results3) != len(results)
+
 
 def test_invalid_bbox_exception(config):
     """Testing query for a invalid bounding box"""
