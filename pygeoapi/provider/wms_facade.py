@@ -84,10 +84,6 @@ class WMSFacadeProvider(BaseProvider):
 
         self._transparent = 'TRUE'
 
-        # Validate bbox for EPSG:4326
-        if bbox[0] < -180 or bbox[1] < -90 or bbox[2] > 180 or bbox[3] > 90:
-            raise ProviderQueryError("Invalid bounding box")
-
         version = self.options.get('version', '1.3.0')
 
         if version == '1.3.0' and CRS_CODES.get('bbox_crs') == 'EPSG:4326':
