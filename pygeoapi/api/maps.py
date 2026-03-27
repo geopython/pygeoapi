@@ -69,7 +69,7 @@ CRS_CODES = {
     'http://www.opengis.net/def/crs/EPSG/0/4326': 'http://www.opengis.net/def/crs/EPSG/0/4326',  # noqa
     'http://www.opengis.net/def/crs/EPSG/0/3857': 'http://www.opengis.net/def/crs/EPSG/0/3857',  # noqa
     'EPSG:4326': 'http://www.opengis.net/def/crs/EPSG/0/4326',
-    'EPSG:3857': 'http://www.opengis.net/def/crs/EPSG/0/3857',
+    'EPSG:3857': 'http://www.opengis.net/def/crs/EPSG/0/3857'
 }
 
 
