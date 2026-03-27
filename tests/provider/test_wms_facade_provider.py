@@ -30,7 +30,6 @@
 
 import pytest
 
-from pygeoapi.provider.base import ProviderQueryError
 from pygeoapi.provider.wms_facade import WMSFacadeProvider
 
 
