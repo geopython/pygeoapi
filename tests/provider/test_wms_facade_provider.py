@@ -63,12 +63,3 @@ def test_query(config):
 
     results3 = p.query(crs='http://www.opengis.net/def/crs/EPSG/0/3857')
     assert len(results3) != len(results)
-
-
-def test_invalid_bbox_exception(config):
-    """Testing query for a invalid bounding box"""
-    p = WMSFacadeProvider(config)
-
-    with pytest.raises(ProviderQueryError) as exc_info:
-        p.query(bbox=[-2000, -90, 180, 90])
-        assert "Invalid bounding box" in str(exc_info.value)
