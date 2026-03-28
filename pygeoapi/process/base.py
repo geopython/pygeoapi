@@ -47,9 +47,10 @@ LOGGER = logging.getLogger(__name__)
 class BaseProcessor:
     """generic Processor ABC. Processes are inherited from this class"""
 
-    def __init__(self, processor_def: dict, process_metadata: dict,
-                 context: Optional[PluginContext] = None,
-                ):
+    def __init__(
+        self, processor_def: dict, process_metadata: dict,
+        context: Optional[PluginContext] = None,
+    ):
         """
         Initialize object
 

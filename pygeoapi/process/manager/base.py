@@ -69,7 +69,10 @@ class BaseManager:
     """generic Manager ABC"""
     processes: OrderedDict[str, Dict]
 
-    def __init__(self, manager_def: dict, context: Optional[PluginContext] = None):
+    def __init__(
+        self, manager_def: dict,
+        context: Optional[PluginContext] = None,
+    ):
         """
         Initialize object
 

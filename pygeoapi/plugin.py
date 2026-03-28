@@ -55,7 +55,8 @@ class PluginContext:
     Example:
         >>> from pygeoapi.plugin import PluginContext, load_plugin
         >>> context = PluginContext(
-        ...     config={'name': 'GeoJSON', 'type': 'feature', 'data': 'obs.geojson'},
+        ...     config={'name': 'GeoJSON', 'type': 'feature',
+        ...             'data': 'obs.geojson'},
         ...     logger=custom_logger,
         ...     base_url='https://api.example.com'
         ... )
@@ -165,7 +166,8 @@ def load_plugin(
 
         # Modern mode with dependencies
         >>> context = PluginContext(
-        ...     config={'name': 'GeoJSON', 'type': 'feature', 'data': 'obs.geojson'},
+        ...     config={'name': 'GeoJSON', 'type': 'feature',
+        ...             'data': 'obs.geojson'},
         ...     logger=custom_logger
         ... )
         >>> provider = load_plugin('provider', context.config, context=context)
