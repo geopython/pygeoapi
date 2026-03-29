@@ -4,7 +4,6 @@ filelock
 Flask
 jinja2
 jsonschema
-pydantic
 pygeofilter
 pygeoif
 pyproj

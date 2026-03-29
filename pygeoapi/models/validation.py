@@ -43,7 +43,7 @@ def validate_type(dc_instance: Any) -> None:
     Validate field types on a dataclass instance.
 
     Checks each field value against its declared type,
-    matching pydantic's runtime type validation behaviour.
+    matching runtime type validation behaviour.
     Supports Optional[T], List[T], and plain types.
 
     :param dc_instance: dataclass instance to validate
