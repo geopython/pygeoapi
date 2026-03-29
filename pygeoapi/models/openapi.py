@@ -1,10 +1,8 @@
-# ****************************** -*-
-# flake8: noqa
 # =================================================================
 #
 # Authors: Francesco Bartoli <xbartolone@gmail.com>
 #
-# Copyright (c) 2025 Francesco Bartoli
+# Copyright (c) 2026 Francesco Bartoli
 #
 # Permission is hereby granted, free of charge, to any person
 # obtaining a copy of this software and associated documentation
@@ -29,20 +27,58 @@
 #
 # =================================================================
 
+from dataclasses import dataclass
 from enum import Enum
-
-from pydantic import BaseModel
-import pydantic
+from typing import Any, Dict
 
 
 class SupportedFormats(Enum):
     JSON = 'json'
     YAML = 'yaml'
 
-# Handle Pydantic v1/v2 compatibility
-if pydantic.VERSION.startswith('1'):
-    class OAPIFormat(BaseModel):
-        __root__: SupportedFormats = SupportedFormats.YAML
-else:
-    class OAPIFormat(BaseModel):
-        root: SupportedFormats = SupportedFormats.YAML
+
+@dataclass
+class OAPIFormat:
+    """
+    OpenAPI output format.
+
+    Concrete dataclass implementation that can be mimicked
+    downstream.
+
+    :param root: output format, defaults to ``yaml``
+    """
+
+    root: SupportedFormats = SupportedFormats.YAML
+
+    def __post_init__(self):
+        if isinstance(self.root, SupportedFormats):
+            return
+        if isinstance(self.root, str):
+            try:
+                self.root = SupportedFormats(self.root)
+            except ValueError:
+                raise ValueError(
+                    f"Unsupported format: '{self.root}'. "
+                    f"Must be one of: "
+                    f"{[f.value for f in SupportedFormats]}"
+                )
+        else:
+            raise ValueError(
+                f"root must be a string or SupportedFormats, "
+                f"got {type(self.root).__name__}"
+            )
+
+    def __eq__(self, other):
+        if isinstance(other, str):
+            return self.root.value == other
+        if isinstance(other, SupportedFormats):
+            return self.root == other
+        if isinstance(other, OAPIFormat):
+            return self.root == other.root
+        return NotImplemented
+
+    def model_dump(
+        self, exclude_none: bool = False
+    ) -> Dict[str, Any]:
+        """Serialize to dict."""
+        return {'root': self.root.value}
