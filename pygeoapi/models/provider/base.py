@@ -31,88 +31,17 @@
 #
 # =================================================================
 
-from dataclasses import dataclass, field, fields as dc_fields
+from dataclasses import dataclass, field
 from datetime import datetime
 from enum import Enum
 import json
 from pathlib import Path
-from typing import Any, Dict, List, Optional, get_type_hints
+from typing import Any, Dict, List, Optional
 
+from pygeoapi.models.validation import validate_type
 from pygeoapi.util import DEFINITIONSDIR
 
 TMS_DIR = DEFINITIONSDIR / 'tiles'
-
-
-def _validate_type(dc_instance: Any) -> None:
-    """
-    Validate field types on a dataclass instance.
-
-    Checks each field value against its declared type,
-    matching dataclass runtime type.
-    Supports Optional[T], List[T], and plain types.
-
-    :param dc_instance: dataclass instance to validate
-
-    :raises ValueError: if a field value has the wrong type
-    """
-    hints = get_type_hints(dc_instance.__class__)
-    for f in dc_fields(dc_instance):
-        value = getattr(dc_instance, f.name)
-        expected = hints[f.name]
-
-        # Extract inner type from Optional[T]
-        origin = getattr(expected, '__origin__', None)
-        args = getattr(expected, '__args__', ())
-
-        is_optional = (
-            origin is type(None)  # noqa: E721
-            or (origin is not None
-                and type(None) in args)
-        )
-
-        if is_optional and value is None:
-            continue
-
-        # Unwrap Optional to get the inner type
-        if is_optional and args:
-            inner_types = [
-                a for a in args if a is not type(None)
-            ]
-            if len(inner_types) == 1:
-                expected = inner_types[0]
-                origin = getattr(expected, '__origin__', None)
-                args = getattr(expected, '__args__', ())
-
-        # Check List[T]
-        if origin is list:
-            if not isinstance(value, list):
-                raise ValueError(
-                    f"{f.name} must be a list, "
-                    f"got {type(value).__name__}"
-                )
-        # Check plain types (str, int, float, bool, Enum)
-        elif origin is None:
-            if isinstance(expected, type):
-                # bool is subclass of int, check bool first
-                if expected is bool:
-                    if not isinstance(value, bool):
-                        raise ValueError(
-                            f"{f.name} must be a bool, "
-                            f"got {type(value).__name__}"
-                        )
-                elif expected is int:
-                    if isinstance(value, bool) \
-                            or not isinstance(value, int):
-                        raise ValueError(
-                            f"{f.name} must be an int, "
-                            f"got {type(value).__name__}"
-                        )
-                elif not isinstance(value, expected):
-                    raise ValueError(
-                        f"{f.name} must be a "
-                        f"{expected.__name__}, "
-                        f"got {type(value).__name__}"
-                    )
 
 
 class TilesMetadataFormat(str, Enum):
@@ -160,7 +89,7 @@ class TileMatrixSetEnumType:
     tileMatrices: List[dict] = field(default_factory=list)
 
     def __post_init__(self):
-        _validate_type(self)
+        validate_type(self)
 
     def model_dump(
         self, exclude_none: bool = False
@@ -244,7 +173,7 @@ class TileMatrixLimitsType:
     maxTileCol: int = 0
 
     def __post_init__(self):
-        _validate_type(self)
+        validate_type(self)
 
     def model_dump(
         self, exclude_none: bool = False
@@ -274,7 +203,7 @@ class TwoDBoundingBoxType:
     crs: Optional[str] = None
 
     def __post_init__(self):
-        _validate_type(self)
+        validate_type(self)
 
     def model_dump(
         self, exclude_none: bool = False
@@ -305,7 +234,7 @@ class LinkType:
     length: Optional[int] = None
 
     def __post_init__(self):
-        _validate_type(self)
+        validate_type(self)
 
     def model_dump(
         self, exclude_none: bool = False
@@ -351,7 +280,7 @@ class GeospatialDataType:
     propertiesSchema: Optional[dict] = None
 
     def __post_init__(self):
-        _validate_type(self)
+        validate_type(self)
 
     def model_dump(
         self, exclude_none: bool = False
@@ -383,7 +312,7 @@ class StyleType:
     links: Optional[LinkType] = None
 
     def __post_init__(self):
-        _validate_type(self)
+        validate_type(self)
 
     def model_dump(
         self, exclude_none: bool = False
@@ -413,7 +342,7 @@ class TilePointType:
     tileMatrix: str = ''
 
     def __post_init__(self):
-        _validate_type(self)
+        validate_type(self)
 
     def model_dump(
         self, exclude_none: bool = False
@@ -463,7 +392,7 @@ class TileSetMetadata:
     links: Optional[List[LinkType]] = None
 
     def __post_init__(self):
-        _validate_type(self)
+        validate_type(self)
 
     def model_dump(
         self, exclude_none: bool = False

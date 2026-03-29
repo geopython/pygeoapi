@@ -29,10 +29,10 @@
 #
 # =================================================================
 
-from dataclasses import dataclass
+from dataclasses import dataclass, fields as dc_fields
 from typing import Any, Dict, List, Optional
 
-from pygeoapi.models.provider.base import _validate_type
+from pygeoapi.models.validation import validate_type
 
 
 @dataclass
@@ -46,7 +46,7 @@ class VectorLayers:
     fields: Optional[dict] = None
 
     def __post_init__(self):
-        _validate_type(self)
+        validate_type(self)
 
     def model_dump(
         self, exclude_none: bool = False
@@ -63,7 +63,12 @@ class VectorLayers:
 
 @dataclass
 class MVTTilesJson:
-    """TileJSON 3.0 specification."""
+    """TileJSON 3.0 specification.
+
+    Accepts and silently ignores unknown kwargs to match
+    the validation behaviour when instantiated from arbitrary
+    JSON metadata dicts (e.g. ``MVTTilesJson(**json_data)``).
+    """
 
     tilejson: str = "3.0.0"
     name: Optional[str] = None
@@ -76,8 +81,19 @@ class MVTTilesJson:
     description: Optional[str] = None
     vector_layers: Optional[List[VectorLayers]] = None
 
-    def __post_init__(self):
-        _validate_type(self)
+    def __init__(self, **kwargs):
+        for f in dc_fields(self):
+            value = kwargs.get(f.name, getattr(self, f.name))
+            # Coerce str to int for Optional[int] fields
+            if (value is not None
+                    and isinstance(value, str)
+                    and 'int' in str(f.type)):
+                try:
+                    value = int(value)
+                except (ValueError, TypeError):
+                    pass
+            setattr(self, f.name, value)
+        validate_type(self)
 
     def model_dump(
         self, exclude_none: bool = False

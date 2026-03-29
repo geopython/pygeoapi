@@ -33,6 +33,8 @@ import re
 from dataclasses import dataclass, fields, asdict
 from typing import Any, Dict
 
+from pygeoapi.models.validation import validate_type
+
 
 SEMVER_PATTERN = re.compile(r'^\d+\.\d+\..+$')
 
@@ -74,30 +76,14 @@ class APIRules:
     strict_slashes: bool = False
 
     def __post_init__(self):
-        if not isinstance(self.api_version, str):
-            raise APIRulesValidationError(
-                "api_version must be a string, "
-                f"got {type(self.api_version).__name__}"
-            )
+        try:
+            validate_type(self)
+        except ValueError as e:
+            raise APIRulesValidationError(str(e)) from e
         if not SEMVER_PATTERN.match(self.api_version):
             raise APIRulesValidationError(
                 f"Invalid semantic version: '{self.api_version}'. "
                 f"Expected format: MAJOR.MINOR.PATCH"
-            )
-        if not isinstance(self.url_prefix, str):
-            raise APIRulesValidationError(
-                "url_prefix must be a string, "
-                f"got {type(self.url_prefix).__name__}"
-            )
-        if not isinstance(self.version_header, str):
-            raise APIRulesValidationError(
-                "version_header must be a string, "
-                f"got {type(self.version_header).__name__}"
-            )
-        if not isinstance(self.strict_slashes, bool):
-            raise APIRulesValidationError(
-                "strict_slashes must be a bool, "
-                f"got {type(self.strict_slashes).__name__}"
             )
 
     @classmethod

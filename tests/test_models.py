@@ -89,15 +89,15 @@ class TestOAPIFormatCreation:
             OAPIFormat(root='xml')
 
     def test_non_string_int_raises(self):
-        with pytest.raises(ValueError, match='must be a string'):
+        with pytest.raises(ValueError, match='must be a'):
             OAPIFormat(root=42)
 
     def test_non_string_bool_raises(self):
-        with pytest.raises(ValueError, match='must be a string'):
+        with pytest.raises(ValueError, match='must be a'):
             OAPIFormat(root=True)
 
     def test_non_string_none_raises(self):
-        with pytest.raises(ValueError, match='must be a string'):
+        with pytest.raises(ValueError, match='must be a'):
             OAPIFormat(root=None)
 
 
@@ -194,20 +194,20 @@ class TestAPIRulesCreation:
 
     def test_non_string_version_raises(self):
         with pytest.raises(
-            APIRulesValidationError, match='must be a string'
+            APIRulesValidationError, match='must be a str'
         ):
             APIRules(api_version=123)
 
     def test_non_string_url_prefix_raises(self):
         with pytest.raises(
-            APIRulesValidationError, match='url_prefix must be a string'
+            APIRulesValidationError, match='url_prefix must be a str'
         ):
             APIRules(api_version='1.0.0', url_prefix=42)
 
     def test_non_string_version_header_raises(self):
         with pytest.raises(
             APIRulesValidationError,
-            match='version_header must be a string',
+            match='version_header must be a str',
         ):
             APIRules(api_version='1.0.0', version_header=True)
 
@@ -638,6 +638,25 @@ class TestMVTTilesJsonValidation:
         }
         mvt_tj = MVTTilesJson(**data)
         assert mvt_tj.name == 'test'
+
+    def test_kwargs_ignores_unknown_keys(self):
+        """Extra keys in JSON metadata are silently ignored."""
+        data = {
+            'tilejson': '3.0.0',
+            'name': 'test',
+            'version': 2,
+            'format': 'pbf',
+            'json': '{}',
+        }
+        mvt_tj = MVTTilesJson(**data)
+        assert mvt_tj.name == 'test'
+        assert not hasattr(mvt_tj, 'format')
+
+    def test_str_to_int_coercion(self):
+        """String zoom values are coerced to int."""
+        mvt_tj = MVTTilesJson(minzoom='0', maxzoom='14')
+        assert mvt_tj.minzoom == 0
+        assert mvt_tj.maxzoom == 14
 
     def test_model_dump(self):
         mvt_tj = MVTTilesJson(

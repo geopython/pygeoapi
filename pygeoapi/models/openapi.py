@@ -31,6 +31,8 @@ from dataclasses import dataclass
 from enum import Enum
 from typing import Any, Dict
 
+from pygeoapi.models.validation import validate_type
+
 
 class SupportedFormats(Enum):
     JSON = 'json'
@@ -51,8 +53,7 @@ class OAPIFormat:
     root: SupportedFormats = SupportedFormats.YAML
 
     def __post_init__(self):
-        if isinstance(self.root, SupportedFormats):
-            return
+        # Coerce str to enum before type validation
         if isinstance(self.root, str):
             try:
                 self.root = SupportedFormats(self.root)
@@ -62,11 +63,7 @@ class OAPIFormat:
                     f"Must be one of: "
                     f"{[f.value for f in SupportedFormats]}"
                 )
-        else:
-            raise ValueError(
-                f"root must be a string or SupportedFormats, "
-                f"got {type(self.root).__name__}"
-            )
+        validate_type(self)
 
     def __eq__(self, other):
         if isinstance(other, str):
