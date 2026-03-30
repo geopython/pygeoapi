@@ -154,18 +154,46 @@
       ['{{ data['extent']['spatial']['bbox'][0][1] }}', '{{ data['extent']['spatial']['bbox'][0][2] }}']
     ]);
 
-   {# if this collection has a map representation, add it to the map #}
-   {% for link in data['links'] %}
-     {% if link['rel'] == 'http://www.opengis.net/def/rel/ogc/1.0/map' and link['href'] %}
-        L.imageOverlay.ogcapi("{{ data['base_url'] }}", {collection: "{{ data['id'] }}", "opacity": .7, "transparent": true}).addTo(map);
-        bbox_layer.setStyle({
-            fillOpacity: 0
-        });
-     {% endif %}
-   {% endfor %}
+    var lbounds = bbox_layer.getBounds();
+
+    function clampLat(lat) {
+        return Math.max(-85.0511, Math.min(lat, 85.0511));
+    }
+
+    var sw = lbounds.getSouthWest();
+    var ne = lbounds.getNorthEast();
+    var clampedSw = L.latLng(clampLat(sw.lat), sw.lng);
+    var clampedNe = L.latLng(clampLat(ne.lat), ne.lng);
+    var clampedBounds = L.latLngBounds(clampedSw, clampedNe);
+
+    // Set the bounds to the limits of WebMercator
+    var crsBounds = L.latLngBounds(
+        L.latLng(-85.0511, -180), // SouthWest
+        L.latLng(85.0511, 180)    // NorthEast
+    );
+    map.setMaxBounds(crsBounds);
+
+      {# if this collection has a map representation, add it to the map #}
+      {% for link in data['links'] %}
+        {% if link['rel'] == 'http://www.opengis.net/def/rel/ogc/1.0/map' and link['href'] %}
+          L.imageOverlay.ogcapi("{{ data['base_url'] }}", {collection: "{{ data['id'] }}", "opacity": .7, "transparent": true, "bounds": clampedBounds }).addTo(map);
+          bbox_layer.setStyle({
+              fillOpacity: 0
+          });
+        {% endif %}
+      {% endfor %}
 
     map.addLayer(bbox_layer);
-    map.fitBounds(bbox_layer.getBounds(), {maxZoom: 10});
+    map.fitBounds(clampedBounds, {maxZoom: 10,});
+
+    // Make sure we stay within the bounds
+    map.on('moveend', function() {
+        if (!crsBounds.contains(map.getBounds())) {
+            map.fitBounds(clampedBounds);
+        }
+    });
+
+    map.setMinZoom(2);
 
     // Allow to get bbox query parameter of a rectangular area specified by
     // dragging the mouse while pressing the Ctrl key
