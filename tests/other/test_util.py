@@ -33,6 +33,7 @@ from copy import deepcopy
 from io import StringIO
 from unittest import mock
 import uuid
+from xml.sax.saxutils import unescape
 
 import pytest
 
@@ -77,12 +78,19 @@ def test_get_typed_value():
 @pytest.mark.parametrize('data,minified,pretty_printed', [
     [{'foo': 'bar'}, '{"foo":"bar"}', '{\n    "foo":"bar"\n}'],
     [{'foo<script>alert("hi")</script>': 'bar'},
-     '{"foo&ltscript&gtalert(\\"hi\\")&lt/script&gt":"bar"}',
-     '{\n    "foo&ltscript&gtalert(\\"hi\\")&lt/script&gt":"bar"\n}']
+     '{"foo&lt;script&gt;alert(\\"hi\\")&lt;/script&gt;":"bar"}',
+     '{\n    "foo&lt;script&gt;alert(\\"hi\\")&lt;/script&gt;":"bar"\n}']
 ])
 def test_to_json(data, minified, pretty_printed):
-    assert util.to_json(data) == minified
+    output = util.to_json(data)
+    assert output == minified
     assert util.to_json(data, pretty=True) == pretty_printed
+
+    unescaped_output = unescape(output)
+    if '&lt;' in output:
+        assert '<' in unescaped_output
+    if '&gt;' in output:
+        assert '>' in unescaped_output
 
 
 def test_yaml_load(config):
