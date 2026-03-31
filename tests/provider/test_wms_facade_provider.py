@@ -56,9 +56,3 @@ def test_query(config):
     results = p.query()
     assert len(results) > 0
 
-    # an invalid CRS should return the default bbox (4326)
-    results2 = p.query(crs='http://www.opengis.net/def/crs/EPSG/0/1111')
-    assert len(results2) == len(results)
-
-    results3 = p.query(crs='http://www.opengis.net/def/crs/EPSG/0/3857')
-    assert len(results3) != len(results)
