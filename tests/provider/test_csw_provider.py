@@ -35,6 +35,8 @@ import pytest
 from pygeoapi.provider.base import ProviderItemNotFoundError
 from pygeoapi.provider.csw_facade import CSWFacadeProvider
 
+CSW_PROVIDER = 'pygeoapi.provider.csw_facade.CatalogueServiceWeb'
+
 
 @pytest.fixture()
 def config():
@@ -114,29 +116,36 @@ def mock_csw_get_record():
 @pytest.fixture()
 def mock_csw(mock_csw_record, mock_csw_record_polygon, mock_csw_get_record):
     """Mock CSW service"""
-    with mock.patch('pygeoapi.provider.csw_facade.CatalogueServiceWeb') as mock_csw_class:
+    with mock.patch(CSW_PROVIDER) as mock_csw_class:
         csw_instance = mock.MagicMock()
         mock_csw_class.return_value = csw_instance
-        
+
         def mock_getrecords2(*args, **kwargs):
             # Simulate different responses based on parameters
             limit = kwargs.get('maxrecords', 10)
             offset = kwargs.get('startposition', 0)
             constraints = kwargs.get('constraints', [])
-            
+
             # All available records
             all_records = [
-                ('urn:uuid:19887a8a-f6b0-4a63-ae56-7fba0e17801f', mock_csw_record),
-                ('urn:uuid:1ef30a8b-876d-4828-9246-c37ab4510bbd', mock_csw_record_polygon),
+                (
+                    'urn:uuid:19887a8a-f6b0-4a63-ae56-7fba0e17801f',
+                    mock_csw_record
+                ),
+                (
+                    'urn:uuid:1ef30a8b-876d-4828-9246-c37ab4510bbd',
+                    mock_csw_record_polygon
+                )
             ]
-            
+
             # Simulate filtering based on query constraints
             filtered_records = all_records[:]
-            
+
             # Simulate different total counts based on constraints
             total_matches = 12  # Default total
             if constraints:
-                # If there are constraints, simulate fewer matches for some cases
+                # If there are constraints
+                # simulate fewer matches
                 constraint_str = str(constraints)
                 if 'lorem' in constraint_str.lower():
                     total_matches = 5
@@ -149,37 +158,46 @@ def mock_csw(mock_csw_record, mock_csw_record_polygon, mock_csw_get_record):
                     total_matches = 1 if '2006-05-12' in constraint_str else 3
                     # Keep appropriate records based on date
                     if '2006-05-12' in constraint_str:
-                        filtered_records = [all_records[1]]  # Second record has matching date
-            
+                        # Second record has matching date
+                        filtered_records = [all_records[1]]
+
             # Apply offset and limit to filtered records
             paginated_records = filtered_records[offset:offset+limit]
-            
+
             # Convert to dictionary format expected by CSW
-            csw_instance.records = {record_id: record for record_id, record in paginated_records}
+            csw_instance.records = {
+                record_id: record for record_id, record in paginated_records
+            }
             csw_instance.results = {
                 'matches': total_matches,
                 'returned': len(paginated_records)
             }
-            
+
         def mock_getrecordbyid(identifiers, **kwargs):
             identifier = identifiers[0]
             if identifier == 'urn:uuid:a06af396-3105-442d-8b40-22b57a90d2f2':
                 csw_instance.records = {identifier: mock_csw_get_record}
             else:
                 csw_instance.records = {}
-                
+
         def mock_getdomain(property_name, **kwargs):
             # Mock domain values for testing
             domain_values = {
-                'type': ['http://purl.org/dc/dcmitype/Image', 'http://purl.org/dc/dcmitype/Text', 
-                        'http://purl.org/dc/dcmitype/Dataset', 'http://purl.org/dc/dcmitype/Service']
+                'type': [
+                    'http://purl.org/dc/dcmitype/Image',
+                    'http://purl.org/dc/dcmitype/Text',
+                    'http://purl.org/dc/dcmitype/Dataset',
+                    'http://purl.org/dc/dcmitype/Service'
+                ]
             }
-            csw_instance.results = {'values': domain_values.get(property_name, [])}
-            
+            csw_instance.results = {
+                'values': domain_values.get(property_name, [])
+            }
+
         csw_instance.getrecords2.side_effect = mock_getrecords2
         csw_instance.getrecordbyid.side_effect = mock_getrecordbyid
         csw_instance.getdomain.side_effect = mock_getdomain
-        
+
         yield csw_instance
 
 
