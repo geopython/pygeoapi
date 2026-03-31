@@ -114,14 +114,19 @@ def get_collection_map(api: API, request: APIRequest,
 
     query_args['format_'] = request.params.get('f', 'png')
     query_args['style'] = style
+
     query_args['crs'] = CRS_CODES.get(request.params.get(
-        'crs', DEFAULT_CRS), DEFAULT_CRS)
+        'crs', DEFAULT_CRS))
     query_args['bbox_crs'] = CRS_CODES.get(request.params.get(
         'bbox-crs',
         api.config['resources'][dataset]['extents']['spatial'].get(
-            'crs', DEFAULT_CRS), DEFAULT_CRS)
+            'crs', DEFAULT_CRS))
     )
-    query_args['transparent'] = request.params.get('transparent', True)
+
+    if query_args['crs'] is None:
+        query_args['crs'] = DEFAULT_CRS
+    if query_args['bbox_crs'] is None:
+        query_args['bbox_crs'] = DEFAULT_CRS
 
     try:
         query_args['width'] = int(request.params.get('width', 500))
