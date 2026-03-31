@@ -55,4 +55,3 @@ def test_query(config):
 
     results = p.query()
     assert len(results) > 0
-
