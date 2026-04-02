@@ -4,7 +4,7 @@
 #          Ricardo Garcia Silva <ricardo.garcia.silva@geobeyond.it>
 #          Francesco Martinelli <francesco.martinelli@ingv.it>
 #
-# Copyright (c) 2024 Tom Kralidis
+# Copyright (c) 2026 Tom Kralidis
 #           (c) 2023 Ricardo Garcia Silva
 #           (c) 2026 Francesco Martinelli
 #
@@ -277,7 +277,8 @@ class BaseManager:
             current_status = JobStatus.running
             jfmt, outputs = p.execute(data_dict, **extra_execute_parameters)
 
-            if isinstance(outputs, bytes):
+            if isinstance(outputs, bytes) and outputs.isascii():
+                LOGGER.debug('output is ASCII; decoding utf-8')
                 outputs = outputs.decode('utf-8')
 
             if requested_response == RequestedResponse.document.value:
