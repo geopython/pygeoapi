@@ -502,6 +502,216 @@ The below template provides a minimal example (let's call the file ``mycooljsonf
            return out_data
 
 
+Example: transaction validation with PluginContext
+--------------------------------------------------
+
+pygeoapi serves the schema of each collection at ``/collections/{id}/schema``, but
+when a transaction (create/update) comes in, providers write the data without validating
+it against that schema.
+
+If you want to fill this gap then you should write a dedicated plugin, i.e. a
+``ValidatedGeoJSONProvider`` plugin for the ``GeoJSON`` provider.  It reads the provider's
+JSON Schema (from ``get_fields()``) and builds a validator that checks incoming features
+on ``create()`` and ``update()``.  In python there are plenty of data validation libraries
+but pygeoapi aims at being dependency least so at first glance the provider code should be
+**technology-agnostic**: it calls the validator's interface without knowing whether the
+validator is implemented with dataclasses, pydantic, or any other library.
+
+The bare minimal, without injecting any ``PluginContext``, is to build a new provider
+(or add the validation logic to the existing one) using the standard python and the
+existing dependencies to validate from its own fields.
+With ``PluginContext``, a downstream project can inject a different validator — for
+example one built with pydantic that adds stricter constraints — without changing the
+provider code.
+
+The provider plugin
+^^^^^^^^^^^^^^^^^^^
+
+The provider resolves its validator in this order:
+
+1. ``context.feature_validator`` if a ``ValidatingContext`` is injected
+2. A validator built from the provider's own JSON Schema (default fallback)
+
+The only interface the provider expects is that the validator is callable with
+``**properties`` as keyword arguments and raises on invalid data.  This makes the
+provider invariant to the validation technology used.
+
+.. code-block:: python
+
+   from pygeoapi.provider.geojson import GeoJSONProvider
+
+
+   class ValidatedGeoJSONProvider(GeoJSONProvider):
+       """GeoJSON provider with transaction validation."""
+
+       def __init__(self, provider_def, context: Optional[PluginContext] = None):
+           super().__init__(provider_def, context)
+
+           # Resolve: injected validator or auto-built default
+           if (context and hasattr(context, 'feature_validator')
+                   and context.feature_validator is not None):
+               self._feature_validator = context.feature_validator
+           else:
+               self._feature_validator = build_feature_validator(
+                   self.fields
+               )
+
+       def _validate_feature(self, feature):
+           """Validate feature properties.
+
+           The validator is called with **properties.
+           It may be a dataclass, a pydantic model, or any
+           callable that raises on invalid input.
+           """
+
+           if self._feature_validator is None:
+               return
+           properties = feature.get('properties', {})
+           self._feature_validator(**properties)
+
+       def create(self, new_feature):
+           self._validate_feature(new_feature)
+           return super().create(new_feature)
+
+       def update(self, identifier, new_feature):
+           self._validate_feature(new_feature)
+           return super().update(identifier, new_feature)
+
+Default validator (standard library only)
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+The default validator uses only dataclasses and ``validate_type`` from pygeoapi core.
+No external dependency is needed.  It reads the provider's JSON Schema
+(``provider.fields``) and dynamically creates a ``@dataclass`` whose fields match the
+data. The type checking is done by ``validate_type`` in ``__post_init__``.
+
+.. code-block:: python
+
+   from dataclasses import dataclass
+   from typing import Optional
+
+   from pygeoapi.models.validation import validate_type
+
+   _JSON_SCHEMA_TYPE_MAP = {
+       'string': str, 'number': float,
+       'integer': int, 'boolean': bool,
+   }
+
+   def _make_feature_validator_cls(fields: dict):
+       """Build a dataclass validator from provider fields.
+
+       No external dependency required.
+       """
+
+       if not fields:
+           return None
+
+       annotations = {}
+       defaults = {}
+       for name, schema in fields.items():
+           json_type = schema.get('type', 'string')
+           py_type = _JSON_SCHEMA_TYPE_MAP.get(json_type, str)
+           annotations[name] = Optional[py_type]
+           defaults[name] = None
+
+       ns = {'__annotations__': annotations, **defaults}
+
+       def __post_init__(self):
+           validate_type(self)
+
+       ns['__post_init__'] = __post_init__
+       cls = type('FeatureValidator', (), ns)
+       return dataclass(cls)
+
+This validator catches type errors (e.g. a string where an integer is expected) using
+only the standard library.  The provider does not know or define what technology the
+validator uses — it only calls ``self._feature_validator(**properties)``.
+
+Injecting a custom validator downstream
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+A downstream project, that uses pygeoapi as a library, can subclass ``PluginContext``
+and inject a more robust validator.  The provider code does not change, only the
+context differs.
+
+The injected validator could be a pydantic ``BaseModel`` with custom field constraints,
+a dataclass with ``__post_init__`` validation, or any callable that accepts ``**kwargs``
+and raises on invalid input.
+
+.. code-block:: python
+
+   from dataclasses import dataclass
+   from typing import Any, Optional
+
+   from pydantic import BaseModel, Field, field_validator
+   from pygeoapi.plugin import PluginContext, load_plugin
+
+
+   @dataclass
+   class ValidatingContext(PluginContext):
+       """Extended context carrying a feature validator."""
+       feature_validator: Optional[Any] = None
+
+
+   # Stricter validator with domain-specific rules
+   class StrictLakeProperties(BaseModel):
+       id: int
+       scalerank: int = Field(..., ge=0, le=10)
+       name: str = Field(..., min_length=1)
+       featureclass: str
+
+       @field_validator('featureclass')
+       @classmethod
+       def must_be_known_class(cls, v):
+           allowed = {'Lake', 'Reservoir', 'Playa'}
+           if v not in allowed:
+               raise ValueError(f'must be one of {allowed}')
+           return v
+
+
+   # Inject via context
+   context = ValidatingContext(
+       config=provider_def,
+       feature_validator=StrictLakeProperties,
+   )
+   provider = load_plugin('provider', provider_def, context=context)
+
+   # Accepted: valid feature
+   provider.create({
+       'type': 'Feature',
+       'geometry': {'type': 'Point', 'coordinates': [0, 0]},
+       'properties': {'id': 1, 'scalerank': 3, 'name': 'Test',
+                       'featureclass': 'Lake'},
+   })
+
+   # Rejected: scalerank out of range (default validator would accept)
+   provider.create({
+       'type': 'Feature',
+       'geometry': {'type': 'Point', 'coordinates': [0, 0]},
+       'properties': {'id': 2, 'scalerank': 99, 'name': 'Test',
+                       'featureclass': 'Lake'},
+   })
+
+So with the same class in the core and the same data sent to the provider, the result
+of the validation may change depending on the injected context.  Without context,
+the default validator catches type errors.  With a ``ValidatingContext``, the downstream
+project might add domain constraints (value ranges, allowed values, minimum lengths) without
+modifying the provider.
+
+Configuration
+^^^^^^^^^^^^^
+
+.. code-block:: yaml
+
+   providers:
+       - type: feature
+         name: pygeoapi.provider.validated_geojson.ValidatedGeoJSONProvider
+         data: tests/data/ne_110m_lakes.geojson
+         id_field: id
+         title_field: name
+         editable: true
+
+
 Featured plugins
 ----------------
 
