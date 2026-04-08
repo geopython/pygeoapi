@@ -140,6 +140,7 @@
 {% block extrafoot %}
     <script>
     var map = L.map('collection-map').setView([{{ 0 }}, {{ 0 }}], 1);
+
     map.addLayer(new L.TileLayer(
       '{{ config['server']['map']['url'] }}', {
         maxZoom: 18,
@@ -156,6 +157,7 @@
 
     var lbounds = bbox_layer.getBounds();
 
+    // Make sure that we pass valid coordinates to the imageOverlay
     function clampLat(lat) {
         return Math.max(-85.0511, Math.min(lat, 85.0511));
     }
@@ -166,34 +168,52 @@
     var clampedNe = L.latLng(clampLat(ne.lat), ne.lng);
     var clampedBounds = L.latLngBounds(clampedSw, clampedNe);
 
-    // Set the bounds to the limits of WebMercator
-    var crsBounds = L.latLngBounds(
-        L.latLng(-85.0511, -180), // SouthWest
-        L.latLng(85.0511, 180)    // NorthEast
-    );
-    map.setMaxBounds(crsBounds);
+    var ogcapi_layer = null;
 
-      {# if this collection has a map representation, add it to the map #}
-      {% for link in data['links'] %}
-        {% if link['rel'] == 'http://www.opengis.net/def/rel/ogc/1.0/map' and link['href'] %}
-          L.imageOverlay.ogcapi("{{ data['base_url'] }}", {collection: "{{ data['id'] }}", "opacity": .7, "transparent": true, "bounds": clampedBounds }).addTo(map);
-          bbox_layer.setStyle({
-              fillOpacity: 0
-          });
-        {% endif %}
-      {% endfor %}
+    {# if this collection has a map representation, add it to the map #}
+    {% for link in data['links'] %}
+      {% if link['rel'] == 'http://www.opengis.net/def/rel/ogc/1.0/map' and link['href'] %}
+        ogcapi_layer = L.imageOverlay.ogcapi("{{ data['base_url'] }}", {
+            collection: "{{ data['id'] }}",
+            "opacity": .7, 
+            "transparent": true, 
+            "bounds": clampedBounds 
+        });
+        bbox_layer.setStyle({
+            fillOpacity: 0
+        });
+      {% endif %}
+    {% endfor %}
+
+    // Check bounds and toggle the visibility of the imageOverlay, accordingly
+    function toggleOverlayVisibility() {
+
+      if (ogcapi_layer) {
+        var currentBounds = map.getBounds();
+        var west = currentBounds.getWest();
+        var east = currentBounds.getEast();
+        var centerLng = map.getCenter().lng;
+        
+        var viewWidth = east - west;
+
+        var isWithinBounds = (viewWidth <= 360) && (centerLng >= -180 && centerLng <= 180);
+
+            if (isWithinBounds) {
+                if (!map.hasLayer(ogcapi_layer)) map.addLayer(ogcapi_layer);
+            } else {
+                if (map.hasLayer(ogcapi_layer)) map.removeLayer(ogcapi_layer);
+            }
+        }
+    }
+
+    map.on('moveend', toggleOverlayVisibility);
 
     map.addLayer(bbox_layer);
-    map.fitBounds(clampedBounds, {maxZoom: 10,});
+    
+    map.fitBounds(clampedBounds, {maxZoom: 10});
 
-    // Make sure we stay within the bounds
-    map.on('moveend', function() {
-        if (!crsBounds.contains(map.getBounds())) {
-            map.fitBounds(clampedBounds);
-        }
-    });
-
-    map.setMinZoom(2);
+    // Run the initial visibility check
+    toggleOverlayVisibility();
 
     // Allow to get bbox query parameter of a rectangular area specified by
     // dragging the mouse while pressing the Ctrl key
