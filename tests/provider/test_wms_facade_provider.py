@@ -50,8 +50,24 @@ def config():
     }
 
 
-def test_query(config):
+def check_is_PNG(results):
+    assert isinstance(results, bytes)
+    assert results[1:4] == b'PNG'
+
+
+def test_default_query(config):
     p = WMSFacadeProvider(config)
 
     results = p.query()
     assert len(results) > 0
+    check_is_PNG(results)
+
+
+def test_crs_query(config):
+    p = WMSFacadeProvider(config)
+
+    results1 = p.query(crs='http://www.opengis.net/def/crs/EPSG/0/3857')
+    results2 = p.query(crs='http://www.opengis.net/def/crs/EPSG/0/4326')
+
+    check_is_PNG(results1)
+    check_is_PNG(results2)
