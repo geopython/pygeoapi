@@ -94,6 +94,17 @@ PROCESS_METADATA = {
             'minOccurs': 0,
             'maxOccurs': 1,
             'keywords': ['as_bytes']
+        },
+        'media_type': {
+            'title': 'Media type',
+            'description': 'Force a specific media type',
+            'schema': {
+                'type': 'string',
+                'default': 'application/json'
+            },
+            'minOccurs': 0,
+            'maxOccurs': 1,
+            'keywords': ['media_type']
         }
     },
     'outputs': {
@@ -132,7 +143,7 @@ class HelloWorldProcessor(BaseProcessor):
         self.supports_outputs = True
 
     def execute(self, data, outputs=None):
-        mimetype = 'application/json'
+        mimetype = data.get('media_type', 'application/json')
         name = data.get('name')
 
         if name is None:

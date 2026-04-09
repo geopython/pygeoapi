@@ -327,26 +327,11 @@ def get_jobs(api: API, request: APIRequest,
             job_result_url = f"{api.base_url}/jobs/{job_['identifier']}/results"  # noqa
 
             job2['links'] = [{
-                'href': f'{job_result_url}?f={F_HTML}',
+                'href': job_result_url,
                 'rel': 'http://www.opengis.net/def/rel/ogc/1.0/results',
-                'type': FORMAT_TYPES[F_HTML],
-                'title': l10n.translate(f'Results of job as HTML', request.locale),  # noqa
-            }, {
-                'href': f'{job_result_url}?f={F_JSON}',
-                'rel': 'http://www.opengis.net/def/rel/ogc/1.0/results',
-                'type': FORMAT_TYPES[F_JSON],
-                'title': l10n.translate(f'Results of job as JSON', request.locale),  # noqa
+                'type': job_['mimetype'],
+                'title': f"Results of job {job_id} as {job_['mimetype']}"
             }]
-
-            if job_['mimetype'] not in (FORMAT_TYPES[F_JSON],
-                                        FORMAT_TYPES[F_HTML]):
-
-                job2['links'].append({
-                    'href': job_result_url,
-                    'rel': 'http://www.opengis.net/def/rel/ogc/1.0/results',  # noqa
-                    'type': job_['mimetype'],
-                    'title': f"Results of job {job_id} as {job_['mimetype']}"  # noqa
-                })
 
         serialized_jobs['jobs'].append(job2)
 
@@ -528,7 +513,10 @@ def execute_process(api: API, request: APIRequest,
             pretty_print_ = False
         response2 = to_json(response, pretty_print_)
     else:
+        pretty_print_ = False
         response2 = response
+        if isinstance(response, (list, dict)):
+            response2 = to_json(response, pretty_print_)
 
     if (headers.get('Preference-Applied', '') == RequestedProcessExecutionMode.respond_async.value):  # noqa
         LOGGER.debug('Asynchronous mode detected, returning statusInfo')
