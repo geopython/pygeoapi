@@ -3,7 +3,7 @@
 # Authors: Tom Kralidis <tomkralidis@gmail.com>
 #          Francesco Martinelli <francesco.martinelli@ingv.it>
 #
-# Copyright (c) 2022 Tom Kralidis
+# Copyright (c) 2026 Tom Kralidis
 # Copyright (c) 2024 Francesco Martinelli
 #
 # Permission is hereby granted, free of charge, to any person
@@ -29,6 +29,7 @@
 #
 # =================================================================
 
+import json
 import logging
 
 from pygeoapi.process.base import BaseProcessor, ProcessorExecuteError
@@ -82,6 +83,28 @@ PROCESS_METADATA = {
             'minOccurs': 0,
             'maxOccurs': 1,
             'keywords': ['message']
+        },
+        'as_bytes': {
+            'title': 'As bytes',
+            'description': 'Whether to force return as bytes',
+            'schema': {
+                'type': 'bool',
+                'default': False
+            },
+            'minOccurs': 0,
+            'maxOccurs': 1,
+            'keywords': ['as_bytes']
+        },
+        'media_type': {
+            'title': 'Media type',
+            'description': 'Force a specific media type',
+            'schema': {
+                'type': 'string',
+                'default': 'application/json'
+            },
+            'minOccurs': 0,
+            'maxOccurs': 1,
+            'keywords': ['media_type']
         }
     },
     'outputs': {
@@ -120,7 +143,7 @@ class HelloWorldProcessor(BaseProcessor):
         self.supports_outputs = True
 
     def execute(self, data, outputs=None):
-        mimetype = 'application/json'
+        mimetype = data.get('media_type', 'application/json')
         name = data.get('name')
 
         if name is None:
@@ -135,6 +158,9 @@ class HelloWorldProcessor(BaseProcessor):
                 'id': 'echo',
                 'value': value
             }
+
+        if data.get('as_bytes', False):
+            json.dumps(produced_outputs).encode('utf-8')
 
         return mimetype, produced_outputs
 

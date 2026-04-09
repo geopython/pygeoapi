@@ -622,7 +622,6 @@ def test_describe_collections(config, api_):
     collections = json.loads(response)
 
     assert len(collections) == 2
-    print(json.dumps(collections['collections']))
     assert len(collections['collections']) == 10
     assert len(collections['links']) == 3
 
