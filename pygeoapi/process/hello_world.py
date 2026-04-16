@@ -88,7 +88,7 @@ PROCESS_METADATA = {
             'title': 'As bytes',
             'description': 'Whether to force return as bytes',
             'schema': {
-                'type': 'bool',
+                'type': 'boolean',
                 'default': False
             },
             'minOccurs': 0,
