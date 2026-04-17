@@ -523,6 +523,11 @@ async def get_collection_edr_query(request: Request,
     if 'collection_id' in request.path_params:
         collection_id = request.path_params['collection_id']
 
+        if '/instances/' in collection_id:
+            tokens = collection_id.split('/instances/')
+            collection_id = tokens[0]
+            instance_id = tokens[-1]
+
     if 'instance_id' in request.path_params:
         instance_id = request.path_params['instance_id']
 
