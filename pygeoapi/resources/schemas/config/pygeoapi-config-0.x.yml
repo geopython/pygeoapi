@@ -682,7 +682,11 @@ properties:
                                           For custom built plugins, use the import path (e.g. `mypackage.provider.MyProvider`)
                               required:
                                   - name
-                      required:
+                          allow_internal_requests:
+                              type: boolean
+                              description: whether to allow internal HTTP requests
+                              default: false
+                      requred:
                           - type
                           - processor
 definitions:

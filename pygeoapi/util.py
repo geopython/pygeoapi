@@ -36,6 +36,7 @@ from datetime import date, datetime, time, timezone
 from decimal import Decimal
 from enum import Enum
 from heapq import heappush
+import ipaddress
 import json
 import logging
 import mimetypes
@@ -43,6 +44,7 @@ import os
 import pathlib
 from pathlib import Path
 import re
+import socket
 from typing import Any, IO, Union, List, Optional
 from urllib.parse import urlparse
 from urllib.request import urlopen
@@ -754,3 +756,30 @@ def remove_url_auth(url: str) -> str:
     u = urlparse(url)
     auth = f'{u.username}:{u.password}@'
     return url.replace(auth, '')
+
+
+def is_request_allowed(url: str, allow_internal: bool = False) -> bool:
+    """
+    Test whether an HTTP request is allowed to be executed
+
+    :param url: `str` of URL
+    :param allow_internal: `bool` of whether internal requests are
+                           allowed (default `False`)
+
+    :returns: `bool` of whether HTTP request execution is allowed
+    """
+
+    is_allowed = False
+
+    u = urlparse(url)
+
+    ip = socket.gethostbyname(u.hostname)
+
+    is_private = ipaddress.ip_address(ip).is_private
+
+    if not is_private:
+        is_allowed = True
+    if is_private and allow_internal:
+        is_allowed = True
+
+    return is_allowed

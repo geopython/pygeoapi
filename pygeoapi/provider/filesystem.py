@@ -78,7 +78,7 @@ class FileSystemProvider(BaseProvider):
         child_links = []
 
         if '..' in dirpath:
-            msg = f'Invalid path requested'
+            msg = 'Invalid path requested'
             LOGGER.error(f'{msg}: {dirpath}')
             raise ProviderInvalidQueryError(msg)
 
