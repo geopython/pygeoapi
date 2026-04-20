@@ -2,7 +2,7 @@
 #
 # Authors: Tom Kralidis <tomkralidis@gmail.com>
 #
-# Copyright (c) 2023 Tom Kralidis
+# Copyright (c) 2026 Tom Kralidis
 #
 # Permission is hereby granted, free of charge, to any person
 # obtaining a copy of this software and associated documentation
@@ -34,6 +34,7 @@ import logging
 import os
 
 from pygeoapi.provider.base import (BaseProvider, ProviderConnectionError,
+                                    ProviderInvalidQueryError,
                                     ProviderNotFoundError)
 from pygeoapi.util import file_modified_iso8601, get_path_basename, url_join
 
@@ -76,8 +77,14 @@ class FileSystemProvider(BaseProvider):
         root_link = None
         child_links = []
 
-        data_path = os.path.join(self.data, dirpath)
+        if '..' in dirpath:
+            msg = f'Invalid path requested'
+            LOGGER.error(f'{msg}: {dirpath}')
+            raise ProviderInvalidQueryError(msg)
+
         data_path = self.data + dirpath
+
+        LOGGER.debug(f'Data path: {data_path}')
 
         if '/' not in dirpath:  # root
             root_link = baseurl
