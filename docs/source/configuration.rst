@@ -292,6 +292,10 @@ default.
           type: process  # REQUIRED (collection, process, or stac-collection)
           processor:
               name: HelloWorld  # Python path of process definition
+          # optional, allow for internal HTTP request execution
+          # if set to True, enables requests to link local ranges and loopback
+          # default: False
+          allow_internal_requests: True
 
 
 .. seealso::

@@ -46,10 +46,12 @@ from pygeoapi.process.base import (
     BaseProcessor,
     JobNotFoundError,
     JobResultNotFoundError,
+    ProcessorExecuteError,
     UnknownProcessError,
 )
 from pygeoapi.util import (
     get_current_datetime,
+    is_request_allowed,
     JobStatus,
     ProcessExecutionMode,
     RequestedProcessExecutionMode,
@@ -105,7 +107,11 @@ class BaseManager:
         except KeyError as err:
             raise UnknownProcessError('Invalid process identifier') from err
         else:
-            return load_plugin('process', process_conf['processor'])
+            pp = load_plugin('process', process_conf['processor'])
+            pp.allow_internal_requests = process_conf.get(
+                'allow_internal_requests', False)
+
+            return pp
 
     def get_jobs(self,
                  status: JobStatus = None,
@@ -395,13 +401,13 @@ class BaseManager:
         """
 
         job_id = str(uuid.uuid1())
-        processor = self.get_processor(process_id)
-        processor.set_job_id(job_id)
+        self.processor = self.get_processor(process_id)
+        self.processor.set_job_id(job_id)
         extra_execute_handler_parameters = {
             'requested_response': requested_response
         }
 
-        job_control_options = processor.metadata.get(
+        job_control_options = self.processor.metadata.get(
             'jobControlOptions', [])
 
         if execution_mode == RequestedProcessExecutionMode.respond_async:
@@ -474,7 +480,7 @@ class BaseManager:
         # TODO: handler's response could also be allowed to include more HTTP
         # headers
         mime_type, outputs, status = handler(
-            processor,
+            self.processor,
             job_id,
             data_dict,
             requested_outputs,
@@ -484,26 +490,37 @@ class BaseManager:
 
     def _send_in_progress_notification(self, subscriber: Optional[Subscriber]):
         if subscriber and subscriber.in_progress_uri:
-            response = requests.post(subscriber.in_progress_uri, json={})
-            LOGGER.debug(
-                f'In progress notification response: {response.status_code}'
-            )
+            self.__do_subscriber_request(subscriber.in_progress_uri)
 
     def _send_success_notification(
             self, subscriber: Optional[Subscriber], outputs: Any
     ):
-        if subscriber:
-            response = requests.post(subscriber.success_uri, json=outputs)
-            LOGGER.debug(
-                f'Success notification response: {response.status_code}'
-            )
+        if subscriber and subscriber.success_uri:
+            self.__do_subscriber_request(subscriber.success_uri, outputs)
 
     def _send_failed_notification(self, subscriber: Optional[Subscriber]):
         if subscriber and subscriber.failed_uri:
-            response = requests.post(subscriber.failed_uri, json={})
-            LOGGER.debug(
-                f'Failed notification response: {response.status_code}'
-            )
+            self.__do_subscriber_request(subscriber.failed_uri)
+
+    def __do_subscriber_request(self, url: str, data: dict = {}) -> None:
+        """
+        Helper function to execute a subscriber URL via HTTP POST
+
+        :param url: `str` of URL
+        :param data: `dict` of request payload
+
+        :returns: `None`
+        """
+
+        if not is_request_allowed(url, self.processor.allow_internal_requests):
+            msg = 'URL not allowed'
+            LOGGER.error(f'{msg}: {url}')
+            raise ProcessorExecuteError(msg)
+
+        response = requests.post(url, json=data)
+        LOGGER.debug(
+            f'Response: {response.status_code}'
+        )
 
     def __repr__(self):
         return f'<BaseManager> {self.name}'
