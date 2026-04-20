@@ -2,7 +2,7 @@
 #
 # Authors: Tom Kralidis <tomkralidis@gmail.com>
 #
-# Copyright (c) 2021 Tom Kralidis
+# Copyright (c) 2026 Tom Kralidis
 #
 # Permission is hereby granted, free of charge, to any person
 # obtaining a copy of this software and associated documentation
@@ -30,6 +30,7 @@
 import os
 import pytest
 
+from pygeoapi.provider.base import ProviderInvalidQueryError
 from pygeoapi.provider.filesystem import FileSystemProvider
 
 THISDIR = os.path.dirname(os.path.realpath(__file__))
@@ -73,3 +74,6 @@ def test_query(config):
         'osm_id': 'int'
     }
     assert r['assets']['default']['href'] == 'http://example.org/stac/poi_portugal.gpkg'  # noqa
+
+    with pytest.raises(ProviderInvalidQueryError):
+        _ = p.get_data_path(baseurl, urlpath, '../../poi_portugal')
