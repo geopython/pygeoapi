@@ -2,7 +2,7 @@
 #
 # Authors: Tom Kralidis <tomkralidis@gmail.com>
 #
-# Copyright (c) 2025 Tom Kralidis
+# Copyright (c) 2026 Tom Kralidis
 #
 # Permission is hereby granted, free of charge, to any person
 # obtaining a copy of this software and associated documentation
@@ -329,3 +329,21 @@ def test_get_choice_from_headers():
                                         'accept') == 'application/ld+json'
     assert util.get_choice_from_headers(
         {'accept-language': 'en_US', 'accept': '*/*'}, 'accept') == '*/*'
+
+
+@pytest.mark.parametrize('url,allow_internal,result', [
+    ['http://127.0.0.1/test', False, False],
+    ['http://127.0.0.1/test', True, True],
+    ['http://192.168.0.12/test', False, False],
+    ['http://192.168.0.12/test', True, True],
+    ['http://169.254.0.11/test', False, False],
+    ['http://169.254.0.11/test', True, True],
+    ['http://0.0.0.0/test', True, True],
+    ['http://0.0.0.0/test', False, False],
+    ['http://localhost:5000/test', False, False],
+    ['http://localhost:5000/test', True, True],
+    ['https://pygeoapi.io', False, True],
+    ['https://pygeoapi.io', True, True]
+])
+def test_is_request_allowed(url, allow_internal, result):
+    assert util.is_request_allowed(url, allow_internal) is result
