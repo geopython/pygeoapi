@@ -34,16 +34,42 @@ jobs:
         env:
           POSTGRES_DB: test
           POSTGRES_PASSWORD: ${{ secrets.DatabasePassword || 'postgres' }}
-    
+      mysql:
+        image: mysql:8.0
+        env:
+          MYSQL_ROOT_PASSWORD: mysql
+          MYSQL_DATABASE: test_geo_app
+          MYSQL_USER: pygeoapi
+          MYSQL_PASSWORD: mysql
+        ports:
+          - 3306:3306
+      elasticsearch:
+        image: docker.elastic.co/elasticsearch/elasticsearch:8.17.0
+        ports:
+          - 9200:9200
+          - 9300:9300
+        env:
+          discovery.type: single-node
+          xpack.security.enabled: "false"
+          ES_JAVA_OPTS: "-Xms512m -Xmx512m"
+      opensearch:
+        image: opensearchproject/opensearch:2.18.0
+        ports:
+          - 9209:9200
+        env:
+          discovery.type: single-node
+          DISABLE_SECURITY_PLUGIN: "true"
+          OPENSEARCH_JAVA_OPTS: "-Xms512m -Xmx512m"
+      mongodb:
+        image: mongo:8.0.4
+        ports:
+          - 27017:27017
+      sensorthings:
+        image: ghcr.io/cgs-earth/sensorthings-action:0.1.2
+        volumes:
+          - /var/run/docker.sock:/var/run/docker.sock
+
     steps:
-    - name: Pre-pull Docker Images
-      run: |
-        docker pull container-registry.oracle.com/database/express:21.3.0-xe &
-        docker pull appropriate/curl:latest &
-        docker pull elasticsearch:8.17.0 &
-        docker pull opensearchproject/opensearch:2.18.0 &
-        docker pull mongo:8.0.4 &
-        docker pull postgis/postgis:14-3.2 &
     - name: Clear up GitHub runner diskspace
       run: |
         echo "Space before"
@@ -60,43 +86,21 @@ jobs:
       name: Setup Python ${{ matrix.python-version }}
       with:
         python-version: ${{ matrix.python-version }}
+    - name: Install and run Oracle
+      run: |
+        docker run \
+          -d \
+          --name oracledb \
+          -e ORACLE_PWD=oracle \
+          -v ${{ github.workspace }}/tests/data/oracle/init-db:/opt/oracle/scripts/startup \
+          -p 1521:1521 \
+          container-registry.oracle.com/database/express:21.3.0-xe
     - name: Configure sysctl limits
       run: |
         sudo swapoff -a
         sudo sysctl -w vm.swappiness=1
         sudo sysctl -w fs.file-max=262144
         sudo sysctl -w vm.max_map_count=262144
-    - name: "Install and run MySQL 📦"
-      uses: mirromutth/mysql-action@v1.1
-      with:
-        host port: 3306 
-        mysql version: '8.0' 
-        mysql database: test_geo_app
-        mysql root password: mysql # This is a dummy password here; not actually used in prod
-        mysql user: pygeoapi 
-        mysql password: mysql 
-        
-    - name: Install and run Elasticsearch 📦
-      uses: getong/elasticsearch-action@v1.2
-      with:
-        elasticsearch version: '8.17.0'
-        host port: 9200
-        container port: 9200
-        host node port: 9300
-        node port: 9300
-        discovery type: 'single-node'
-    - name: Install and run OpenSearch 📦
-      uses: esmarkowski/opensearch-github-action@v1.0.0
-      with:
-        version: 2.18.0
-        security-disabled: true
-        port: 9209
-    - name: Install and run MongoDB
-      uses: supercharge/mongodb-github-action@1.12.0
-      with:
-        mongodb-version: '8.0.4'
-    - name: Install and run SensorThingsAPI
-      uses: cgs-earth/sensorthings-action@v0.1.2
     - name: Install sqlite and gpkg dependencies
       uses: awalsh128/cache-apt-pkgs-action@v1.4.3
       with:
@@ -113,9 +117,6 @@ jobs:
 #      with:
 #        packages: gdal-bin libgdal-dev
 #        version: 3.11.3
-    - name: Install and run Oracle
-      run: |
-        docker run -d --name oracledb -e ORACLE_PWD=oracle -v ${{ github.workspace }}/tests/data/oracle/init-db:/opt/oracle/scripts/startup -p 1521:1521 container-registry.oracle.com/database/express:21.3.0-xe
     - name: Install requirements 📦
       run: |
         pip3 install setuptools
@@ -131,6 +132,7 @@ jobs:
         pip3 install GDAL==`gdal-config --version`
     - name: setup test data ⚙️
       run: |
+        python3 tests/load_oracle_data.py
         python3 tests/load_es_data.py tests/data/ne_110m_populated_places_simple.geojson geonameid
         python3 tests/load_opensearch_data.py tests/data/ne_110m_populated_places_simple.geojson geonameid
         python3 tests/load_mongo_data.py tests/data/ne_110m_populated_places_simple.geojson
@@ -140,7 +142,6 @@ jobs:
         psql postgresql://postgres:${{ secrets.DatabasePassword || 'postgres' }}@localhost:5432/test -f tests/data/postgres_manager_full_structure.backup.sql
         mysql -h 127.0.0.1 -P 3306 -u root -p'mysql' test_geo_app < tests/data/mysql_data.sql
         docker ps
-        python3 tests/load_oracle_data.py
     - name: run API tests ⚙️
       run: pytest tests/api --ignore-glob='*_live.py'
     - name: run Formatter tests ⚙️
