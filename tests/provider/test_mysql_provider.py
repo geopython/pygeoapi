@@ -166,6 +166,19 @@ def test_query_skip_geometry(config):
     assert feature['geometry'] is None
 
 
+def test_get_with_injection(config):
+    """Testing query for injection attack string"""
+    p = MySQLProvider(config)
+    feature = p.get('1')
+    assert feature.get('type') == 'Feature'
+
+    with pytest.raises(ProviderItemNotFoundError):
+        p.get('1; DROP TABLE location;')
+
+    with pytest.raises(ProviderItemNotFoundError):
+        p.get('1<script>alert("We love pygeoapi")</script>')
+
+
 def test_get_not_existing_item_raise_exception(config):
     """Testing query for a not existing object"""
     p = MySQLProvider(config)

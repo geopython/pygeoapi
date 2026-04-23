@@ -113,6 +113,15 @@ required.  An optional style name can be defined via `options.style`.
                name: png
                mimetype: image/png
 
+.. note::
+  According to the `Standard <https://docs.ogc.org/is/20-058/20-058.html#_5df53b56-5468-4c9d-acac-6abfddd83ccf>`_, OGC API - Maps
+  supports a `crs` parameter, expressed as an uri. Currently, this provider supports WGS84 and Web Mercator; for a matter of convenience, they can be expressed in
+  a number of different ways, other than the uri format.
+
+  - `EPSG:4326`
+  - `EPSG:3857`
+  - `4326`
+  - `3857`
 
 Data visualization examples
 ---------------------------

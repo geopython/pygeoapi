@@ -42,10 +42,11 @@ OUTPUT_FORMATS = {
 }
 
 CRS_CODES = {
-    4326: 'EPSG:4326',
     'http://www.opengis.net/def/crs/EPSG/0/4326': 'EPSG:4326',
     'http://www.opengis.net/def/crs/EPSG/0/3857': 'EPSG:3857'
 }
+
+DEFAULT_CRS = 'http://www.opengis.net/def/crs/EPSG/0/4326'
 
 
 class WMSFacadeProvider(BaseProvider):
@@ -65,8 +66,8 @@ class WMSFacadeProvider(BaseProvider):
         LOGGER.debug(f'pyproj version: {pyproj.__version__}')
 
     def query(self, style=None, bbox=[-180, -90, 180, 90], width=500,
-              height=300, crs=4326, datetime_=None, transparent=True,
-              bbox_crs=4326, format_='png', **kwargs):
+              height=300, crs=DEFAULT_CRS, datetime_=None, transparent=True,
+              bbox_crs=DEFAULT_CRS, format_='png', **kwargs):
         """
         Generate map
 
@@ -87,7 +88,7 @@ class WMSFacadeProvider(BaseProvider):
 
         version = self.options.get('version', '1.3.0')
 
-        if version == '1.3.0' and CRS_CODES[bbox_crs] == 'EPSG:4326':
+        if version == '1.3.0' and CRS_CODES.get(bbox_crs) == 'EPSG:4326':
             bbox = [bbox[1], bbox[0], bbox[3], bbox[2]]
         bbox2 = ','.join(map(str, bbox))
 
@@ -100,7 +101,7 @@ class WMSFacadeProvider(BaseProvider):
             'service': 'WMS',
             'request': 'GetMap',
             'bbox': bbox2,
-            crs_param: CRS_CODES[crs],
+            crs_param: CRS_CODES.get(crs) or 'EPSG:4326',
             'layers': self.options['layer'],
             'styles': self.options.get('style', 'default'),
             'width': width,

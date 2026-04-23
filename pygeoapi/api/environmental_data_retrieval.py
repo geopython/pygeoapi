@@ -113,14 +113,14 @@ def get_collection_edr_instances(api: API, request: APIRequest,
 
     if instance_id is not None:
         try:
-            if p.get_instance(instance_id):
+            if p.instance(instance_id):
                 instances = [instance_id]
         except ProviderItemNotFoundError:
             msg = 'Instance not found'
             return api.get_exception(
                 HTTPStatus.NOT_FOUND, headers, request.format, 'NotFound', msg)
     else:
-        instances = p.get_instances()
+        instances = p.instances()
 
     for instance in instances:
         instance_dict = {
@@ -281,7 +281,7 @@ def get_collection_edr_query(api: API, request: APIRequest,
             err.http_status_code, headers, request.format,
             err.ogc_exception_code, err.message)
 
-    if instance is not None and not p.get_instance(instance):
+    if instance is not None and not p.instance(instance):
         msg = 'Invalid instance identifier'
         return api.get_exception(
             HTTPStatus.BAD_REQUEST, headers,

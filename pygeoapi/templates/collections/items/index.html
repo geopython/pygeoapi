@@ -202,19 +202,19 @@
         var datetime = [];
 
         var q = document.getElementById('q').value;
-        var datetime_begin = document.getElementById('datetime_begin').value;
-        var datetime_end = document.getElementById('datetime_end').value;
+        var datetime_begin = document.getElementById('datetime_begin');
+        var datetime_end = document.getElementById('datetime_end');
 
         if (q) {
             query_string.push('q=' + encodeURIComponent(q));
         }
-        if (datetime_begin !== "") {
-            datetime.push(datetime_begin + 'T00:00:00Z');
+        if (datetime_begin.value !== "") {
+            datetime.push(datetime_begin.value + 'T00:00:00Z');
         } else {
             datetime.push('..');
         }
-        if (datetime_end !== "") {
-            datetime.push(datetime_end + 'T23:59:59Z');
+        if (datetime_end.value !== "") {
+            datetime.push(datetime_end.value + 'T23:59:59Z');
         } else {
             datetime.push('..');
         }
@@ -232,6 +232,8 @@
         if (query_string.length > 0)  {
             document.location.href = '{{ data['items_path'] }}' + '?' + query_string.join('&');
         }
+        datetime_begin.disabled = true;
+        datetime_end.disabled = true;
     }
     {% endif %}
     var map = L.map('items-map').setView([{{ 45 }}, {{ -75 }}], 5);

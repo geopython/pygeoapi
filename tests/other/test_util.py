@@ -2,7 +2,7 @@
 #
 # Authors: Tom Kralidis <tomkralidis@gmail.com>
 #
-# Copyright (c) 2025 Tom Kralidis
+# Copyright (c) 2026 Tom Kralidis
 #
 # Permission is hereby granted, free of charge, to any person
 # obtaining a copy of this software and associated documentation
@@ -33,6 +33,7 @@ from copy import deepcopy
 from io import StringIO
 from unittest import mock
 import uuid
+from xml.sax.saxutils import unescape
 
 import pytest
 
@@ -77,12 +78,19 @@ def test_get_typed_value():
 @pytest.mark.parametrize('data,minified,pretty_printed', [
     [{'foo': 'bar'}, '{"foo":"bar"}', '{\n    "foo":"bar"\n}'],
     [{'foo<script>alert("hi")</script>': 'bar'},
-     '{"foo&ltscript&gtalert(\\"hi\\")&lt/script&gt":"bar"}',
-     '{\n    "foo&ltscript&gtalert(\\"hi\\")&lt/script&gt":"bar"\n}']
+     '{"foo&lt;script&gt;alert(\\"hi\\")&lt;/script&gt;":"bar"}',
+     '{\n    "foo&lt;script&gt;alert(\\"hi\\")&lt;/script&gt;":"bar"\n}']
 ])
 def test_to_json(data, minified, pretty_printed):
-    assert util.to_json(data) == minified
+    output = util.to_json(data)
+    assert output == minified
     assert util.to_json(data, pretty=True) == pretty_printed
+
+    unescaped_output = unescape(output)
+    if '&lt;' in output:
+        assert '<' in unescaped_output
+    if '&gt;' in output:
+        assert '>' in unescaped_output
 
 
 def test_yaml_load(config):
@@ -321,3 +329,21 @@ def test_get_choice_from_headers():
                                         'accept') == 'application/ld+json'
     assert util.get_choice_from_headers(
         {'accept-language': 'en_US', 'accept': '*/*'}, 'accept') == '*/*'
+
+
+@pytest.mark.parametrize('url,allow_internal,result', [
+    ['http://127.0.0.1/test', False, False],
+    ['http://127.0.0.1/test', True, True],
+    ['http://192.168.0.12/test', False, False],
+    ['http://192.168.0.12/test', True, True],
+    ['http://169.254.0.11/test', False, False],
+    ['http://169.254.0.11/test', True, True],
+    ['http://0.0.0.0/test', True, True],
+    ['http://0.0.0.0/test', False, False],
+    ['http://localhost:5000/test', False, False],
+    ['http://localhost:5000/test', True, True],
+    ['https://pygeoapi.io', False, True],
+    ['https://pygeoapi.io', True, True]
+])
+def test_is_request_allowed(url, allow_internal, result):
+    assert util.is_request_allowed(url, allow_internal) is result

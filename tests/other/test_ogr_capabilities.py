@@ -1,8 +1,10 @@
 # =================================================================
 #
 # Authors: Just van den Broecke <justb4@gmail.com>
+#          Tom Kralidis <tomkralidis@gmail.com>
 #
 # Copyright (c) 2023 Just van den Broecke
+# Copyright (c) 2026 Tom Kralidis
 #
 # Permission is hereby granted, free of charge, to any person
 # obtaining a copy of this software and associated documentation
@@ -50,7 +52,6 @@ def get_axis_order(coords):
 def test_transforms():
     version_num = int(gdal.VersionInfo('VERSION_NUM'))
     assert version_num > 3000000, f'GDAL version={version_num} must be > 3.0.0'
-    print(f'GDAL Version num = {version_num}')
 
     pyproj.show_versions()
     FORCE_LON_LAT = osr.OAMS_TRADITIONAL_GIS_ORDER
@@ -68,7 +69,6 @@ def test_transforms():
     }
 
     for crs in CRS_DICT:
-        print(f'Testing CRS={crs}')
         crs_entry = CRS_DICT[crs]
         source = get_spatial_ref(28992, AUTH_COMPLIANT)
         target = get_spatial_ref(crs_entry['epsg'], crs_entry['mapping'])
@@ -85,7 +85,6 @@ def test_transforms():
         axis_order = get_axis_order(result)
 
         # Axis order should match that of CRS
-        print(f'Transform result={result} Axis order={axis_order}')
         crs_axis_order = crs_entry['order']
         assert axis_order == crs_axis_order, f'Axis order for {crs} after Transform should be {crs_axis_order} result={result}' # noqa
 
@@ -106,7 +105,6 @@ def test_transforms():
         # Determine Axis order after ExportToJson
         coords = json_feature['geometry']['coordinates']
         axis_order = get_axis_order(coords)
-        print(f'ExportToJson result={coords} Axis order={axis_order}')
         assert axis_order == crs_axis_order, f'Axis order for {crs} after ExportToJson should be {crs_axis_order} coords={coords}' # noqa
 
 

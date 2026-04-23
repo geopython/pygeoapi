@@ -95,7 +95,7 @@ def test_describe_processes(config, api_):
     assert process['title'] == 'Hello World'
     assert len(process['keywords']) == 3
     assert len(process['links']) == 6
-    assert len(process['inputs']) == 2
+    assert len(process['inputs']) == 4
     assert len(process['outputs']) == 1
     assert len(process['outputTransmission']) == 1
     assert len(process['jobControlOptions']) == 2
@@ -240,6 +240,18 @@ def test_execute_process(config, api_):
     req_body_9 = {
         'inputs': {
             'name': 'Test document'
+        }
+    }
+    req_body_10 = {
+        'inputs': {
+            'name': 'Test document as bytes response',
+            'as_bytes': True
+        }
+    }
+    req_body_11 = {
+        'inputs': {
+            'name': 'Test document as text/plain media type',
+            'media_type': 'text/plain'
         }
     }
 
@@ -408,6 +420,19 @@ def test_execute_process(config, api_):
     rsp_headers, code, response = execute_process(api_, req, 'hello-world')
 
     response2 = '{"id":"echo","value":"Hello Test document!"}'
+    assert response == response2
+
+    req = mock_api_request(data=req_body_10)
+    rsp_headers, code, response = execute_process(api_, req, 'hello-world')
+
+    response2 = '{"id":"echo","value":"Hello Test document as bytes response!"}'  # noqa
+    assert response == response2
+
+    req = mock_api_request(data=req_body_11)
+    rsp_headers, code, response = execute_process(api_, req, 'hello-world')
+
+    assert rsp_headers['Content-Type'] == 'text/plain'
+    response2 = '{"id":"echo","value":"Hello Test document as text/plain media type!"}'  # noqa
     assert response == response2
 
     # Cleanup

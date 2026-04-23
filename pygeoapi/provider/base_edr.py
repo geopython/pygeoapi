@@ -78,7 +78,7 @@ class BaseEDRProvider(BaseProvider):
                 'but requests will be routed to a feature provider'
             )
 
-    def get_instances(self):
+    def instances(self):
         """
         Get a list of instance identifiers
 
@@ -87,7 +87,7 @@ class BaseEDRProvider(BaseProvider):
 
         return NotImplementedError()
 
-    def get_instance(self, instance):
+    def instance(self, instance):
         """
         Validate instance identifier
 

@@ -73,8 +73,10 @@
             {% if 'sync-execute' in data.jobControlOptions %}<li>{% trans %}Synchronous{% endtrans %}</li>{% endif %}
             {% if 'async-execute' in data.jobControlOptions %}<li>{% trans %}Asynchronous{% endtrans %}</li>{% endif %}
           </ul>
+          {% if data['jobs'] %}
           <h2>{% trans %}Jobs{% endtrans %}</h2>
           <a title="Browse jobs" href="{{config.server.url}}/jobs">{% trans %}Browse jobs{% endtrans %}</a>
+          {% endif %}
           <h2>{% trans %}Links{% endtrans %}</h2>
           <ul>
             {% for link in data['links'] %}

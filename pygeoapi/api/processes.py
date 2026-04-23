@@ -142,7 +142,6 @@ def describe_processes(api: API, request: APIRequest,
 
             p2['links'] = p2.get('links', [])
 
-            jobs_url = f"{api.base_url}/jobs"
             process_url = f"{api.base_url}/processes/{key}"
 
             # TODO translation support
@@ -164,23 +163,22 @@ def describe_processes(api: API, request: APIRequest,
             }
             p2['links'].append(link)
 
-            link = {
-                'type': FORMAT_TYPES[F_HTML],
-                'rel': 'http://www.opengis.net/def/rel/ogc/1.0/job-list',
-                'href': f'{jobs_url}?f={F_HTML}',
-                'title': l10n.translate('Jobs list as HTML', request.locale),  # noqa
-                'hreflang': api.default_locale
-            }
-            p2['links'].append(link)
-
-            link = {
-                'type': FORMAT_TYPES[F_JSON],
-                'rel': 'http://www.opengis.net/def/rel/ogc/1.0/job-list',
-                'href': f'{jobs_url}?f={F_JSON}',
-                'title': l10n.translate('Jobs list as JSON', request.locale),  # noqa
-                'hreflang': api.default_locale
-            }
-            p2['links'].append(link)
+            if api.manager.is_async:
+                jobs_url = f"{api.base_url}/jobs"
+                p2['links'].append({
+                    'type': FORMAT_TYPES[F_HTML],
+                    'rel': 'http://www.opengis.net/def/rel/ogc/1.0/job-list',
+                    'href': f'{jobs_url}?f={F_HTML}',
+                    'title': l10n.translate('Jobs list as HTML', request.locale),  # noqa
+                    'hreflang': api.default_locale
+                })
+                p2['links'].append({
+                    'type': FORMAT_TYPES[F_JSON],
+                    'rel': 'http://www.opengis.net/def/rel/ogc/1.0/job-list',
+                    'href': f'{jobs_url}?f={F_JSON}',
+                    'title': l10n.translate('Jobs list as JSON', request.locale),  # noqa
+                    'hreflang': api.default_locale
+                })
 
             link = {
                 'type': FORMAT_TYPES[F_JSON],
@@ -329,26 +327,11 @@ def get_jobs(api: API, request: APIRequest,
             job_result_url = f"{api.base_url}/jobs/{job_['identifier']}/results"  # noqa
 
             job2['links'] = [{
-                'href': f'{job_result_url}?f={F_HTML}',
+                'href': job_result_url,
                 'rel': 'http://www.opengis.net/def/rel/ogc/1.0/results',
-                'type': FORMAT_TYPES[F_HTML],
-                'title': l10n.translate(f'Results of job as HTML', request.locale),  # noqa
-            }, {
-                'href': f'{job_result_url}?f={F_JSON}',
-                'rel': 'http://www.opengis.net/def/rel/ogc/1.0/results',
-                'type': FORMAT_TYPES[F_JSON],
-                'title': l10n.translate(f'Results of job as JSON', request.locale),  # noqa
+                'type': job_['mimetype'],
+                'title': f"Results of job {job_id} as {job_['mimetype']}"
             }]
-
-            if job_['mimetype'] not in (FORMAT_TYPES[F_JSON],
-                                        FORMAT_TYPES[F_HTML]):
-
-                job2['links'].append({
-                    'href': job_result_url,
-                    'rel': 'http://www.opengis.net/def/rel/ogc/1.0/results',  # noqa
-                    'type': job_['mimetype'],
-                    'title': f"Results of job {job_id} as {job_['mimetype']}"  # noqa
-                })
 
         serialized_jobs['jobs'].append(job2)
 
@@ -530,7 +513,10 @@ def execute_process(api: API, request: APIRequest,
             pretty_print_ = False
         response2 = to_json(response, pretty_print_)
     else:
+        pretty_print_ = False
         response2 = response
+        if isinstance(response, (list, dict)):
+            response2 = to_json(response, pretty_print_)
 
     if (headers.get('Preference-Applied', '') == RequestedProcessExecutionMode.respond_async.value):  # noqa
         LOGGER.debug('Asynchronous mode detected, returning statusInfo')
@@ -825,68 +811,73 @@ def get_oas_30(cfg: dict, locale: str
         }
     }
 
-    paths['/jobs'] = {
-        'get': {
-            'summary': 'Retrieve jobs list',
-            'description': 'Retrieve a list of jobs',
-            'tags': ['jobs'],
-            'operationId': 'getJobs',
-            'responses': {
-                '200': {'$ref': '#/components/responses/200'},
-                '404': {'$ref': f"{OPENAPI_YAML['oapip']}/responses/NotFound.yaml"},  # noqa
-                'default': {'$ref': '#/components/responses/default'}
+    tag_objects = [{'name': 'processes'}]
+
+    if process_manager.is_async:
+        paths['/jobs'] = {
+            'get': {
+                'summary': 'Retrieve jobs list',
+                'description': 'Retrieve a list of jobs',
+                'tags': ['jobs'],
+                'operationId': 'getJobs',
+                'responses': {
+                    '200': {'$ref': '#/components/responses/200'},
+                    '404': {'$ref': f"{OPENAPI_YAML['oapip']}/responses/NotFound.yaml"},  # noqa
+                    'default': {'$ref': '#/components/responses/default'}
+                }
             }
         }
-    }
 
-    paths['/jobs/{jobId}'] = {
-        'get': {
-            'summary': 'Retrieve job details',
-            'description': 'Retrieve job details',
-            'tags': ['jobs'],
-            'parameters': [
-                name_in_path,
-                {'$ref': '#/components/parameters/f'}
-            ],
-            'operationId': 'getJob',
-            'responses': {
-                '200': {'$ref': '#/components/responses/200'},
-                '404': {'$ref': f"{OPENAPI_YAML['oapip']}/responses/NotFound.yaml"},  # noqa
-                'default': {'$ref': '#/components/responses/default'}
-            }
-        },
-        'delete': {
-            'summary': 'Cancel / delete job',
-            'description': 'Cancel / delete job',
-            'tags': ['jobs'],
-            'parameters': [
-                name_in_path
-            ],
-            'operationId': 'deleteJob',
-            'responses': {
-                '204': {'$ref': '#/components/responses/204'},
-                '404': {'$ref': f"{OPENAPI_YAML['oapip']}/responses/NotFound.yaml"},  # noqa
-                'default': {'$ref': '#/components/responses/default'}
-            }
-        },
-    }
+        paths['/jobs/{jobId}'] = {
+            'get': {
+                'summary': 'Retrieve job details',
+                'description': 'Retrieve job details',
+                'tags': ['jobs'],
+                'parameters': [
+                    name_in_path,
+                    {'$ref': '#/components/parameters/f'}
+                ],
+                'operationId': 'getJob',
+                'responses': {
+                    '200': {'$ref': '#/components/responses/200'},
+                    '404': {'$ref': f"{OPENAPI_YAML['oapip']}/responses/NotFound.yaml"},  # noqa
+                    'default': {'$ref': '#/components/responses/default'}
+                }
+            },
+            'delete': {
+                'summary': 'Cancel / delete job',
+                'description': 'Cancel / delete job',
+                'tags': ['jobs'],
+                'parameters': [
+                    name_in_path
+                ],
+                'operationId': 'deleteJob',
+                'responses': {
+                    '204': {'$ref': '#/components/responses/204'},
+                    '404': {'$ref': f"{OPENAPI_YAML['oapip']}/responses/NotFound.yaml"},  # noqa
+                    'default': {'$ref': '#/components/responses/default'}
+                }
+            },
+        }
 
-    paths['/jobs/{jobId}/results'] = {
-        'get': {
-            'summary': 'Retrieve job results',
-            'description': 'Retrieve job results',
-            'tags': ['jobs'],
-            'parameters': [
-                name_in_path,
-                {'$ref': '#/components/parameters/f'}
-            ],
-            'operationId': 'getJobResults',
-            'responses': {
-                '200': {'$ref': '#/components/responses/200'},
-                '404': {'$ref': f"{OPENAPI_YAML['oapip']}/responses/NotFound.yaml"},  # noqa
-                'default': {'$ref': '#/components/responses/default'}
+        paths['/jobs/{jobId}/results'] = {
+            'get': {
+                'summary': 'Retrieve job results',
+                'description': 'Retrieve job results',
+                'tags': ['jobs'],
+                'parameters': [
+                    name_in_path,
+                    {'$ref': '#/components/parameters/f'}
+                ],
+                'operationId': 'getJobResults',
+                'responses': {
+                    '200': {'$ref': '#/components/responses/200'},
+                    '404': {'$ref': f"{OPENAPI_YAML['oapip']}/responses/NotFound.yaml"},  # noqa
+                    'default': {'$ref': '#/components/responses/default'}
+                }
             }
         }
-    }
 
-    return [{'name': 'processes'}, {'name': 'jobs'}], {'paths': paths}
+        tag_objects.append({'name': 'jobs'})
+
+    return tag_objects, {'paths': paths}
