@@ -123,6 +123,36 @@ relies on using the ObservedProperty Entity to create the `parameter-name` set.
    EDR query type.
 
 
+Formatters
+----------
+
+CoverageJSON is the default format provided by edr providers.  Additional formats can
+be added to configuration using one of the pygeoapi core formatters or by building a
+custom formatter plugin.
+
+.. note::
+   See the :ref:`plugin documentation <example-custom-pygeoapi-formatter>` for more
+   information on custom formatter plugins.
+
+.. csv-table::
+   :header: Formatter, format parameter value
+   :align: left
+
+   :ref:`CSV <csv-formatter-edr>`,``f=csv``
+
+.. _csv-formatter-edr:
+
+CSV
+^^^
+
+.. code-block:: yaml
+
+   formatters:
+       - name: CSV  # propagated by .../items?f=csv
+         geom: False  # whether to include geometry (default=False)
+         attachment: True  # whether to provide as an attachment (default=False)
+
+
 Data access examples
 --------------------
 

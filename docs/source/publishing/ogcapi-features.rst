@@ -45,6 +45,8 @@ Connection examples
 
 Below are specific connection examples based on supported providers.
 
+.. _csv:
+
 CSV
 ^^^
 
@@ -844,6 +846,36 @@ To publish a TinyDB (`see website <https://tinydb.readthedocs.io>`_) index, the 
          time_field: datetimefield
 
 .. _including-extra-query-parameters:
+
+Formatters
+----------
+
+GeoJSON is the default format provided by feature providers.  Additional formats can
+be added to configuration using one of the pygeoapi core formatters or by building a
+custom formatter plugin.
+
+.. note::
+   See the :ref:`plugin documentation <example-custom-pygeoapi-formatter>` for more
+   information on custom formatter plugins.
+
+.. csv-table::
+   :header: Formatter, format parameter value
+   :align: left
+
+   :ref:`CSV <csv-formatter-features>`,``f=csv``
+
+.. _csv-formatter-features:
+
+CSV
+^^^
+
+.. code-block:: yaml
+
+   formatters:
+       - name: CSV  # propagated by .../items?f=csv
+         geom: False  # whether to include geometry (default=False)
+         attachment: True  # whether to provide as an attachment (default=False)
+
 
 Including extra query parameters
 --------------------------------

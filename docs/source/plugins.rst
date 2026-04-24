@@ -466,6 +466,8 @@ Below is a sample process definition as a Python dictionary:
 
    Additional processing plugins can also be found in ``pygeoapi/process``.
 
+.. _example-custom-pygeoapi-formatter:
+
 Example: custom pygeoapi formatter
 ----------------------------------
 
