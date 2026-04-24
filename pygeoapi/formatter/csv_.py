@@ -135,7 +135,7 @@ class CSVFormatter(BaseFormatter):
 
             LOGGER.debug(f'Writing feature to row: {fp}')
             writer.writerow(fp)
-        except ValueError as err:
+        except (ValueError, IndexError) as err:
             LOGGER.error(err)
             raise FormatterSerializationError('Error writing CSV output')
 
