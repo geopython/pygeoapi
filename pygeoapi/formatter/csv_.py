@@ -66,7 +66,7 @@ class CSVFormatter(BaseFormatter):
 
         :returns: string representation of format
         """
-        type = data.get('type') or ''
+        type = data.get('type', '')
         LOGGER.debug(f'Formatting CSV from data type: {type}')
 
         if 'Feature' in type or 'features' in data:
