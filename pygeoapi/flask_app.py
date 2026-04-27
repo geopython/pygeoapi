@@ -86,7 +86,7 @@ ADMIN_BLUEPRINT = Blueprint(
 if CONFIG['server'].get('cors', False):
     try:
         from flask_cors import CORS
-        CORS(APP, CORS_EXPOSE_HEADERS=['*'])
+        CORS(APP, CORS_EXPOSE_HEADERS='*')
     except ModuleNotFoundError:
         print('Python package flask-cors required for CORS support')
 
