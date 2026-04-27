@@ -280,6 +280,9 @@ def test_apirules_active(config_with_rules, rules_api):
         assert response.status_code == 200
         response = flask_client.get(flask_prefix)
         assert response.status_code in (307, 308)
+        # Ensure that the expose-headers are set regardless of
+        # whether apirules are active or not
+        assert response.headers["Access-Control-Expose-Headers"] == "*"
 
         # Test links on landing page for correct URLs
         response = flask_client.get(flask_prefix, follow_redirects=True)
@@ -342,6 +345,9 @@ def test_apirules_inactive(config, api_):
                flask_client.application.url_for('pygeoapi.conformance')
         response = flask_client.get('/static/img/pygeoapi.png')
         assert response.status_code == 200
+        # Ensure that the expose-headers are set regardless of
+        # whether apirules are active or not
+        assert response.headers["Access-Control-Expose-Headers"] == "*"
 
         # Test trailing slashes
         response = flask_client.get('/')
