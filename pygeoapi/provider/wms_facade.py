@@ -67,7 +67,7 @@ class WMSFacadeProvider(BaseProvider):
 
     def query(self, style=None, bbox=[-180, -90, 180, 90], width=500,
               height=300, crs=DEFAULT_CRS, datetime_=None, transparent=True,
-              bbox_crs=DEFAULT_CRS, format_='png', **kwargs):
+              format_='png', **kwargs):
         """
         Generate map
 
@@ -88,7 +88,7 @@ class WMSFacadeProvider(BaseProvider):
 
         version = self.options.get('version', '1.3.0')
 
-        if version == '1.3.0' and CRS_CODES.get(bbox_crs) == 'EPSG:4326':
+        if version == '1.3.0' and CRS_CODES.get(crs) == 'EPSG:4326':
             bbox = [bbox[1], bbox[0], bbox[3], bbox[2]]
         bbox2 = ','.join(map(str, bbox))
 

@@ -123,6 +123,9 @@ required.  An optional style name can be defined via `options.style`.
   - `4326`
   - `3857`
 
+  If `crs` is not provided, the server will default `4326`. If `crs-bbox` and `bbox` are not provided,
+  the server will default to the crs and bounding box defined in the configuration of the spatial extent.
+
 Data visualization examples
 ---------------------------
 

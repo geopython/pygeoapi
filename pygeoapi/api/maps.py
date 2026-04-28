@@ -114,11 +114,19 @@ def get_collection_map(api: API, request: APIRequest,
 
     query_args['format_'] = request.params.get('f', 'png')
     query_args['style'] = style
-    query_args['crs'] = CRS_CODES[request.params.get(
-        'crs', collection_def.get('crs', DEFAULT_CRS))]
-    query_args['bbox_crs'] = CRS_CODES[request.params.get(
-        'bbox-crs', collection_def.get('crs', DEFAULT_CRS))]
-    query_args['transparent'] = request.params.get('transparent', True)
+
+    query_args['crs'] = CRS_CODES.get(request.params.get(
+        'crs', DEFAULT_CRS))
+    query_args['bbox_crs'] = CRS_CODES.get(request.params.get(
+        'bbox-crs',
+        api.config['resources'][dataset]['extents']['spatial'].get(
+            'crs', DEFAULT_CRS))
+    )
+
+    if query_args['crs'] is None:
+        query_args['crs'] = DEFAULT_CRS
+    if query_args['bbox_crs'] is None:
+        query_args['bbox_crs'] = DEFAULT_CRS
 
     try:
         query_args['width'] = int(request.params.get('width', 500))
@@ -135,7 +143,8 @@ def get_collection_map(api: API, request: APIRequest,
 
     LOGGER.debug('Processing bbox parameter')
     try:
-        bbox = request.params.get('bbox').split(',')
+        bbox = request.params.get(
+            'bbox').split(',')
         if len(bbox) != 4:
             exception = {
                 'code': 'InvalidParameterValue',
@@ -145,6 +154,7 @@ def get_collection_map(api: API, request: APIRequest,
             LOGGER.error(exception)
             return headers, HTTPStatus.BAD_REQUEST, to_json(
                 exception, api.pretty_print)
+
     except AttributeError:
         bbox = api.config['resources'][dataset]['extents']['spatial']['bbox']  # noqa
     try:
@@ -163,7 +173,6 @@ def get_collection_map(api: API, request: APIRequest,
     if query_args['bbox_crs'] != query_args['crs']:
         LOGGER.debug(f'Reprojecting bbox CRS: {query_args["crs"]}')
         bbox = transform_bbox(bbox, query_args['bbox_crs'], query_args['crs'])
-
     query_args['bbox'] = bbox
 
     LOGGER.debug('Processing datetime parameter')
