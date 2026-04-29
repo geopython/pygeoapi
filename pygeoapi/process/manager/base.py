@@ -31,17 +31,22 @@
 #
 # =================================================================
 
+from __future__ import annotations
+
 import collections
 import json
 import logging
+import uuid
 from multiprocessing import dummy
 from pathlib import Path
-from typing import Any, Dict, Tuple, Optional, OrderedDict
-import uuid
+from typing import Any, Dict, Optional, OrderedDict, Tuple, TYPE_CHECKING
 
 import requests
 
 from pygeoapi.plugin import load_plugin
+
+if TYPE_CHECKING:
+    from pygeoapi.plugin import PluginContext
 from pygeoapi.process.base import (
     BaseProcessor,
     JobNotFoundError,
@@ -66,11 +71,15 @@ class BaseManager:
     """generic Manager ABC"""
     processes: OrderedDict[str, Dict]
 
-    def __init__(self, manager_def: dict):
+    def __init__(
+        self, manager_def: dict,
+        context: Optional[PluginContext] = None,
+    ):
         """
         Initialize object
 
         :param manager_def: manager definition
+        :param context: optional PluginContext with injected dependencies
 
         :returns: `pygeoapi.process.manager.base.BaseManager`
         """
@@ -92,6 +101,18 @@ class BaseManager:
         self.processes = collections.OrderedDict()
         for id_, process_conf in manager_def.get('processes', {}).items():
             self.processes[id_] = dict(process_conf)
+
+        # Dependencies support
+        self._context = context
+        if context and context.logger:
+            self._logger = context.logger
+        else:
+            self._logger = LOGGER  # Global fallback
+
+    @property
+    def logger(self):
+        """Get logger (injected or global)"""
+        return self._logger
 
     def get_processor(self, process_id: str) -> BaseProcessor:
         """Instantiate a processor.
@@ -433,7 +454,7 @@ class BaseManager:
             # do we support sync?
             process_supports_sync = (
                 ProcessExecutionMode.sync_execute.value in job_control_options
-                )
+            )
             if not process_supports_sync:
                 LOGGER.debug('Asynchronous execution')
                 handler = self._execute_handler_async
@@ -493,7 +514,7 @@ class BaseManager:
             self.__do_subscriber_request(subscriber.in_progress_uri)
 
     def _send_success_notification(
-            self, subscriber: Optional[Subscriber], outputs: Any
+        self, subscriber: Optional[Subscriber], outputs: Any
     ):
         if subscriber and subscriber.success_uri:
             self.__do_subscriber_request(subscriber.success_uri, outputs)

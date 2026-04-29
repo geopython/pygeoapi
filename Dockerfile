@@ -7,7 +7,7 @@
 #
 # Copyright (c) 2026 Tom Kralidis
 # Copyright (c) 2019 Just van den Broecke
-# Copyright (c) 2025 Francesco Bartoli
+# Copyright (c) 2026 Francesco Bartoli
 # Copyright (c) 2025 Angelos Tzotsos
 # Copyright (c) 2023 Bernhard Mallinger
 #
@@ -70,7 +70,6 @@ ARG ADD_DEB_PACKAGES="\
     python3-netcdf4 \
     python3-pandas \
     python3-psycopg2 \
-    python3-pydantic \
     python3-pymongo \
     python3-pyproj \
     python3-rasterio \

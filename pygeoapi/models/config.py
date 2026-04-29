@@ -4,7 +4,7 @@
 #          Francesco Bartoli <xbartolone@gmail.com>
 #
 # Copyright (c) 2023 Sander Schaminee
-# Copyright (c) 2025 Francesco Bartoli
+# Copyright (c) 2026 Francesco Bartoli
 #
 # Permission is hereby granted, free of charge, to any person
 # obtaining a copy of this software and associated documentation
@@ -29,59 +29,82 @@
 #
 # =================================================================
 
-from pydantic import BaseModel, Field
-import pydantic
+import re
+from dataclasses import dataclass, fields, asdict
+from typing import Any, Dict
 
-# Handle Pydantic v1/v2 compatibility
-if pydantic.VERSION.startswith('1'):
-    model_validator = 'parse_obj'
-    model_fields = '__fields__'
-    regex_param = {'regex': r'^\d+\.\d+\..+$'}
-else:
-    model_validator = 'model_validate'
-    model_fields = 'model_fields'
-    regex_param = {'pattern': r'^\d+\.\d+\..+$'}
+from pygeoapi.models.validation import validate_type
 
 
-class APIRules(BaseModel):
+SEMVER_PATTERN = re.compile(r'^\d+\.\d+\..+$')
+
+
+class APIRulesValidationError(ValueError):
+    """Raised when APIRules validation fails."""
+    pass
+
+
+@dataclass
+class APIRules:
     """
-    Pydantic model for API design rules that must be adhered to.
-    """
-    api_version: str = Field(**regex_param,
-                             description='Semantic API version number.')
-    url_prefix: str = Field(
-        '',
-        description="If set, pygeoapi routes will be prepended with the "
-                    "given URL path prefix (e.g. '/v1'). "
-                    "Defaults to an empty string (no prefix)."
-    )
-    version_header: str = Field(
-        '',
-        description="If set, pygeoapi will set a response header with this "
-                    "name and its value will hold the API version. "
-                    "Defaults to an empty string (i.e. no header). "
-                    "Often 'API-Version' or 'X-API-Version' are used here."
-    )
-    strict_slashes: bool = Field(
-        False,
-        description="If False (default), URL trailing slashes are allowed. "
-                    "If True, pygeoapi will return a 404."
-    )
+    API design rules that must be adhered to.
 
-    @staticmethod
-    def create(**rules_config) -> 'APIRules':
+    Concrete dataclass implementation that can be mimicked
+    downstream.
+
+    :param api_version: Semantic API version number (e.g. '1.0.0')
+    :param url_prefix: URL path prefix for routes (e.g. '/v1')
+                       If set, pygeoapi routes will be prepended
+                       with the given URL path prefix (e.g. '/v1').
+                       Defaults to an empty string (no prefix).
+    :param version_header: Response header name for API version
+                           If set, pygeoapi will set a response
+                           header with this name and its value will
+                           hold the API version.
+                           Defaults to an empty string (i.e. no header).
+                           Often 'API-Version' or 'X-API-Version' are
+                           used here.
+    :param strict_slashes: Whether trailing slashes return 404
+                           If False (default), URL trailing slashes
+                           are allowed.
+                           If True, pygeoapi will return a 404.
+    """
+
+    api_version: str = ''
+    url_prefix: str = ''
+    version_header: str = ''
+    strict_slashes: bool = False
+
+    def __post_init__(self):
+        try:
+            validate_type(self)
+        except ValueError as e:
+            raise APIRulesValidationError(str(e)) from e
+        if not SEMVER_PATTERN.match(self.api_version):
+            raise APIRulesValidationError(
+                f"Invalid semantic version: '{self.api_version}'. "
+                f"Expected format: MAJOR.MINOR.PATCH"
+            )
+
+    @classmethod
+    def create(cls, **rules_config) -> 'APIRules':
         """
         Returns a new APIRules instance for the current API version
         and configured rules.
+
+        Filters only valid fields from the config dict and
+        creates a validated instance.
+
+        :param rules_config: Configuration dict
+
+        :returns: Validated APIRules instance
         """
-        obj = {
+        valid = {f.name for f in fields(cls)}
+        filtered = {
             k: v for k, v in rules_config.items()
-            if k in getattr(APIRules, model_fields)
+            if k in valid
         }
-        # Validation will fail if required `api_version` is missing
-        # or if `api_version` is not a semantic version number
-        model_validator_ = getattr(APIRules, model_validator)
-        return model_validator_(obj)
+        return cls(**filtered)
 
     @property
     def response_headers(self) -> dict:
@@ -122,3 +145,15 @@ class APIRules(BaseModel):
         else:
             # If no format is specified, return only the bare prefix
             return prefix
+
+    def model_dump(
+        self, exclude_none: bool = False
+    ) -> Dict[str, Any]:
+        """Serialize to dict."""
+        result = asdict(self)
+        if exclude_none:
+            result = {
+                k: v for k, v in result.items()
+                if v is not None
+            }
+        return result

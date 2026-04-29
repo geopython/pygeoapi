@@ -2,9 +2,11 @@
 #
 # Authors: Tom Kralidis <tomkralidis@gmail.com>
 #          Francesco Martinelli <francesco.martinelli@ingv.it>
+#          Francesco Bartoli <xbartolone@gmail.com>
 #
 # Copyright (c) 2026 Tom Kralidis
 # Copyright (c) 2024 Francesco Martinelli
+# Copyright (c) 2026 Francesco Bartoli
 #
 # Permission is hereby granted, free of charge, to any person
 # obtaining a copy of this software and associated documentation
@@ -29,10 +31,15 @@
 #
 # =================================================================
 
+from __future__ import annotations
+
 import logging
-from typing import Any, Tuple, Optional
+from typing import Any, Optional, Tuple, TYPE_CHECKING
 
 from pygeoapi.error import GenericError
+
+if TYPE_CHECKING:
+    from pygeoapi.plugin import PluginContext
 
 LOGGER = logging.getLogger(__name__)
 
@@ -40,12 +47,16 @@ LOGGER = logging.getLogger(__name__)
 class BaseProcessor:
     """generic Processor ABC. Processes are inherited from this class"""
 
-    def __init__(self, processor_def: dict, process_metadata: dict):
+    def __init__(
+        self, processor_def: dict, process_metadata: dict,
+        context: Optional[PluginContext] = None,
+    ):
         """
         Initialize object
 
         :param processor_def: processor definition
         :param process_metadata: process metadata `dict`
+        :param context: optional PluginContext with injected dependencies
 
         :returns: pygeoapi.processor.base.BaseProvider
         """
@@ -55,6 +66,18 @@ class BaseProcessor:
         self.supports_outputs = False
         self.allow_internal_requests = processor_def.get(
             'allow_internal_requests', False)
+
+        # Dependencies support
+        self._context = context
+        if context and context.logger:
+            self._logger = context.logger
+        else:
+            self._logger = LOGGER  # Global fallback
+
+    @property
+    def logger(self):
+        """Get logger (injected or global)"""
+        return self._logger
 
     def set_job_id(self, job_id: str) -> None:
         """

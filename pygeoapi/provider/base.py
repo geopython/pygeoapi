@@ -27,13 +27,19 @@
 #
 # =================================================================
 
+from __future__ import annotations
+
 import json
 import logging
 from enum import Enum
 from http import HTTPStatus
+from typing import TYPE_CHECKING, Optional
 
 from pygeoapi.crs import DEFAULT_STORAGE_CRS, get_crs
 from pygeoapi.error import GenericError
+
+if TYPE_CHECKING:
+    from pygeoapi.plugin import PluginContext
 
 LOGGER = logging.getLogger(__name__)
 
@@ -48,11 +54,12 @@ class SchemaType(Enum):
 class BaseProvider:
     """generic Provider ABC"""
 
-    def __init__(self, provider_def):
+    def __init__(self, provider_def, context: Optional[PluginContext] = None):
         """
         Initialize object
 
         :param provider_def: provider definition
+        :param context: optional PluginContext with injected dependencies
 
         :returns: pygeoapi.provider.base.BaseProvider
         """
@@ -90,6 +97,28 @@ class BaseProvider:
         self.axes = []
         self.crs = None
         self.num_bands = None
+
+        # Dependencies support
+        self._context = context
+        if context and context.logger:
+            self._logger = context.logger
+        else:
+            self._logger = LOGGER  # Global fallback
+
+        if context and context.locales:
+            self._locales = context.locales
+        else:
+            self._locales = []
+
+    @property
+    def logger(self):
+        """Get logger (injected or global)"""
+        return self._logger
+
+    @property
+    def locales(self):
+        """Get supported locales (injected or global)"""
+        return self._locales
 
     def get_fields(self):
         """

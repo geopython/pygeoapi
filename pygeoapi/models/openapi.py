@@ -1,10 +1,8 @@
-# ****************************** -*-
-# flake8: noqa
 # =================================================================
 #
 # Authors: Francesco Bartoli <xbartolone@gmail.com>
 #
-# Copyright (c) 2025 Francesco Bartoli
+# Copyright (c) 2026 Francesco Bartoli
 #
 # Permission is hereby granted, free of charge, to any person
 # obtaining a copy of this software and associated documentation
@@ -29,20 +27,55 @@
 #
 # =================================================================
 
+from dataclasses import dataclass
 from enum import Enum
+from typing import Any, Dict
 
-from pydantic import BaseModel
-import pydantic
+from pygeoapi.models.validation import validate_type
 
 
 class SupportedFormats(Enum):
     JSON = 'json'
     YAML = 'yaml'
 
-# Handle Pydantic v1/v2 compatibility
-if pydantic.VERSION.startswith('1'):
-    class OAPIFormat(BaseModel):
-        __root__: SupportedFormats = SupportedFormats.YAML
-else:
-    class OAPIFormat(BaseModel):
-        root: SupportedFormats = SupportedFormats.YAML
+
+@dataclass
+class OAPIFormat:
+    """
+    OpenAPI output format.
+
+    Concrete dataclass implementation that can be mimicked
+    downstream.
+
+    :param root: output format, defaults to ``yaml``
+    """
+
+    root: SupportedFormats = SupportedFormats.YAML
+
+    def __post_init__(self):
+        # Coerce str to enum before type validation
+        if isinstance(self.root, str):
+            try:
+                self.root = SupportedFormats(self.root)
+            except ValueError:
+                raise ValueError(
+                    f"Unsupported format: '{self.root}'. "
+                    f"Must be one of: "
+                    f"{[f.value for f in SupportedFormats]}"
+                )
+        validate_type(self)
+
+    def __eq__(self, other):
+        if isinstance(other, str):
+            return self.root.value == other
+        if isinstance(other, SupportedFormats):
+            return self.root == other
+        if isinstance(other, OAPIFormat):
+            return self.root == other.root
+        return NotImplemented
+
+    def model_dump(
+        self, exclude_none: bool = False
+    ) -> Dict[str, Any]:
+        """Serialize to dict."""
+        return {'root': self.root.value}

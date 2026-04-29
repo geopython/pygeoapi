@@ -1,8 +1,10 @@
 # =================================================================
 #
 # Authors: Tom Kralidis <tomkralidis@gmail.com>
+#          Francesco Bartoli <xbartolone@gmail.com>
 #
 # Copyright (c) 2026 Tom Kralidis
+# Copyright (c) 2026 Francesco Bartoli
 #
 # Permission is hereby granted, free of charge, to any person
 # obtaining a copy of this software and associated documentation
@@ -30,9 +32,57 @@
 
 import importlib
 import logging
-from typing import Any
+from dataclasses import dataclass
+from typing import Any, Dict, List, Optional
 
 LOGGER = logging.getLogger(__name__)
+
+
+@dataclass
+class PluginContext:
+    """
+    Inject dependencies with a context object into plugins.
+
+    This allows passing runtime dependencies to plugins without
+    relying on global state or complex config dictionaries.
+
+    Attributes:
+        config: Original plugin configuration dictionary
+        logger: Optional injected logger instance
+        locales: Optional list of supported locale codes
+        base_url: Optional API base URL for link generation
+
+    Example:
+        >>> from pygeoapi.plugin import PluginContext, load_plugin
+        >>> context = PluginContext(
+        ...     config={'name': 'GeoJSON', 'type': 'feature',
+        ...             'data': 'obs.geojson'},
+        ...     logger=custom_logger,
+        ...     base_url='https://api.example.com'
+        ... )
+        >>> provider = load_plugin('provider', context.config, context=context)
+    """
+
+    config: Dict[str, Any]
+    logger: Optional[Any] = None
+    locales: Optional[List[str]] = None
+    base_url: Optional[str] = None
+
+    def to_dict(self) -> Dict[str, Any]:
+        """
+        Convert to plain dict format for backwards compatibility.
+
+        :returns: Dictionary with config and injected dependencies
+        """
+        result = dict(self.config)
+        if self.logger:
+            result["_logger"] = self.logger
+        if self.base_url:
+            result["_base_url"] = self.base_url
+        if self.locales:
+            result["_locales"] = self.locales
+        return result
+
 
 #: Loads provider plugins to be used by pygeoapi,\
 #: formatters and processes available
@@ -94,14 +144,33 @@ PLUGINS = {
 }
 
 
-def load_plugin(plugin_type: str, plugin_def: dict) -> Any:
+def load_plugin(
+    plugin_type: str, plugin_def: dict, context: Optional[PluginContext] = None
+) -> Any:
     """
-    loads plugin by name
+    Loads plugin by name with optional dependency injection.
 
-    :param plugin_type: type of plugin (provider, formatter)
-    :param plugin_def: plugin definition
+    :param plugin_type: type of plugin (provider, formatter, process, etc.)
+    :param plugin_def: plugin definition dictionary
+    :param context: optional context with injected dependencies
 
     :returns: plugin object
+
+    Example:
+        # Plain mode (backwards compatible)
+        >>> provider = load_plugin('provider', {
+        ...     'name': 'GeoJSON',
+        ...     'type': 'feature',
+        ...     'data': 'obs.geojson'
+        ... })
+
+        # Modern mode with dependencies
+        >>> context = PluginContext(
+        ...     config={'name': 'GeoJSON', 'type': 'feature',
+        ...             'data': 'obs.geojson'},
+        ...     logger=custom_logger
+        ... )
+        >>> provider = load_plugin('provider', context.config, context=context)
     """
 
     name = plugin_def['name']
@@ -130,7 +199,23 @@ def load_plugin(plugin_type: str, plugin_def: dict) -> Any:
 
     module = importlib.import_module(packagename)
     class_ = getattr(module, classname)
-    plugin = class_(plugin_def)
+
+    # Support injected dependencies via PluginContext
+    if context is not None:
+        # Try context-aware constructor first
+        try:
+            plugin = class_(plugin_def, context=context)
+            LOGGER.debug(f"{name} initialized with PluginContext")
+        except TypeError as err:
+            # Fallback: legacy constructor without context parameter
+            LOGGER.debug(
+                f"{name} does not support PluginContext, "
+                f"using legacy init: {err}"
+            )
+            plugin = class_(plugin_def)
+    else:
+        # Plain mode: no more context provided
+        plugin = class_(plugin_def)
 
     return plugin
 
