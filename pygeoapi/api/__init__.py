@@ -944,7 +944,8 @@ def describe_collections(api: API, request: APIRequest,
 
     LOGGER.debug('Creating collections')
     for k, v in collections_dict.items():
-        if v.get('visibility', 'default') == 'hidden':
+        if v.get('visibility', 'default') == 'hidden' \
+                and dataset is None:
             LOGGER.debug(f'Skipping hidden layer: {k}')
             continue
 
