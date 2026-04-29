@@ -123,9 +123,13 @@ class SODAServiceProvider(BaseProvider):
 
         fc = {
             'type': 'FeatureCollection',
-            'features': [],
-            'numberMatched': self._get_count(params)
+            'features': []
         }
+
+        if self.count or resulttype == 'hits':
+            matched = self._get_count(params)
+            LOGGER.debug(f'Found {matched} result(s)')
+            fc['numberMatched'] = matched
 
         if resulttype == 'hits':
             # Return hits

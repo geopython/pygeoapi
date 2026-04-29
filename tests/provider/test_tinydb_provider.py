@@ -194,6 +194,20 @@ def test_get(config):
     assert result['properties']['FLOW'] == 2.059999942779541
 
 
+def test_no_count(config):
+    p = TinyDBProvider(config)
+
+    results = p.query()
+    assert results['numberMatched'] == 50
+    assert results['numberReturned'] == 10
+
+    config['count'] = False
+    p = TinyDBProvider(config)
+    results = p.query()
+    assert 'numberMatched' not in results
+    assert results['numberReturned'] == 10
+
+
 def test_get_not_existing_item_raise_exception(config):
     """Testing query for a not existing object"""
     p = TinyDBProvider(config)
