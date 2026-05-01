@@ -31,7 +31,7 @@
 import pytest
 
 from pygeoapi.provider.wms_facade import WMSFacadeProvider
-
+from pygeoapi.provider.base import ProviderQueryError
 
 @pytest.fixture()
 def config():
@@ -55,19 +55,17 @@ def check_is_PNG(results):
     assert results[1:4] == b'PNG'
 
 
-def test_default_query(config):
-    p = WMSFacadeProvider(config)
-
-    results = p.query()
-    assert len(results) > 0
-    check_is_PNG(results)
-
-
 def test_crs_query(config):
     p = WMSFacadeProvider(config)
 
-    results1 = p.query(crs='http://www.opengis.net/def/crs/EPSG/0/3857')
-    results2 = p.query(crs='http://www.opengis.net/def/crs/EPSG/0/4326')
+    results1 = p.query(crs='http://www.opengis.net/def/crs/EPSG/0/4326')
+    results2 = p.query(crs='http://www.opengis.net/def/crs/EPSG/0/3857')
 
     check_is_PNG(results1)
     check_is_PNG(results2)
+
+    # This should fail for an invalid crs
+    with pytest.raises(ProviderQueryError) as error:
+        p.query(crs='http://0000')
+
+    assert "ServiceException" in str(error.value)

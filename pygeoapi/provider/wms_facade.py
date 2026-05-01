@@ -103,7 +103,7 @@ class WMSFacadeProvider(BaseProvider):
             'service': 'WMS',
             'request': 'GetMap',
             'bbox': bbox2,
-            crs_param: CRS_CODES.get(crs) or 'CRS84',
+            crs_param: CRS_CODES.get(crs) or DEFAULT_CRS,
             'layers': self.options['layer'],
             'styles': self.options.get('style', 'default'),
             'width': width,
