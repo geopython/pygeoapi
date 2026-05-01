@@ -2,6 +2,7 @@
 #
 # Authors: Tom Kralidis <tomkralidis@gmail.com>
 #
+# Copyright (c) 2026 Joana Simoes
 # Copyright (c) 2026 Tom Kralidis
 #
 # Permission is hereby granted, free of charge, to any person
@@ -43,10 +44,11 @@ OUTPUT_FORMATS = {
 
 CRS_CODES = {
     'http://www.opengis.net/def/crs/EPSG/0/4326': 'EPSG:4326',
-    'http://www.opengis.net/def/crs/EPSG/0/3857': 'EPSG:3857'
+    'http://www.opengis.net/def/crs/EPSG/0/3857': 'EPSG:3857',
+    'http://www.opengis.net/def/crs/OGC/1.3/CRS84': 'urn:ogc:def:crs:OGC:1.3:CRS84' # noqa
 }
 
-DEFAULT_CRS = 'http://www.opengis.net/def/crs/EPSG/0/4326'
+DEFAULT_CRS = 'urn:ogc:def:crs:OGC:1.3:CRS84'
 
 
 class WMSFacadeProvider(BaseProvider):
@@ -101,7 +103,7 @@ class WMSFacadeProvider(BaseProvider):
             'service': 'WMS',
             'request': 'GetMap',
             'bbox': bbox2,
-            crs_param: CRS_CODES.get(crs) or 'EPSG:4326',
+            crs_param: CRS_CODES.get(crs) or 'CRS84',
             'layers': self.options['layer'],
             'styles': self.options.get('style', 'default'),
             'width': width,

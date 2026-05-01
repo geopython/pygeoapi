@@ -8,6 +8,7 @@
 #          Ricardo Garcia Silva <ricardo.garcia.silva@geobeyond.it>
 #          Bernhard Mallinger <bernhard.mallinger@eox.at>
 #
+# Copyright (c) 2026 Joana Simoes
 # Copyright (c) 2026 Tom Kralidis
 # Copyright (c) 2025 Francesco Bartoli
 # Copyright (c) 2022 John A Stevenson and Colin Blackburn
@@ -61,15 +62,19 @@ CONFORMANCE_CLASSES = [
     'http://www.opengis.net/spec/ogcapi-maps-1/1.0/conf/core'
 ]
 
-DEFAULT_CRS = 'http://www.opengis.net/def/crs/EPSG/0/4326'
+DEFAULT_CRS = 'http://www.opengis.net/def/crs/OGC/1.3/CRS84'
+
+DEFAULT_BBOX = [-180, -90, 180, 90]  # CRS84
 
 CRS_CODES = {
     '4326': 'http://www.opengis.net/def/crs/EPSG/0/4326',
     '3857': 'http://www.opengis.net/def/crs/EPSG/0/3857',
+    'CRS84': 'http://www.opengis.net/def/crs/OGC/1.3/CRS84',
     'http://www.opengis.net/def/crs/EPSG/0/4326': 'http://www.opengis.net/def/crs/EPSG/0/4326',  # noqa
     'http://www.opengis.net/def/crs/EPSG/0/3857': 'http://www.opengis.net/def/crs/EPSG/0/3857',  # noqa
+    'http://www.opengis.net/def/crs/OGC/1.3/CRS84': 'http://www.opengis.net/def/crs/OGC/1.3/CRS84', # noqa
     'EPSG:4326': 'http://www.opengis.net/def/crs/EPSG/0/4326',
-    'EPSG:3857': 'http://www.opengis.net/def/crs/EPSG/0/3857'
+    'EPSG:3857': 'http://www.opengis.net/def/crs/EPSG/0/3857',
 }
 
 
@@ -115,18 +120,31 @@ def get_collection_map(api: API, request: APIRequest,
     query_args['format_'] = request.params.get('f', 'png')
     query_args['style'] = style
 
-    query_args['crs'] = CRS_CODES.get(request.params.get(
-        'crs', DEFAULT_CRS))
-    query_args['bbox_crs'] = CRS_CODES.get(request.params.get(
-        'bbox-crs',
-        api.config['resources'][dataset]['extents']['spatial'].get(
-            'crs', DEFAULT_CRS))
-    )
-
-    if query_args['crs'] is None:
+    # If there is no crs param, we assume the storage_crs;
+    # if it does not exist or is not supported, use CRS84.
+    try:
+        if 'crs' not in request.params:
+            query_args['crs'] = CRS_CODES.get(collection_def.get('storage_crs',
+                                              DEFAULT_CRS), DEFAULT_CRS)
+        else:
+            query_args['crs'] = CRS_CODES.get(request.params['crs'],
+                                              DEFAULT_CRS)
+    except KeyError:
         query_args['crs'] = DEFAULT_CRS
-    if query_args['bbox_crs'] is None:
-        query_args['bbox_crs'] = DEFAULT_CRS
+
+    LOGGER.debug(f'Using crs: {query_args['crs']}')
+
+    # If there is no bbox-crs param, we assume CRS84
+    try:
+        if 'bbox-crs' not in request.params:
+            query_args['bbox-crs'] = DEFAULT_CRS
+        else:
+            query_args['bbox-crs'] = CRS_CODES.get(request.params['bbox-crs'],
+                                                   DEFAULT_CRS)
+    except KeyError:
+        query_args['bbox-crs'] = DEFAULT_CRS
+
+    LOGGER.debug(f'Using bbox-crs: {query_args['bbox-crs']}')
 
     try:
         query_args['width'] = int(request.params.get('width', 500))
@@ -156,7 +174,7 @@ def get_collection_map(api: API, request: APIRequest,
                 exception, api.pretty_print)
 
     except AttributeError:
-        bbox = api.config['resources'][dataset]['extents']['spatial']['bbox']  # noqa
+        bbox = DEFAULT_BBOX
     try:
         bbox = [float(c) for c in bbox]
     except ValueError:
@@ -170,9 +188,9 @@ def get_collection_map(api: API, request: APIRequest,
             exception, api.pretty_print)
 
     # the transformer function expects the crs to be in a uri format
-    if query_args['bbox_crs'] != query_args['crs']:
+    if query_args['bbox-crs'] != query_args['crs']:
         LOGGER.debug(f'Reprojecting bbox CRS: {query_args["crs"]}')
-        bbox = transform_bbox(bbox, query_args['bbox_crs'],
+        bbox = transform_bbox(bbox, query_args['bbox-crs'],
                               query_args['crs'], True)
     query_args['bbox'] = bbox
 
