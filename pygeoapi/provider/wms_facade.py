@@ -34,6 +34,7 @@ from urllib.parse import urlencode
 import pyproj
 import requests
 
+
 from pygeoapi.provider.base import BaseProvider, ProviderQueryError
 
 LOGGER = logging.getLogger(__name__)
