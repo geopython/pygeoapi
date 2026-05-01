@@ -263,6 +263,9 @@ def get_collection_map(api: API, request: APIRequest,
 
     mt = collection_def['format']['name']
 
+    headers['Content-Crs'] = query_args['crs']
+    headers['Content-Bbox'] = ','.join(map(str, query_args['bbox']))
+
     if format_ == mt:
         headers['Content-Type'] = collection_def['format']['mimetype']
         return headers, HTTPStatus.OK, data
