@@ -1,8 +1,10 @@
 # =================================================================
 #
 # Authors: Joana Simoes <jo@byteroad.net>
+#          Tom Kralidis <tomkralidis@gmail.com>
 #
 # Copyright (c) 2023 Joana Simoes
+# Copyright (c) 2026 Tom Kralidis
 #
 # Permission is hereby granted, free of charge, to any person
 # obtaining a copy of this software and associated documentation
@@ -237,10 +239,14 @@ class MVTElasticProvider(BaseMVTProvider):
                 tiling_scheme_url_type = "application/json"
                 tiling_scheme_url_title = f'{schema.tileMatrixSet} tile matrix set definition' # noqa
 
-                tiling_scheme = LinkType(href=tiling_scheme_url,
-                                         rel="http://www.opengis.net/def/rel/ogc/1.0/tiling-scheme", # noqa
-                                         type_=tiling_scheme_url_type,
-                                         title=tiling_scheme_url_title)
+                link = {
+                    'href': tiling_scheme_url,
+                    'rel': 'http://www.opengis.net/def/rel/ogc/1.0/tiling-scheme',  # noqa
+                    'type': tiling_scheme_url_type,
+                    'title': tiling_scheme_url_title
+                }
+
+                tiling_scheme = LinkType(**link)
 
         if tiling_scheme is None:
             msg = f'Could not identify a valid tiling schema'  # noqa
@@ -254,13 +260,19 @@ class MVTElasticProvider(BaseMVTProvider):
         links = []
         service_url_link_type = "application/vnd.mapbox-vector-tile"
         service_url_link_title = f'{tileset} vector tiles for {layer}'
-        service_url_link = LinkType(href=service_url, rel="item",
-                                    type_=service_url_link_type,
-                                    title=service_url_link_title)
+
+        link = {
+            'href': service_url,
+            'rel': 'item',
+            'type': service_url_link_type,
+            'title': service_url_link_title
+        }
+
+        service_url_link = LinkType(**link)
 
         links.append(tiling_scheme)
         links.append(service_url_link)
 
         content.links = links
 
-        return content.model_dump(exclude_none=True)
+        return content.model_dump(exclude_none=True, by_alias=True)

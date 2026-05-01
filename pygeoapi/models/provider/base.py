@@ -153,10 +153,13 @@ class TwoDBoundingBoxType(BaseModel):
 class LinkType(BaseModel):
     href: str
     rel: Optional[str] = None
-    type_: Optional[str] = None
+    type_: Optional[str] = pydantic.Field(alias='type')
     hreflang: Optional[str] = None
     title: Optional[str] = None
     length: Optional[int] = None
+
+    class Config:
+        populate_by_name = True
 
 
 class GeospatialDataType(BaseModel):
