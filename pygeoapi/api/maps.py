@@ -44,7 +44,7 @@ from http import HTTPStatus
 import logging
 from typing import Tuple
 
-from pygeoapi.crs import transform_bbox
+from pygeoapi.crs import transform_bbox, DEFAULT_CRS
 from pygeoapi.formats import F_JSON, FORMAT_TYPES
 from pygeoapi.openapi import get_oas_30_parameters
 from pygeoapi.plugin import load_plugin
@@ -61,8 +61,6 @@ LOGGER = logging.getLogger(__name__)
 CONFORMANCE_CLASSES = [
     'http://www.opengis.net/spec/ogcapi-maps-1/1.0/conf/core'
 ]
-
-DEFAULT_CRS = 'http://www.opengis.net/def/crs/OGC/1.3/CRS84'
 
 DEFAULT_BBOX = [-180, -90, 180, 90]  # CRS84
 
