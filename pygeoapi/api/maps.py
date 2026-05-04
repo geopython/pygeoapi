@@ -146,6 +146,8 @@ def get_collection_map(api: API, request: APIRequest,
 
     LOGGER.debug(f'Using bbox-crs: {query_args['bbox-crs']}')
 
+    query_args['transparent'] = request.params.get('transparent', True)
+
     try:
         query_args['width'] = int(request.params.get('width', 500))
         query_args['height'] = int(request.params.get('height', 300))
