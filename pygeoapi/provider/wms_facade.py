@@ -46,10 +46,10 @@ OUTPUT_FORMATS = {
 CRS_CODES = {
     'http://www.opengis.net/def/crs/EPSG/0/4326': 'EPSG:4326',
     'http://www.opengis.net/def/crs/EPSG/0/3857': 'EPSG:3857',
-    'http://www.opengis.net/def/crs/OGC/1.3/CRS84': 'urn:ogc:def:crs:OGC:1.3:CRS84' # noqa
+    'http://www.opengis.net/def/crs/OGC/1.3/CRS84': 'CRS:84' # noqa
 }
 
-DEFAULT_CRS = 'urn:ogc:def:crs:OGC:1.3:CRS84'
+DEFAULT_CRS = 'CRS:84'
 
 
 class WMSFacadeProvider(BaseProvider):
