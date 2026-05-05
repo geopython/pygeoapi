@@ -169,6 +169,7 @@
     var clampedBounds = L.latLngBounds(clampedSw, clampedNe);
 
     var ogcapi_layer = null;
+    var image_overlay = null;
 
     {# if this collection has a map representation, add it to the map #}
     {% for link in data['links'] %}
@@ -179,6 +180,10 @@
             "transparent": true, 
             "bounds": clampedBounds 
         });
+        image_layer = L.imageOverlay("{{ link['href'] }}", clampedBounds, {opacity: 0.7, transparent: true});
+         bbox_layer.setStyle({
+             fillOpacity: 0
+         });
         bbox_layer.setStyle({
             fillOpacity: 0
         });
@@ -198,12 +203,18 @@
 
         var isWithinBounds = (viewWidth <= 360) && (centerLng >= -180 && centerLng <= 180);
 
-            if (isWithinBounds) {
-                if (!map.hasLayer(ogcapi_layer)) map.addLayer(ogcapi_layer);
-            } else {
-                if (map.hasLayer(ogcapi_layer)) map.removeLayer(ogcapi_layer);
+         if (isWithinBounds) {
+            if (!map.hasLayer(ogcapi_layer)) {
+              map.addLayer(ogcapi_layer);
             }
-        }
+            map.removeLayer(image_layer);
+         } else {
+            if (map.hasLayer(ogcapi_layer)) {
+              map.removeLayer(ogcapi_layer); 
+            }
+            map.addLayer(image_layer);
+         }
+     }
     }
 
     map.on('moveend', toggleOverlayVisibility);
