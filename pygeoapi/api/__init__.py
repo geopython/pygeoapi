@@ -1076,6 +1076,10 @@ def get_collection_schema(api: API, request: Union[APIRequest, Any],
         }
 
     for k, v in p.fields.items():
+        if p.properties:
+            if k not in p.properties:
+                continue
+
         schema['properties'][k] = v
         if v['type'] == 'float':
             schema['properties'][k]['type'] = 'number'
