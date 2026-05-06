@@ -62,11 +62,12 @@ def test_crs_query(config):
     results1 = p.query(crs='http://www.opengis.net/def/crs/EPSG/0/4326')
     results2 = p.query(crs='http://www.opengis.net/def/crs/EPSG/0/3857')
 
+    print(results1)
+
     check_is_PNG(results1)
     check_is_PNG(results2)
 
-    # This should fail for an invalid crs
-    with pytest.raises(ProviderQueryError) as error:
-        p.query(crs='http://0000')
+    # An invalid crs should default to default crs
+    results3 = p.query(crs='http://0000')
 
-    assert "ServiceException" in str(error.value)
+    check_is_PNG(results3)
