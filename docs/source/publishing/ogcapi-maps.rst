@@ -15,11 +15,11 @@ pygeoapi core feature providers are listed below, along with a matrix of support
 parameters.
 
 .. csv-table::
-   :header: Provider, bbox, width/height
+   :header: Provider, bbox, width/height, crs, bbox-crs
    :align: left
 
-   `MapScript`_,✅,✅
-   `WMSFacade`_,✅,✅
+   `MapScript`_,✅,✅,✅,✅
+   `WMSFacade`_,✅,✅,✅,✅
 
 
 Below are specific connection examples based on supported providers.
@@ -61,6 +61,7 @@ Currently supported style files (`options.style`):
          format:
             name: png
             mimetype: image/png
+         storage_crs: http://www.opengis.net/def/crs/EPSG/0/4326
 
 Projections are supported through EPSG codes (`options.projection`):        
 
@@ -90,6 +91,7 @@ In order to enable it, set `options.tileindex` to `True` and set the location of
             format:
                 name: png
                 mimetype: image/png
+            storage_crs: http://www.opengis.net/def/crs/EPSG/0/4326
 
 The `options.tileindex` parameter is optional, defaulting to `False`.
 
@@ -112,17 +114,27 @@ required.  An optional style name can be defined via `options.style`.
          format:
                name: png
                mimetype: image/png
+         storage_crs: http://www.opengis.net/def/crs/EPSG/0/4326
 
 .. note::
   According to the `Standard <https://docs.ogc.org/is/20-058/20-058.html#_5df53b56-5468-4c9d-acac-6abfddd83ccf>`_, OGC API - Maps
-  supports a `crs` parameter, expressed as an uri. Currently, this provider supports WGS84 and Web Mercator; for a matter of convenience, they can be expressed in
+  supports a `crs` parameter, expressed as an uri. Currently, this provider supports CRS84, WGS84 and Web Mercator; for a matter of convenience, they can be expressed in
   a number of different ways, other than the uri format.
 
   - `EPSG:4326`
   - `EPSG:3857`
   - `4326`
-  - `3857`
+  - `3857`,
+  - `CRS84`
 
+  If `crs` is not provided, the server will default to the `storage_crs`; in case it does not exist, the default is `CRS84`.
+  If `crs-bbox` is not provided, it will default to `CRS84`. If the `bbox` is not provided, it will default to `-180, -90, 180, 90`.
+  
+  The response headers will always contain the `Content-Crs` and `Content-Bbox`. Examples:
+
+  - Content-Bbox: -180.0,-90.0,180.0,90.0
+  - Content-Crs: http://www.opengis.net/def/crs/EPSG/0/4326
+ 
 Data visualization examples
 ---------------------------
 

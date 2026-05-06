@@ -50,15 +50,23 @@ def config():
     }
 
 
-def test_query(config):
+def check_is_PNG(results):
+    assert isinstance(results, bytes)
+    assert results[1:4] == b'PNG'
+
+
+def test_crs_query(config):
     p = WMSFacadeProvider(config)
 
-    results = p.query()
-    assert len(results) > 0
+    results1 = p.query(crs='http://www.opengis.net/def/crs/EPSG/0/4326')
+    results2 = p.query(crs='http://www.opengis.net/def/crs/EPSG/0/3857')
 
-    # an invalid CRS should return the default bbox (4326)
-    results2 = p.query(crs='http://www.opengis.net/def/crs/EPSG/0/1111')
-    assert len(results2) == len(results)
+    print(results1)
 
-    results3 = p.query(crs='http://www.opengis.net/def/crs/EPSG/0/3857')
-    assert len(results3) != len(results)
+    check_is_PNG(results1)
+    check_is_PNG(results2)
+
+    # An invalid crs should default to default crs
+    results3 = p.query(crs='http://0000')
+
+    check_is_PNG(results3)

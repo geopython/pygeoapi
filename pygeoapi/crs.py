@@ -279,7 +279,7 @@ def crs_transform_feature(feature: dict, transform_func: Callable):
 
 
 def transform_bbox(bbox: list, from_crs: Union[str, pyproj.CRS],
-                   to_crs: Union[str, pyproj.CRS]) -> list:
+                   to_crs: Union[str, pyproj.CRS], always_xy=False) -> list:
     """
     helper function to transform a bounding box (bbox) from
     a source to a target CRS. CRSs in URI str format.
@@ -297,7 +297,17 @@ def transform_bbox(bbox: list, from_crs: Union[str, pyproj.CRS],
     from_crs_obj = get_crs(from_crs)
     to_crs_obj = get_crs(to_crs)
     transform_func = pyproj.Transformer.from_crs(
-        from_crs_obj, to_crs_obj).transform
+        from_crs_obj, to_crs_obj, always_xy).transform
+
+    # Clip values to max and min lat of WebMercator,
+    # to avoid infinte pole distortion
+    if to_crs_obj.to_epsg() == 3857:
+        bbox = [
+            bbox[0],
+            max(-85.0511, bbox[1]),
+            bbox[2],
+            min(85.0511, bbox[3])
+        ]
 
     n_dims = len(bbox) // 2
     return list(transform_func(*bbox[:n_dims]) + transform_func(
