@@ -54,7 +54,7 @@ To publish an Elasticsearch index, the following are required in your index:
 The ES provider also has the support for the CQL queries as indicated in the table above.
 
 .. seealso::
-  :ref:`cql` for more details on how to use Common Query Language (CQL) to filter the collection with specific queries.
+  :ref:`cql2` for more details on how to use Common Query Language (CQL) to filter the collection with specific queries.
 
 TinyDBCatalogue
 ^^^^^^^^^^^^^^^
