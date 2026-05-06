@@ -31,7 +31,6 @@
 import pytest
 
 from pygeoapi.provider.wms_facade import WMSFacadeProvider
-from pygeoapi.provider.base import ProviderQueryError
 
 
 @pytest.fixture()
