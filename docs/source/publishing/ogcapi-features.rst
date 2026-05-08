@@ -16,29 +16,35 @@ parameters.
 
 
 .. csv-table::
-   :header: Provider, property filters/display, resulttype, bbox, datetime, sortby, skipGeometry, domains, CQL, transactions, crs
+   :header: Provider, property filters/display, resulttype hits/count, bbox, datetime, sortby, skipGeometry, domains, CQL, transactions, crs
    :align: left
 
-   `CSV`_,✅/✅,results/hits,✅,❌,❌,✅,❌,❌,❌,✅
-   `Elasticsearch`_,✅/✅,results/hits,✅,✅,✅,✅,✅,✅,✅,✅
-   `ERDDAP Tabledap Service`_,❌/❌,results/hits,✅,✅,❌,❌,❌,❌,❌,✅
-   `ESRI Feature Service`_,✅/✅,results/hits,✅,✅,✅,✅,❌,❌,❌,✅
-   `GeoJSON`_,✅/✅,results/hits,✅,❌,❌,✅,❌,❌,❌,✅
-   `MongoDB`_,✅/❌,results,✅,✅,✅,✅,❌,❌,❌,✅
-   `MySQL`_,✅/✅,results/hits,✅,✅,✅,✅,❌,✅,✅,✅
-   `OGR`_,✅/❌,results/hits,✅,❌,❌,✅,❌,❌,❌,✅
-   `OpenSearch`_,✅/✅,results/hits,✅,✅,✅,✅,❌,✅,✅,✅
-   `Oracle`_,✅/✅,results/hits,✅,❌,✅,✅,❌,❌,❌,✅
-   `Parquet`_,✅/✅,results/hits,✅,✅,❌,✅,❌,❌,❌,✅
-   `PostgreSQL`_,✅/✅,results/hits,✅,✅,✅,✅,❌,✅,✅,✅
-   `SQLiteGPKG`_,✅/❌,results/hits,✅,❌,❌,✅,❌,❌,❌,✅
-   `SensorThings API`_,✅/✅,results/hits,✅,✅,✅,✅,❌,❌,✅,✅
-   `Socrata`_,✅/✅,results/hits,✅,✅,✅,✅,❌,❌,❌,✅
-   `TinyDB`_,✅/✅,results/hits,✅,✅,✅,✅,✅,❌,✅,✅
+   `CSV`_,✅/✅,✅/✅,✅,❌,❌,✅,❌,❌,❌,✅
+   `Elasticsearch`_,✅/✅,✅/❌,✅,✅,✅,✅,✅,✅,✅,✅
+   `ERDDAP Tabledap Service`_,❌/❌,❌/❌,✅,✅,❌,❌,❌,❌,❌,✅
+   `ESRI Feature Service`_,✅/✅,✅/✅,✅,✅,✅,✅,❌,❌,❌,✅
+   `GeoJSON`_,✅/✅,✅/✅,✅,❌,❌,✅,❌,❌,❌,✅
+   `MongoDB`_,✅/❌,✅/✅,✅,✅,✅,✅,❌,❌,❌,✅
+   `MySQL`_,✅/✅,✅/✅,✅,✅,✅,✅,❌,✅,✅,✅
+   `OGR`_,✅/❌,✅/❌,✅,❌,❌,✅,❌,❌,❌,✅
+   `OpenSearch`_,✅/✅,✅/❌,✅,✅,✅,✅,❌,✅,✅,✅
+   `Oracle`_,✅/✅,✅/✅,✅,❌,✅,✅,❌,❌,❌,✅
+   `Parquet`_,✅/✅,✅/❌,✅,✅,❌,✅,❌,❌,❌,✅
+   `PostgreSQL`_,✅/✅,✅/✅,✅,✅,✅,✅,❌,✅,✅,✅
+   `SQLiteGPKG`_,✅/❌,✅/✅,✅,❌,❌,✅,❌,❌,❌,✅
+   `SensorThings API`_,✅/✅,✅/❌,✅,✅,✅,✅,❌,❌,✅,✅
+   `Socrata`_,✅/✅,✅/✅,✅,✅,✅,✅,❌,❌,❌,✅
+   `TinyDB`_,✅/✅,✅/✅,✅,✅,✅,✅,✅,❌,✅,✅
 
 .. note::
    For more information on CRS transformations, see :ref:`crs`.
 
+
+.. note::
+   Providers that support the query parameter ``resulttype=hits`` will also
+   include ``numberMatched`` in the default ``resulttype=results`` response.
+   Providers that support the configuration option ``count: false`` will 
+   not include the ``numberMatched`` property in the ``results`` response.
 
 Connection examples
 -------------------
