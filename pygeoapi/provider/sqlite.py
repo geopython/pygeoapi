@@ -169,18 +169,6 @@ class SQLiteGPKGProvider(BaseProvider):
         else:
             return None
 
-    def __response_feature_hits(self, hits):
-        """Assembles GeoJSON/Feature number
-
-        :returns: GeoJSON FeaturesCollection
-        """
-
-        feature_collection = {"features": [],
-                              "type": "FeatureCollection"}
-        feature_collection['numberMatched'] = hits
-
-        return feature_collection
-
     def __load(self):
         """
         Private method for loading spatiallite,
@@ -305,14 +293,25 @@ class SQLiteGPKGProvider(BaseProvider):
         where_clause, where_values = self.__get_where_clauses(
             properties=properties, bbox=bbox)
 
-        if resulttype == 'hits':
+        feature_collection = {
+            'type': 'FeatureCollection',
+            'features': []
+        }
 
-            sql_query = f"SELECT COUNT(*) as hits FROM {self.table} {where_clause} "  # noqa
+        if self.count or resulttype == 'hits':
+
+            sql_query = (
+                'SELECT COUNT(*) as hits '
+                f'FROM {self.table} {where_clause}'
+            )
 
             res = self.cursor.execute(sql_query, where_values)
 
-            hits = res.fetchone()["hits"]
-            return self.__response_feature_hits(hits)
+            hits = res.fetchone()['hits']
+            feature_collection['numberMatched'] = hits
+
+        if resulttype == 'hits':
+            return feature_collection
 
         sql_query = f"SELECT DISTINCT {self.columns} from \
             {self.table} {where_clause} limit ? offset ?"
@@ -326,14 +325,12 @@ class SQLiteGPKGProvider(BaseProvider):
         row_data = self.cursor.execute(
             sql_query, where_values + (limit, offset))
 
-        feature_collection = {
-            'type': 'FeatureCollection',
-            'features': []
-        }
-
+        feature_collection['numberReturned'] = 0
         for rd in row_data:
             feature_collection['features'].append(
-                self.__response_feature(rd, skip_geometry=skip_geometry))
+                self.__response_feature(rd, skip_geometry=skip_geometry)
+            )
+            feature_collection['numberReturned'] += 1
 
         return feature_collection
 
