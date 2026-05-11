@@ -59,12 +59,19 @@ def config_hidden_resources():
 
 
 @pytest.fixture()
+def config_i18n():
+    filename = 'pygeoapi-test-config-i18n.yml'
+    with open(get_test_file_path(filename)) as fh:
+        return yaml_load(fh)
+
+
+@pytest.fixture()
 def openapi():
     with open(get_test_file_path('pygeoapi-test-openapi.yml')) as fh:
         return yaml_load(fh)
 
 
-def test_str2bool():
+def test_get_ogc_schemas_location():
 
     default = {
         'url': 'http://localhost:5000'
@@ -139,6 +146,13 @@ def test_hidden_resources(config_hidden_resources):
 
     assert '/collections/obs' not in openapi_doc['paths']
     assert '/collections/obs/items' not in openapi_doc['paths']
+
+
+def test_i18n(config_i18n):
+    openapi_doc = get_oas(config_i18n)
+
+    assert isinstance(openapi_doc['info']['contact']['name'], str)
+    assert openapi_doc['info']['contact']['name'] == 'Organization Name'
 
 
 def test_admin_empty_resources(config_admin_empty_resources):
