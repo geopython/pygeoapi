@@ -229,7 +229,10 @@ class TinyDBProvider(BaseProvider):
             LOGGER.error(f'{msg}: {err}')
             raise ProviderInvalidQueryError(msg)
 
-        feature_collection['numberMatched'] = len(results)
+        if self.count or resulttype == 'hits':
+            matched = len(results)
+            LOGGER.debug(f'Found {matched} result(s)')
+            feature_collection['numberMatched'] = matched
 
         if resulttype == 'hits':
             return feature_collection

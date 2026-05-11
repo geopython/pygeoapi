@@ -188,7 +188,8 @@ class GeoJSONProvider(BaseProvider):
                           properties=properties,
                           select_properties=select_properties)
 
-        data['numberMatched'] = len(data['features'])
+        if self.count or resulttype == 'hits':
+            data['numberMatched'] = len(data['features'])
 
         if resulttype == 'hits':
             data['features'] = []

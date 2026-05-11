@@ -191,6 +191,20 @@ def test_query(config, mock_socrata):
     assert results['numberMatched'] == 1006
 
 
+def test_no_count(config, mock_socrata):
+    p = SODAServiceProvider(config)
+
+    results = p.query()
+    assert results['numberMatched'] == 1006
+    assert results['numberReturned'] == 10
+
+    config['count'] = False
+    p = SODAServiceProvider(config)
+    results = p.query()
+    assert 'numberMatched' not in results
+    assert results['numberReturned'] == 10
+
+
 def test_geometry(config, mock_socrata):
     p = SODAServiceProvider(config)
 

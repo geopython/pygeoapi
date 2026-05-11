@@ -164,6 +164,20 @@ def test_query_bbox_sqlite_geopackage(config_sqlite):
         boxed_feature_collection['features'][0]['properties']['name']
 
 
+def test_no_count(config_sqlite):
+    """Test query with count disabled"""
+    p = SQLiteGPKGProvider(config_sqlite)
+    results = p.query()
+    assert results['numberMatched'] == 177
+    assert results['numberReturned'] == 10
+
+    config_sqlite['count'] = False
+    p = SQLiteGPKGProvider(config_sqlite)
+    results = p.query()
+    assert 'numberMatched' not in results
+    assert results['numberReturned'] == 10
+
+
 def test_get_sqlite(config_sqlite):
     p = SQLiteGPKGProvider(config_sqlite)
     result = p.get(118)
