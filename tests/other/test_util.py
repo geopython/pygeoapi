@@ -347,3 +347,23 @@ def test_get_choice_from_headers():
 ])
 def test_is_request_allowed(url, allow_internal, result):
     assert util.is_request_allowed(url, allow_internal) is result
+
+
+@pytest.mark.parametrize('value,format_,result', [
+    ['2000-11-11T11:33:31Z', '%Y-%m-%dT%H:%M:%SZ', '2000-11-11T11:33:31Z'],
+    [datetime(2000, 11, 11, 11, 33, 31), '%Y-%m-%dT%H:%M:%SZ', '2000-11-11T11:33:31Z']  # noqa
+])
+def test_format_datetime(value, format_, result):
+    assert util.format_datetime(value, format_) == result
+
+
+@pytest.mark.parametrize('start,end,result', [
+    ['2000-11-11T11:33:31Z', None, '0:00:00'],
+    [datetime(2000, 11, 11, 11, 33, 31), None, '0:00:00'],
+    ['2000-11-11T11:33:31Z', '2000-11-11T11:34:33Z', '0:01:02'],
+    [datetime(2000, 11, 11, 11, 33, 31), datetime(2000, 11, 11, 11, 34, 33), '0:01:02'],  # noqa
+    [datetime(2000, 11, 11, 11, 33, 31), '2000-11-11T11:34:33Z', '0:01:02'],
+    ['2000-11-11T11:33:31Z', datetime(2000, 11, 11, 11, 34, 33), '0:01:02']
+])
+def test_format_duration(start, end, result):
+    assert util.format_duration(start, end) == result
