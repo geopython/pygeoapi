@@ -29,19 +29,7 @@
 #
 # =================================================================
 
-# Requires postgresql database structure.
-# Create the database:
-# e.g.
-# CREATE DATABASE test
-#   WITH TEMPLATE = template0
-#   ENCODING = 'UTF8'
-#   LOCALE = 'en_US.UTF-8';
-# ALTER DATABASE test OWNER TO postgres;
-#
-# Import dump:
-# psql -U postgres -h 127.0.0.1 -p 5432 test <
-#   tests/data/postgres_manager_full_structure.backup.sql
-
+import functools
 import json
 import logging
 from pathlib import Path
@@ -314,6 +302,7 @@ class PostgreSQLManager(BaseManager):
         return f'<PostgreSQLManager> {self.name}'
 
 
+@functools.cache
 def get_table_model(
     db_search_path: tuple[str], engine: Engine, table_output: bool
 ) -> Any:
