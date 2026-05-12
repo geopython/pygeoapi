@@ -385,7 +385,6 @@ def get_oas_30(cfg: dict, locale: str) -> tuple[list[dict[str, str]], dict[str, 
                     'operationId': 'getMap',
                     'parameters': [
                         {'$ref': '#/components/parameters/bbox'},
-                        {'$ref': f"{OPENAPI_YAML['oapif-1']}#/components/parameters/datetime"},  # noqa
                         {'$ref': f"{OPENAPI_YAML['oamaps']}#/components/parameters/subset"},  # noqa
                         {
                             'name': 'width',

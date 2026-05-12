@@ -134,12 +134,13 @@ def gen_response_object(description: str, media_type: str,
     return response
 
 
-def gen_contact(cfg: dict) -> dict:
+def gen_contact(cfg: dict, locale_: str) -> dict:
     """
     Generates an OpenAPI contact object with OGC extensions
     based on OGC API - Records contact
 
     :param cfg: `dict` of configuration
+    :param locale_: `str` of locale
 
     :returns: `dict` of OpenAPI contact object
     """
@@ -148,20 +149,22 @@ def gen_contact(cfg: dict) -> dict:
     has_phones = False
 
     contact = {
-        'name': cfg['metadata']['provider']['name']
+        'name': l10n.translate(cfg['metadata']['provider']['name'], locale_)
     }
 
     for key in ['url', 'email']:
         if key in cfg['metadata']['provider']:
-            contact[key] = cfg['metadata']['provider'][key]
+            contact[key] = l10n.translate(cfg['metadata']['provider'][key],
+                                          locale_)
 
     contact['x-ogc-serviceContact'] = {
-        'name': cfg['metadata']['contact']['name'],
+        'name': l10n.translate(cfg['metadata']['contact']['name'], locale_),
         'addresses': []
     }
 
     if 'position' in cfg['metadata']['contact']:
-        contact['x-ogc-serviceContact']['position'] = cfg['metadata']['contact']['position']  # noqa
+        contact['x-ogc-serviceContact']['position'] = l10n.translate(
+            cfg['metadata']['contact']['position'], locale_)
 
     if any(address in ['address', 'city', 'stateorprovince', 'postalcode', 'country'] for address in cfg['metadata']['contact']):  # noqa
         has_addresses = True
@@ -169,19 +172,24 @@ def gen_contact(cfg: dict) -> dict:
     if has_addresses:
         address = {}
         if 'address' in cfg['metadata']['contact']:
-            address['deliveryPoint'] = [cfg['metadata']['contact']['address']]
+            address['deliveryPoint'] = [l10n.translate(
+                cfg['metadata']['contact']['address'], locale_)]
 
         if 'city' in cfg['metadata']['contact']:
-            address['city'] = cfg['metadata']['contact']['city']
+            address['city'] = l10n.translate(
+                cfg['metadata']['contact']['city'], locale_)
 
         if 'stateorprovince' in cfg['metadata']['contact']:
-            address['administrativeArea'] = cfg['metadata']['contact']['stateorprovince']  # noqa
+            address['administrativeArea'] = l10n.translate(
+                cfg['metadata']['contact']['stateorprovince'], locale_)
 
         if 'postalCode' in cfg['metadata']['contact']:
-            address['administrativeArea'] = cfg['metadata']['contact']['postalCode']  # noqa
+            address['administrativeArea'] = l10n.translate(
+                cfg['metadata']['contact']['postalCode'], locale_)
 
         if 'country' in cfg['metadata']['contact']:
-            address['administrativeArea'] = cfg['metadata']['contact']['country']  # noqa
+            address['administrativeArea'] = l10n.translate(
+                cfg['metadata']['contact']['country'], locale_)
 
         contact['x-ogc-serviceContact']['addresses'].append(address)
 
@@ -192,33 +200,39 @@ def gen_contact(cfg: dict) -> dict:
     if has_phones:
         if 'phone' in cfg['metadata']['contact']:
             contact['x-ogc-serviceContact']['phones'].append({
-                'type': 'main', 'value': cfg['metadata']['contact']['phone']
+                'type': 'main', 'value': l10n.translate(
+                    cfg['metadata']['contact']['phone'], locale_)
             })
 
         if 'fax' in cfg['metadata']['contact']:
             contact['x-ogc-serviceContact']['phones'].append({
-                'type': 'fax', 'value': cfg['metadata']['contact']['fax']
+                'type': 'fax', 'value': l10n.translate(
+                    cfg['metadata']['contact']['fax'], locale_)
             })
 
     if 'email' in cfg['metadata']['contact']:
         contact['x-ogc-serviceContact']['emails'] = [{
-            'value': cfg['metadata']['contact']['email']
+            'value': l10n.translate(
+                cfg['metadata']['contact']['email'], locale_)
         }]
 
     if 'url' in cfg['metadata']['contact']:
         contact['x-ogc-serviceContact']['links'] = [{
             'type': 'text/html',
-            'href': cfg['metadata']['contact']['url']
+            'href': l10n.translate(cfg['metadata']['contact']['url'], locale_)
         }]
 
     if 'instructions' in cfg['metadata']['contact']:
-        contact['x-ogc-serviceContact']['contactInstructions'] = cfg['metadata']['contact']['instructions']  # noqa
+        contact['x-ogc-serviceContact']['contactInstructions'] = l10n.translate(  # noqa
+            cfg['metadata']['contact']['instructions'], locale_)
 
     if 'hours' in cfg['metadata']['contact']:
-        contact['x-ogc-serviceContact']['hoursOfService'] = cfg['metadata']['contact']['hours']  # noqa
+        contact['x-ogc-serviceContact']['hoursOfService'] = l10n.translate(
+            cfg['metadata']['contact']['hours'], locale_)
 
     if 'role' in cfg['metadata']['contact']:
-        contact['x-ogc-serviceContact']['hoursOfService'] = cfg['metadata']['contact']['role']  # noqa
+        contact['x-ogc-serviceContact']['hoursOfService'] = l10n.translate(
+            cfg['metadata']['contact']['role'], locale_)
 
     return contact
 
@@ -255,11 +269,11 @@ def get_oas_30(cfg: dict, fail_on_invalid_collection: bool = True) -> dict:
         'description': l10n.translate(cfg['metadata']['identification']['description'], locale_),  # noqa
         'x-keywords': l10n.translate(cfg['metadata']['identification']['keywords'], locale_),  # noqa
         'termsOfService':
-            cfg['metadata']['identification']['terms_of_service'],
-        'contact': gen_contact(cfg),
+            l10n.translate(cfg['metadata']['identification']['terms_of_service'], locale_),  # noqa
+        'contact': gen_contact(cfg, locale_),
         'license': {
-            'name': cfg['metadata']['license']['name'],
-            'url': cfg['metadata']['license']['url']
+            'name': l10n.translate(cfg['metadata']['license']['name'], locale_),  # noqa
+            'url': l10n.translate(cfg['metadata']['license']['url'], locale_)
         },
         'version': api_rules.api_version
     }
@@ -360,7 +374,7 @@ def get_oas_30(cfg: dict, fail_on_invalid_collection: bool = True) -> dict:
             'description': l10n.translate(cfg['metadata']['identification']['description'], locale_),  # noqa
             'externalDocs': {
                 'description': 'information',
-                'url': cfg['metadata']['identification']['url']}
+                'url': l10n.translate(cfg['metadata']['identification']['url'], locale_)}  # noqa
         }
     )
 
