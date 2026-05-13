@@ -44,7 +44,7 @@ from http import HTTPStatus
 import logging
 from typing import Tuple
 
-from pygeoapi.crs import transform_bbox, DEFAULT_CRS
+from pygeoapi.crs import transform_bbox, DEFAULT_CRS, get_crs_curie
 from pygeoapi.formats import F_JSON, FORMAT_TYPES
 from pygeoapi.openapi import get_oas_30_parameters
 from pygeoapi.plugin import load_plugin
@@ -65,17 +65,17 @@ CONFORMANCE_CLASSES = [
 DEFAULT_BBOX = [-180, -90, 180, 90]  # CRS84
 
 CRS_CODES = {
-    '4326': 'http://www.opengis.net/def/crs/EPSG/0/4326',
-    '3857': 'http://www.opengis.net/def/crs/EPSG/0/3857',
-    'CRS84': 'http://www.opengis.net/def/crs/OGC/1.3/CRS84',
+    '4326': 'http://www.opengis.net/def/crs/EPSG/0/4326',# stop supporting this
+    '3857': 'http://www.opengis.net/def/crs/EPSG/0/3857',# stop supporting this
+    'CRS84': 'http://www.opengis.net/def/crs/OGC/1.3/CRS84',# stop supporting this
     'http://www.opengis.net/def/crs/EPSG/0/4326': 'http://www.opengis.net/def/crs/EPSG/0/4326',  # noqa
     'http://www.opengis.net/def/crs/EPSG/0/3857': 'http://www.opengis.net/def/crs/EPSG/0/3857',  # noqa
     'http://www.opengis.net/def/crs/OGC/1.3/CRS84': 'http://www.opengis.net/def/crs/OGC/1.3/CRS84', # noqa
     'EPSG:4326': 'http://www.opengis.net/def/crs/EPSG/0/4326',
     'EPSG:3857': 'http://www.opengis.net/def/crs/EPSG/0/3857',
     'CRS:84': 'http://www.opengis.net/def/crs/OGC/1.3/CRS84',
+    'OGC:CRS84': 'http://www.opengis.net/def/crs/OGC/1.3/CRS84',
 }
-
 
 def get_collection_map(api: API, request: APIRequest,
                        dataset: str, style: str | None = None
@@ -128,6 +128,7 @@ def get_collection_map(api: API, request: APIRequest,
         else:
             query_args['crs'] = CRS_CODES.get(request.params['crs'],
                                               DEFAULT_CRS)
+            LOGGER.debug(get_crs_curie(request.params['crs']))
     except KeyError:
         query_args['crs'] = DEFAULT_CRS
 

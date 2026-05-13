@@ -3,6 +3,7 @@
 # Authors: Tom Kralidis <tomkralidis@gmail.com>
 #          Just van den Broecke <justb4@gmail.com>
 #
+# Copyright (c) 2026 Joana Simoes
 # Copyright (c) 2025 Tom Kralidis
 # Copyright (c) 2025 Just van den Broecke
 #
@@ -47,6 +48,7 @@ from shapely.geometry import (
     shape as geojson_to_geom,
     mapping as geom_to_geojson
 )
+from urllib.parse import urlparse
 
 LOGGER = logging.getLogger(__name__)
 
@@ -119,6 +121,82 @@ def get_supported_crs_list(
 
     return supported_crs_list
 
+def get_crs_uri(str) -> str:
+
+    try:
+        if str.contains('epsg'):
+            curie_el = str.split(':')
+            return f'http://www.opengis.net/def/crs/EPSG/0/{curie_el[1]}'
+        elif str != 'CRS:84':
+            raise CRSError
+        
+        return 'http://www.opengis.net/def/crs/OGC/1.3/CRS84'
+    except CRSError as e:
+            return e
+
+def get_crs_curie(str) -> str:
+        """
+        Get a wms compatible crs curie from a uri or a curie
+
+        :param crs: Uniform resource identifier of the coordinate
+                    reference system. In accordance with
+                    https://docs.ogc.org/pol/09-048r5.html#_naming_rule
+                    Or a safe, or unsafe curie
+                    https://docs.ogc.org/DRAFTS/20-024.html#conventions-curies
+
+        :raises `CRSError`: Error raised if no CRS could be identified from the
+            URI.
+
+        :returns: `crs curie` matching the input crs.
+        """
+        
+        try:
+            str = str.lower()
+            LOGGER.debug(str)
+            result = urlparse(str)
+
+            if result.scheme not in ['http', 'https']:
+                raise CRSError('Invalid uri scheme')
+            if result.netloc is None or result.netloc != 'www.opengis.net':
+                raise CRSError('Invalid uri prefix')
+
+            path_el = [p for p in result.path.split('/') if p]
+
+            # Check if the path uri contains the relevant fragments
+            if len(path_el
+                   ) != 5 or path_el[0] != 'def'or path_el[1] != 'crs' or path_el[2] not in ['epsg', 'ogc']:
+                raise CRSError('Invalid uri fragments')
+
+            # We support all EPSG crs and CRS84
+            if path_el[2] == 'epsg':
+                return f'EPSG:{path_el[4]}'
+            elif path_el[4] != 'crs84':
+                raise CRSError('Unsupported crs')
+            
+            return 'CRS:84'
+
+        except CRSError as e:
+            try:
+                # parse safe curies
+                curie = str.strip('[]')
+                LOGGER.debug(curie)
+
+                curie_el = curie.split(':')
+                LOGGER.debug(len(curie_el))
+                # We support all EPSG and CRS84
+                if len(curie_el
+                        ) > 2  or (curie_el[0] != 'epsg' and curie not in ['crs:84','ogc:crs84']):
+                     raise CRSError('Unsupported crs')
+
+                if curie in ['crs:84','ogc:crs84']:
+                    return 'CRS:84'
+                
+                return curie.upper()
+            
+            except CRSError as e:
+                return e
+
+    
 
 def get_crs(crs: Union[str, pyproj.CRS]) -> pyproj.CRS:
     """
