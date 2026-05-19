@@ -134,6 +134,7 @@ class GenericSQLProvider(BaseProvider):
             self.db_user,
             self._db_password,
             self.db_conn,
+            self.db_pool_options,
             **self.db_options
         )
         self.table_model = get_table_model(
@@ -615,6 +616,24 @@ def store_db_parameters(
         connection_data.get('search_path') or
         options.pop('search_path', ['public'])
     )
+    # Connection-pool tuning. These are popped out of ``options`` so they
+    # are NOT passed to the DBAPI as connect_args, and are coerced to a
+    # hashable form so get_engine() can stay functools.cache()-able.
+    # Defaults keep SQLAlchemy's QueuePool sizing but, unlike SQLAlchemy's
+    # default of -1, recycle connections after an hour so that pooled
+    # connections cannot sit IDLE on the server indefinitely.
+    pool_defaults = {
+        'pool_size': 5,
+        'max_overflow': 10,
+        'pool_recycle': 3600,
+        'pool_timeout': 30,
+        'pool_pre_ping': True,
+    }
+    self.db_pool_options = tuple(sorted(
+        (key, type(default)(options.pop(key, default)))
+        for key, default in pool_defaults.items()
+    ))
+
     self.db_options = {
         k: v
         for k, v in options.items()
@@ -631,6 +650,7 @@ def get_engine(
     user: str,
     password: str,
     conn_str: Optional[str] = None,
+    pool_options: tuple[tuple[str, Any], ...] = (),
     **connect_args
 ) -> Engine:
     """
@@ -643,6 +663,11 @@ def get_engine(
     :param user: database user
     :param password: database password
     :param conn_str: optional connection URL
+    :param pool_options: hashable tuple of (key, value) pairs controlling
+                         the connection pool (pool_size, max_overflow,
+                         pool_recycle, pool_timeout, pool_pre_ping). Passed
+                         as a tuple rather than a dict so this function can
+                         remain functools.cache()-able.
     :param connect_args: custom connection arguments to pass to create_engine()
 
     :returns: SQL Alchemy engine
@@ -658,10 +683,16 @@ def get_engine(
         )
 
     engine = create_engine(
-        conn_str, connect_args=connect_args, pool_pre_ping=True
+        conn_str,
+        connect_args=connect_args,
+        **dict(pool_options)
     )
 
-    LOGGER.debug(f'Created engine for {repr(engine.url)}.')
+    LOGGER.debug(
+        f'Created engine for {repr(engine.url)} '
+        f'with pool options {dict(pool_options)}.'
+    )
+
     return engine
 
 
