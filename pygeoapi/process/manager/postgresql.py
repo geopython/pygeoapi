@@ -95,6 +95,7 @@ class PostgreSQLManager(BaseManager):
             self.db_user,
             self._db_password,
             self.db_conn,
+            self.db_pool_options,
             **self.db_options
         )
         self.table_output = self.output_dir is None
