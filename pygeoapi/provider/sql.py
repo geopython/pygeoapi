@@ -625,7 +625,7 @@ def store_db_parameters(
     pool_defaults = {
         'pool_size': 5,
         'max_overflow': 10,
-        'pool_recycle': 3600,
+        'pool_recycle': -1,   # SQLAlchemy default; preserves current behaviour
         'pool_timeout': 30,
         'pool_pre_ping': True,
     }
