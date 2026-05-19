@@ -703,10 +703,26 @@ These are optional and if not specified, the default from the engine will be use
              # Number of seconds after which a TCP keepalive message that is not
              # acknowledged by the server should be retransmitted.
              keepalives_interval: 1
+             # SQLAlchemy connection-pool tuning (optional). Defaults match
+             # SQLAlchemy's QueuePool and preserve previous behaviour.
+             # Persistent connections held open per worker process.
+             pool_size: 5
+             # Extra short-lived connections allowed above pool_size.
+             max_overflow: 10
+             # Recreate connections older than this many seconds. -1 (the
+             # default) never recycles; set a finite value (e.g. 300) so
+             # pooled connections cannot sit IDLE on the server indefinitely.
+             pool_recycle: -1
+             # Seconds to wait for a connection from the pool before erroring.
+             pool_timeout: 30
+             # Test connections with a lightweight ping before use.
+             pool_pre_ping: true
          id_field: osm_id
          table: hotosm_bdi_waterways
          geom_field: foo_geom
          count: true # Optional; Default true; Enable/disable count for improved performance.
+
+`get_engine()` is cached per worker process, so providers that share the same database connection should use identical pool options to keep sharing a single engine; differing pool options intentionally create separate engines.
 
 The PostgreSQL provider is also able to connect to Cloud SQL databases.
 
