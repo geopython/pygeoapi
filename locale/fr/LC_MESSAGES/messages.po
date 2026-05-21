@@ -138,17 +138,17 @@ msgstr "Définition de l'API"
 #: build/lib/pygeoapi/templates/landing_page.html:71
 #: pygeoapi/templates/landing_page.html:71
 msgid "Documentation"
-msgstr ""
+msgstr "Documentation"
 
 #: build/lib/pygeoapi/templates/landing_page.html:71
 #: pygeoapi/templates/landing_page.html:71
 msgid "Swagger UI"
-msgstr ""
+msgstr "Swagger UI"
 
 #: build/lib/pygeoapi/templates/landing_page.html:71
 #: pygeoapi/templates/landing_page.html:71
 msgid "ReDoc"
-msgstr ""
+msgstr "ReDoc"
 
 #: build/lib/pygeoapi/templates/landing_page.html:74
 #: pygeoapi/templates/landing_page.html:74
@@ -188,7 +188,7 @@ msgstr "Téléphone"
 #: build/lib/pygeoapi/templates/landing_page.html:115
 #: pygeoapi/templates/landing_page.html:115
 msgid "Fax"
-msgstr ""
+msgstr "Fax"
 
 #: build/lib/pygeoapi/templates/landing_page.html:119
 #: pygeoapi/templates/landing_page.html:119
@@ -208,7 +208,7 @@ msgstr "Instructions de contact"
 #: build/lib/pygeoapi/templates/collections/coverage/rangetype.html:11
 #: pygeoapi/templates/collections/coverage/rangetype.html:11
 msgid "Coverage range type"
-msgstr ""
+msgstr "Type de domaine des valeurs"
 
 #: build/lib/pygeoapi/templates/collections/coverage/rangetype.html:12
 #: pygeoapi/templates/collections/coverage/rangetype.html:12
@@ -283,12 +283,12 @@ msgstr "Valeur"
 #: pygeoapi/templates/collections/tiles/index.html:6
 #: pygeoapi/templates/collections/tiles/metadata.html:6
 msgid "Tiles"
-msgstr ""
+msgstr "Tiles"
 
 #: build/lib/pygeoapi/templates/collections/tiles/index.html:31
 #: pygeoapi/templates/collections/tiles/index.html:31
 msgid "Tile Matrix Set"
-msgstr ""
+msgstr "Tile Matrix Set"
 
 #: build/lib/pygeoapi/templates/collections/tiles/index.html:42
 #: pygeoapi/templates/collections/tiles/index.html:42
@@ -298,17 +298,17 @@ msgstr "Métadonnées"
 #: build/lib/pygeoapi/templates/collections/tiles/metadata.html:18
 #: pygeoapi/templates/collections/tiles/metadata.html:18
 msgid "Tiles metadata"
-msgstr ""
+msgstr "Métadonnées des tuiles"
 
 #: build/lib/pygeoapi/templates/collections/tiles/metadata.html:18
 #: pygeoapi/templates/collections/tiles/metadata.html:18
 msgid "format"
-msgstr ""
+msgstr "format"
 
 #: build/lib/pygeoapi/templates/collections/tiles/metadata.html:19
 #: pygeoapi/templates/collections/tiles/metadata.html:19
 msgid "Tileset"
-msgstr ""
+msgstr "Tileset"
 
 #: build/lib/pygeoapi/templates/processes/process.html:20
 #: pygeoapi/templates/processes/process.html:20
@@ -424,7 +424,7 @@ msgstr "Taille"
 #: build/lib/pygeoapi/templates/stac/collection.html:9
 #: pygeoapi/templates/stac/collection.html:9
 msgid "STAC Version"
-msgstr ""
+msgstr "STAC Version"
 
 #: build/lib/pygeoapi/templates/stac/item.html:19
 #: pygeoapi/templates/stac/item.html:19
@@ -439,7 +439,7 @@ msgstr "Actifs"
 #: build/lib/pygeoapi/templates/stac/item.html:32
 #: pygeoapi/templates/stac/item.html:32
 msgid "URL"
-msgstr ""
+msgstr "URL"
 
 #: build/lib/pygeoapi/templates/stac/item.html:33
 #: pygeoapi/templates/stac/item.html:33
@@ -458,7 +458,7 @@ msgstr "propulsé par"
 
 #: pygeoapi/templates/collections/collection.html:32
 msgid "Browse"
-msgstr ""
+msgstr "Explorer"
 
 #: pygeoapi/templates/collections/collection.html:36
 #, fuzzy
@@ -467,29 +467,29 @@ msgstr "Pas d'item"
 
 #: pygeoapi/templates/collections/collection.html:37
 msgid "Browse through the items of"
-msgstr ""
+msgstr "Parcourir les items de"
 
 #: pygeoapi/templates/collections/collection.html:40
 #: pygeoapi/templates/collections/queryables.html:6
 #: pygeoapi/templates/collections/queryables.html:17
 msgid "Queryables"
-msgstr ""
+msgstr "Queryables"
 
 #: pygeoapi/templates/collections/collection.html:44
 msgid "Display Queryables"
-msgstr ""
+msgstr "Afficher les queryables"
 
 #: pygeoapi/templates/collections/collection.html:45
 msgid "Display Queryables of"
-msgstr ""
+msgstr "Afficher les queryables de"
 
 #: pygeoapi/templates/collections/collection.html:54
 msgid "Display Tiles"
-msgstr ""
+msgstr "Afficher les tiles"
 
 #: pygeoapi/templates/collections/collection.html:54
 msgid "Display Tiles of"
-msgstr ""
+msgstr "Afficher les tiles de"
 
 #: pygeoapi/templates/collections/index.html:13
 #, fuzzy
@@ -498,11 +498,11 @@ msgstr "Type de données"
 
 #: pygeoapi/templates/collections/coverage/domainset.html:11
 msgid "Coverage domain set"
-msgstr ""
+msgstr "Domain set de la couverture"
 
 #: pygeoapi/templates/collections/coverage/domainset.html:12
 msgid "Axis labels"
-msgstr ""
+msgstr "Noms des axes"
 
 #: pygeoapi/templates/collections/coverage/domainset.html:18
 #, fuzzy
@@ -511,27 +511,27 @@ msgstr "Suivant"
 
 #: pygeoapi/templates/collections/coverage/domainset.html:24
 msgid "Coordinate reference system"
-msgstr ""
+msgstr "Système de référence de coordonnées"
 
 #: pygeoapi/templates/collections/coverage/domainset.html:28
 msgid "width"
-msgstr ""
+msgstr "largeur"
 
 #: pygeoapi/templates/collections/coverage/domainset.html:29
 msgid "height"
-msgstr ""
+msgstr "hauteur"
 
 #: pygeoapi/templates/collections/coverage/domainset.html:31
 msgid "Resolution"
-msgstr ""
+msgstr "Résolution"
 
 #: pygeoapi/templates/collections/coverage/domainset.html:33
 msgid "x"
-msgstr ""
+msgstr "x"
 
 #: pygeoapi/templates/collections/coverage/domainset.html:34
 msgid "y"
-msgstr ""
+msgstr "y"
 
 #: pygeoapi/templates/processes/index.html:8
 #, fuzzy
@@ -545,180 +545,177 @@ msgstr "id"
 
 #: pygeoapi/templates/processes/jobs/index.html:17
 msgid "Start"
-msgstr ""
+msgstr "Début"
 
 #: pygeoapi/templates/processes/jobs/index.html:18
 #: pygeoapi/templates/processes/jobs/job.html:38
 msgid "Duration"
-msgstr ""
+msgstr "Durée"
 
 #: pygeoapi/templates/processes/jobs/index.html:19
 #: pygeoapi/templates/processes/jobs/job.html:19
 #: pygeoapi/templates/processes/jobs/job.html:36
 msgid "Progress"
-msgstr ""
+msgstr "Progression"
 
 #: pygeoapi/templates/processes/jobs/index.html:20
 #: pygeoapi/templates/processes/jobs/job.html:18
 msgid "Status"
-msgstr ""
+msgstr "État"
 
 #: pygeoapi/templates/processes/jobs/index.html:21
 #: pygeoapi/templates/processes/jobs/job.html:23
 msgid "Message"
-msgstr ""
+msgstr "Message"
 
 #: pygeoapi/templates/processes/jobs/job.html:2
 #: pygeoapi/templates/processes/jobs/job.html:12
 msgid "Job status"
-msgstr ""
+msgstr "État du traitement"
 
 #: pygeoapi/templates/processes/jobs/job.html:28
 msgid "Parameters"
-msgstr ""
+msgstr "Paramètres"
 
 #: pygeoapi/templates/processes/jobs/job.html:46
 msgid "Started processing"
-msgstr ""
+msgstr "Traitement démarré"
 
 #: pygeoapi/templates/processes/jobs/job.html:48
 msgid "Finished processing"
-msgstr ""
+msgstr "Traitement terminé"
 
 #: pygeoapi/templates/processes/jobs/results/index.html:2
 msgid "Job result"
-msgstr ""
+msgstr "Résultat du traitement"
 
 #: pygeoapi/templates/processes/jobs/results/index.html:8
 msgid "Results"
-msgstr ""
+msgstr "Résultats"
 
 #: pygeoapi/templates/processes/jobs/results/index.html:12
 msgid "Results of job"
-msgstr ""
+msgstr "Résultats du traitement"
 
 msgid "This document as JSON"
-msgstr ""
+msgstr "Ce document en JSON"
 
 msgid "This document as RDF (JSON-LD)"
-msgstr ""
+msgstr "Ce document en RDF (JSON-LD)"
 
 msgid "This document as HTML"
-msgstr ""
+msgstr "Ce document en HTML"
 
 msgid "The OpenAPI definition as JSON"
-msgstr ""
+msgstr "Définition OpenAPI au format JSON"
 
 msgid "The list of supported tiling schemes as JSON"
-msgstr ""
+msgstr "Liste des schémas de tuiles pris en charge au format JSON"
 
 msgid "The list of supported tiling schemes as HTML"
-msgstr ""
+msgstr "Liste des schémas de tuiles pris en charge au format HTML"
 
 msgid "The landing page of this server as JSON"
 msgstr ""
 
 msgid "The landing page of this server as HTML"
-msgstr ""
+msgstr "Page d’accueil de ce serveur au format JSON"
 
 msgid "Schema of collection in JSON"
-msgstr ""
+msgstr "Schéma de la collection au format JSON"
 
 msgid "Schema of collection in HTML"
-msgstr ""
+msgstr "Schéma de la collection au format HTML"
 
 msgid "Queryables for this collection as JSON"
-msgstr ""
+msgstr "Queryables interrogeables de cette collection au format JSON"
 
 msgid "Queryables for this collection as HTML"
-msgstr ""
+msgstr "Queryables interrogeables de cette collection au format HTML"
 
 msgid "Items as GeoJSON"
-msgstr ""
+msgstr "Items au format JSON"
 
 msgid "Items as HTML"
-msgstr ""
+msgstr "Items au format HTML"
 
 msgid "Items as RDF (GeoJSON-LD)"
-msgstr ""
+msgstr "Items au format RDF (GeoJSON-LD)"
 
 msgid "Coverage data"
-msgstr ""
+msgstr "Données de couverture"
 
 msgid "Coverage data as"
-msgstr ""
+msgstr "Données de couverture au format"
 
 msgid "Tiles as HTML"
-msgstr ""
+msgstr "Tiles au format HTML"
 
 msgid "Tiles as JSON"
-msgstr ""
+msgstr "Tiles au format JSON"
 
 msgid "query for this collection as HTML"
-msgstr ""
+msgstr "Requête pour cette collection au format HTML"
 
 msgid "query for this collection as JSON"
-msgstr ""
+msgstr "Requête pour cette collection au format JSON"
 
 msgid "Items (prev)"
-msgstr ""
+msgstr "Items (prev)"
 
 msgid "Items (next)"
-msgstr ""
+msgstr "Items (next)"
 
 msgid "Process description as JSON"
-msgstr ""
+msgstr "Description du processus au format JSON"
 
 msgid "Process description as HTML"
-msgstr ""
-
-msgid "query for this collection as HTML"
-msgstr ""
+msgstr "Description du processus au format HTML"
 
 msgid "Execution for process as JSON"
-msgstr ""
+msgstr "Exécution du processus au format JSON"
 
 msgid "Jobs list as JSON"
-msgstr ""
+msgstr "Exécution du processus au format JSON"
 
 msgid "Jobs list as HTML"
-msgstr ""
+msgstr "Exécution du processus au format HTML"
 
 msgid "Results of job as JSON"
-msgstr ""
+msgstr "Résultats du traitement au format JSON"
 
 msgid "Results of job as HTML"
-msgstr ""
+msgstr "Résultats du traitement au format HTML"
 
 msgid "The job list for the current process"
-msgstr ""
+msgstr "Liste des traitements du processus courant"
 
 msgid "TileMatrixSet definition in JSON"
-msgstr ""
+msgstr "Définition du TileMatrixSet au format JSON"
 
 msgid "Data collections in this service"
-msgstr ""
+msgstr "Collections de données de ce service"
 
 msgid "Record collections in this service"
-msgstr ""
+msgstr "Collections de metadonnées de ce service"
 
 msgid "Display Schema"
-msgstr ""
+msgstr "Afficher le schéma"
 
 msgid "Display Schema of"
-msgstr ""
+msgstr "Afficher le schéma de"
 
 msgid "Contact"
-msgstr ""
+msgstr "Contact"
 
 msgid "CRS"
-msgstr ""
+msgstr "CRS"
 
 msgid "Epoch"
 msgstr ""
 
 msgid "not specified"
-msgstr ""
+msgstr "non spécifié"
 
 msgid "Position"
 msgstr ""
