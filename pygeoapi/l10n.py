@@ -249,11 +249,11 @@ def translate(value: str, language: Union[Locale, str]):
         raise LocaleError('language is not a str or Locale')
 
     # First try fast approach: directly fetch expected language key
-    translation = value.get(locale2str(language)
-                            if hasattr(language, 'language') else language)
+    translation_ = value.get(locale2str(language)
+                             if hasattr(language, 'language') else language)
 
-    if translation:
-        return translation
+    if translation_:
+        return translation_
 
     # Find valid locale keys in language struct
     # Also maps Locale instances to actual key names
