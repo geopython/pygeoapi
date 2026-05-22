@@ -1,8 +1,10 @@
 # =================================================================
 #
 # Authors: Sander Schaminee <sander.schaminee@geocat.net>
+#          Tom Kralidis <tomkralidis@gmail.com>
 #
 # Copyright (c) 2021 GeoCat BV
+# Copyright (c) 2026 Tom Kralidis
 #
 # Permission is hereby granted, free of charge, to any person
 # obtaining a copy of this software and associated documentation
@@ -27,16 +29,20 @@
 #
 # =================================================================
 
-import logging
-from typing import List, Union
 from collections import OrderedDict
 from copy import deepcopy
+from gettext import translation
+import logging
+from pathlib import Path
+from typing import List, Union
 
 from babel import Locale
 from babel import UnknownLocaleError as _UnknownLocaleError
 from urllib import parse
 
 LOGGER = logging.getLogger(__name__)
+
+LOCALEDIR = Path(__file__).resolve().parent.parent / 'locale'
 
 # Specifies the name of a request query parameter used to set a locale
 QUERY_PARAM = 'lang'
@@ -46,6 +52,9 @@ _lc_cache = {}
 
 # Cache translated configurations
 _cfg_cache = {}
+
+# Cache gettext translations by string
+_gettext_cache = {}
 
 
 class LocaleError(Exception):
@@ -226,6 +235,11 @@ def translate(value: str, language: Union[Locale, str]):
 
     nested_dicts = isinstance(value, dict) and any(isinstance(v, dict)
                                                    for v in value.values())
+
+    if isinstance(value, str) and not nested_dicts:
+        LOGGER.debug(f'Value {value} is from data, not config')
+        return translate_gettext(value, language.language)
+
     if not isinstance(value, dict) or nested_dicts:
         # Return non-dicts or dicts with nested dicts as-is
         return value
@@ -235,10 +249,11 @@ def translate(value: str, language: Union[Locale, str]):
         raise LocaleError('language is not a str or Locale')
 
     # First try fast approach: directly fetch expected language key
-    translation = value.get(locale2str(language)
-                            if hasattr(language, 'language') else language)
-    if translation:
-        return translation
+    translation_ = value.get(locale2str(language)
+                             if hasattr(language, 'language') else language)
+
+    if translation_:
+        return translation_
 
     # Find valid locale keys in language struct
     # Also maps Locale instances to actual key names
@@ -250,6 +265,31 @@ def translate(value: str, language: Union[Locale, str]):
     # Find best language match and return value by its key
     out_locale = best_match([language], loc_items.keys())
     return value[loc_items[out_locale]]
+
+
+def translate_gettext(value: str, locale_: Locale) -> str:
+    """
+    :param value: A string value to translate.
+    :param language: A locale Babel Locale.
+
+    :returns: A translated string or the original value.
+    """
+
+    try:
+        value2 = _gettext_cache[locale_][value]
+        LOGGER.debug(f'Value {value} is gettext cached')
+    except KeyError:
+        LOGGER.debug(f'Value {value} is NOT gettext cached')
+        if locale_ not in _gettext_cache:
+            _gettext_cache[locale_] = {}
+        if value not in _gettext_cache[locale_]:
+            tr = translation('messages',
+                             localedir=LOCALEDIR,
+                             languages=[locale_],
+                             fallback=True)
+            value2 = _gettext_cache[locale_][value] = tr.gettext(value)
+
+    return value2
 
 
 def translate_struct(struct: dict | List[dict],

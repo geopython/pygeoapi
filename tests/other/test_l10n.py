@@ -4,7 +4,7 @@
 #          Tom Kralidis <tomkralidis@gmail.com>
 #
 # Copyright (c) 2021 GeoCat BV
-# Copyright (c) 2025 Tom Kralidis
+# Copyright (c) 2026 Tom Kralidis
 #
 # Permission is hereby granted, free of charge, to any person
 # obtaining a copy of this software and associated documentation
@@ -287,3 +287,11 @@ def test_translatedict(config, locale_):
         }
     ]
     assert l10n.translate_struct(test_input, locale_) == test_output
+
+
+def test_translate_gettext():
+    locale_fr = Locale.parse('fr').language
+    locale_es = Locale.parse('es').language
+
+    assert l10n.translate_gettext('Home', locale_fr) == 'Accueil'
+    assert l10n.translate_gettext('Home', locale_es) == 'Inicio'
