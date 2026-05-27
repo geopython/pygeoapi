@@ -85,3 +85,17 @@ def test_query(config):
 
     with pytest.raises(ProviderQueryError):
         data = p.query(datetime_='2010-01-16')
+
+
+def test_query_preserves_nan_values(config):
+    p = XarrayProvider(config)
+
+    # Work on an in-memory copy so we can inject a NaN without touching fixture data.
+    p._data = p._data.copy(deep=True)
+    p._data['SST'].values[0, 0, 0] = float('nan')
+
+    coverage = p.query(properties=['SST'], datetime_='2000-01-16')
+    values = coverage['ranges']['SST']['values']
+
+    assert None not in values
+    assert any(value != value for value in values)

@@ -397,7 +397,6 @@ class XarrayProvider(BaseProvider):
 
             cj['parameters'][key] = parameter
 
-        data = data.fillna(None)
 
         try:
             for key, value in selected_fields.items():
