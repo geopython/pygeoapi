@@ -87,15 +87,40 @@ def test_query(config):
         data = p.query(datetime_='2010-01-16')
 
 
-def test_query_preserves_nan_values(config):
+def test_query_serializes_nan_values(config):
     p = XarrayProvider(config)
+
+    # Query the first available timestep
+    query_time = str(p._data[p.time_field].values[0]).split('T')[0]
+
+    baseline = p.query(properties=['SST'], datetime_=query_time)
+    baseline_values = baseline['ranges']['SST']['values']
+    baseline_none_count = sum(value is None for value in baseline_values)
+
+    # Get the index of the first non-null/non-nan value in the baseline 
+    target_index = next(
+        idx for idx, value in enumerate(baseline_values)
+        if value is not None and value == value
+    )
+    # Calculate the corresponding y/x indices in the original data array.
+    _, x_size = baseline['ranges']['SST']['shape'][-2:]
+    y_index = target_index // x_size
+    x_index = target_index % x_size
 
     # Work on an in-memory copy so we can inject a NaN without touching fixture data.
     p._data = p._data.copy(deep=True)
-    p._data['SST'].values[0, 0, 0] = float('nan')
+    p._data['SST'][{
+        p.time_field: 0,
+        p.y_field: y_index,
+        p.x_field: x_index
+    }] = float('nan')
 
-    coverage = p.query(properties=['SST'], datetime_='2000-01-16')
+    coverage = p.query(properties=['SST'], datetime_=query_time)
     values = coverage['ranges']['SST']['values']
 
-    assert None not in values
-    assert any(value != value for value in values)
+    # Baseline value at target index is numeric before the injected NaN.
+    assert baseline_values[target_index] is not None
+    # The injected NaN is converted to null during serialization.
+    assert values[target_index] is None
+    # Injecting one NaN should produce exactly one additional serialized null.
+    assert sum(value is None for value in values) == baseline_none_count + 1
