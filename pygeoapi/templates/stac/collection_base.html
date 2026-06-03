@@ -10,6 +10,7 @@
 {% block extrahead %}
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.3.1/dist/leaflet.css"/>
     <script src="https://unpkg.com/leaflet@1.3.1/dist/leaflet.js"></script>
+    <script src="{{ config['server']['url'] }}/static/js/default.js"></script>
 {% endblock %}
 
 {% block body %}
@@ -102,12 +103,16 @@
             attribution: '{{ config['server']['map']['attribution'] | safe }}'
         }
     ));
+
+    var bbox = gen_safe_bbox({{ data['extent']['spatial']['bbox'][0] }});
+
     var bbox_layer = L.polygon([
-        [{{ data['extent']['spatial']['bbox'][0][1] }}, {{ data['extent']['spatial']['bbox'][0][0] }}],
-        [{{ data['extent']['spatial']['bbox'][0][3] }}, {{ data['extent']['spatial']['bbox'][0][0] }}],
-        [{{ data['extent']['spatial']['bbox'][0][3] }}, {{ data['extent']['spatial']['bbox'][0][2] }}],
-        [{{ data['extent']['spatial']['bbox'][0][1] }}, {{ data['extent']['spatial']['bbox'][0][2] }}],
+      [bbox[1], bbox[0]],
+      [bbox[3], bbox[0]],
+      [bbox[3], bbox[2]],
+      [bbox[1], bbox[2]]
     ]);
+
     map.addLayer(bbox_layer);
     map.fitBounds(bbox_layer.getBounds(), {maxZoom: 10});
     </script>
