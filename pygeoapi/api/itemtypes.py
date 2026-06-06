@@ -690,6 +690,7 @@ def get_collection_items(
             content = formatter.write(
                 data=content,
                 options={
+                    'content_crs': query_crs_uri,
                     'provider_def': get_provider_by_type(
                         collections[dataset]['providers'],
                         'feature')

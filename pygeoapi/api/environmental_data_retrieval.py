@@ -483,6 +483,7 @@ def get_collection_edr_query(api: API, request: APIRequest,
             content = formatter.write(
                 data=data,
                 options={
+                    'content_crs': query_crs_uri,
                     'provider_def': get_provider_by_type(
                         collections[dataset]['providers'],
                         'edr')
