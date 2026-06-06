@@ -454,7 +454,7 @@ def gen_collection(api, request, dataset: str,
             title2 = f'{qt} {title2}'
 
             data['links'].extend([{
-                'type': 'application/json',
+                'type': 'application/vnd.cov+json',
                 'rel': 'data',
                 'title': title1,
                 'href': f'{api.get_collections_url()}/{dataset}/{qt}?f={F_JSON}'  # noqa

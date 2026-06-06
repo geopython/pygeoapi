@@ -461,7 +461,7 @@ def get_collection_edr_query(api: API, request: APIRequest,
             'title': collections[dataset]['title'],
             'href': data['dataset_path']
         }, {
-            'type': 'application/prs.coverage+json',
+            'type': 'application/vnd.cov+json',
             'rel': request.get_linkrel(F_COVERAGEJSON),
             'title': l10n.translate('This document as CoverageJSON', request.locale),  # noqa
             'href': f'{uri}?f={F_COVERAGEJSON}{serialized_query_params}'
@@ -603,7 +603,7 @@ def get_oas_30(cfg: dict, locale: str) -> tuple[list[dict[str, str]], dict[str, 
                             '200': {
                                 'description': 'Response',
                                 'content': {
-                                    'application/prs.coverage+json': {
+                                    'application/vnd.cov+json': {
                                         'schema': {
                                             '$ref': f"{OPENAPI_YAML['oaedr']}/schemas/coverageJSON.yaml"  # noqa
                                         }
@@ -687,7 +687,7 @@ def get_oas_30(cfg: dict, locale: str) -> tuple[list[dict[str, str]], dict[str, 
                             '200': {
                                 'description': 'Response',
                                 'content': {
-                                    'application/prs.coverage+json': {
+                                    'application/vnd.cov+json': {
                                         'schema': {
                                             '$ref': f"{OPENAPI_YAML['oaedr']}/schemas/coverageJSON.yaml"  # noqa
                                         }
