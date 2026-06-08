@@ -937,3 +937,4 @@ class MySQLProvider(GenericSQLProvider):
             )
 
         return feature
+    

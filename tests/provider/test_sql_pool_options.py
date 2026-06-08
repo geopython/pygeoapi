@@ -27,3 +27,4 @@ def test_get_engine_separates_pool_options_from_connect_args(mock_create):
     assert kwargs['pool_pre_ping'] is True
     # genuine DBAPI args are forwarded via connect_args; pool keys are not
     assert kwargs['connect_args'] == {'connect_timeout': 10}
+    
