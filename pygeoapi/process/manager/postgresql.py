@@ -45,7 +45,7 @@ from sqlalchemy import (
     String,
     Table,
     text,
-    update,
+    update
 )
 from sqlalchemy.engine import Engine
 from sqlalchemy.orm import declarative_base, Session
@@ -54,7 +54,7 @@ from pygeoapi.formats import F_JSON, F_JSONLD, FORMAT_TYPES
 from pygeoapi.process.base import (
     JobNotFoundError,
     JobResultNotFoundError,
-    ProcessorGenericError,
+    ProcessorGenericError
 )
 from pygeoapi.process.manager.base import BaseManager
 from pygeoapi.provider.sql import get_engine, store_db_parameters
@@ -81,21 +81,21 @@ class PostgreSQLManager(BaseManager):
 
         super().__init__(manager_def)
         self.is_async = True
-        self.id_field = "identifier"
+        self.id_field = 'identifier'
         self.supports_subscribing = True
-        self.connection = manager_def["connection"]
+        self.connection = manager_def['connection']
 
-        options = manager_def.get("options", {})
-        self._store_db_parameters(manager_def["connection"], options)
+        options = manager_def.get('options', {})
+        self._store_db_parameters(manager_def['connection'], options)
         self._engine = get_engine(
-            "postgresql+psycopg2",
+            'postgresql+psycopg2',
             self.db_host,
             self.db_port,
             self.db_name,
             self.db_user,
             self._db_password,
             self.db_conn,
-            **self.db_options,
+            **self.db_options
         )
         self.table_output = self.output_dir is None
 
@@ -104,14 +104,16 @@ class PostgreSQLManager(BaseManager):
         )
         self.c = self.table_model.c
         try:
-            LOGGER.debug("Getting table model")
+            LOGGER.debug('Getting table model')
 
         except Exception as err:
-            msg = "Table model fetch failed"
-            LOGGER.error(f"{msg}: {err}")
+            msg = 'Table model fetch failed'
+            LOGGER.error(f'{msg}: {err}')
             raise ProcessorGenericError(msg)
 
-    def get_jobs(self, status: JobStatus = None, limit=None, offset=None) -> dict:
+    def get_jobs(
+        self, status: JobStatus = None, limit=None, offset=None
+    ) -> dict:
         """
         Get jobs
 
@@ -124,7 +126,7 @@ class PostgreSQLManager(BaseManager):
                   and numberMatched
         """
 
-        LOGGER.debug("Querying for jobs")
+        LOGGER.debug('Querying for jobs')
         with Session(self._engine) as session:
             results = session.query(self.table_model)
 
@@ -132,7 +134,7 @@ class PostgreSQLManager(BaseManager):
                 results = results.filter(self.c.status == status.value)
 
             jobs = [r._asdict() for r in results.all()]
-            return {"jobs": jobs, "numberMatched": len(jobs)}
+            return {'jobs': jobs, 'numberMatched': len(jobs)}
 
     def add_job(self, job_metadata: dict) -> str:
         """
@@ -143,18 +145,20 @@ class PostgreSQLManager(BaseManager):
         :returns: identifier of added job
         """
 
-        LOGGER.debug("Adding job")
+        LOGGER.debug('Adding job')
         with Session(self._engine) as session:
             try:
-                session.execute(insert(self.table_model).values(**job_metadata))
+                session.execute(
+                    insert(self.table_model).values(**job_metadata)
+                )
                 session.commit()
             except Exception as err:
                 session.rollback()
-                msg = "Insert failed"
-                LOGGER.error(f"{msg}: {err}")
+                msg = 'Insert failed'
+                LOGGER.error(f'{msg}: {err}')
                 raise ProcessorGenericError(msg)
 
-        return job_metadata["identifier"]
+        return job_metadata['identifier']
 
     def update_job(self, job_id: str, update_dict: dict) -> bool:
         """
@@ -168,7 +172,7 @@ class PostgreSQLManager(BaseManager):
 
         rowcount = 0
 
-        LOGGER.debug("Updating job")
+        LOGGER.debug('Updating job')
         with Session(self._engine) as session:
             try:
                 stmt = (
@@ -181,8 +185,8 @@ class PostgreSQLManager(BaseManager):
                 rowcount = result.rowcount
             except Exception as err:
                 session.rollback()
-                msg = "Update failed"
-                LOGGER.error(f"{msg}: {err}")
+                msg = 'Update failed'
+                LOGGER.error(f'{msg}: {err}')
                 raise ProcessorGenericError(msg)
 
         return rowcount == 1
@@ -198,7 +202,7 @@ class PostgreSQLManager(BaseManager):
         :returns: `dict`  # `pygeoapi.process.manager.Job`
         """
 
-        LOGGER.debug("Querying for job")
+        LOGGER.debug('Querying for job')
         with Session(self._engine) as session:
             results = session.query(self.table_model).filter(
                 self.c.identifier == job_id
@@ -226,19 +230,21 @@ class PostgreSQLManager(BaseManager):
 
         # get result file if present for deletion
         job_result = self.get_job(job_id)
-        location = job_result.get("location")
+        location = job_result.get('location')
 
-        LOGGER.debug("Deleting job")
+        LOGGER.debug('Deleting job')
         with Session(self._engine) as session:
             try:
-                stmt = delete(self.table_model).where(self.c.identifier == job_id)
+                stmt = delete(self.table_model).where(
+                    self.c.identifier == job_id
+                )
                 result = session.execute(stmt)
                 session.commit()
                 rowcount = result.rowcount
             except Exception as err:
                 session.rollback()
-                msg = "Delete failed"
-                LOGGER.error(f"{msg}: {err}")
+                msg = 'Delete failed'
+                LOGGER.error(f'{msg}: {err}')
                 raise ProcessorGenericError(msg)
 
         # delete result file if present
@@ -264,24 +270,28 @@ class PostgreSQLManager(BaseManager):
         """
 
         job_result = self.get_job(job_id)
-        location = job_result.get("location")
-        mimetype = job_result.get("mimetype")
-        job_status = JobStatus[job_result["status"]]
+        location = job_result.get('location')
+        mimetype = job_result.get('mimetype')
+        job_status = JobStatus[job_result['status']]
 
         if job_status != JobStatus.successful:
             # Job is incomplete
             return (None,)
         if not location:
-            LOGGER.warning(f"job {job_id!r} -  unknown result location")
+            LOGGER.warning(f'job {job_id!r} -  unknown result location')
             raise JobResultNotFoundError()
         else:
             try:
                 location = Path(location)
-                if mimetype in (None, FORMAT_TYPES[F_JSON], FORMAT_TYPES[F_JSONLD]):
-                    with location.open("r", encoding="utf-8") as fh:
+                if mimetype in (
+                    None,
+                    FORMAT_TYPES[F_JSON],
+                    FORMAT_TYPES[F_JSONLD]
+                ):
+                    with location.open('r', encoding='utf-8') as fh:
                         result = json.load(fh)
                 else:
-                    with location.open("rb") as fh:
+                    with location.open('rb') as fh:
                         result = fh.read()
             except (TypeError, FileNotFoundError, json.JSONDecodeError):
                 raise JobResultNotFoundError()
@@ -289,7 +299,7 @@ class PostgreSQLManager(BaseManager):
                 return mimetype, result
 
     def __repr__(self):
-        return f"<PostgreSQLManager> {self.name}"
+        return f'<PostgreSQLManager> {self.name}'
 
 
 @functools.cache
@@ -302,30 +312,30 @@ def get_table_model(
     schema = db_search_path[0]
 
     Jobs = Table(
-        "jobs",
+        'jobs',
         Base.metadata,
-        Column("identifier", String, primary_key=True, nullable=False),
+        Column('identifier', String, primary_key=True, nullable=False),
         Column(
-            "type",
+            'type',
             String,
             nullable=False,
-            server_default=text("'process'::character varying"),
+            server_default=text("'process'::character varying")
         ),
-        Column("process_id", String, nullable=False),
-        Column("created", DateTime),
-        Column("started", DateTime),
-        Column("finished", DateTime),
-        Column("updated", DateTime),
-        Column("status", String, nullable=False),
-        Column("location", String),
-        Column("mimetype", String),
-        Column("message", String),
-        Column("progress", Integer, nullable=False),
-        schema=schema,
+        Column('process_id', String, nullable=False),
+        Column('created', DateTime),
+        Column('started', DateTime),
+        Column('finished', DateTime),
+        Column('updated', DateTime),
+        Column('status', String, nullable=False),
+        Column('location', String),
+        Column('mimetype', String),
+        Column('message', String),
+        Column('progress', Integer, nullable=False),
+        schema=schema
     )
 
     if table_output:
-        Jobs.append_column(Column("output", LargeBinary))
+        Jobs.append_column(Column('output', LargeBinary))
 
     Base.metadata.create_all(engine, tables=[Jobs], checkfirst=True)
 

@@ -52,13 +52,20 @@ from geoalchemy2.shape import to_shape, from_shape
 from pygeofilter.backends.sqlalchemy.evaluate import to_filter
 import shapely
 from sqlalchemy.sql import func
-from sqlalchemy import create_engine, MetaData, PrimaryKeyConstraint, asc, desc, delete
+from sqlalchemy import (
+    create_engine,
+    MetaData,
+    PrimaryKeyConstraint,
+    asc,
+    desc,
+    delete
+)
 from sqlalchemy.engine import URL, Engine
 from sqlalchemy.exc import (
     ConstraintColumnNotFoundError,
     InvalidRequestError,
     OperationalError,
-    SQLAlchemyError,
+    SQLAlchemyError
 )
 from sqlalchemy.ext.automap import automap_base
 from sqlalchemy.orm import Session, load_only
@@ -71,7 +78,7 @@ from pygeoapi.provider.base import (
     ProviderConnectionError,
     ProviderInvalidDataError,
     ProviderQueryError,
-    ProviderItemNotFoundError,
+    ProviderItemNotFoundError
 )
 
 LOGGER = logging.getLogger(__name__)
@@ -84,7 +91,10 @@ class GenericSQLProvider(BaseProvider):
     """
 
     def __init__(
-        self, provider_def: dict, driver_name: str, extra_conn_args: Optional[dict] = {}
+        self,
+        provider_def: dict,
+        driver_name: str,
+        extra_conn_args: Optional[dict] = {}
     ):
         """
         GenericSQLProvider Class constructor
@@ -99,23 +109,23 @@ class GenericSQLProvider(BaseProvider):
 
         :returns: pygeoapi.provider.GenericSQLProvider
         """
-        LOGGER.debug("Initialising GenericSQL provider.")
+        LOGGER.debug('Initialising GenericSQL provider.')
         super().__init__(provider_def)
 
-        self.table = provider_def["table"]
-        self.id_field = provider_def["id_field"]
-        self.geom = provider_def.get("geom_field", "geom")
+        self.table = provider_def['table']
+        self.id_field = provider_def['id_field']
+        self.geom = provider_def.get('geom_field', 'geom')
         self.driver_name = driver_name
 
-        LOGGER.debug(f"Name: {self.name}")
-        LOGGER.debug(f"Table: {self.table}")
-        LOGGER.debug(f"ID field: {self.id_field}")
-        LOGGER.debug(f"Geometry field: {self.geom}")
-        LOGGER.debug(f"Configured Storage CRS: {self.storage_crs}")
+        LOGGER.debug(f'Name: {self.name}')
+        LOGGER.debug(f'Table: {self.table}')
+        LOGGER.debug(f'ID field: {self.id_field}')
+        LOGGER.debug(f'Geometry field: {self.geom}')
+        LOGGER.debug(f'Configured Storage CRS: {self.storage_crs}')
 
         # Read table information from database
-        options = provider_def.get("options", {}) | extra_conn_args
-        store_db_parameters(self, provider_def["data"], options)
+        options = provider_def.get('options', {}) | extra_conn_args
+        store_db_parameters(self, provider_def['data'], options)
         self._engine = get_engine(
             driver_name,
             self.db_host,
@@ -124,7 +134,7 @@ class GenericSQLProvider(BaseProvider):
             self.db_user,
             self._db_password,
             self.db_conn,
-            **self.db_options,
+            **self.db_options
         )
         self.table_model = get_table_model(
             self.table, self.id_field, self.db_search_path, self._engine
@@ -136,7 +146,7 @@ class GenericSQLProvider(BaseProvider):
         self,
         offset=0,
         limit=10,
-        resulttype="results",
+        resulttype='results',
         bbox=[],
         datetime_=None,
         properties=[],
@@ -146,7 +156,7 @@ class GenericSQLProvider(BaseProvider):
         q=None,
         filterq=None,
         crs_transform_spec=None,
-        **kwargs,
+        **kwargs
     ):
         """
         Query sql database for all the content.
@@ -169,7 +179,7 @@ class GenericSQLProvider(BaseProvider):
         :returns: GeoJSON FeatureCollection
         """
 
-        LOGGER.debug("Preparing filters")
+        LOGGER.debug('Preparing filters')
         property_filters = self._get_property_filters(properties)
         cql_filters = self._get_cql_filters(filterq)
         bbox_filter = self._get_bbox_filter(bbox)
@@ -179,7 +189,7 @@ class GenericSQLProvider(BaseProvider):
             select_properties, skip_geometry
         )
 
-        LOGGER.debug("Querying Database")
+        LOGGER.debug('Querying Database')
         # Execute query within self-closing database Session context
         with Session(self._engine) as session:
             results = (
@@ -191,32 +201,33 @@ class GenericSQLProvider(BaseProvider):
                 .options(selected_properties)
             )
 
-            LOGGER.debug("Preparing response")
+            LOGGER.debug('Preparing response')
             response = {
-                "type": "FeatureCollection",
-                "features": [],
-                "numberReturned": 0,
+                'type': 'FeatureCollection',
+                'features': [],
+                'numberReturned': 0
             }
 
-            if self.count or resulttype == "hits":
+            if self.count or resulttype == 'hits':
                 matched = results.count()
-                response["numberMatched"] = matched
-                LOGGER.debug(f"Found {matched} result(s)")
+                response['numberMatched'] = matched
+                LOGGER.debug(f'Found {matched} result(s)')
             else:
-                LOGGER.debug("Count disabled")
+                LOGGER.debug('Count disabled')
 
-            if resulttype == "hits" or not results:
+            if resulttype == 'hits' or not results:
                 return response
 
             crs_transform_out = get_transform_from_spec(crs_transform_spec)
 
-            response["numberReturned"] = 0
-            for item in results.order_by(*order_by_clauses).offset(offset).limit(limit):
-                response["numberReturned"] += 1
-                response["features"].append(
-                    self._sqlalchemy_to_feature(
-                        item, crs_transform_out, select_properties
-                    )
+            response['numberReturned'] = 0
+            for item in (
+                results.order_by(*order_by_clauses).offset(offset).limit(limit)
+            ):
+                response['numberReturned'] += 1
+                response['features'].append(
+                    self._sqlalchemy_to_feature(item, crs_transform_out,
+                                                select_properties)
                 )
 
         return response
@@ -228,41 +239,41 @@ class GenericSQLProvider(BaseProvider):
         :returns: dict of fields
         """
 
-        LOGGER.debug("Get available fields/properties")
+        LOGGER.debug('Get available fields/properties')
 
         # sql-schema only allows these types, so we need to map from sqlalchemy
         # string, number, integer, object, array, boolean, null,
         # https://json-schema.org/understanding-json-schema/reference/type.html
         column_type_map = {
-            bool: "boolean",
-            datetime: "string",
-            Decimal: "number",
-            dict: "object",
-            float: "number",
-            int: "integer",
-            str: "string",
+            bool: 'boolean',
+            datetime: 'string',
+            Decimal: 'number',
+            dict: 'object',
+            float: 'number',
+            int: 'integer',
+            str: 'string'
         }
-        default_type = "string"
+        default_type = 'string'
 
         # https://json-schema.org/understanding-json-schema/reference/string#built-in-formats  # noqa
         column_format_map = {
-            "date": "date",
-            "interval": "duration",
-            "time": "time",
-            "timestamp": "date-time",
+            'date': 'date',
+            'interval': 'duration',
+            'time': 'time',
+            'timestamp': 'date-time'
         }
 
         def _column_type_to_json_schema_type(column_type):
             try:
                 python_type = column_type.python_type
             except NotImplementedError:
-                LOGGER.warning(f"Unsupported column type {column_type}")
+                LOGGER.warning(f'Unsupported column type {column_type}')
                 return default_type
             else:
                 try:
                     return column_type_map[python_type]
                 except KeyError:
-                    LOGGER.warning(f"Unsupported column type {column_type}")
+                    LOGGER.warning(f'Unsupported column type {column_type}')
                     return default_type
 
         def _column_format_to_json_schema_format(column_type):
@@ -270,18 +281,20 @@ class GenericSQLProvider(BaseProvider):
                 ct = str(column_type).lower()
                 return column_format_map[ct]
             except KeyError:
-                LOGGER.debug("No string format detected")
+                LOGGER.debug('No string format detected')
                 return None
 
         if not self._fields:
             for column in self.table_model.__table__.columns:
-                LOGGER.debug(f"Testing {column.name}")
+                LOGGER.debug(f'Testing {column.name}')
                 if column.name == self.geom:
                     continue
 
                 self._fields[str(column.name)] = {
-                    "type": _column_type_to_json_schema_type(column.type),
-                    "format": _column_format_to_json_schema_format(column.type),
+                    'type': _column_type_to_json_schema_type(column.type),
+                    'format': _column_format_to_json_schema_format(
+                        column.type
+                    )
                 }
 
         return self._fields
@@ -296,7 +309,7 @@ class GenericSQLProvider(BaseProvider):
 
         :returns: GeoJSON FeatureCollection
         """
-        LOGGER.debug(f"Get item by ID: {identifier}")
+        LOGGER.debug(f'Get item by ID: {identifier}')
 
         # Execute query within self-closing database Session context
         with Session(self._engine) as session:
@@ -307,14 +320,14 @@ class GenericSQLProvider(BaseProvider):
                 assert item is not None
             except (AssertionError, SQLAlchemyError) as e:
                 LOGGER.debug(e, exc_info=True)
-                msg = f"No such item: {self.id_field}={identifier}."
+                msg = f'No such item: {self.id_field}={identifier}.'
                 raise ProviderItemNotFoundError(msg)
             crs_transform_out = get_transform_from_spec(crs_transform_spec)
             feature = self._sqlalchemy_to_feature(item, crs_transform_out)
 
             # Drop non-defined properties
             if self.properties:
-                props = feature["properties"]
+                props = feature['properties']
                 dropping_keys = deepcopy(props).keys()
                 for item in dropping_keys:
                     if item not in self.properties:
@@ -334,12 +347,12 @@ class GenericSQLProvider(BaseProvider):
                 .filter(id_field > identifier)
                 .first()
             )
-            feature["prev"] = (
+            feature['prev'] = (
                 getattr(prev_item, self.id_field)
                 if prev_item is not None
                 else identifier
             )
-            feature["next"] = (
+            feature['next'] = (
                 getattr(next_item, self.id_field)
                 if next_item is not None
                 else identifier
@@ -379,7 +392,9 @@ class GenericSQLProvider(BaseProvider):
         :returns: `bool` of update result
         """
 
-        identifier, json_data = self._load_and_prepare_item(item, raise_if_exists=False)
+        identifier, json_data = self._load_and_prepare_item(
+            item, raise_if_exists=False
+        )
 
         new_instance = self._feature_to_sqlalchemy(json_data, identifier)
         with Session(self._engine) as session:
@@ -405,9 +420,8 @@ class GenericSQLProvider(BaseProvider):
 
         return result.rowcount > 0
 
-    def _sqlalchemy_to_feature(
-        self, item, crs_transform_out=None, select_properties=[]
-    ):
+    def _sqlalchemy_to_feature(self, item, crs_transform_out=None,
+                               select_properties=[]):
         """
         Helper function to transform an SQLAlchemy result to a
         GeoJSON feature.
@@ -419,12 +433,12 @@ class GenericSQLProvider(BaseProvider):
         :returns: `dict` of GeoJSON feature
         """
 
-        feature = {"type": "Feature", "properties": {}}
+        feature = {'type': 'Feature', 'properties': {}}
 
         item_dict = item.__dict__
 
         # set feature id
-        feature["id"] = item_dict[self.id_field]
+        feature['id'] = item_dict[self.id_field]
 
         # Convert geometry to GeoJSON style
         if item_dict.get(self.geom) is not None:
@@ -436,40 +450,40 @@ class GenericSQLProvider(BaseProvider):
             if crs_transform_out is not None:
                 shapely_geom = crs_transform_out(shapely_geom)
             geojson_geom = shapely.geometry.mapping(shapely_geom)
-            feature["geometry"] = geojson_geom
+            feature['geometry'] = geojson_geom
         else:
-            feature["geometry"] = None
+            feature['geometry'] = None
 
         keys = select_properties or self.fields.keys()
         for key in keys:
             if key in item_dict:
-                feature["properties"][key] = item_dict[key]
+                feature['properties'][key] = item_dict[key]
 
         return feature
 
     def _feature_to_sqlalchemy(self, json_data, identifier=None):
-        attributes = {**json_data["properties"]}
+        attributes = {**json_data['properties']}
         # 'identifier' key maybe be present in geojson properties, but might
         # not be a valid db field
-        attributes.pop("identifier", None)
+        attributes.pop('identifier', None)
         attributes[self.geom] = from_shape(
-            shapely.geometry.shape(json_data["geometry"]),
-            srid=get_srid(self.storage_crs),
+            shapely.geometry.shape(json_data['geometry']),
+            srid=get_srid(self.storage_crs)
         )
         attributes[self.id_field] = identifier
 
         try:
             return self.table_model(**attributes)
         except Exception as e:
-            LOGGER.exception("Failed to create db model")
+            LOGGER.exception('Failed to create db model')
             raise ProviderInvalidDataError(str(e))
 
     def _get_order_by_clauses(self, sort_by, table_model):
         # Build sort_by clauses if provided
         clauses = []
         for sort_by_dict in sort_by:
-            model_column = getattr(table_model, sort_by_dict["property"])
-            order_function = asc if sort_by_dict["order"] == "+" else desc
+            model_column = getattr(table_model, sort_by_dict['property'])
+            order_function = asc if sort_by_dict['order'] == '+' else desc
             clauses.append(order_function(model_column))
 
         # Otherwise sort by primary key (to ensure reproducible output)
@@ -514,21 +528,21 @@ class GenericSQLProvider(BaseProvider):
         raise NotImplementedError
 
     def _get_datetime_filter(self, datetime_):
-        if datetime_ in (None, "../.."):
+        if datetime_ in (None, '../..'):
             return True
         else:
             if self.time_field is None:
-                LOGGER.error("time_field not enabled for collection")
+                LOGGER.error('time_field not enabled for collection')
                 raise ProviderQueryError()
 
             time_column = getattr(self.table_model, self.time_field)
 
-            if "/" in datetime_:  # envelope
-                LOGGER.debug("detected time range")
-                time_begin, time_end = datetime_.split("/")
-                if time_begin == "..":
+            if '/' in datetime_:  # envelope
+                LOGGER.debug('detected time range')
+                time_begin, time_end = datetime_.split('/')
+                if time_begin == '..':
                     datetime_filter = time_column <= time_end
-                elif time_end == "..":
+                elif time_end == '..':
                     datetime_filter = time_column >= time_begin
                 else:
                     datetime_filter = time_column.between(time_begin, time_end)
@@ -539,7 +553,8 @@ class GenericSQLProvider(BaseProvider):
     def _select_properties_clause(self, select_properties, skip_geometry):
         # List the column names that we want
         if select_properties:
-            column_names = sorted(set(select_properties), key=select_properties.index)
+            column_names = sorted(set(select_properties),
+                                  key=select_properties.index)
         else:
             # get_fields() doesn't include geometry column
             column_names = self.fields.keys()
@@ -568,7 +583,7 @@ class GenericSQLProvider(BaseProvider):
 def store_db_parameters(
     self: GenericSQLProvider | Any,
     connection_data: str | dict[str],
-    options: dict[str, str],
+    options: dict[str, str]
 ) -> None:
     """
     Store database connection parameters
@@ -585,24 +600,31 @@ def store_db_parameters(
     else:
         self.db_conn = None
     # OR
-    self.db_user = connection_data.get("user")
-    self.db_host = connection_data.get("host")
-    self.db_port = connection_data.get("port", self.default_port)
-    self.db_name = connection_data.get("dbname") or connection_data.get("database")
-    self.db_query = connection_data.get("query")
-    self._db_password = connection_data.get("password")
+    self.db_user = connection_data.get('user')
+    self.db_host = connection_data.get('host')
+    self.db_port = connection_data.get('port', self.default_port)
+    self.db_name = (
+        connection_data.get('dbname') or connection_data.get('database')
+    )
+    self.db_query = connection_data.get('query')
+    self._db_password = connection_data.get('password')
     # db_search_path gets converted to a tuple here in order to ensure it
     # is hashable - which allows us to use functools.cache() when
     # reflecting the table definition from the DB
     self.db_search_path = tuple(
-        connection_data.get("search_path") or options.pop("search_path", ["public"])
+        connection_data.get('search_path') or
+        options.pop('search_path', ['public'])
     )
     # Connection-pool tuning keys (pool_size, max_overflow, pool_recycle,
     # pool_timeout, pool_pre_ping) are intentionally left in ``options`` and
     # flow through ``db_options`` to get_engine(), which separates them from
     # the DBAPI connect_args. Their types are validated by the config JSON
     # Schema, so no coercion is performed here.
-    self.db_options = {k: v for k, v in options.items() if not isinstance(v, dict)}
+    self.db_options = {
+        k: v
+        for k, v in options.items()
+        if not isinstance(v, dict)
+    }
 
 
 #: Connection-pool tuning keys recognised by get_engine(). These configure
@@ -611,11 +633,11 @@ def store_db_parameters(
 #: behaviour exactly: SQLAlchemy's own QueuePool defaults, except for
 #: pool_pre_ping, which was previously hardcoded to True.
 POOL_OPTION_DEFAULTS = {
-    "pool_size": 5,
-    "max_overflow": 10,
-    "pool_recycle": -1,  # SQLAlchemy default; never recycles connections
-    "pool_timeout": 30,
-    "pool_pre_ping": True,
+    'pool_size': 5,
+    'max_overflow': 10,
+    'pool_recycle': -1,   # SQLAlchemy default; never recycles connections
+    'pool_timeout': 30,
+    'pool_pre_ping': True,
 }
 
 
@@ -628,7 +650,7 @@ def get_engine(
     user: str,
     password: str,
     conn_str: Optional[str] = None,
-    **connect_args,
+    **connect_args
 ) -> Engine:
     """
     Get SQL Alchemy engine.
@@ -655,7 +677,7 @@ def get_engine(
             password=password,
             host=host,
             port=int(port),
-            database=database,
+            database=database
         )
 
     # Separate connection-pool tuning from DBAPI connect args. Pool keys are
@@ -669,10 +691,15 @@ def get_engine(
         for key, default in POOL_OPTION_DEFAULTS.items()
     }
 
-    engine = create_engine(conn_str, connect_args=connect_args, **pool_options)
+    engine = create_engine(
+        conn_str,
+        connect_args=connect_args,
+        **pool_options
+    )
 
     LOGGER.debug(
-        f"Created engine for {repr(engine.url)} with pool options {pool_options}."
+        f'Created engine for {repr(engine.url)} '
+        f'with pool options {pool_options}.'
     )
 
     return engine
@@ -680,7 +707,10 @@ def get_engine(
 
 @functools.cache
 def get_table_model(
-    table_name: str, id_field: str, db_search_path: tuple[str], engine: Engine
+    table_name: str,
+    id_field: str,
+    db_search_path: tuple[str],
+    engine: Engine
 ) -> Table:
     """
     Reflect table using SQLAlchemy Automap.
@@ -692,28 +722,35 @@ def get_table_model(
 
     :returns: SQLAlchemy model of the reflected table
     """
-    LOGGER.debug("Reflecting table definition from database")
+    LOGGER.debug('Reflecting table definition from database')
     metadata = MetaData()
 
     # Look for table in the first schema in the search path
     schema = db_search_path[0]
     try:
-        LOGGER.debug(f"Looking for table {table_name} in schema {schema}")
-        metadata.reflect(bind=engine, schema=schema, only=[table_name], views=True)
+        LOGGER.debug(f'Looking for table {table_name} in schema {schema}')
+        metadata.reflect(
+            bind=engine, schema=schema, only=[table_name], views=True
+        )
     except OperationalError:
         raise ProviderConnectionError(
-            f"Could not connect to {repr(engine.url)} (password hidden)."
+            f'Could not connect to {repr(engine.url)} (password hidden).'
         )
     except InvalidRequestError:
         msg = (
             f"Table '{table_name}' not found in schema '{schema}' "
-            f"on {repr(engine.url)}."
+            f'on {repr(engine.url)}.'
         )
         LOGGER.error(msg)
 
         if len(db_search_path) > 1:
             # If the table is not found in the first schema, try the next one
-            return get_table_model(table_name, id_field, db_search_path[1:], engine)
+            return get_table_model(
+                table_name,
+                id_field,
+                db_search_path[1:],
+                engine
+            )
         else:
             # If the table is not found in any schema, raise an error
             raise ProviderQueryError(msg)
@@ -722,12 +759,12 @@ def get_table_model(
     # It is necessary to add the primary key constraint because SQLAlchemy
     # requires it to reflect the table, but a view in a PostgreSQL database
     # does not have a primary key defined.
-    sqlalchemy_table_def = metadata.tables[f"{schema}.{table_name}"]
+    sqlalchemy_table_def = metadata.tables[f'{schema}.{table_name}']
     try:
         sqlalchemy_table_def.append_constraint(PrimaryKeyConstraint(id_field))
     except (ConstraintColumnNotFoundError, KeyError):
         raise ProviderQueryError(
-            f"No such id_field column ({id_field}) on {schema}.{table_name}."
+            f'No such id_field column ({id_field}) on {schema}.{table_name}.'
         )
 
     _Base = automap_base(metadata=metadata)
@@ -744,10 +781,10 @@ def _name_for_scalar_relationship(base, local_cls, referred_cls, constraint):
     name = referred_cls.__name__.lower()
     local_table = local_cls.__table__
     if name in local_table.columns:
-        newname = name + "_"
+        newname = name + '_'
         LOGGER.debug(
-            f"Already detected column name {name!r} in table "
-            f"{local_table!r}. Using {newname!r} for relationship name."
+            f'Already detected column name {name!r} in table '
+            f'{local_table!r}. Using {newname!r} for relationship name.'
         )
         return newname
     return name
@@ -757,7 +794,6 @@ class PostgreSQLProvider(GenericSQLProvider):
     """
     A provider for querying a PostgreSQL database
     """
-
     default_port = 5432
 
     def __init__(self, provider_def: dict):
@@ -771,8 +807,11 @@ class PostgreSQLProvider(GenericSQLProvider):
         :returns: pygeoapi.provider.sql.PostgreSQLProvider
         """
 
-        driver_name = "postgresql+psycopg2"
-        extra_conn_args = {"client_encoding": "utf8", "application_name": "pygeoapi"}
+        driver_name = 'postgresql+psycopg2'
+        extra_conn_args = {
+            'client_encoding': 'utf8',
+            'application_name': 'pygeoapi'
+        }
         super().__init__(provider_def, driver_name, extra_conn_args)
 
     def _get_bbox_filter(self, bbox: list[float]):
@@ -795,7 +834,6 @@ class MySQLProvider(GenericSQLProvider):
     """
     A provider for a MySQL database
     """
-
     default_port = 3306
 
     def __init__(self, provider_def: dict):
@@ -809,8 +847,10 @@ class MySQLProvider(GenericSQLProvider):
         :returns: pygeoapi.provider.sql.MySQLProvider
         """
 
-        driver_name = "mysql+pymysql"
-        extra_conn_args = {"charset": "utf8mb4"}
+        driver_name = 'mysql+pymysql'
+        extra_conn_args = {
+            'charset': 'utf8mb4'
+        }
         super().__init__(provider_def, driver_name, extra_conn_args)
 
     def _get_bbox_filter(self, bbox: list[float]):
@@ -826,10 +866,12 @@ class MySQLProvider(GenericSQLProvider):
 
         # Create WKT POLYGON from bbox: (minx, miny, maxx, maxy)
         minx, miny, maxx, maxy = bbox
-        polygon_wkt = f"POLYGON(({minx} {miny}, {maxx} {miny}, {maxx} {maxy}, {minx} {maxy}, {minx} {miny}))"  # noqa
+        polygon_wkt = f'POLYGON(({minx} {miny}, {maxx} {miny}, {maxx} {maxy}, {minx} {maxy}, {minx} {miny}))'  # noqa
         geom_column = getattr(self.table_model, self.geom)
         # Use MySQL MBRContains for index-accelerated bounding box checks
-        bbox_filter = func.MBRContains(func.ST_GeomFromText(polygon_wkt), geom_column)
+        bbox_filter = func.MBRContains(
+            func.ST_GeomFromText(polygon_wkt), geom_column
+        )
         return bbox_filter
 
     def get(self, identifier, crs_transform_spec=None, **kwargs):
@@ -842,7 +884,7 @@ class MySQLProvider(GenericSQLProvider):
 
         :returns: GeoJSON FeatureCollection
         """
-        LOGGER.debug(f"Get item by ID: {identifier}")
+        LOGGER.debug(f'Get item by ID: {identifier}')
 
         # Execute query within self-closing database Session context
         with Session(self._engine) as session:
@@ -856,14 +898,14 @@ class MySQLProvider(GenericSQLProvider):
                 assert str(feature_id) == identifier
             except (AssertionError, SQLAlchemyError) as e:
                 LOGGER.debug(e, exc_info=True)
-                msg = f"No such item: {self.id_field}={identifier}."
+                msg = f'No such item: {self.id_field}={identifier}.'
                 raise ProviderItemNotFoundError(msg)
             crs_transform_out = get_transform_from_spec(crs_transform_spec)
             feature = self._sqlalchemy_to_feature(item, crs_transform_out)
 
             # Drop non-defined properties
             if self.properties:
-                props = feature["properties"]
+                props = feature['properties']
                 dropping_keys = deepcopy(props).keys()
                 for item in dropping_keys:
                     if item not in self.properties:
@@ -883,12 +925,12 @@ class MySQLProvider(GenericSQLProvider):
                 .filter(id_field > feature_id)
                 .first()
             )
-            feature["prev"] = (
+            feature['prev'] = (
                 getattr(prev_item, self.id_field)
                 if prev_item is not None
                 else feature_id
             )
-            feature["next"] = (
+            feature['next'] = (
                 getattr(next_item, self.id_field)
                 if next_item is not None
                 else feature_id
