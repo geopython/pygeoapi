@@ -589,7 +589,7 @@ def test_conformance(config, api_):
 
     assert isinstance(root, dict)
     assert 'conformsTo' in root
-    assert len(root['conformsTo']) == 42
+    assert len(root['conformsTo']) == 44
     assert 'http://www.opengis.net/spec/ogcapi-features-2/1.0/conf/crs' \
            in root['conformsTo']
 

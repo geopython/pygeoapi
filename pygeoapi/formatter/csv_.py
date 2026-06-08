@@ -2,7 +2,7 @@
 #
 # Authors: Tom Kralidis <tomkralidis@gmail.com>
 #
-# Copyright (c) 2022 Tom Kralidis
+# Copyright (c) 2026 Tom Kralidis
 #
 # Permission is hereby granted, free of charge, to any person
 # obtaining a copy of this software and associated documentation
@@ -66,12 +66,12 @@ class CSVFormatter(BaseFormatter):
 
         :returns: string representation of format
         """
-        type = data.get('type', '')
-        LOGGER.debug(f'Formatting CSV from data type: {type}')
+        type_ = data.get('type', '')
+        LOGGER.debug(f'Formatting CSV from data type: {type_}')
 
-        if 'Feature' in type or 'features' in data:
+        if 'Feature' in type_ or 'features' in data:
             return self._write_from_geojson(options, data)
-        elif 'Coverage' in type or 'coverages' in data:
+        elif 'Coverage' in type_ or 'coverages' in data:
             return self._write_from_covjson(options, data)
 
     def _write_from_geojson(
