@@ -615,11 +615,30 @@ def store_db_parameters(
         connection_data.get('search_path') or
         options.pop('search_path', ['public'])
     )
+    # Connection-pool tuning keys (pool_size, max_overflow, pool_recycle,
+    # pool_timeout, pool_pre_ping) are intentionally left in ``options`` and
+    # flow through ``db_options`` to get_engine(), which separates them from
+    # the DBAPI connect_args. Their types are validated by the config JSON
+    # Schema, so no coercion is performed here.
     self.db_options = {
         k: v
         for k, v in options.items()
         if not isinstance(v, dict)
     }
+
+
+#: Connection-pool tuning keys recognised by get_engine(). These configure
+#: SQLAlchemy's QueuePool rather than the DBAPI, so get_engine() separates
+#: them from connect_args. The defaults reproduce pygeoapi's previous
+#: behaviour exactly: SQLAlchemy's own QueuePool defaults, except for
+#: pool_pre_ping, which was previously hardcoded to True.
+POOL_OPTION_DEFAULTS = {
+    'pool_size': 5,
+    'max_overflow': 10,
+    'pool_recycle': -1,   # SQLAlchemy default; never recycles connections
+    'pool_timeout': 30,
+    'pool_pre_ping': True,
+}
 
 
 @functools.cache
@@ -643,7 +662,11 @@ def get_engine(
     :param user: database user
     :param password: database password
     :param conn_str: optional connection URL
-    :param connect_args: custom connection arguments to pass to create_engine()
+    :param connect_args: keyword arguments forwarded from the provider's
+                         ``options`` block. Connection-pool tuning keys (see
+                         POOL_OPTION_DEFAULTS) are extracted and applied to
+                         the engine's pool; any remaining keys are passed to
+                         the DBAPI as connect_args.
 
     :returns: SQL Alchemy engine
     """
@@ -657,11 +680,28 @@ def get_engine(
             database=database
         )
 
+    # Separate connection-pool tuning from DBAPI connect args. Pool keys are
+    # applied to create_engine() directly; everything left in connect_args is
+    # forwarded to the DBAPI. get_engine() stays functools.cache()-able
+    # because connect_args values are hashable scalars, so engine sharing per
+    # process is preserved; providers with differing pool config (or any
+    # other option) correctly get distinct engines.
+    pool_options = {
+        key: connect_args.pop(key, default)
+        for key, default in POOL_OPTION_DEFAULTS.items()
+    }
+
     engine = create_engine(
-        conn_str, connect_args=connect_args, pool_pre_ping=True
+        conn_str,
+        connect_args=connect_args,
+        **pool_options
     )
 
-    LOGGER.debug(f'Created engine for {repr(engine.url)}.')
+    LOGGER.debug(
+        f'Created engine for {repr(engine.url)} '
+        f'with pool options {pool_options}.'
+    )
+
     return engine
 
 
