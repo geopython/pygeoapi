@@ -105,6 +105,56 @@ class BaseEDRProvider(BaseProvider):
 
         return self.query_types
 
+    def get_parameters(
+        self, parameters: set | list = [], as_list=False
+    ) -> dict | list:
+        """
+        Generate CoverageJSON parameters from provider field defintions
+
+        :param parameters: List of the subset of parameters include.
+        :param as_list: bool to return as a list of parameter definitions.
+
+        :returns: A dictionary or list containing the parameter definition.
+        """
+        if not parameters:
+            parameters = set(self.fields.keys())
+
+        out_params = {}
+        for name in set(parameters):
+            conf_ = self.fields[name]
+            p_label = conf_.get('title')
+            out_params[name] = {
+                'id': name,
+                'type': 'Parameter',
+                'name': p_label,
+                'observedProperty': {
+                    'id': name,
+                    'label': {'en': p_label}
+                },
+                'unit': {
+                    'symbol': {
+                        'value': conf_['x-ogc-unit'],
+                        'type': 'http://www.opengis.net/def/uom/UCUM/'
+                    }
+                }
+            }
+
+            # Add description if available
+            p_description = conf_.get('description')
+            if p_description is not None:
+                out_params[name]['observedProperty'].update({
+                    'description': {
+                        'en': p_description
+                    }
+                })
+
+        if as_list:
+            # GeoJSON Parameters are a list
+            # https://github.com/opengeospatial/ogcapi-environmental-data-retrieval/issues/633
+            return list(out_params.values())
+        else:
+            return out_params
+
     def query(self, **kwargs):
         """
         Extract data from collection collection
