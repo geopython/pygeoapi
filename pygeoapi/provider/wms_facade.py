@@ -31,6 +31,9 @@
 import logging
 from urllib.parse import urlencode
 
+from pygeoapi.crs import get_crs_curie
+from pyproj.exceptions import CRSError
+
 import pyproj
 import requests
 
@@ -43,14 +46,7 @@ OUTPUT_FORMATS = {
     'png': 'image/png'
 }
 
-CRS_CODES = {
-    'http://www.opengis.net/def/crs/EPSG/0/4326': 'EPSG:4326',
-    'http://www.opengis.net/def/crs/EPSG/0/3857': 'EPSG:3857',
-    'http://www.opengis.net/def/crs/OGC/1.3/CRS84': 'CRS:84' # noqa
-}
-
-DEFAULT_CRS = 'CRS:84'
-
+DEFAULT_WMS_CRS = 'CRS:84'
 
 class WMSFacadeProvider(BaseProvider):
     """WMS 1.3.0 provider"""
@@ -69,7 +65,7 @@ class WMSFacadeProvider(BaseProvider):
         LOGGER.debug(f'pyproj version: {pyproj.__version__}')
 
     def query(self, style=None, bbox=[-180, -90, 180, 90], width=500,
-              height=300, crs=DEFAULT_CRS, datetime_=None, transparent=True,
+              height=300, crs=DEFAULT_WMS_CRS, datetime_=None, transparent=True,
               format_='png', **kwargs):
         """
         Generate map
@@ -87,11 +83,18 @@ class WMSFacadeProvider(BaseProvider):
         :returns: `bytes` of map image
         """
 
+        LOGGER.debug(f'bbox: {bbox}')
+
         self._transparent = 'TRUE'
 
         version = self.options.get('version', '1.3.0')
 
-        if version == '1.3.0' and CRS_CODES.get(crs) == 'EPSG:4326':
+        try:
+            wms_crs = get_crs_curie(crs)
+        except CRSError:
+            wms_crs = DEFAULT_WMS_CRS
+
+        if version == '1.3.0' and wms_crs == 'EPSG:4326':
             bbox = [bbox[1], bbox[0], bbox[3], bbox[2]]
         bbox2 = ','.join(map(str, bbox))
 
@@ -104,7 +107,7 @@ class WMSFacadeProvider(BaseProvider):
             'service': 'WMS',
             'request': 'GetMap',
             'bbox': bbox2,
-            crs_param: CRS_CODES.get(crs) or DEFAULT_CRS,
+            crs_param: wms_crs,
             'layers': self.options['layer'],
             'styles': self.options.get('style', 'default'),
             'width': width,

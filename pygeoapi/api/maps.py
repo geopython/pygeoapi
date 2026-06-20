@@ -44,7 +44,7 @@ from http import HTTPStatus
 import logging
 from typing import Tuple
 
-from pygeoapi.crs import transform_bbox, DEFAULT_CRS, get_crs_curie
+from pygeoapi.crs import transform_bbox, DEFAULT_CRS, get_crs_curie, get_crs_uri
 from pygeoapi.formats import F_JSON, FORMAT_TYPES
 from pygeoapi.openapi import get_oas_30_parameters
 from pygeoapi.plugin import load_plugin
@@ -63,20 +63,6 @@ CONFORMANCE_CLASSES = [
 ]
 
 DEFAULT_BBOX = [-180, -90, 180, 90]  # CRS84
-
-CRS_CODES = {
-    '4326': 'http://www.opengis.net/def/crs/EPSG/0/4326',  # stop supporting this # noqa
-    '3857': 'http://www.opengis.net/def/crs/EPSG/0/3857',  # stop supporting this # noqa
-    'CRS84': 'http://www.opengis.net/def/crs/OGC/1.3/CRS84',  # stop supporting this # noqa
-    'http://www.opengis.net/def/crs/EPSG/0/4326': 'http://www.opengis.net/def/crs/EPSG/0/4326',  # noqa
-    'http://www.opengis.net/def/crs/EPSG/0/3857': 'http://www.opengis.net/def/crs/EPSG/0/3857',  # noqa
-    'http://www.opengis.net/def/crs/OGC/1.3/CRS84': 'http://www.opengis.net/def/crs/OGC/1.3/CRS84', # noqa
-    'EPSG:4326': 'http://www.opengis.net/def/crs/EPSG/0/4326',
-    'EPSG:3857': 'http://www.opengis.net/def/crs/EPSG/0/3857',
-    'CRS:84': 'http://www.opengis.net/def/crs/OGC/1.3/CRS84',
-    'OGC:CRS84': 'http://www.opengis.net/def/crs/OGC/1.3/CRS84',
-}
-
 
 def get_collection_map(api: API, request: APIRequest,
                        dataset: str, style: str | None = None
@@ -124,12 +110,11 @@ def get_collection_map(api: API, request: APIRequest,
     # if it does not exist or is not supported, use CRS84.
     try:
         if 'crs' not in request.params:
-            query_args['crs'] = CRS_CODES.get(collection_def.get('storage_crs',
-                                              DEFAULT_CRS), DEFAULT_CRS)
-        else:
-            query_args['crs'] = CRS_CODES.get(request.params['crs'],
+            query_args['crs'] = collection_def.get('storage_crs',
                                               DEFAULT_CRS)
-            LOGGER.debug(get_crs_curie(request.params['crs']))
+        else:
+            query_args['crs'] = get_crs_uri(request.params['crs'])                       
+
     except KeyError:
         query_args['crs'] = DEFAULT_CRS
 
@@ -140,8 +125,7 @@ def get_collection_map(api: API, request: APIRequest,
         if 'bbox-crs' not in request.params:
             query_args['bbox-crs'] = DEFAULT_CRS
         else:
-            query_args['bbox-crs'] = CRS_CODES.get(request.params['bbox-crs'],
-                                                   DEFAULT_CRS)
+            query_args['bbox-crs'] = get_crs_uri(request.params['bbox-crs'])
     except KeyError:
         query_args['bbox-crs'] = DEFAULT_CRS
 
@@ -189,12 +173,12 @@ def get_collection_map(api: API, request: APIRequest,
         LOGGER.error(exception)
         return headers, HTTPStatus.BAD_REQUEST, to_json(
             exception, api.pretty_print)
-
+                 
     # the transformer function expects the crs to be in a uri format
     if query_args['bbox-crs'] != query_args['crs']:
-        LOGGER.debug(f'Reprojecting bbox CRS: {query_args["crs"]}')
         bbox = transform_bbox(bbox, query_args['bbox-crs'],
                               query_args['crs'], always_xy=True)
+        LOGGER.debug(f'Transformed bbox: {bbox}')
     query_args['bbox'] = bbox
 
     LOGGER.debug('Processing datetime parameter')
