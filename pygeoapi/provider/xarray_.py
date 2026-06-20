@@ -379,7 +379,9 @@ class XarrayProvider(BaseProvider):
             })
 
         LOGGER.debug('Adding parameters')
-        cj['parameters'] = BaseEDRProvider.get_parameters(self, selected_fields)
+        cj['parameters'] = BaseEDRProvider.get_parameters(
+            self, selected_fields
+        )
 
         data = data.fillna(None)
 
