@@ -44,6 +44,7 @@ from pygeoapi.provider.base import (BaseProvider,
                                     ProviderConnectionError,
                                     ProviderNoDataError,
                                     ProviderQueryError)
+from pygeoapi.provider.base_edr import BaseEDRProvider
 from pygeoapi.util import read_data
 
 LOGGER = logging.getLogger(__name__)
@@ -378,24 +379,7 @@ class XarrayProvider(BaseProvider):
             })
 
         LOGGER.debug('Adding parameters')
-        for key, value in selected_fields.items():
-            parameter = {
-                'type': 'Parameter',
-                'description': {
-                    'en': value['title']
-                },
-                'unit': {
-                    'symbol': value['x-ogc-unit']
-                },
-                'observedProperty': {
-                    'id': key,
-                    'label': {
-                        'en': value['title']
-                    }
-                }
-            }
-
-            cj['parameters'][key] = parameter
+        cj['parameters'] = BaseEDRProvider.get_parameters(self, selected_fields)
 
         data = data.fillna(None)
 
