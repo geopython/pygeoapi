@@ -31,7 +31,7 @@
 import pytest
 
 from pygeoapi.provider.wms_facade import WMSFacadeProvider
-
+from pygeoapi.provider.base import ProviderQueryError
 
 @pytest.fixture()
 def config():
@@ -61,12 +61,9 @@ def test_crs_query(config):
     results1 = p.query(crs='http://www.opengis.net/def/crs/EPSG/0/4326')
     results2 = p.query(crs='http://www.opengis.net/def/crs/EPSG/0/3857')
 
-    print(results1)
-
     check_is_PNG(results1)
     check_is_PNG(results2)
 
-    # An invalid crs should default to default crs
-    results3 = p.query(crs='http://0000')
-
-    check_is_PNG(results3)
+    # An invalid uri triggers an error
+    with pytest.raises(ProviderQueryError):
+        p.query(crs='http://www.opengis.net/def/crs/FOO/0/9999')
