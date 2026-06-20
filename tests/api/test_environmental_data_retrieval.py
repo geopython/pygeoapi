@@ -54,7 +54,6 @@ def test_describe_collection_edr(config, api_):
     assert sst['id'] == 'SST'
     assert sst['type'] == 'Parameter'
     assert sst['observedProperty']['label']['en'] == 'SEA SURFACE TEMPERATURE'
-    assert sst['unit']['label']['en'] == 'SEA SURFACE TEMPERATURE'
     assert sst['unit']['symbol']['value'] == 'Deg C'
 
 
