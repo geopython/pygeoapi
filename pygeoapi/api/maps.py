@@ -44,7 +44,7 @@ from http import HTTPStatus
 import logging
 from typing import Tuple
 
-from pygeoapi.crs import transform_bbox, DEFAULT_CRS, get_crs_curie, get_crs_uri
+from pygeoapi.crs import transform_bbox, DEFAULT_CRS, get_crs_uri
 from pygeoapi.formats import F_JSON, FORMAT_TYPES
 from pygeoapi.openapi import get_oas_30_parameters
 from pygeoapi.plugin import load_plugin
@@ -63,6 +63,7 @@ CONFORMANCE_CLASSES = [
 ]
 
 DEFAULT_BBOX = [-180, -90, 180, 90]  # CRS84
+
 
 def get_collection_map(api: API, request: APIRequest,
                        dataset: str, style: str | None = None
@@ -111,9 +112,9 @@ def get_collection_map(api: API, request: APIRequest,
     try:
         if 'crs' not in request.params:
             query_args['crs'] = collection_def.get('storage_crs',
-                                              DEFAULT_CRS)
+                                                   DEFAULT_CRS)
         else:
-            query_args['crs'] = get_crs_uri(request.params['crs'])                       
+            query_args['crs'] = get_crs_uri(request.params['crs'])
 
     except KeyError:
         query_args['crs'] = DEFAULT_CRS
@@ -173,7 +174,7 @@ def get_collection_map(api: API, request: APIRequest,
         LOGGER.error(exception)
         return headers, HTTPStatus.BAD_REQUEST, to_json(
             exception, api.pretty_print)
-                 
+
     # the transformer function expects the crs to be in a uri format
     if query_args['bbox-crs'] != query_args['crs']:
         bbox = transform_bbox(bbox, query_args['bbox-crs'],

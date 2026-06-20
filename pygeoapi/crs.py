@@ -121,6 +121,7 @@ def get_supported_crs_list(
 
     return supported_crs_list
 
+
 def get_crs_uri(str) -> str:
     """
     Parse a uri from a uri, a curie or a safe curie
@@ -171,16 +172,14 @@ def get_crs_uri(str) -> str:
                 raise CRSError('Unsupported crs')
 
             if curie in ['crs84', 'ogc:crs84']:
-                LOGGER.debug(f'Returning CRS84')
                 return 'http://www.opengis.net/def/crs/OGC/1.3/CRS84'
 
-            LOGGER.debug(f'Returning: http://www.opengis.net/def/crs/EPSG/0/{curie_el[1]}')
             return f'http://www.opengis.net/def/crs/EPSG/0/{curie_el[1]}'
 
         except CRSError as e:
             return e
 
-  
+
 def get_crs_curie(str) -> str:
     """
     Get a wms compatible crs curie from a uri
@@ -202,7 +201,7 @@ def get_crs_curie(str) -> str:
             raise CRSError('Not an uri')
 
         str = str.lower()
-        path_el = [p for p in str.split('/') if p]    
+        path_el = [p for p in str.split('/') if p]
 
         # We support all EPSG crs and CRS84
         if path_el[4] == 'epsg':

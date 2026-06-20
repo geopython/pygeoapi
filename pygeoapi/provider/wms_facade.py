@@ -48,6 +48,7 @@ OUTPUT_FORMATS = {
 
 DEFAULT_WMS_CRS = 'CRS:84'
 
+
 class WMSFacadeProvider(BaseProvider):
     """WMS 1.3.0 provider"""
 
@@ -64,9 +65,9 @@ class WMSFacadeProvider(BaseProvider):
 
         LOGGER.debug(f'pyproj version: {pyproj.__version__}')
 
-    def query(self, style=None, bbox=[-180, -90, 180, 90], width=500,
-              height=300, crs=DEFAULT_WMS_CRS, datetime_=None, transparent=True,
-              format_='png', **kwargs):
+    def query(self, style=None, bbox=[-180, -90, 180, 90],
+              width=500, height=300, crs=DEFAULT_WMS_CRS, datetime_=None,
+              transparent=True, format_='png', **kwargs):
         """
         Generate map
 
