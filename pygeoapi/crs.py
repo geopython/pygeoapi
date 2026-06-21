@@ -122,9 +122,9 @@ def get_supported_crs_list(
     return supported_crs_list
 
 
-def get_crs_uri(str) -> str:
+def get_crs_uri(crs) -> str:
     """
-    Parse a uri from a uri, a curie or a safe curie
+    Parse a uri from a uri or a curie
 
     :param crs: Uniform resource identifier of the coordinate
                 reference system. In accordance with
@@ -135,15 +135,15 @@ def get_crs_uri(str) -> str:
     :raises `CRSError`: Error raised if no CRS could be identified from the
         URI.
 
-    :returns: `crs uri` matching the input crs.
+    :returns: `crs uri` matching the input CRS.
     """
 
     try:
-        str = str.lower()
-        result = urlparse(str)
+        crs = crs.lower()
+        result = urlparse(crs)
 
         # If it is a uri, check if it is valid
-        LOGGER.debug(f'Attempt to parse a uri: {str}')
+        LOGGER.debug(f'Attempt to parse a uri: {crs}')
 
         if result.scheme not in ['http', 'https']:
             raise CRSError('Invalid uri scheme')
@@ -157,19 +157,19 @@ def get_crs_uri(str) -> str:
                ) != 5 or path_el[0] != 'def' or path_el[1] != 'crs' or path_el[2] not in ['epsg', 'ogc']: # noqa
             raise CRSError('Invalid uri fragments')
 
-        return str
+        return crs
 
     except CRSError:
         try:
-            # Parse safe curie
-            curie = str.strip('[]')
+            # Parse safe CURIE
+            curie = crs.strip('[]')
             LOGGER.debug(f'Attempt to parse a curie: {curie}')
 
             curie_el = curie.split(':')
-            # We support all EPSG and CRS84
+            # We support all EPSG codes and CRS84
             if len(curie_el
                    ) > 2 or (curie_el[0] != 'epsg' and curie not in ['crs:84', 'ogc:crs84']): # noqa
-                raise CRSError('Unsupported crs')
+                raise CRSError('Unsupported CRS')
 
             if curie in ['crs:84', 'ogc:crs84']:
                 return 'http://www.opengis.net/def/crs/OGC/1.3/CRS84'
@@ -180,34 +180,32 @@ def get_crs_uri(str) -> str:
             return e
 
 
-def get_crs_curie(str) -> str:
+def get_crs_curie(crs) -> str:
     """
-    Get a wms compatible crs curie from a uri
+    Get a WMS compatible CRS CURIE from a uri
 
     :param crs: Uniform resource identifier of the coordinate
                 reference system. In accordance with
                 https://docs.ogc.org/pol/09-048r5.html#_naming_rule
-                Or a safe, or unsafe curie
-                https://docs.ogc.org/DRAFTS/20-024.html#conventions-curies
 
     :raises `CRSError`: Error raised if no CRS could be identified from the
         URI.
 
-    :returns: `wms curie` matching the input uri.
+    :returns: `WMS CURIE` matching the input uri.
     """
 
     try:
-        if not str.startswith(("http://", "https://")):
+        if not crs.startswith(("http://", "https://")):
             raise CRSError('Not an uri')
 
-        str = str.lower()
-        path_el = [p for p in str.split('/') if p]
+        crs = crs.lower()
+        path_el = [p for p in crs.split('/') if p]
 
-        # We support all EPSG crs and CRS84
+        # We support all EPSG codes and CRS84
         if path_el[4] == 'epsg':
             return f'EPSG:{path_el[6]}'
         elif path_el[6] != 'crs84':
-            raise CRSError('Unsupported crs')
+            raise CRSError('Unsupported CRS')
 
         return 'CRS:84'
 
