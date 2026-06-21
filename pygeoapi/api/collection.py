@@ -400,37 +400,7 @@ def gen_collection(api, request, dataset: str,
         # TODO: translate
         LOGGER.debug('Adding EDR links')
         data['data_queries'] = {}
-        parameters = p.get_fields()
-        if parameters:
-            data['parameter_names'] = {}
-            for key, value in parameters.items():
-                p_label = value.get('title')
-                p_description = value.get('description')
-                data['parameter_names'][key] = {
-                    'id': key,
-                    'type': 'Parameter',
-                    'observedProperty': {
-                        'label': {
-                            'en': p_label
-                        }
-                    },
-                    'unit': {
-                        'label': {
-                            'en': value['title']
-                        },
-                        'symbol': {
-                            'value': value['x-ogc-unit'],
-                            'type': 'http://www.opengis.net/def/uom/UCUM/'
-                        }
-                    }
-                }
-
-                if p_description is not None:
-                    data['parameter_names'][key]['observedProperty'].update({
-                        'description': {
-                            'en': p_description
-                        }
-                    })
+        data['parameter_names'] = p.get_parameters()
 
         for qt in p.get_query_types():
             data_query = {
