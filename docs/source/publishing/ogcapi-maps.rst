@@ -118,8 +118,8 @@ required.  An optional style name can be defined via `options.style`.
 
 .. note::
   According to the `Standard <https://docs.ogc.org/is/20-058/20-058.html#_5df53b56-5468-4c9d-acac-6abfddd83ccf>`_, OGC API - Maps
-  supports a `crs` and `bbox-crs` parameters, expressed as an uri or a curie. Currently, this provider supports CRS84 and various crs from the EPSG namespace; for a matter of convenience, they can be expressed
-  also as unsafe curies.
+  supports a `crs` and `bbox-crs` parameters, expressed as an uri or a CURIE. Currently, this provider supports CRS84 and various CRS from the EPSG namespace; for a matter of convenience, they can be expressed
+  also as unsafe CURIEs.
 
   - `http://www.opengis.net/def/crs/EPSG/0/4326`
   - `[EPSG:4326]`
