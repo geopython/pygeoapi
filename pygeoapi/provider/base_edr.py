@@ -113,6 +113,9 @@ class BaseEDRProvider(BaseProvider):
 
         :param parameters: List of the subset of parameters include.
         :param as_list: bool to return as a list of parameter definitions.
+                        GeoJSON parameters are returned as an array
+                        https://github.com/opengeospatial/ogcapi-environmental-data-retrieval/issues/633
+
 
         :returns: A dictionary or list containing the parameter definition.
         """
@@ -149,8 +152,6 @@ class BaseEDRProvider(BaseProvider):
                 })
 
         if as_list:
-            # GeoJSON Parameters are a list
-            # https://github.com/opengeospatial/ogcapi-environmental-data-retrieval/issues/633
             return list(out_params.values())
         else:
             return out_params
