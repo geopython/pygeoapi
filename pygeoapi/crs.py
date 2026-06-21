@@ -168,10 +168,10 @@ def get_crs_uri(str) -> str:
             curie_el = curie.split(':')
             # We support all EPSG and CRS84
             if len(curie_el
-                   ) > 2 or (curie_el[0] != 'epsg' and curie not in ['crs84', 'ogc:crs84']): # noqa
+                   ) > 2 or (curie_el[0] != 'epsg' and curie not in ['crs:84', 'ogc:crs84']): # noqa
                 raise CRSError('Unsupported crs')
 
-            if curie in ['crs84', 'ogc:crs84']:
+            if curie in ['crs:84', 'ogc:crs84']:
                 return 'http://www.opengis.net/def/crs/OGC/1.3/CRS84'
 
             return f'http://www.opengis.net/def/crs/EPSG/0/{curie_el[1]}'

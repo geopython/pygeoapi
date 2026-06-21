@@ -124,7 +124,7 @@ required.  An optional style name can be defined via `options.style`.
   - `http://www.opengis.net/def/crs/EPSG/0/4326`
   - `[EPSG:4326]`
   - `EPSG:4326` (unsafe)
-  - `CRS84` (unsafe)
+  - `CRS:84` (unsafe, for compatibility with WMS)
   - `OGC:CRS84` (unsafe)
 
   If `crs` is not provided, the server will default to the `storage_crs`; in case it does not exist, the default is `CRS84`.
