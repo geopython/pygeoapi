@@ -31,8 +31,9 @@
 import logging
 from urllib.parse import urlencode
 
-from pygeoapi.crs import get_crs_curie
 from pyproj.exceptions import CRSError
+
+from pygeoapi.crs import get_crs_curie
 
 import pyproj
 import requests
