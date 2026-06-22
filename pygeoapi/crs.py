@@ -122,7 +122,7 @@ def get_supported_crs_list(
     return supported_crs_list
 
 
-def get_crs_uri(crs) -> str:
+def get_uri(crs) -> str:
     """
     Parse a uri from a uri or a curie
 
@@ -181,7 +181,7 @@ def get_crs_uri(crs) -> str:
             return e
 
 
-def get_crs_curie(crs) -> str:
+def get_curie(crs) -> str:
     """
     Get a WMS compatible CRS CURIE from a uri
 

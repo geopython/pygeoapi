@@ -33,7 +33,7 @@ from urllib.parse import urlencode
 
 from pyproj.exceptions import CRSError
 
-from pygeoapi.crs import get_crs_curie
+from pygeoapi.crs import get_curie
 
 import pyproj
 import requests
@@ -92,7 +92,7 @@ class WMSFacadeProvider(BaseProvider):
         version = self.options.get('version', '1.3.0')
 
         try:
-            wms_crs = get_crs_curie(crs)
+            wms_crs = get_curie(crs)
         except CRSError:
             wms_crs = DEFAULT_WMS_CRS
 
