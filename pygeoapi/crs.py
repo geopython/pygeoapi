@@ -175,8 +175,6 @@ def get_uri(crs: str) -> str:
             else:
                 return 'http://www.opengis.net/def/crs/OGC/1.3/CRS84'
 
-            
-
         except CRSError as e:
             return e
 
