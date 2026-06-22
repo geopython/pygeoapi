@@ -28,7 +28,7 @@
         </div>
       </div>
       <div class="row">
-        <div class="col-sm-12">
+        <div class="col-sm-12 mb-2">
           <div id="collection-map"></div>
         </div>
       </div>
@@ -87,6 +87,23 @@
         {% endif %}
       {% endfor %}
       {% endif  %}
+
+      {%- if data['data_queries'] -%}
+        <h3>Data Queries</h3>
+        <table class="table table-striped table-bordered">
+        <tr>
+            <th>Query Name</th>
+            <th>Query Location</th>
+        </tr>
+        {% for query_name, query in data['data_queries'].items() %}
+        <tr>
+            <td>{{ query_name }}</td>
+            <td><a title="{{ query_name }}" href="{{ query['link']['href'] }}">{{ query['link']['href'] }}</a></td>
+        </tr>
+        {% endfor %}
+        <caption><em>Note: EDR Queries may require query parameters not provided in the Query Location.</em></caption>
+        </table>
+      {%- endif -%}
 
       {% if 'parameter_names' in data %}
       <h3>Parameters</h3>
