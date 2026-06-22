@@ -118,14 +118,14 @@ required.  An optional style name can be defined via `options.style`.
 
 .. note::
   According to the `Standard <https://docs.ogc.org/is/20-058/20-058.html#_5df53b56-5468-4c9d-acac-6abfddd83ccf>`_, OGC API - Maps
-  supports a `crs` parameter, expressed as an uri. Currently, this provider supports CRS84, WGS84 and Web Mercator; for a matter of convenience, they can be expressed in
-  a number of different ways, other than the uri format.
+  supports a `crs` and `bbox-crs` parameters, expressed as an uri or a CURIE. Currently, this provider supports CRS84 and various CRS from the EPSG namespace; for a matter of convenience, they can be expressed
+  also as unsafe CURIEs.
 
-  - `EPSG:4326`
-  - `EPSG:3857`
-  - `4326`
-  - `3857`,
-  - `CRS84`
+  - `http://www.opengis.net/def/crs/EPSG/0/4326`
+  - `[EPSG:4326]`
+  - `EPSG:4326` (unsafe)
+  - `CRS:84` (unsafe, for compatibility with WMS)
+  - `OGC:CRS84` (unsafe)
 
   If `crs` is not provided, the server will default to the `storage_crs`; in case it does not exist, the default is `CRS84`.
   If `crs-bbox` is not provided, it will default to `CRS84`. If the `bbox` is not provided, it will default to `-180, -90, 180, 90`.
