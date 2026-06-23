@@ -358,13 +358,11 @@ def get_collection_items(
 
     if dataset_formatters:
         LOGGER.debug(f'Dataset formatters: {dataset_formatters}')
-        request._format = request._get_format(
-            request.get_request_headers(request.headers),
-            {v.f: v.mimetype for v in dataset_formatters.values()})
+        request._format = request._get_format(dataset_formatters)
 
         LOGGER.debug(f'Request format: {request.format}')
 
-    if not request.is_valid(dataset_formatters.keys()):
+    if not request.is_valid(dataset_formatters):
         return api.get_format_exception(request)
 
     crs_transform_spec = None
@@ -600,8 +598,8 @@ def get_collection_items(
         content['links'].append({
             'type': value.mimetype,
             'rel': 'alternate',
-            'title': f'This document as {key}',
-            'href': f'{uri}?f={value.name}{serialized_query_params}'
+            'title': f'This document as {value.name}',
+            'href': f'{uri}?f={key}{serialized_query_params}'
         })
 
     next_link = False
@@ -685,9 +683,8 @@ def get_collection_items(
                                      'collections/items/index.html',
                                      content, request.locale)
         return headers, HTTPStatus.OK, content
-    elif request.format in [df.f for df in dataset_formatters.values()]:
-        formatter = [v for v in dataset_formatters.values() if
-                     v.f == request.format][0]
+    elif request.format in dataset_formatters:
+        formatter = dataset_formatters[request.format]
 
         try:
             content = formatter.write(
@@ -1109,10 +1106,10 @@ def get_oas_30(cfg: dict, locale: str) -> tuple[list[dict[str, str]], dict[str, 
                 v.get('limits', {})
             )
 
+            # Add data formatters to OAS
             dataset_formatters = get_dataset_formatters(v)
             coll_f_parameter = deepcopy(oas_30_parameters)['f']
-            for key, value in dataset_formatters.items():
-                coll_f_parameter['schema']['enum'].append(value.f)
+            coll_f_parameter['schema']['enum'].extend(dataset_formatters)
 
             paths[items_path] = {
                 'get': {
