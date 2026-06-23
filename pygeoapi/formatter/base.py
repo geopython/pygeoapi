@@ -56,7 +56,9 @@ class BaseFormatter:
         self.geom = formatter_def.get('geom', False)
         self.attachment = formatter_def.get('attachment', False)
 
-    def write(self, options: dict = {}, data: dict | None = None) -> str:
+    def write(
+        self, options: dict = {}, data: dict | None = None
+    ) -> str | bytes:
         """
         Generate data in specified format
 
