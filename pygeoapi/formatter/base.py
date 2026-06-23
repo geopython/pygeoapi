@@ -65,7 +65,7 @@ class BaseFormatter:
         :param options: formatting options
         :param data: dict representation of GeoJSON object
 
-        :returns: string representation of format
+        :returns: string or bytes representation of format
         """
 
         raise NotImplementedError()
