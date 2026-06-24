@@ -41,14 +41,15 @@ from copy import deepcopy
 import logging
 from http import HTTPStatus
 from typing import Tuple
+import urllib
 
 from pygeoapi import l10n
-from pygeoapi.formats import F_JSON
+from pygeoapi.formats import F_JSON, F_COVERAGEJSON, F_HTML
 from pygeoapi.openapi import get_oas_30_parameters
 from pygeoapi.plugin import load_plugin
 from pygeoapi.provider.base import ProviderGenericError, ProviderTypeError
 from pygeoapi.provider import get_provider_by_type
-from pygeoapi.util import filter_dict_by_key_value, to_json
+from pygeoapi.util import filter_dict_by_key_value, to_json, render_j2_template
 
 from . import (
     APIRequest, API, SYSTEM_LOCALE, validate_bbox, validate_datetime,
@@ -86,6 +87,8 @@ def get_collection_coverage(
 
     # Force response content type and language (en-US only) headers
     headers = request.get_response_headers(SYSTEM_LOCALE, **api.api_headers)
+    collections = filter_dict_by_key_value(api.config['resources'],
+                                           'type', 'collection')
 
     LOGGER.debug('Loading provider')
     try:
@@ -140,7 +143,9 @@ def get_collection_coverage(
             'InvalidParameterValue', msg)
 
     query_args['datetime_'] = datetime_
-    query_args['format_'] = format_
+
+    if request.format == F_HTML:
+        query_args['format_'] = F_COVERAGEJSON
 
     properties = request.params.get('properties')
     if properties:
@@ -191,6 +196,39 @@ def get_collection_coverage(
 
         headers['Content-Type'] = collection_def['format']['mimetype']
         return headers, HTTPStatus.OK, data
+    if request.format == F_HTML:  # render
+        tpl_config = api.get_dataset_templates(dataset)
+
+        uri = f'{api.get_collections_url()}/{dataset}/coverage'
+        serialized_query_params = ''
+        for k, v in request.params.items():
+            if k != 'f':
+                serialized_query_params += '&'
+                serialized_query_params += urllib.parse.quote(k, safe='')
+                serialized_query_params += '='
+                serialized_query_params += urllib.parse.quote(str(v), safe=',')
+
+        data['query_path'] = uri
+        data['dataset_path'] = '/'.join(uri.split('/')[:-1])
+        data['collections_path'] = api.get_collections_url()
+
+        data['links'] = [{
+            'rel': 'collection',
+            'title': collections[dataset]['title'],
+            'href': data['dataset_path']
+        },{
+            'type': 'application/vnd.cov+json',
+            'rel': request.get_linkrel(F_COVERAGEJSON),
+            'title': l10n.translate('This document as CoverageJSON', request.locale),  # noqa
+            'href': f'{uri}?f={F_COVERAGEJSON}{serialized_query_params}'
+        }]
+
+        content = render_j2_template(api.tpl_config, tpl_config,
+                                     'collections/coverages/coverage.html', data,
+                                     api.default_locale)
+        
+        return headers, HTTPStatus.OK, content
+
     elif format_ == F_JSON:
         headers['Content-Type'] = 'application/prs.coverage+json'
         return headers, HTTPStatus.OK, to_json(data, api.pretty_print)
