@@ -106,7 +106,7 @@ cli_config = click.option(
     '--config-file',
     '-c',
     'config_file',
-    # required=True,
+    required=True,
     type=click.Path(dir_okay=False, path_type=Path),
     envvar='PYGEOAPI_CONFIG',
     help='Name of configuration document (env: PYGEOAPI_CONFIG)'
