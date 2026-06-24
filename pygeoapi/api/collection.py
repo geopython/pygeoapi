@@ -228,7 +228,7 @@ def gen_collection(api, request, dataset: str,
             'rel': f'{OGC_RELTYPES_BASE}/schema',
             'title': l10n.translate('Schema of collection in HTML', locale_),
             'href': f'{api.get_collections_url()}/{dataset}/schema?f={F_HTML}'
-        },{
+        }, {
             'type': 'application/schema+json',
             'rel': f'{OGC_RELTYPES_BASE}/queryables',
             'title': l10n.translate('Queryables for this collection as JSON', locale_),  # noqa

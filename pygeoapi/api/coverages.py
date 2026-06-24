@@ -143,8 +143,10 @@ def get_collection_coverage(
             'InvalidParameterValue', msg)
 
     query_args['datetime_'] = datetime_
+    query_args['format_'] = format_
 
     if request.format == F_HTML:
+        # Request as JSON to render HTML
         query_args['format_'] = F_COVERAGEJSON
 
     properties = request.params.get('properties')
@@ -196,7 +198,7 @@ def get_collection_coverage(
 
         headers['Content-Type'] = collection_def['format']['mimetype']
         return headers, HTTPStatus.OK, data
-    if request.format == F_HTML:  # render
+    elif format_ == F_HTML:  # render
         tpl_config = api.get_dataset_templates(dataset)
 
         uri = f'{api.get_collections_url()}/{dataset}/coverage'
@@ -216,7 +218,7 @@ def get_collection_coverage(
             'rel': 'collection',
             'title': collections[dataset]['title'],
             'href': data['dataset_path']
-        },{
+        }, {
             'type': 'application/vnd.cov+json',
             'rel': request.get_linkrel(F_COVERAGEJSON),
             'title': l10n.translate('This document as CoverageJSON', request.locale),  # noqa
@@ -224,9 +226,9 @@ def get_collection_coverage(
         }]
 
         content = render_j2_template(api.tpl_config, tpl_config,
-                                     'collections/coverages/coverage.html', data,
-                                     api.default_locale)
-        
+                                     'collections/coverages/coverage.html',
+                                     data, api.default_locale)
+
         return headers, HTTPStatus.OK, content
 
     elif format_ == F_JSON:

@@ -57,7 +57,7 @@ def test_describe_collections(config, api_):
     collection = json.loads(response)
 
     assert collection['id'] == 'gdps-temperature'
-    assert len(collection['links']) == 10
+    assert len(collection['links']) == 13
     assert collection['extent']['spatial']['grid'][0]['cellsCount'] == 2400
     assert collection['extent']['spatial']['grid'][0]['resolution'] == 0.15000000000000002  # noqa
     assert collection['extent']['spatial']['grid'][1]['cellsCount'] == 1201
@@ -122,17 +122,14 @@ def test_get_collection_coverage(config, api_):
     rsp_headers, code, response = get_collection_coverage(
         api_, req, 'gdps-temperature')
 
-    assert code == HTTPStatus.BAD_REQUEST
+    assert code == HTTPStatus.OK
     assert rsp_headers['Content-Type'] == 'text/html'
 
     req = mock_api_request(HTTP_ACCEPT='text/html')
     rsp_headers, code, response = get_collection_coverage(
         api_, req, 'gdps-temperature')
 
-    # NOTE: This test used to assert the code to be 200 OK,
-    #       but it requested HTML, which is not available,
-    #       so it should be 400 Bad Request
-    assert code == HTTPStatus.BAD_REQUEST
+    assert code == HTTPStatus.OK
     assert rsp_headers['Content-Type'] == 'text/html'
 
     req = mock_api_request({'subset': 'Lat(5:10),Long(5:10)'})
