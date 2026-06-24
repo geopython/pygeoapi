@@ -33,7 +33,7 @@ import os
 import pytest
 from jsonschema.exceptions import ValidationError
 
-from pygeoapi.config import validate_config
+from pygeoapi.config import validate_config_document
 from pygeoapi.util import yaml_load
 
 from ..util import get_test_file_path
@@ -76,11 +76,11 @@ def test_config_envvars():
 
 
 def test_validate_config(config):
-    is_valid = validate_config(config)
+    is_valid = validate_config_document(config)
     assert is_valid
 
     with pytest.raises(ValidationError):
-        validate_config({'foo': 'bar'})
+        validate_config_document({'foo': 'bar'})
 
     # Test API rules
     cfg_copy = deepcopy(config)
@@ -90,7 +90,7 @@ def test_validate_config(config):
         'url_prefix': 'v{major_version}',
         'version_header': 'API-Version'
     }
-    assert validate_config(cfg_copy)
+    assert validate_config_document(cfg_copy)
 
     cfg_copy['server']['api_rules'] = {
         'api_version': 123,
@@ -98,7 +98,7 @@ def test_validate_config(config):
         'strict_slashes': 'bad_value'
     }
     with pytest.raises(ValidationError):
-        validate_config(cfg_copy)
+        validate_config_document(cfg_copy)
 
 
 def test_validate_config_process_manager(config):
@@ -112,7 +112,7 @@ def test_validate_config_process_manager(config):
         'connection': '/tmp/pygeoapi_test.db',
         'output_dir': '/tmp/'
     }
-    assert validate_config(cfg_copy)
+    assert validate_config_document(cfg_copy)
 
     with pytest.raises(ValidationError):
         # make sure an int is validated as invalid
@@ -121,7 +121,7 @@ def test_validate_config_process_manager(config):
             'connection': 12345,
             'output_dir': '/tmp/'
         }
-        validate_config(cfg_copy)
+        validate_config_document(cfg_copy)
 
     cfg_copy['server']['manager'] = {
         'name': 'PostgreSQL',
@@ -134,4 +134,4 @@ def test_validate_config_process_manager(config):
         },
         'output_dir': '/tmp/'
     }
-    assert validate_config(cfg_copy)
+    assert validate_config_document(cfg_copy)

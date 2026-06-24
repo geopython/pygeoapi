@@ -40,7 +40,7 @@ from jsonpatch import make_patch
 from jsonschema.exceptions import ValidationError
 
 from pygeoapi.api import API, APIRequest
-from pygeoapi.config import get_config, validate_config
+from pygeoapi.config import get_config, validate_config_document
 from pygeoapi.formats import F_HTML
 from pygeoapi.openapi import get_oas
 from pygeoapi.util import to_json, render_j2_template, yaml_dump
@@ -99,7 +99,7 @@ class Admin(API):
 
         # validate pygeoapi configuration
         LOGGER.debug('Validating configuration')
-        validate_config(config)
+        validate_config_document(config)
         # validate OpenAPI document
         # LOGGER.debug('Validating openapi document')
         # oas = get_oas(config)
@@ -125,7 +125,7 @@ class Admin(API):
 
         # validate pygeoapi configuration
         config = deepcopy(config)
-        validate_config(config)
+        validate_config_document(config)
 
         # Preserve env variables
         LOGGER.debug('Reading env variables in configuration')
