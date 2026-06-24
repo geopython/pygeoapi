@@ -59,8 +59,8 @@ import pygeoapi.api.maps as maps_api
 import pygeoapi.api.processes as processes_api
 import pygeoapi.api.stac as stac_api
 import pygeoapi.api.tiles as tiles_api
-from pygeoapi.asyncapi import load_asyncapi_document
-from pygeoapi.openapi import load_openapi_document
+from pygeoapi.asyncapi import get_asyncapi
+from pygeoapi.openapi import get_openapi
 from pygeoapi.config import get_config
 from pygeoapi.util import get_api_rules
 
@@ -69,8 +69,8 @@ CONFIG = get_config()
 if 'PYGEOAPI_OPENAPI' not in os.environ:
     raise RuntimeError('PYGEOAPI_OPENAPI environment variable not set')
 
-OPENAPI = load_openapi_document()
-ASYNCAPI = load_asyncapi_document()
+OPENAPI = get_openapi()
+ASYNCAPI = get_asyncapi()
 
 if CONFIG['server'].get('admin'):
     import pygeoapi.api.admin as admin_api

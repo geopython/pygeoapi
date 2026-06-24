@@ -27,14 +27,20 @@
 #
 # =================================================================
 
+from click.testing import CliRunner
+import json
 from jsonschema.exceptions import ValidationError
 import pytest
+import os
+import yaml
 
 from pygeoapi.openapi import (get_oas, get_ogc_schemas_location,
-                              validate_openapi_document)
+                              validate_openapi_document, generate, validate)
 from pygeoapi.util import yaml_load
 
 from ..util import get_test_file_path
+
+os.environ['PYGEOAPI_URL'] = 'http://localhost:5000'
 
 
 @pytest.fixture()
@@ -158,3 +164,65 @@ def test_i18n(config_i18n):
 def test_admin_empty_resources(config_admin_empty_resources):
     openapi_doc = get_oas(config_admin_empty_resources)
     assert '/admin/config' in openapi_doc['paths']
+
+
+def test_generate_openapi_document():
+    runner = CliRunner()
+    file_path = get_test_file_path('pygeoapi-test-config.yml')
+    file_success = b'Generating tests/pygeoapi-test-openapi.yml'
+
+    # Basic functionality
+    result = runner.invoke(generate, ['-c', file_path])
+    assert result.stderr_bytes == b''
+    assert file_success in result.stdout_bytes
+    assert b'Done' in result.stdout_bytes
+
+    os.environ['PYGEOAPI_CONFIG'] = file_path
+    result2 = runner.invoke(generate)
+    assert result2.stderr_bytes == b''
+    assert file_success in result2.stdout_bytes
+    assert b'Done' in result2.stdout_bytes
+
+    assert result.stdout_bytes == result2.stdout_bytes
+
+    # Format is ignored when writing to file
+    result = runner.invoke(generate, ['-c', file_path, '-f', 'json'])
+
+    assert result.stderr_bytes == b''
+    assert file_success in result.stdout_bytes
+    assert b'Done' in result.stdout_bytes
+
+
+def test_validate():
+    # Run and validate openapi document from CLI
+    runner = CliRunner()
+    runner.invoke(generate)
+    result = runner.invoke(validate)
+    assert result.stderr_bytes == b''
+    assert result.stdout_bytes.endswith(b'Valid OpenAPI document\n')
+
+
+def test_generate_openapi_stdout():
+    runner = CliRunner()
+    file_path = get_test_file_path('pygeoapi-test-config.yml')
+    # Ensure openapi var not in env
+    openapi_ = os.environ.pop('PYGEOAPI_OPENAPI')
+
+    # Format is recognized JSON
+    result = runner.invoke(generate, ['-c', file_path, '-f', 'json'])
+    assert result.stderr_bytes == b''
+    assert result.stdout_bytes.startswith(b'{')
+    assert result.stdout_bytes.endswith(b'}\n')
+    result2 = json.loads(result.stdout_bytes[:])
+
+    # Format is recognized YAML
+    result = runner.invoke(generate, ['-c', file_path, '-f', 'yaml'])
+    assert result.stderr_bytes == b''
+    assert result.stdout_bytes.startswith(b'components')
+    result3 = yaml.safe_load(result.stdout_bytes[:])
+
+    # Ensure parity between JSON to YAML
+    assert result2 == result3
+
+    # Add openapi var back to environment
+    os.environ['PYGEOAPI_OPENAPI'] = openapi_

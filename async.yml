@@ -1,0 +1,116 @@
+asyncapi: 3.0.0
+channels:
+  notify-air-quality:
+    address: messages/a/data/collections/air-quality
+    description: Fraunhofer IOSB Air Quality
+    messages:
+      DefaultMessage:
+        payload:
+          $ref: https://raw.githubusercontent.com/wmo-im/wis2-monitoring-events/refs/heads/main/schemas/cloudevents-v1.0.2.yaml
+  notify-canada-metadata:
+    address: messages/a/data/collections/canada-metadata
+    description: Open Canada sample data
+    messages:
+      DefaultMessage:
+        payload:
+          $ref: https://raw.githubusercontent.com/wmo-im/wis2-monitoring-events/refs/heads/main/schemas/cloudevents-v1.0.2.yaml
+  notify-icoads-sst:
+    address: messages/a/data/collections/icoads-sst
+    description: International Comprehensive Ocean-Atmosphere Data Set (ICOADS)
+    messages:
+      DefaultMessage:
+        payload:
+          $ref: https://raw.githubusercontent.com/wmo-im/wis2-monitoring-events/refs/heads/main/schemas/cloudevents-v1.0.2.yaml
+  notify-lakes:
+    address: messages/a/data/collections/lakes
+    description: Large Lakes
+    messages:
+      DefaultMessage:
+        payload:
+          $ref: https://raw.githubusercontent.com/wmo-im/wis2-monitoring-events/refs/heads/main/schemas/cloudevents-v1.0.2.yaml
+  notify-mapserver_world_map:
+    address: messages/a/data/collections/mapserver_world_map
+    description: MapServer demo WMS world map
+    messages:
+      DefaultMessage:
+        payload:
+          $ref: https://raw.githubusercontent.com/wmo-im/wis2-monitoring-events/refs/heads/main/schemas/cloudevents-v1.0.2.yaml
+  notify-obs:
+    address: messages/a/data/collections/obs
+    description: Observations
+    messages:
+      DefaultMessage:
+        payload:
+          $ref: https://raw.githubusercontent.com/wmo-im/wis2-monitoring-events/refs/heads/main/schemas/cloudevents-v1.0.2.yaml
+defaultContentType: application/json
+id: http://localhost:5002
+info:
+  contact:
+    email: you@example.org
+    name: Lastname, Firstname
+  description: pygeoapi provides an API to geospatial data
+  externalDocs:
+    url: https://example.org
+  license:
+    name: CC-BY 4.0 license
+    url: https://creativecommons.org/licenses/by/4.0/
+  tags:
+  - name: geospatial
+  - name: data
+  - name: api
+  title: pygeoapi default instance
+  version: 0.24.dev0
+operations:
+  consume-air-quality:
+    action: receive
+    channel:
+      $ref: '#/channels/notify-air-quality'
+  consume-canada-metadata:
+    action: receive
+    channel:
+      $ref: '#/channels/notify-canada-metadata'
+  consume-icoads-sst:
+    action: receive
+    channel:
+      $ref: '#/channels/notify-icoads-sst'
+  consume-lakes:
+    action: receive
+    channel:
+      $ref: '#/channels/notify-lakes'
+  consume-mapserver_world_map:
+    action: receive
+    channel:
+      $ref: '#/channels/notify-mapserver_world_map'
+  consume-obs:
+    action: receive
+    channel:
+      $ref: '#/channels/notify-obs'
+  publish-air-quality:
+    action: send
+    channel:
+      $ref: '#/channels/notify-air-quality'
+  publish-canada-metadata:
+    action: send
+    channel:
+      $ref: '#/channels/notify-canada-metadata'
+  publish-icoads-sst:
+    action: send
+    channel:
+      $ref: '#/channels/notify-icoads-sst'
+  publish-lakes:
+    action: send
+    channel:
+      $ref: '#/channels/notify-lakes'
+  publish-mapserver_world_map:
+    action: send
+    channel:
+      $ref: '#/channels/notify-mapserver_world_map'
+  publish-obs:
+    action: send
+    channel:
+      $ref: '#/channels/notify-obs'
+servers:
+  default:
+    description: pygeoapi provides an API to geospatial data
+    host: localhost:1883
+    protocol: mqtt

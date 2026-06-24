@@ -84,14 +84,14 @@ cd ${PYGEOAPI_HOME}
 echo "Default config in ${PYGEOAPI_CONFIG}"
 
 echo "Trying to generate openapi.yml"
-/venv/bin/pygeoapi openapi generate ${PYGEOAPI_CONFIG} --output-file ${PYGEOAPI_OPENAPI} ${OPENAPI_GENERATE_FAIL_ON_INVALID_COLLECTION}
+/venv/bin/pygeoapi openapi generate ${OPENAPI_GENERATE_FAIL_ON_INVALID_COLLECTION}
 
 [[ $? -ne 0 ]] && error "openapi.yml could not be generated ERROR"
 
 echo "openapi.yml generated continue to pygeoapi"
 
 echo "Trying to generate asyncapi.yml"
-/venv/bin/pygeoapi asyncapi generate ${PYGEOAPI_CONFIG} --output-file ${PYGEOAPI_ASYNCAPI}
+/venv/bin/pygeoapi asyncapi generate
 
 [[ $? -ne 0 ]] && echo "asyncapi.yml could not be generated; skipping"
 

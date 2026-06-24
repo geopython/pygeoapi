@@ -45,19 +45,19 @@ To generate the AsyncAPI document, run the following:
 
 .. code-block:: bash
 
-   pygeoapi asyncapi generate /path/to/my-pygeoapi-config.yml
+   pygeoapi asyncapi generate /path/to/my-pygeoapi-config.yml -f json
 
-This will dump the AsyncAPI document as YAML to your system's ``stdout``.  To save to a file on disk, run:
+This will dump the AsyncAPI document as YAML to your system's ``stdout`` as JSON.  To save to a file on disk, run:
 
 .. code-block:: bash
 
-   pygeoapi asyncapi generate /path/to/my-pygeoapi-config.yml --output-file /path/to/my-pygeoapi-asyncapi.yml
+   pygeoapi asyncapi generate /path/to/my-pygeoapi-config.yml --asyncapi-file /path/to/my-pygeoapi-asyncapi.yml
 
 To generate the AsyncAPI document as JSON, run:
 
 .. code-block:: bash
 
-   pygeoapi asyncapi generate /path/to/my-pygeoapi-config.yml --format json --output-file /path/to/my-pygeoapi-asyncapi.json
+   pygeoapi asyncapi generate /path/to/my-pygeoapi-config.yml --asyncapi-file /path/to/my-pygeoapi-asyncapi.json
 
 .. note::
    Generate as YAML or JSON?  If your AsyncAPI YAML definition is slow to render as JSON,

@@ -38,8 +38,9 @@ from jsonschema import validate as jsonschema_validate
 import yaml
 
 from pygeoapi import __version__, l10n
+from pygeoapi.config import get_config, cli_config
 from pygeoapi.models.openapi import OAPIFormat
-from pygeoapi.util import to_json, yaml_load, remove_url_auth
+from pygeoapi.util import to_json, yaml_load, remove_url_auth, SCHEMASDIR
 
 LOGGER = logging.getLogger(__name__)
 
@@ -150,20 +151,13 @@ def gen_asyncapi(cfg: dict) -> dict:
     return a
 
 
-def get_asyncapi(cfg, version='3.0'):
-    """
-    Stub to generate AsyncAPI Document
+def get_asyncapi_schema() -> dict:
+    """Reads the asyncapi JSON schema file."""
 
-    :param cfg: configuration object
-    :param version: version of AsyncAPI (default 3.0)
+    schema_file = SCHEMASDIR / 'asyncapi' / 'asyncapi-3.0.0.json'
 
-    :returns: AsyncAPI definition YAML dict
-    """
-
-    if version == '3.0':
-        return gen_asyncapi(cfg)
-    else:
-        raise RuntimeError('AsyncAPI version not supported')
+    with schema_file.open() as fh:
+        return json.load(fh)
 
 
 def validate_asyncapi_document(instance_dict):
@@ -175,15 +169,9 @@ def validate_asyncapi_document(instance_dict):
     :returns: `bool` of validation
     """
 
-    schema_file = os.path.join(
-        THISDIR, 'resources', 'schemas', 'asyncapi', 'asyncapi-3.0.0.json')
+    jsonschema_validate(instance_dict, get_asyncapi_schema())
 
-    LOGGER.debug(f'Validating against {schema_file}')
-    with open(schema_file) as fh2:
-        schema_dict = json.load(fh2)
-        jsonschema_validate(instance_dict, schema_dict)
-
-        return True
+    return True
 
 
 def generate_asyncapi_document(cfg: dict, output_format: OAPIFormat):
@@ -199,34 +187,38 @@ def generate_asyncapi_document(cfg: dict, output_format: OAPIFormat):
 
     pretty_print = cfg['server'].get('pretty_print', False)
 
-    if output_format == 'yaml':
-        content = yaml.safe_dump(get_asyncapi(cfg), default_flow_style=False)
+    if output_format.endswith(('yaml', 'yml')):
+        content = yaml.safe_dump(gen_asyncapi(cfg), default_flow_style=False)
     else:
-        content = to_json(get_asyncapi(cfg), pretty=pretty_print)
+        content = to_json(gen_asyncapi(cfg), pretty=pretty_print)
     return content
 
 
-def load_asyncapi_document() -> dict:
+def get_asyncapi(file_path: str | None = None) -> dict:
     """
-    Open AsyncAPI document from `PYGEOAPI_ASYNCAPI` environment variable
+    Read pygeoapi AsyncAPI document
 
-    :returns: `dict` of AsyncAPI document
+    :param file_path: `str` of path to configuration file; if `None`,
+                      reads from `PYGEOAPI_ASYNCAPI` environment variable
+
+    :returns: `dict` of OpenAPI document
     """
 
-    pygeoapi_asyncapi = os.environ.get('PYGEOAPI_ASYNCAPI')
+    if file_path is None:
+        file_path = os.environ.get('PYGEOAPI_ASYNCAPI')
 
-    if pygeoapi_asyncapi is None:
+    if not file_path:
         LOGGER.debug('PYGEOAPI_ASYNCAPI environment not set')
         return {}
 
-    if not os.path.exists(pygeoapi_asyncapi):
-        msg = (f'AsyncAPI document {pygeoapi_asyncapi} does not exist.  '
+    if not os.path.exists(file_path):
+        msg = (f'AsyncAPI document {file_path} does not exist. '
                'Please generate before starting pygeoapi')
-        LOGGER.warning(msg)
-        return {}
+        LOGGER.error(msg)
+        raise RuntimeError(msg)
 
-    with open(pygeoapi_asyncapi, encoding='utf8') as ff:
-        if pygeoapi_asyncapi.endswith(('.yaml', '.yml')):
+    with open(file_path, encoding='utf8') as ff:
+        if file_path.endswith(('yaml', 'yml')):
             asyncapi_ = yaml_load(ff)
         else:  # JSON string, do not transform
             asyncapi_ = ff.read()
@@ -242,50 +234,59 @@ def asyncapi():
 
 @click.command()
 @click.pass_context
-@click.argument('config_file', type=click.File(encoding='utf-8'))
+@cli_config
+@click.option(
+    '--asyncapi-file',
+    '-af',
+    'asyncapi_file',
+    type=click.File('w'),
+    envvar='PYGEOAPI_ASYNCAPI',
+    help='Name of asyncapi file (env: PYGEOAPI_ASYNCAPI)'
+)
+@click.option('--output-file', 'deprecated', type=click.File('w'), hidden=True)
 @click.option('--format', '-f', 'format_', type=click.Choice(['json', 'yaml']),
-              default='yaml', help='output format (json|yaml)')
-@click.option('--output-file', '-of', type=click.File('w', encoding='utf-8'),
-              help='Name of output file')
-def generate(ctx, config_file, output_file, format_='yaml'):
+              help='output format (json|yaml); only applies to stdout.')
+def generate(ctx, config_file, asyncapi_file, deprecated, format_):
     """Generate AsyncAPI Document"""
 
-    if config_file is None:
-        raise click.ClickException('--config/-c required')
+    if deprecated is not None:
+        click.echo(
+            'Warning: --output-file is deprecated; use --asyncapi-file',
+            err=True,
+        )
+        if asyncapi_file is None:
+            asyncapi_file = deprecated
 
-    if isinstance(config_file, Path):
-        with config_file.open(mode='r') as cf:
-            cfg = yaml_load(cf)
-    else:
-        cfg = yaml_load(config_file)
+    cfg = get_config(config_file)
 
     if 'pubsub' not in cfg:
         click.echo('pubsub not configured; aborting')
         ctx.exit(1)
 
+    format_ = Path(asyncapi_file.name).suffix if asyncapi_file else format_
     content = generate_asyncapi_document(cfg, format_)
 
-    if output_file is None:
+    if asyncapi_file is None:
         click.echo(content)
     else:
-        click.echo(f'Generating {output_file.name}')
-        output_file.write(content)
+        click.echo(f'Generating {asyncapi_file.name}')
+        asyncapi_file.write(content)
         click.echo('Done')
 
 
 @click.command()
 @click.pass_context
-@click.argument('asyncapi_file', type=click.File())
+@click.argument('asyncapi_file', type=click.File(), envvar='PYGEOAPI_ASYNCAPI')
 def validate(ctx, asyncapi_file):
     """Validate AsyncAPI Document"""
 
     if asyncapi_file is None:
-        raise click.ClickException('--asyncapi/-o required')
+        raise click.ClickException('asyncapi file required')
 
     click.echo(f'Validating {asyncapi_file.name}')
     instance = yaml_load(asyncapi_file)
-    validate_asyncapi_document(instance)
-    click.echo('Valid AsyncAPI document')
+    if validate_asyncapi_document(instance):
+        click.echo('Valid AsyncAPI document')
 
 
 asyncapi.add_command(generate)

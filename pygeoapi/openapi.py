@@ -32,12 +32,10 @@
 # =================================================================
 
 from copy import deepcopy
-import io
 import json
 import logging
 import os
 from pathlib import Path
-from typing import Union
 
 import click
 from jsonschema import validate as jsonschema_validate
@@ -45,6 +43,7 @@ import yaml
 
 from pygeoapi import l10n
 from pygeoapi.api import all_apis
+from pygeoapi.config import get_config, cli_config, get_config_schema
 from pygeoapi.models.openapi import OAPIFormat
 from pygeoapi.util import (filter_dict_by_key_value, to_json, yaml_load,
                            get_api_rules, get_base_url, SCHEMASDIR)
@@ -738,13 +737,6 @@ def get_visible_collections(cfg: dict) -> dict:
     }
 
 
-def get_config_schema():
-    schema_file = SCHEMASDIR / 'config' / 'pygeoapi-config-0.x.yml'
-
-    with schema_file.open() as fh2:
-        return yaml_load(fh2)
-
-
 def get_admin(cfg: dict) -> dict:
 
     schema_dict = get_config_schema()
@@ -1002,7 +994,16 @@ def get_oas(cfg: dict, fail_on_invalid_collection: bool = True,
         raise RuntimeError('OpenAPI version not supported')
 
 
-def validate_openapi_document(instance_dict: dict) -> bool:
+def get_openapi_schema() -> dict:
+    """Reads the JSON schema YAML file."""
+
+    schema_file = SCHEMASDIR / 'openapi' / 'openapi-3.0.x.json'
+
+    with schema_file.open() as fh:
+        return json.load(fh)
+
+
+def validate_openapi_document(openapi_dict: dict) -> bool:
     """
     Validate an OpenAPI document against the OpenAPI schema
 
@@ -1011,17 +1012,12 @@ def validate_openapi_document(instance_dict: dict) -> bool:
     :returns: `bool` of validation
     """
 
-    schema_file = SCHEMASDIR / 'openapi' / 'openapi-3.0.x.json'
+    jsonschema_validate(openapi_dict, get_openapi_schema())
 
-    LOGGER.debug(f'Validating against {schema_file}')
-    with schema_file.open() as fh2:
-        schema_dict = json.load(fh2)
-        jsonschema_validate(instance_dict, schema_dict)
-
-        return True
+    return True
 
 
-def generate_openapi_document(cfg_file: Union[Path, io.TextIOWrapper],
+def generate_openapi_document(cfg_file: Path,
                               output_format: OAPIFormat,
                               fail_on_invalid_collection: bool = True) -> str:
     """
@@ -1038,45 +1034,47 @@ def generate_openapi_document(cfg_file: Union[Path, io.TextIOWrapper],
 
     LOGGER.debug(f'Loading configuration {cfg_file}')
 
-    if isinstance(cfg_file, Path):
-        with cfg_file.open(mode="r") as cf:
-            s = yaml_load(cf)
-    else:
-        s = yaml_load(cfg_file)
+    s = get_config(cfg_file)
 
     pretty_print = s['server'].get('pretty_print', False)
 
     oas = get_oas(s, fail_on_invalid_collection=fail_on_invalid_collection)
 
-    if output_format == 'yaml':
+    if output_format.endswith(('yaml', 'yml')):
         content = yaml.safe_dump(oas, default_flow_style=False)
     else:
         content = to_json(oas, pretty=pretty_print)
+
     return content
 
 
-def load_openapi_document() -> dict:
+def get_openapi(file_path: str | None = None) -> dict:
     """
-    Open OpenAPI document from `PYGEOAPI_OPENAPI` environment variable
+    Read pygeoapi openapi document
+
+    :param file_path: `str` of path to configuration file; if `None`,
+                      reads from `PYGEOAPI_OPENAPI` environment variable
+
 
     :returns: `dict` of OpenAPI document
     """
 
-    pygeoapi_openapi = os.environ.get('PYGEOAPI_OPENAPI')
+    if file_path is None:
+        file_path = os.environ.get('PYGEOAPI_OPENAPI')
 
-    if pygeoapi_openapi is None:
-        msg = 'PYGEOAPI_OPENAPI environment not set'
+    if not file_path:
+        msg = 'PYGEOAPI_OPENAPI file not specified'
         LOGGER.error(msg)
         raise RuntimeError(msg)
 
-    if not os.path.exists(pygeoapi_openapi):
-        msg = (f'OpenAPI document {pygeoapi_openapi} does not exist.  '
+    if not os.path.exists(file_path):
+        msg = (f'OpenAPI document {file_path} does not exist. '
                'Please generate before starting pygeoapi')
         LOGGER.error(msg)
         raise RuntimeError(msg)
 
-    with open(pygeoapi_openapi, encoding='utf8') as ff:
-        if pygeoapi_openapi.endswith(('.yaml', '.yml')):
+    with open(file_path, encoding='utf8') as ff:
+        if file_path.endswith(('.yaml', '.yml')):
             openapi_ = yaml_load(ff)
         else:  # JSON string, do not transform
             openapi_ = ff.read()
@@ -1092,44 +1090,58 @@ def openapi():
 
 @click.command()
 @click.pass_context
-@click.argument('config_file', type=click.File(encoding='utf-8'))
+@cli_config
+@click.option(
+    '--openapi-file',
+    '-of',
+    'openapi_file',
+    type=click.File('w'),
+    envvar='PYGEOAPI_OPENAPI',
+    help='Name of openapi document (env: PYGEOAPI_OPENAPI)'
+)
+@click.option('--output-file', 'deprecated', type=click.File('w'), hidden=True)
 @click.option('--fail-on-invalid-collection/--no-fail-on-invalid-collection',
               '-fic', default=True, help='Fail on invalid collection')
 @click.option('--format', '-f', 'format_', type=click.Choice(['json', 'yaml']),
-              default='yaml', help='output format (json|yaml)')
-@click.option('--output-file', '-of', type=click.File('w', encoding='utf-8'),
-              help='Name of output file')
-def generate(ctx, config_file, output_file, format_='yaml',
+              help='output format (json|yaml); only applies to stdout.')
+def generate(ctx, config_file, openapi_file, deprecated, format_,
              fail_on_invalid_collection=True):
     """Generate OpenAPI Document"""
 
-    if config_file is None:
-        raise click.ClickException('--config/-c required')
+    if deprecated is not None:
+        click.echo(
+            'Warning: --output-file is deprecated; use --openapi-file',
+            err=True,
+        )
+        if openapi_file is None:
+            openapi_file = deprecated
 
+    format_ = Path(openapi_file.name).suffix if openapi_file else format_
     content = generate_openapi_document(
-        config_file, format_, fail_on_invalid_collection)
+        config_file, format_, fail_on_invalid_collection
+    )
 
-    if output_file is None:
+    if openapi_file is None:
         click.echo(content)
     else:
-        click.echo(f'Generating {output_file.name}')
-        output_file.write(content)
+        click.echo(f'Generating {openapi_file.name}')
+        openapi_file.write(content)
         click.echo('Done')
 
 
 @click.command()
 @click.pass_context
-@click.argument('openapi_file', type=click.File())
+@click.argument('openapi_file', type=click.File(), envvar='PYGEOAPI_OPENAPI')
 def validate(ctx, openapi_file):
     """Validate OpenAPI Document"""
 
     if openapi_file is None:
-        raise click.ClickException('--openapi/-o required')
+        raise click.ClickException('openapi file required')
 
-    click.echo(f'Validating {openapi_file}')
+    click.echo(f'Validating {openapi_file.name}')
     instance = yaml_load(openapi_file)
-    validate_openapi_document(instance)
-    click.echo('Valid OpenAPI document')
+    if validate_openapi_document(instance):
+        click.echo('Valid OpenAPI document')
 
 
 openapi.add_command(generate)

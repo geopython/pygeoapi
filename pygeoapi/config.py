@@ -34,6 +34,7 @@ import json
 from jsonschema import validate as jsonschema_validate
 import logging
 import os
+from pathlib import Path
 import yaml
 
 from pygeoapi.util import SCHEMASDIR, to_json, yaml_load
@@ -41,37 +42,50 @@ from pygeoapi.util import SCHEMASDIR, to_json, yaml_load
 LOGGER = logging.getLogger(__name__)
 
 
-def get_config(raw: bool = False) -> dict:
+def get_config(file_path: str | None = None, raw: bool = False) -> dict:
     """
-    Get pygeoapi configurations
+    Read pygeoapi configuration document
 
+    :param file_path: `str` of path to configuration file; if `None`,
+                      reads from `PYGEOAPI_CONFIG` environment variable
     :param raw: `bool` over interpolation during config loading
 
     :returns: `dict` of pygeoapi configuration
     """
 
-    if not os.environ.get('PYGEOAPI_CONFIG'):
-        raise RuntimeError('PYGEOAPI_CONFIG environment variable not set')
+    if file_path is None:
+        file_path = os.environ.get('PYGEOAPI_CONFIG')
 
-    with open(os.environ.get('PYGEOAPI_CONFIG'), encoding='utf8') as fh:
+    if not file_path:
+        msg = 'PYGEOAPI_CONFIG file not specified'
+        LOGGER.error(msg)
+        raise RuntimeError(msg)
+
+    if not os.path.exists(file_path):
+        msg = (f'pygeoapi configuration {file_path} does not exist. '
+               'Please create before starting pygeoapi')
+        LOGGER.error(msg)
+        raise RuntimeError(msg)
+
+    with open(file_path, encoding='utf8') as fh:
         if raw:
-            CONFIG = yaml.safe_load(fh)
+            config_ = yaml.safe_load(fh)
         else:
-            CONFIG = yaml_load(fh)
+            config_ = yaml_load(fh)
 
-    return CONFIG
+    return config_
 
 
-def load_schema() -> dict:
-    """ Reads the JSON schema YAML file. """
+def get_config_schema() -> dict:
+    """Reads the JSON schema YAML file."""
 
     schema_file = SCHEMASDIR / 'config' / 'pygeoapi-config-0.x.yml'
 
-    with schema_file.open() as fh2:
-        return yaml_load(fh2)
+    with schema_file.open() as fh:
+        return yaml_load(fh)
 
 
-def validate_config(instance_dict: dict) -> bool:
+def validate_config_document(instance_dict: dict) -> bool:
     """
     Validate pygeoapi configuration against pygeoapi schema
 
@@ -80,9 +94,23 @@ def validate_config(instance_dict: dict) -> bool:
     :returns: `bool` of validation
     """
 
-    jsonschema_validate(json.loads(to_json(instance_dict)), load_schema())
+    # Load as simple JSON
+    config = json.loads(to_json(instance_dict))
+    jsonschema_validate(config, get_config_schema())
 
     return True
+
+
+cli_config = click.option(
+    '--config',
+    '--config-file',
+    '-c',
+    'config_file',
+    # required=True,
+    type=click.Path(dir_okay=False, path_type=Path),
+    envvar='PYGEOAPI_CONFIG',
+    help='Name of configuration document (env: PYGEOAPI_CONFIG)'
+)
 
 
 @click.group()
@@ -93,17 +121,13 @@ def config():
 
 @click.command()
 @click.pass_context
-@click.option('--config', '-c', 'config_file', help='configuration file')
+@cli_config
 def validate(ctx, config_file):
     """Validate configuration"""
 
-    if config_file is None:
-        raise click.ClickException('--config/-c required')
-
-    with open(config_file) as ff:
-        click.echo(f'Validating {config_file}')
-        instance = yaml_load(ff)
-        validate_config(instance)
+    click.echo(f'Validating {config_file.name}')
+    instance = get_config(config_file)
+    if validate_config_document(instance):
         click.echo('Valid configuration')
 
 
