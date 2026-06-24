@@ -49,13 +49,18 @@
           {% endif %}
       {% endfor %}
 
-      {% if data['itemType'] == 'feature' or data['itemType'] == 'record' %}
+      {% if data['itemType'] == 'feature' or data['itemType'] == 'record' or data['itemType'] == 'coverage' %}
       <h3>{% trans %}Browse{% endtrans %}</h3>
       <ul>
         <li>
           <div>
+            {% if data.itemType == 'coverage' %}
+            <a title="{% trans %}Browse Coverage{% endtrans %}" href="{{ data['collections_path'] }}/{{ data['id'] }}/coverage">
+              {% trans %}Browse through the coverage of{% endtrans %} "{{ data['title'] }}"</a></div>
+            {% else %}
             <a title="{% trans %}Browse Items{% endtrans %}" href="{{ data['collections_path'] }}/{{ data['id'] }}/items">
               {% trans %}Browse through the items of{% endtrans %} "{{ data['title'] }}"</a></div>
+            {% endif %}
         </li>
       </ul>
       <h3>{% trans %}Queryables{% endtrans %}</h3>
@@ -74,20 +79,20 @@
               {% trans %}Display Schema of{% endtrans %} "{{ data['title'] }}"</a></div>
         </li>
       </ul>
+      {% endif %}
+
       {% for provider in config['resources'][data['id']]['providers'] %}
         {% if 'tile' in provider['type'] %}
-      <h3>{% trans %}Tiles{% endtrans %}</h3>
-      <ul>
-        <li>
-          <div>
-            <a title="{% trans %}Display Tiles{% endtrans %}" href="{{ data['collections_path'] }}/{{ data['id'] }}/tiles">{% trans %}Display Tiles of{% endtrans %} "{{ data['title'] }}"</a>
-          </div>
-        </li>
-      </ul>
-        {% endif %}
+          <h3>{% trans %}Tiles{% endtrans %}</h3>
+          <ul>
+            <li>
+              <div>
+                <a title="{% trans %}Display Tiles{% endtrans %}" href="{{ data['collections_path'] }}/{{ data['id'] }}/tiles">{% trans %}Display Tiles of{% endtrans %} "{{ data['title'] }}"</a>
+              </div>
+            </li>
+          </ul> 
+        {% endif  %}
       {% endfor %}
-      {% endif  %}
-
       {%- if data['data_queries'] -%}
         <h3>Data Queries</h3>
         <table class="table table-striped table-bordered">
