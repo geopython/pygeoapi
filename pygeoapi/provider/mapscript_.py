@@ -2,6 +2,7 @@
 #
 # Authors: Tom Kralidis <tomkralidis@gmail.com>
 #
+# Copyright (c) 2026 Joana Simoes
 # Copyright (c) 2022 Tom Kralidis
 #
 # Permission is hereby granted, free of charge, to any person
@@ -37,6 +38,8 @@ from pygeoapi.provider.base import (BaseProvider, ProviderConnectionError,
                                     ProviderQueryError)
 from pygeoapi.util import str2bool
 
+from pygeoapi.crs import get_curie
+
 LOGGER = logging.getLogger(__name__)
 
 IMAGE_FORMATS = {
@@ -44,6 +47,8 @@ IMAGE_FORMATS = {
     'png8': 'AGG/PNG8',
     'jpeg': 'AGG/JPEG'
 }
+
+DEFAULT_WMS_CRS = 'CRS:84'
 
 
 class MapScriptProvider(BaseProvider):
@@ -122,8 +127,9 @@ class MapScriptProvider(BaseProvider):
             LOGGER.warning(err)
             raise ProviderConnectionError('Cannot connect to map service')
 
-    def query(self, style=None, bbox=[], width=500, height=300, crs='CRS84',
-              datetime_=None, format_='png', transparent=True, **kwargs):
+    def query(self, style=None, bbox=[], width=500, height=300,
+              crs=DEFAULT_WMS_CRS, datetime_=None, format_='png',
+              transparent=True, **kwargs):
         """
         Generate map
 
@@ -146,23 +152,19 @@ class MapScriptProvider(BaseProvider):
             raise ProviderQueryError('Bad image format')
 
         LOGGER.debug('Setting output map CRS')
+
         try:
-            if crs not in ['CRS84', 4326]:
-                LOGGER.debug('Reprojecting coordinates')
-                prj_dst_text = self._epsg2projstring(int(crs.split("/")[-1]))
 
-                prj_src = mapscript.projectionObj(self._layer.getProjection())
-                prj_dst = mapscript.projectionObj(prj_dst_text)
+            curie = get_curie(crs)
 
-                rect = mapscript.rectObj(*bbox)
-                _ = rect.project(prj_src, prj_dst)
+            LOGGER.debug(f'Mapscript will use: {curie}')
 
-                map_bbox = [rect.minx, rect.miny, rect.maxx, rect.maxy]
-                map_crs = prj_dst_text
+            # The bbox is already reprojected on the base class
+            if curie not in ['CRS:84', 'EPSG:4326']:
+                epsg_code = int(curie.split(":")[-1].strip())
+                map_crs = self._epsg2projstring(epsg_code)
                 self._map.units = mapscript.MS_METERS
-
             else:
-                map_bbox = bbox
                 map_crs = self._epsg2projstring(4326)
                 self._map.units = mapscript.MS_DD
 
@@ -186,7 +188,7 @@ class MapScriptProvider(BaseProvider):
             fmt.transparent = mapscript.MS_OFF
 
         self._map.setOutputFormat(fmt)
-        self._map.setExtent(*map_bbox)
+        self._map.setExtent(*bbox)
         self._map.setSize(width, height)
 
         self._map.setProjection(map_crs)
@@ -201,7 +203,7 @@ class MapScriptProvider(BaseProvider):
 
         return img.getBytes()
 
-    def _epsg2projstring(self, epsg_code):
+    def _epsg2projstring(self, epsg_code: int):
         """
         Helper function to derive a proj string from an EPSG code
 
@@ -209,6 +211,12 @@ class MapScriptProvider(BaseProvider):
 
         :returns: `str` of PROJ string/syntax
         """
+        try:
+            epsg_code = int(epsg_code)
+        except (ValueError, TypeError) as err:
+            raise ValueError(f"Invalid EPSG code: {epsg_code}") from err
+
+        LOGGER.debug(f'_epsg2projstring: {epsg_code}')
 
         prj = osr.SpatialReference()
         prj.ImportFromEPSG(epsg_code)
