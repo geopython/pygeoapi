@@ -37,6 +37,8 @@ from pygeoapi.provider.base import (BaseProvider, ProviderConnectionError,
                                     ProviderQueryError)
 from pygeoapi.util import str2bool
 
+from pygeoapi.crs import get_crs_curie
+
 LOGGER = logging.getLogger(__name__)
 
 IMAGE_FORMATS = {
@@ -45,6 +47,7 @@ IMAGE_FORMATS = {
     'jpeg': 'AGG/JPEG'
 }
 
+DEFAULT_WMS_CRS = 'CRS:84'
 
 class MapScriptProvider(BaseProvider):
     """MapScript map provider (https://mapserver.org/mapscript)"""
@@ -122,7 +125,7 @@ class MapScriptProvider(BaseProvider):
             LOGGER.warning(err)
             raise ProviderConnectionError('Cannot connect to map service')
 
-    def query(self, style=None, bbox=[], width=500, height=300, crs='CRS84',
+    def query(self, style=None, bbox=[], width=500, height=300, crs=DEFAULT_WMS_CRS,
               datetime_=None, format_='png', transparent=True, **kwargs):
         """
         Generate map
@@ -146,14 +149,26 @@ class MapScriptProvider(BaseProvider):
             raise ProviderQueryError('Bad image format')
 
         LOGGER.debug('Setting output map CRS')
+
         try:
-            if crs not in ['CRS84', 4326]:
+
+            wms_crs = get_crs_curie(crs)
+
+            LOGGER.debug(f'Mapscript will use: {wms_crs}')
+
+            if wms_crs not in ['CRS:84', 'EPSG:4326']:
                 LOGGER.debug('Reprojecting coordinates')
-                prj_dst_text = self._epsg2projstring(int(crs.split("/")[-1]))
+                epsg_code_str = wms_crs.split(":")[-1].strip()
+                epsg_code = int(epsg_code_str)
+                LOGGER.debug(f'Extracted EPSG Code: {epsg_code}')
+                prj_dst_text = self._epsg2projstring(epsg_code)
+                #prj_dst_text = self._epsg2projstring(int(crs.split("/")[-1]))
 
+                LOGGER.debug('checkpoint1')
                 prj_src = mapscript.projectionObj(self._layer.getProjection())
+                LOGGER.debug('checkpoint2')
                 prj_dst = mapscript.projectionObj(prj_dst_text)
-
+                LOGGER.debug('checkpoint3')
                 rect = mapscript.rectObj(*bbox)
                 _ = rect.project(prj_src, prj_dst)
 
@@ -201,7 +216,7 @@ class MapScriptProvider(BaseProvider):
 
         return img.getBytes()
 
-    def _epsg2projstring(self, epsg_code):
+    def _epsg2projstring(self, epsg_code: int):
         """
         Helper function to derive a proj string from an EPSG code
 
@@ -209,6 +224,12 @@ class MapScriptProvider(BaseProvider):
 
         :returns: `str` of PROJ string/syntax
         """
+        try:
+            epsg_code = int(epsg_code)
+        except (ValueError, TypeError) as e:
+            raise ValueError(f"Invalid EPSG code: {epsg_code}") from e
+        
+        LOGGER.debug(f'_epsg2projstring: {epsg_code}')
 
         prj = osr.SpatialReference()
         prj.ImportFromEPSG(epsg_code)
