@@ -485,6 +485,18 @@ msgstr ""
 msgid "Display Tiles of"
 msgstr ""
 
+#: pygeoapi/templates/collections/collection.html:92
+msgid "Coverages"
+msgstr ""
+
+#: pygeoapi/templates/collections/collection.html:96
+msgid "Display Coverage"
+msgstr ""
+
+#: pygeoapi/templates/collections/collection.html:97
+msgid "Display Coverage of"
+msgstr ""
+
 #: pygeoapi/templates/collections/index.html:13
 msgid "Type"
 msgstr ""
