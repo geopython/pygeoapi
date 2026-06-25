@@ -37,7 +37,7 @@ from pygeoapi.provider.base import (BaseProvider, ProviderConnectionError,
                                     ProviderQueryError)
 from pygeoapi.util import str2bool
 
-from pygeoapi.crs import get_crs_curie
+from pygeoapi.crs import get_curie
 
 LOGGER = logging.getLogger(__name__)
 
@@ -152,7 +152,7 @@ class MapScriptProvider(BaseProvider):
 
         try:
 
-            wms_crs = get_crs_curie(crs)
+            wms_crs = get_curie(crs)
 
             LOGGER.debug(f'Mapscript will use: {wms_crs}')
 
