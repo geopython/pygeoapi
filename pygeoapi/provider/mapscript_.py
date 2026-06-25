@@ -49,6 +49,7 @@ IMAGE_FORMATS = {
 
 DEFAULT_WMS_CRS = 'CRS:84'
 
+
 class MapScriptProvider(BaseProvider):
     """MapScript map provider (https://mapserver.org/mapscript)"""
 
@@ -125,8 +126,9 @@ class MapScriptProvider(BaseProvider):
             LOGGER.warning(err)
             raise ProviderConnectionError('Cannot connect to map service')
 
-    def query(self, style=None, bbox=[], width=500, height=300, crs=DEFAULT_WMS_CRS,
-              datetime_=None, format_='png', transparent=True, **kwargs):
+    def query(self, style=None, bbox=[], width=500, height=300,
+              crs=DEFAULT_WMS_CRS, datetime_=None, format_='png',
+              transparent=True, **kwargs):
         """
         Generate map
 
@@ -215,7 +217,7 @@ class MapScriptProvider(BaseProvider):
             epsg_code = int(epsg_code)
         except (ValueError, TypeError) as e:
             raise ValueError(f"Invalid EPSG code: {epsg_code}") from e
-        
+
         LOGGER.debug(f'_epsg2projstring: {epsg_code}')
 
         prj = osr.SpatialReference()
