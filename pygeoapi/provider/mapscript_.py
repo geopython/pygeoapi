@@ -214,7 +214,7 @@ class MapScriptProvider(BaseProvider):
         try:
             epsg_code = int(epsg_code)
         except (ValueError, TypeError) as err:
-            raise ValueError(f"Invalid EPSG code: {epsg_code}") from e
+            raise ValueError(f"Invalid EPSG code: {epsg_code}") from err
 
         LOGGER.debug(f'_epsg2projstring: {epsg_code}')
 
