@@ -218,7 +218,6 @@ def gen_collection(api, request, dataset: str,
         }])
 
     if collection_data_type in ['feature', 'coverage', 'record']:
-        data['itemType'] = collection_data_type
         data['links'].extend([{
             'type': 'application/schema+json',
             'rel': f'{OGC_RELTYPES_BASE}/schema',
@@ -244,6 +243,7 @@ def gen_collection(api, request, dataset: str,
     if is_vector_tile or collection_data_type in ['feature', 'record']:
         # TODO: translate
         LOGGER.debug('Adding feature/record based links')
+        data['itemType'] = collection_data_type
         data['links'].extend([{
             'type': 'application/geo+json',
             'rel': 'items',

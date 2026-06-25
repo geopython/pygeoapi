@@ -49,18 +49,13 @@
           {% endif %}
       {% endfor %}
 
-      {% if data['itemType'] == 'feature' or data['itemType'] == 'record' or data['itemType'] == 'coverage' %}
+      {% if data['itemType'] == 'feature' or data['itemType'] == 'record' %}
       <h3>{% trans %}Browse{% endtrans %}</h3>
       <ul>
         <li>
           <div>
-            {% if data.itemType == 'coverage' %}
-            <a title="{% trans %}Browse Coverage{% endtrans %}" href="{{ data['collections_path'] }}/{{ data['id'] }}/coverage">
-              {% trans %}Browse through the coverage of{% endtrans %} "{{ data['title'] }}"</a></div>
-            {% else %}
             <a title="{% trans %}Browse Items{% endtrans %}" href="{{ data['collections_path'] }}/{{ data['id'] }}/items">
               {% trans %}Browse through the items of{% endtrans %} "{{ data['title'] }}"</a></div>
-            {% endif %}
         </li>
       </ul>
       <h3>{% trans %}Queryables{% endtrans %}</h3>
@@ -92,6 +87,34 @@
             </li>
           </ul> 
         {% endif  %}
+
+        {% if 'coverage' in provider['type'] %}
+        <h3>{% trans %}Coverage{% endtrans %}</h3>
+        <ul>
+          <li>
+            <div>
+              <a title="{% trans %}Browse Coverage{% endtrans %}" href="{{ data['collections_path'] }}/{{ data['id'] }}/coverage">
+                {% trans %}Display coverage of{% endtrans %} "{{ data['title'] }}"</a></div>
+          </li>
+        </ul>
+        <h3>{% trans %}Queryables{% endtrans %}</h3>
+        <ul>
+          <li>
+            <div>
+              <a title="{% trans %}Display Queryables{% endtrans %}" href="{{ data['collections_path'] }}/{{ data['id'] }}/queryables">
+                {% trans %}Display Queryables of{% endtrans %} "{{ data['title'] }}"</a></div>
+          </li>
+        </ul>
+        <h3>{% trans %}Schema{% endtrans %}</h3>
+        <ul>
+          <li>
+            <div>
+              <a title="{% trans %}Display Schema{% endtrans %}" href="{{ data['collections_path'] }}/{{ data['id'] }}/schema">
+                {% trans %}Display Schema of{% endtrans %} "{{ data['title'] }}"</a></div>
+          </li>
+        </ul>
+        {% endif %}
+
       {% endfor %}
       {%- if data['data_queries'] -%}
         <h3>Data Queries</h3>
