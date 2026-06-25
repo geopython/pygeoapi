@@ -155,16 +155,13 @@ class MapScriptProvider(BaseProvider):
 
         try:
 
-            wms_crs = get_curie(crs)
+            curie = get_curie(crs)
 
-            LOGGER.debug(f'Mapscript will use: {wms_crs}')
+            LOGGER.debug(f'Mapscript will use: {curie}')
 
             # The bbox is already reprojected on the base class
-            map_bbox = bbox
-
-            if wms_crs not in ['CRS:84', 'EPSG:4326']:
-                epsg_code_str = wms_crs.split(":")[-1].strip()
-                epsg_code = int(epsg_code_str)
+            if curie not in ['CRS:84', 'EPSG:4326']:
+                epsg_code = int(curie.split(":")[-1].strip())
                 map_crs = self._epsg2projstring(epsg_code)
                 self._map.units = mapscript.MS_METERS
             else:
@@ -191,7 +188,7 @@ class MapScriptProvider(BaseProvider):
             fmt.transparent = mapscript.MS_OFF
 
         self._map.setOutputFormat(fmt)
-        self._map.setExtent(*map_bbox)
+        self._map.setExtent(*bbox)
         self._map.setSize(width, height)
 
         self._map.setProjection(map_crs)
