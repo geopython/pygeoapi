@@ -242,8 +242,19 @@ def test_url_join():
 
 
 def test_get_base_url(config, config_with_rules):
-    assert util.get_base_url(config) == 'http://localhost:5000'
+    # config has url: 'http://localhost:5000/' — trailing slash preserved
+    assert util.get_base_url(config) == 'http://localhost:5000/'
     assert util.get_base_url(config_with_rules) == 'http://localhost:5000/api/v0'  # noqa
+
+    # Test trailing slash preservation (GH #2361)
+    config_trailing = deepcopy(config)
+    config_trailing['server']['url'] = 'http://localhost:5000/somepath/api/'
+    assert util.get_base_url(config_trailing) == 'http://localhost:5000/somepath/api/'  # noqa
+
+    # Without trailing slash should remain without
+    config_no_trailing = deepcopy(config)
+    config_no_trailing['server']['url'] = 'http://localhost:5000/somepath/api'
+    assert util.get_base_url(config_no_trailing) == 'http://localhost:5000/somepath/api'  # noqa
 
 
 def test_get_api_rules(config, config_with_rules):

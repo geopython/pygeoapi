@@ -383,8 +383,6 @@ class XarrayProvider(BaseProvider):
             self, selected_fields
         )
 
-        data = data.fillna(None)
-
         try:
             for key, value in selected_fields.items():
                 LOGGER.debug(f'Adding range {key}')
