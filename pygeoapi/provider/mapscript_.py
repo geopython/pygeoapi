@@ -156,28 +156,15 @@ class MapScriptProvider(BaseProvider):
 
             LOGGER.debug(f'Mapscript will use: {wms_crs}')
 
+            # The bbox is already reprojected on the base class
+            map_bbox = bbox
+
             if wms_crs not in ['CRS:84', 'EPSG:4326']:
-                LOGGER.debug('Reprojecting coordinates')
                 epsg_code_str = wms_crs.split(":")[-1].strip()
                 epsg_code = int(epsg_code_str)
-                LOGGER.debug(f'Extracted EPSG Code: {epsg_code}')
-                prj_dst_text = self._epsg2projstring(epsg_code)
-                #prj_dst_text = self._epsg2projstring(int(crs.split("/")[-1]))
-
-                LOGGER.debug('checkpoint1')
-                prj_src = mapscript.projectionObj(self._layer.getProjection())
-                LOGGER.debug('checkpoint2')
-                prj_dst = mapscript.projectionObj(prj_dst_text)
-                LOGGER.debug('checkpoint3')
-                rect = mapscript.rectObj(*bbox)
-                _ = rect.project(prj_src, prj_dst)
-
-                map_bbox = [rect.minx, rect.miny, rect.maxx, rect.maxy]
-                map_crs = prj_dst_text
+                map_crs = self._epsg2projstring(epsg_code)
                 self._map.units = mapscript.MS_METERS
-
             else:
-                map_bbox = bbox
                 map_crs = self._epsg2projstring(4326)
                 self._map.units = mapscript.MS_DD
 
