@@ -181,12 +181,12 @@ def gen_collection(api, request, dataset: str,
         'type': FORMAT_TYPES[F_JSON],
         'rel': 'root',
         'title': l10n.translate('The landing page of this server as JSON', locale_),  # noqa
-        'href': f"{api.base_url}?f={F_JSON}"
+        'href': f"{api.base_url}/?f={F_JSON}"
     }, {
         'type': FORMAT_TYPES[F_HTML],
         'rel': 'root',
         'title': l10n.translate('The landing page of this server as HTML', locale_),  # noqa
-        'href': f"{api.base_url}?f={F_HTML}"
+        'href': f"{api.base_url}/?f={F_HTML}"
     }, {
         'type': FORMAT_TYPES[F_JSON],
         'rel': request.get_linkrel(F_JSON),

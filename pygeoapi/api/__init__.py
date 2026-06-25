@@ -662,17 +662,17 @@ def landing_page(api: API,
         'rel': request.get_linkrel(F_JSON),
         'type': FORMAT_TYPES[F_JSON],
         'title': l10n.translate('This document as JSON', request.locale),
-        'href': f"{api.base_url}?f={F_JSON}"
+        'href': f"{api.base_url}/?f={F_JSON}"
     }, {
         'rel': request.get_linkrel(F_JSONLD),
         'type': FORMAT_TYPES[F_JSONLD],
         'title': l10n.translate('This document as RDF (JSON-LD)', request.locale),  # noqa
-        'href': f"{api.base_url}?f={F_JSONLD}"
+        'href': f"{api.base_url}/?f={F_JSONLD}"
     }, {
         'rel': request.get_linkrel(F_HTML),
         'type': FORMAT_TYPES[F_HTML],
         'title': l10n.translate('This document as HTML', request.locale),
-        'href': f"{api.base_url}?f={F_HTML}",
+        'href': f"{api.base_url}/?f={F_HTML}",
         'hreflang': api.default_locale
     }, {
         'rel': 'service-desc',

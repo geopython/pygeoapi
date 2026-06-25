@@ -956,12 +956,12 @@ def get_collection_item(api: API, request: APIRequest,
         'type': FORMAT_TYPES[F_JSON],
         'rel': 'root',
         'title': l10n.translate('The landing page of this server as JSON', request.locale),  # noqa
-        'href': f"{api.base_url}?f={F_JSON}"
+        'href': f"{api.base_url}/?f={F_JSON}"
         }, {
         'type': FORMAT_TYPES[F_HTML],
         'rel': 'root',
         'title': l10n.translate('The landing page of this server as HTML', request.locale),  # noqa
-        'href': f"{api.base_url}?f={F_HTML}"
+        'href': f"{api.base_url}/?f={F_HTML}"
         }, {
         'rel': request.get_linkrel(F_JSON),
         'type': 'application/geo+json',
