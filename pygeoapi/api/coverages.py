@@ -226,7 +226,7 @@ def get_collection_coverage(
         }]
 
         content = render_j2_template(api.tpl_config, tpl_config,
-                                     'collections/coverages/coverage.html',
+                                     'collections/coverages/index.html',
                                      data, api.default_locale)
 
         return headers, HTTPStatus.OK, content
