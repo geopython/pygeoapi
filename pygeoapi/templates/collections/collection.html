@@ -74,20 +74,40 @@
               {% trans %}Display Schema of{% endtrans %} "{{ data['title'] }}"</a></div>
         </li>
       </ul>
+      {% endif %}
+
       {% for provider in config['resources'][data['id']]['providers'] %}
         {% if 'tile' in provider['type'] %}
-      <h3>{% trans %}Tiles{% endtrans %}</h3>
-      <ul>
-        <li>
-          <div>
-            <a title="{% trans %}Display Tiles{% endtrans %}" href="{{ data['collections_path'] }}/{{ data['id'] }}/tiles">{% trans %}Display Tiles of{% endtrans %} "{{ data['title'] }}"</a>
-          </div>
-        </li>
-      </ul>
-        {% endif %}
-      {% endfor %}
-      {% endif  %}
+          <h3>{% trans %}Tiles{% endtrans %}</h3>
+          <ul>
+            <li>
+              <div>
+                <a title="{% trans %}Display Tiles{% endtrans %}" href="{{ data['collections_path'] }}/{{ data['id'] }}/tiles">{% trans %}Display Tiles of{% endtrans %} "{{ data['title'] }}"</a>
+              </div>
+            </li>
+          </ul> 
+        {% endif  %}
 
+        {% if 'coverage' in provider['type'] %}
+        <h3>{% trans %}Coverage{% endtrans %}</h3>
+        <ul>
+          <li>
+            <div>
+              <a title="{% trans %}Display Coverage{% endtrans %}" href="{{ data['collections_path'] }}/{{ data['id'] }}/coverage">
+                {% trans %}Display Coverage of{% endtrans %} "{{ data['title'] }}"</a></div>
+          </li>
+        </ul>
+        <h3>{% trans %}Schema{% endtrans %}</h3>
+        <ul>
+          <li>
+            <div>
+              <a title="{% trans %}Display Schema{% endtrans %}" href="{{ data['collections_path'] }}/{{ data['id'] }}/schema">
+                {% trans %}Display Schema of{% endtrans %} "{{ data['title'] }}"</a></div>
+          </li>
+        </ul>
+        {% endif %}
+
+      {% endfor %}
       {%- if data['data_queries'] -%}
         <h3>Data Queries</h3>
         <table class="table table-striped table-bordered">

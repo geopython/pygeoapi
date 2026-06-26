@@ -228,13 +228,7 @@ def gen_collection(api, request, dataset: str,
             'rel': f'{OGC_RELTYPES_BASE}/schema',
             'title': l10n.translate('Schema of collection in HTML', locale_),
             'href': f'{api.get_collections_url()}/{dataset}/schema?f={F_HTML}'
-        }])
-
-    if is_vector_tile or collection_data_type in ['feature', 'record']:
-        # TODO: translate
-        data['itemType'] = collection_data_type
-        LOGGER.debug('Adding feature/record based links')
-        data['links'].extend([{
+        }, {
             'type': 'application/schema+json',
             'rel': f'{OGC_RELTYPES_BASE}/queryables',
             'title': l10n.translate('Queryables for this collection as JSON', locale_),  # noqa
@@ -244,7 +238,13 @@ def gen_collection(api, request, dataset: str,
             'rel': f'{OGC_RELTYPES_BASE}/queryables',
             'title': l10n.translate('Queryables for this collection as HTML', locale_),  # noqa
             'href': f'{api.get_collections_url()}/{dataset}/queryables?f={F_HTML}'  # noqa
-        }, {
+        }])
+
+    if is_vector_tile or collection_data_type in ['feature', 'record']:
+        # TODO: translate
+        LOGGER.debug('Adding feature/record based links')
+        data['itemType'] = collection_data_type
+        data['links'].extend([{
             'type': 'application/geo+json',
             'rel': 'items',
             'title': l10n.translate('Items as GeoJSON', locale_),
@@ -278,12 +278,17 @@ def gen_collection(api, request, dataset: str,
 
     elif collection_data_type == 'coverage':
         LOGGER.debug('Adding coverage based links')
-        data['links'].append({
+        data['links'].extend([{
             'type': 'application/prs.coverage+json',
             'rel': f'{OGC_RELTYPES_BASE}/coverage',
             'title': l10n.translate('Coverage data', locale_),
             'href': f'{api.get_collections_url()}/{dataset}/coverage?f={F_JSON}'  # noqa
-        })
+        }, {
+            'type': 'text/html',
+            'rel': f'{OGC_RELTYPES_BASE}/coverage',
+            'title': l10n.translate('Coverage data', locale_),
+            'href': f'{api.get_collections_url()}/{dataset}/coverage?f={F_HTML}'  # noqa
+        }])
         if collection_data_format is not None:
             title_ = l10n.translate('Coverage data as', locale_)
             title_ = f"{title_} {collection_data_format['name']}"
