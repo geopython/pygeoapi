@@ -324,13 +324,13 @@ def get_jobs(api: API, request: APIRequest,
         if JobStatus[job_['status']] in (
            JobStatus.successful, JobStatus.running, JobStatus.accepted):
 
-            job_result_url = f"{api.base_url}/jobs/{job_['identifier']}/results"  # noqa
+            job_result_url = f"{api.base_url}/jobs/{job_['identifier']}/results?f={F_JSON}"  # noqa
 
             job2['links'] = [{
                 'href': job_result_url,
                 'rel': 'http://www.opengis.net/def/rel/ogc/1.0/results',
                 'type': job_['mimetype'],
-                'title': f"Results of job {job_id} as {job_['mimetype']}"
+                'title': f"Results of job {job_['identifier']} as {job_['mimetype']}"  # noqa
             }]
 
         serialized_jobs['jobs'].append(job2)
@@ -592,20 +592,18 @@ def get_job_result(api: API, request: APIRequest,
     if mimetype not in (None, FORMAT_TYPES[F_JSON]):
         headers['Content-Type'] = mimetype
         content = job_output
+    elif request.format == F_HTML:
+        headers['Content-Type'] = "text/html"
+        data = {
+            'job': {'id': job_id},
+            'result': job_output
+        }
+        content = render_j2_template(
+            api.config, api.config['server']['templates'],
+            'jobs/results/index.html', data, request.locale)
     else:
-        if request.format == F_JSON:
-            content = json.dumps(job_output, sort_keys=True, indent=4,
-                                 default=json_serial)
-        else:
-            # HTML
-            headers['Content-Type'] = "text/html"
-            data = {
-                'job': {'id': job_id},
-                'result': job_output
-            }
-            content = render_j2_template(
-                api.config, api.config['server']['templates'],
-                'jobs/results/index.html', data, request.locale)
+        content = json.dumps(job_output, sort_keys=True, indent=4,
+                             default=json_serial)
 
     return headers, HTTPStatus.OK, content
 
