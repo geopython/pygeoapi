@@ -99,7 +99,7 @@ class BaseProcessor:
         handle (add/remove) them.
 
         :param job_id: the job_id associated to the resources to be removed.
-        
+
         The function should be called by the Manager upon receiving a request
         to delete_job().
 
