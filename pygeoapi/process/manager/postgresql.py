@@ -254,6 +254,11 @@ class PostgreSQLManager(BaseManager):
             except FileNotFoundError:
                 pass
 
+        # remove resources if present
+        process_id = job_result.get('process_id')
+        processor = self.get_processor(process_id)
+        processor.remove_resources(job_id)
+
         return rowcount == 1
 
     def get_job_result(self, job_id: str) -> Tuple[str, Any]:
