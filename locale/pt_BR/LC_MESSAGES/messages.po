@@ -406,7 +406,13 @@ msgstr "Instâncias"
 #: custom/templates/collections/edr/instance.html:23
 #: pygeoapi/templates/collections/edr/instance.html:23
 msgid "Instance"
-msgstr "Instâncias"
+msgstr "Instância"
+
+msgid "Instance as JSON"
+msgstr "Instância como JSON"
+
+msgid "Instance as HTML"
+msgstr "Instância como HTML"
 
 #: custom/templates/collections/edr/query.html:11
 #: pygeoapi/templates/collections/edr/query.html:11

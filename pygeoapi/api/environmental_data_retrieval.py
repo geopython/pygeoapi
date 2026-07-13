@@ -128,10 +128,12 @@ def get_collection_edr_instances(api: API, request: APIRequest,
             'links': [{
                 'href': f'{uri}/instances/{instance}?f={F_JSON}',
                 'rel': request.get_linkrel(F_JSON),
+                'title': l10n.translate('Instance as JSON', request.locale),
                 'type': 'application/json'
             }, {
                 'href': f'{uri}/instances/{instance}?f={F_HTML}',
                 'rel': request.get_linkrel(F_HTML),
+                'title': l10n.translate('Instance as HTML', request.locale),
                 'type': 'text/html'
             }, {
                 'href': f'{uri}?f={F_HTML}',

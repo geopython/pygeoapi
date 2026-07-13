@@ -307,6 +307,12 @@ msgstr "Экземпляры"
 msgid "Instance"
 msgstr "Экземпляр"
 
+msgid "Instance as JSON"
+msgstr ""
+
+msgid "Instance as HTML"
+msgstr ""
+
 #: pygeoapi/templates/collections/edr/query.html:11
 #, python-format
 msgid "%(query_type)s"

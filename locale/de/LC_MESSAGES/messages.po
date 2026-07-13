@@ -734,3 +734,9 @@ msgstr ""
 
 msgid "Instances"
 msgstr ""
+
+msgid "Instance as JSON"
+msgstr ""
+
+msgid "Instance as HTML"
+msgstr ""
