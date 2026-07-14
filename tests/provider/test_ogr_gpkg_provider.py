@@ -80,6 +80,14 @@ def test_get(config_poi_portugal):
     assert result['id'] == 536678593
     assert 'cafe' in result['properties']['fclass']
 
+    with pytest.raises(ProviderItemNotFoundError):
+        item_id = 'foo%27%20OR%20%271%27%3D%271'
+        p.get(item_id)
+
+    with pytest.raises(ProviderItemNotFoundError):
+        item_id = "x' OR (SELECT substr(sql,1,1) FROM sqlite_master WHERE name='secret_table')='C"  # noqa
+        p.get(item_id)
+
 
 def test_get_not_existing_feature_raise_exception(
     config_poi_portugal
@@ -397,3 +405,23 @@ def test_query_with_property_filtering(config_gpkg_4326):
         assert 'straatnaam' in feature['properties']
 
         assert feature['properties']['straatnaam'] == 'Arnhemseweg'
+
+    feature_collection = p.query(
+        properties=[
+            ('straatnaam', "Arnhemseweg' OR '1'='1")
+        ]
+    )
+
+    assert feature_collection.get('type') == 'FeatureCollection'
+    features = feature_collection.get('features')
+    assert len(features) == 0
+
+    feature_collection = p.query(
+        properties=[
+            ('straatnaam', "doesnotexist' OR '1'='1")
+        ]
+    )
+
+    assert feature_collection.get('type') == 'FeatureCollection'
+    features = feature_collection.get('features')
+    assert len(features) == 0
