@@ -322,7 +322,7 @@ class OGRProvider(BaseProvider):
                 LOGGER.debug('processing properties')
 
                 attribute_filter = ' and '.join(
-                    map(lambda x: f'{x[0]} = \'{x[1]}\'', properties)
+                    map(lambda x: f'{x[0]} = {sanitize_attribute_value(x[1])}', properties)  # noqa
                 )
 
                 LOGGER.debug(attribute_filter)
@@ -410,7 +410,9 @@ class OGRProvider(BaseProvider):
             LOGGER.debug(f'Fetching identifier {identifier}')
             layer = self._get_layer()
 
-            layer.SetAttributeFilter(f"{self.id_field} = '{identifier}'")
+            identifier2 = sanitize_attribute_value(identifier)
+
+            layer.SetAttributeFilter(f'{self.id_field} = {identifier2}')
 
             ogr_feature = self._get_next_feature(layer, identifier)
             result = self._ogr_feature_to_json(
@@ -902,3 +904,25 @@ def _ignore_gdal_error(inst, fn, *args, **kwargs) -> Any:
     """
     value = getattr(inst, fn)(*args, **kwargs)
     return value
+
+
+def sanitize_attribute_value(value) -> str:
+    """
+    Sanitize an attribute value used in an
+    OGR layer SetAttributeFilter function
+
+    :param value: `str` of attribute value
+
+    :returns: `str` of sanitized attribute value
+    """
+
+    if value is None:
+        return 'NULL'
+
+    if isinstance(value, bool):
+        return '1' if value else '0'
+
+    if isinstance(value, (int, float)):
+        return f"'{value}'"
+
+    return "'" + str(value).replace("'", "''") + "'"
