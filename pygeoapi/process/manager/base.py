@@ -517,7 +517,7 @@ class BaseManager:
             LOGGER.error(f'{msg}: {url}')
             raise ProcessorExecuteError(msg)
 
-        response = requests.post(url, json=data)
+        response = requests.post(url, json=data, allow_redirects=False)
         LOGGER.debug(
             f'Response: {response.status_code}'
         )

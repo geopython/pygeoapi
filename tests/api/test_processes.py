@@ -397,11 +397,12 @@ def test_execute_process(config, api_):
         rsp_headers, code, response = execute_process(api_, req, 'hello-world')
     assert code == HTTPStatus.OK
     post_mocker.assert_any_call(
-        req_body_7['subscriber']['inProgressUri'], json={}
+        req_body_7['subscriber']['inProgressUri'], json={},
+        allow_redirects=False
     )
     post_mocker.assert_any_call(
         req_body_7['subscriber']['successUri'],
-        json={'id': 'echo', 'value': 'Hello Test!'}
+        json={'id': 'echo', 'value': 'Hello Test!'}, allow_redirects=False
     )
     assert post_mocker.call_count == 2
 
