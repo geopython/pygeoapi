@@ -416,3 +416,13 @@ def test_unique_subclass_query_types():
     assert BaseEDRProvider.query_types != SensorThingsEDRProvider.query_types
     assert SensorThingsEDRProvider.query_types == \
         ['items', 'locations', 'cube', 'area']
+
+
+def test_sanitize_attribute_value(basic_provider_def):
+    provider = BaseProvider(basic_provider_def)
+
+    assert provider.sanitize_attribute_value(None) == 'NULL'
+    assert provider.sanitize_attribute_value(True) == '1'
+    assert provider.sanitize_attribute_value(False) == '0'
+    assert provider.sanitize_attribute_value(11.53) == "'11.53'"
+    assert provider.sanitize_attribute_value("NAME=4' OR '1'='1") == "'NAME=4'' OR ''1''=''1'"  # noqa

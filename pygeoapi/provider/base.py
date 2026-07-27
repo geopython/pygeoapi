@@ -294,6 +294,27 @@ class BaseProvider:
 
         return identifier2, json_data
 
+    def sanitize_attribute_value(self, value) -> str:
+        """
+        Sanitize an attribute value used in an
+        OGR layer SetAttributeFilter function
+
+        :param value: `str` of attribute value
+
+        :returns: `str` of sanitized attribute value
+        """
+
+        if value is None:
+            return 'NULL'
+
+        if isinstance(value, bool):
+            return '1' if value else '0'
+
+        if isinstance(value, (int, float)):
+            return f"'{value}'"
+
+        return "'" + str(value).replace("'", "''") + "'"
+
     def __repr__(self):
         return f'<BaseProvider> {self.type}'
 

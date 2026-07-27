@@ -3,6 +3,7 @@
 # Authors: Benjamin Webb <bwebb@lincolninst.edu>
 #
 # Copyright (c) 2022 Benjamin Webb
+# Copyright (c) 2026 Tom Kralidis
 #
 # Permission is hereby granted, free of charge, to any person
 # obtaining a copy of this software and associated documentation
@@ -309,13 +310,9 @@ class ESRIServiceProvider(BaseProvider):
 
         p = []
 
-        if properties != []:
-
+        if properties:
             for (k, v) in properties:
-                if 'String' in self.fields[k]['type']:
-                    p.append(f"{k} = '{v}'")
-                else:
-                    p.append(f"{k} = {v}")
+                p.append(f'{k} = {self.sanitize_attribute_value(v)}')
 
         if datetime_ is not None:
 
