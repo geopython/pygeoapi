@@ -454,6 +454,17 @@ Some API rules state that trailing slashes at the end of a URL are not allowed i
 In that case, you may wish to set this property to ``true``. Doing so will result in a ``404 Not Found`` if a user adds a ``/`` to the end of a URL.
 If omitted or ``false`` (default), it does not matter whether the user omits or adds the ``/`` to the end of the URL.
 
+``strict_content_negotiation``
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+If set to ``true``, requests with an ``Accept`` header that does not match any
+representation supported by the requested resource receive a ``406 Not
+Acceptable`` response. Wildcards such as ``*/*`` and ``image/*`` match the
+default or first compatible representation, respectively.
+
+If omitted or ``false`` (default), pygeoapi returns its default representation
+when none of the requested media types are supported.
+
 ``url_prefix``
 ^^^^^^^^^^^^^^
 

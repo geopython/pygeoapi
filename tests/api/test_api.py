@@ -166,6 +166,35 @@ def test_apirequest(api_):
     assert apireq.get_linkrel(F_JSON) == 'self'
     assert apireq.get_linkrel(F_HTML) == 'alternate'
 
+    # Unsupported media types fall back to the default representation unless
+    # strict content negotiation is enabled
+    req = mock_request(HTTP_ACCEPT='application/vnd.lala')
+    apireq = APIRequest(req, api_.locales)
+    assert apireq.is_valid()
+    assert apireq.format is None
+
+    apireq = APIRequest(req, api_.locales, strict_content_negotiation=True)
+    assert not apireq.is_valid()
+    assert apireq.format == 'application/vnd.lala'
+    _, status, content = api_.get_format_exception(apireq)
+    assert status == HTTPStatus.NOT_ACCEPTABLE
+    assert 'Requested media type is not supported' in content
+
+    # Wildcards accept the default or first matching representation
+    req = mock_request(HTTP_ACCEPT='*/*')
+    apireq = APIRequest(req, api_.locales)
+    assert apireq.is_valid()
+    assert apireq.format is None
+
+    req = mock_request(HTTP_ACCEPT='image/*')
+    apireq = APIRequest(req, api_.locales)
+    assert apireq.is_valid()
+    assert apireq.format == 'png'
+
+    req = mock_request(HTTP_ACCEPT='not a valid media type;')
+    apireq = APIRequest(req, api_.locales, strict_content_negotiation=True)
+    assert not apireq.is_valid()
+
     # Test complex format string
     hh = 'text/html,application/xhtml+xml,application/xml;q=0.9,'
     req = mock_request(HTTP_ACCEPT=hh)
@@ -267,6 +296,7 @@ def test_apirules_active(config_with_rules, rules_api):
     assert rules_api.config == config_with_rules
     rules = get_api_rules(config_with_rules)
     base_url = get_base_url(config_with_rules)
+    assert rules.strict_content_negotiation
 
     # Test Flask
     flask_prefix = rules.get_url_prefix('flask')
@@ -286,6 +316,12 @@ def test_apirules_active(config_with_rules, rules_api):
         # Test strict slashes
         response = flask_client.get(f'{flask_prefix}/conformance/')
         assert response.status_code == 404
+
+        # Test strict content negotiation
+        response = flask_client.get(
+            f'{flask_prefix}/conformance',
+            headers={'Accept': 'application/vnd.lala'})
+        assert response.status_code == HTTPStatus.NOT_ACCEPTABLE
         # For the landing page ONLY, trailing slashes are actually preferred.
         # See https://docs.opengeospatial.org/is/17-069r4/17-069r4.html#_api_landing_page  # noqa
         # Omitting the trailing slash should lead to a redirect.
@@ -320,6 +356,12 @@ def test_apirules_active(config_with_rules, rules_api):
         response = starlette_client.get('/static/img/pygeoapi.png')
         assert response.status_code == 200
 
+        # Test strict content negotiation
+        response = starlette_client.get(
+            f'{starlette_prefix}/conformance',
+            headers={'Accept': 'application/vnd.lala'})
+        assert response.status_code == HTTPStatus.NOT_ACCEPTABLE
+
         # Test strict slashes
         response = starlette_client.get(f'{starlette_prefix}/conformance/')
         assert response.status_code == 404
@@ -344,6 +386,7 @@ def test_apirules_active(config_with_rules, rules_api):
 def test_apirules_inactive(config, api_):
     assert api_.config == config
     rules = get_api_rules(config)
+    assert not rules.strict_content_negotiation
 
     # Test Flask
     flask_prefix = rules.get_url_prefix('flask')

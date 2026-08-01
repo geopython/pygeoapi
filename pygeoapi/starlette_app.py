@@ -127,7 +127,9 @@ async def execute_from_starlette(api_function, request: Request, *args,
                                  alternative_api: API | None = None
                                  ) -> Response:
     actual_api = api_ if alternative_api is None else alternative_api
-    api_request = await APIRequest.from_starlette(request, actual_api.locales)
+    api_request = await APIRequest.from_starlette(
+        request, actual_api.locales,
+        actual_api.api_rules.strict_content_negotiation)
     content: Union[str, bytes]
     if not skip_valid_check and not api_request.is_valid():
         headers, status, content = actual_api.get_format_exception(api_request)

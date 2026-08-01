@@ -581,7 +581,8 @@ def execute_from_django(api_function, request: HttpRequest, *args,
     else:
         api_ = API(settings.PYGEOAPI_CONFIG, settings.OPENAPI_DOCUMENT)
 
-    api_request = APIRequest.from_django(request, api_.locales)
+    api_request = APIRequest.from_django(
+        request, api_.locales, api_.api_rules.strict_content_negotiation)
     content: Union[str, bytes]
     if not skip_valid_check and not api_request.is_valid():
         headers, status, content = api_.get_format_exception(api_request)

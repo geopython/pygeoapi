@@ -145,7 +145,9 @@ def execute_from_flask(api_function: Callable, request: Request, *args,
 
     actual_api = api_ if alternative_api is None else alternative_api
 
-    api_request = APIRequest.from_flask(request, actual_api.locales)
+    api_request = APIRequest.from_flask(
+        request, actual_api.locales,
+        actual_api.api_rules.strict_content_negotiation)
 
     content: Union[str, bytes]
 

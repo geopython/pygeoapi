@@ -153,6 +153,9 @@ properties:
                     strict_slashes:
                         type: boolean
                         description: whether trailing slashes are allowed in URLs (disallow = True)
+                    strict_content_negotiation:
+                        type: boolean
+                        description: whether unsupported Accept headers result in a 406 response
                     url_prefix:
                         type: string
                         description: |-

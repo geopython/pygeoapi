@@ -185,11 +185,16 @@ class APIRequest:
 
     :param request:             The web platform specific Request instance.
     :param supported_locales:   List or set of supported Locale instances.
+    :param strict_content_negotiation: Return an invalid format for an
+                                       unsupported Accept header instead of
+                                       falling back to the default format.
     """
 
-    def __init__(self, request, supported_locales):
+    def __init__(self, request, supported_locales,
+                 strict_content_negotiation: bool = False):
         # Set default request data
         self._data = b''
+        self._strict_content_negotiation = strict_content_negotiation
 
         # Copy request query parameters
         self._args = self._get_params(request)
@@ -213,24 +218,28 @@ class APIRequest:
         self._headers = self.get_request_headers(request.headers)
 
     @classmethod
-    def from_flask(cls, request, supported_locales) -> 'APIRequest':
+    def from_flask(cls, request, supported_locales,
+                   strict_content_negotiation: bool = False) -> 'APIRequest':
         """Factory class similar to with_data, but only for flask requests"""
-        api_req = cls(request, supported_locales)
+        api_req = cls(request, supported_locales, strict_content_negotiation)
         api_req._data = request.data
         return api_req
 
     @classmethod
-    async def from_starlette(cls, request, supported_locales) -> 'APIRequest':
+    async def from_starlette(
+            cls, request, supported_locales,
+            strict_content_negotiation: bool = False) -> 'APIRequest':
         """Factory class similar to with_data, but only for starlette requests
         """
-        api_req = cls(request, supported_locales)
+        api_req = cls(request, supported_locales, strict_content_negotiation)
         api_req._data = await request.body()
         return api_req
 
     @classmethod
-    def from_django(cls, request, supported_locales) -> 'APIRequest':
+    def from_django(cls, request, supported_locales,
+                    strict_content_negotiation: bool = False) -> 'APIRequest':
         """Factory class similar to with_data, but only for django requests"""
-        api_req = cls(request, supported_locales)
+        api_req = cls(request, supported_locales, strict_content_negotiation)
         api_req._data = request.body
         return api_req
 
@@ -320,6 +329,10 @@ class APIRequest:
         types_ = get_choice_from_headers(headers, 'accept', all=True)
         if types_ is None:
             return
+        if not types_:
+            if self._strict_content_negotiation:
+                return get_from_headers(headers, 'accept')
+            return
 
         merged_format_types = FORMAT_TYPES | extra_formats
 
@@ -330,6 +343,23 @@ class APIRequest:
             if type_ in mimes2:
                 idx_ = mimes2.index(type_)
                 return fmts[idx_]
+
+            # A wildcard accepts the default representation.  A type
+            # wildcard accepts the first configured representation in that
+            # media type (for example, ``image/*`` accepts ``image/png``).
+            if type_ == '*/*':
+                return
+            if type_.endswith('/*'):
+                media_type = type_.split('/', 1)[0]
+                for idx_, mimetype in enumerate(mimes2):
+                    if mimetype.startswith(f'{media_type}/'):
+                        return fmts[idx_]
+
+        # In strict mode, keep an unmatched Accept value distinct from an
+        # absent Accept header. This lets adapters return HTTP 406 instead of
+        # silently serving the default format.
+        if self._strict_content_negotiation:
+            return types_[0]
 
     @property
     def data(self) -> bytes:
@@ -524,7 +554,8 @@ class API:
         self.config = config
         self.openapi = openapi
         self.asyncapi = asyncapi
-        self.api_headers = get_api_rules(self.config).response_headers
+        self.api_rules = get_api_rules(self.config)
+        self.api_headers = self.api_rules.response_headers
         self.base_url = get_base_url(self.config)
         self.prefetcher = UrlPrefetcher()
         self.pubsub_client = None
@@ -612,11 +643,18 @@ class API:
         # Content-Language is in the system locale (ignore language settings)
         headers = request.get_response_headers(SYSTEM_LOCALE,
                                                **self.api_headers)
-        msg = 'Invalid format requested'
+        accept = get_from_headers(request.headers, 'accept')
+        if 'f' not in request.params and accept:
+            status = HTTPStatus.NOT_ACCEPTABLE
+            code = 'NotAcceptable'
+            msg = 'Requested media type is not supported'
+        else:
+            status = HTTPStatus.BAD_REQUEST
+            code = 'InvalidParameterValue'
+            msg = 'Invalid format requested'
         LOGGER.error(f'{msg}: {request.format}')
         return self.get_exception(
-            HTTPStatus.BAD_REQUEST, headers,
-            request.format, 'InvalidParameterValue', msg)
+            status, headers, request.format, code, msg)
 
     def get_collections_url(self) -> str:
         return f"{self.base_url}/collections"

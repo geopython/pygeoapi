@@ -56,6 +56,7 @@ server:
         output_dir: /tmp
     api_rules:
         strict_slashes: true
+        strict_content_negotiation: true
         url_prefix: 'v{api_major}'
         version_header: 'X-API-Version'
 

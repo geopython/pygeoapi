@@ -67,6 +67,12 @@ class APIRules(BaseModel):
         description="If False (default), URL trailing slashes are allowed. "
                     "If True, pygeoapi will return a 404."
     )
+    strict_content_negotiation: bool = Field(
+        False,
+        description="If False (default), an unsupported Accept header falls "
+                    "back to the default representation. If True, pygeoapi "
+                    "will return a 406 Not Acceptable response."
+    )
 
     @staticmethod
     def create(**rules_config) -> 'APIRules':
