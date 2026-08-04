@@ -33,7 +33,7 @@ Queries
 
 The PostgreSQL provider uses `pygeofilter <https://github.com/geopython/pygeofilter>`_ allowing a range of filter expressions, see examples for:
 
-* `Comparison predicates (`Advanced <https://docs.ogc.org/is/21-065r2/21-065r2.html#advanced-comparison-operators>`_, `Case-insensitive <https://docs.ogc.org/is/21-065r2/21-065r2.html#case-insensitive-comparison>`_)
+* Comparison predicates (`Advanced <https://docs.ogc.org/is/21-065r2/21-065r2.html#advanced-comparison-operators>`_, `Case-insensitive <https://docs.ogc.org/is/21-065r2/21-065r2.html#case-insensitive-comparison>`_)
 * `Spatial predicates <https://docs.ogc.org/is/21-065r2/21-065r2.html#spatial-functions>`_
 * `Temporal predicates <https://docs.ogc.org/is/21-065r2/21-065r2.html#temporal-functions>`_
 

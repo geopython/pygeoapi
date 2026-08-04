@@ -59,6 +59,12 @@ def config():
         return yaml_load(fh)
 
 
+@pytest.fixture()
+def config_validator():
+    with open(get_test_file_path('pygeoapi-test-config-validator.yml')) as fh:
+        return yaml_load(fh)
+
+
 def test_get_collection_queryables(config, api_):
     req = mock_api_request()
     rsp_headers, code, response = get_collection_queryables(
@@ -737,3 +743,12 @@ def test_get_collection_item_json_ld(config, api_):
     rsp_headers, code, response = get_collection_item(api_, req, 'obs', '371')
     assert rsp_headers['Content-Type'] == FORMAT_TYPES[F_JSONLD]
     assert rsp_headers['Content-Language'] == 'fr-CA'
+
+
+def test_transaction_validation_failure(config_validator, api_):
+    req = mock_api_request(data=b'{"type": "Feature"}')
+    rsp_headers, code, response = manage_collection_item(
+        api_, req, 'create', 'obs')
+
+    assert code == HTTPStatus.BAD_REQUEST
+    assert json.loads(response)['code'] == 'InvalidParameterValue'

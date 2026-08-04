@@ -63,6 +63,7 @@ from pygeoapi.provider import filter_providers_by_type, get_provider_by_type
 from pygeoapi.provider.base import (
     ProviderGenericError, ProviderItemNotFoundError,
     ProviderTypeError, SchemaType)
+from pygeoapi.validator.base import ValidatorGenericError
 
 from pygeoapi.util import (to_json, filter_dict_by_key_value, str2bool,
                            render_j2_template, get_dataset_formatters)
@@ -796,6 +797,28 @@ def manage_collection_item(
         return api.get_exception(
             HTTPStatus.BAD_REQUEST, headers, request.format,
             'InvalidParameterValue', msg)
+
+    if action in ['create', 'update']:
+        if p.validator is not None:
+            LOGGER.debug('Provider is configured for validation')
+            LOGGER.debug('Loading validator')
+            try:
+                v = load_plugin('validator', {'name': p.validator['name']})
+            except Exception:
+                msg = 'Invalid validator configured'
+                return api.get_exception(
+                    HTTPStatus.INTERNAL_SERVER_ERROR, headers, request.format,
+                    'NoApplicableCode', msg)
+
+            LOGGER.debug('Validating item')
+            try:
+                v.validate(request.data)
+            except ValidatorGenericError as err:
+                msg = err.user_msg or 'Item is not valid, please check and validate payload'  # noqa
+                LOGGER.error(f'Validation errors: {err.message}')
+                return api.get_exception(
+                   err.http_status_code, headers, request.format,
+                   err.ogc_exception_code, msg)
 
     if action == 'create':
         LOGGER.debug('Creating item')

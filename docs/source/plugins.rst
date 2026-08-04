@@ -464,7 +464,7 @@ Below is a sample process definition as a Python dictionary:
 
 .. note::
 
-   Additional processing plugins can also be found in ``pygeoapi/process``.
+   Additional processing plugins can be found in ``pygeoapi/process``.
 
 .. _example-custom-pygeoapi-formatter:
 
@@ -503,6 +503,40 @@ The below template provides a minimal example (let's call the file ``mycooljsonf
 
            return out_data
 
+Example: custom pygeoapi validator
+----------------------------------
+
+Python code
+^^^^^^^^^^^
+
+The below template provides a minimal example (let's call the file ``mycooldatavalidator.py``:
+
+.. code-block:: python
+
+   from pygeoapi.validator.base import BaseValidator, ValidatorValidationError
+
+   class MyCoolDataValidator(BaseValidator):
+       def __init__(self, validator_def):
+           """Inherit from parent class"""
+
+           super().__init__(validator_def)
+
+       def validate(self, data: bytes, partial: bool = False) -> None:
+           if partial:  # plugin does not support partial updates to a given item (PATCH)
+               msg = 'Partial validation not supported'
+               raise ValidatorValidationError(msg)
+
+           # data is a dict of incoming data, validate accordingly
+           if 'some_property' not in data:
+               msg = 'Invalid data payload!'  # to add more detailed messaging, pass user_msg="string of text" to ValidatorValidationError
+               raise ValidatorValidationError(msg)
+
+       def __repr__(self):
+           return '<MyCoolValidator>'
+
+.. note::
+
+   Additional validator plugins can be found in ``pygeoapi/validator``.
 
 Featured plugins
 ----------------

@@ -637,6 +637,15 @@ properties:
                                           type: boolean
                                           description: whether to include extra query parameters
                                           default: false
+                                      validator:
+                                          type: object
+                                          description: custom validator to apply on transactions
+                                          properties:
+                                              name:
+                                                  type: string
+                                                  description: name of validator
+                                          required:
+                                              - name
                                   required:
                                       - type
                                       - name

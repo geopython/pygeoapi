@@ -377,7 +377,7 @@ def test_provider_exceptions_http_status_codes(exception_class, expected_code):
 
 
 @pytest.mark.parametrize("exception_class,expected_code", [
-    (ProviderInvalidQueryError, "InvalidQuery"),
+    (ProviderInvalidQueryError, "InvalidParameterValue"),
     (ProviderItemNotFoundError, "NotFound"),
     (ProviderNoDataError, "InvalidParameterValue")
 ])

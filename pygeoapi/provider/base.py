@@ -81,6 +81,7 @@ class BaseProvider:
         self.include_extra_query_parameters = provider_def.get('include_extra_query_parameters', False)  # noqa
         self._fields = {}
         self.filename = None
+        self.validator = provider_def.get('validator')
 
         # CRS properties
         storage_crs_uri = provider_def.get('storage_crs', DEFAULT_STORAGE_CRS)
@@ -337,7 +338,7 @@ class ProviderTypeError(ProviderGenericError):
 
 class ProviderInvalidQueryError(ProviderGenericError):
     """provider invalid query error"""
-    ogc_exception_code = 'InvalidQuery'
+    ogc_exception_code = 'InvalidParameterValue'
     http_status_code = HTTPStatus.BAD_REQUEST
     default_msg = "query error"
 

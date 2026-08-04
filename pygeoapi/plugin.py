@@ -90,6 +90,9 @@ PLUGINS = {
         'HTTP': 'pygeoapi.pubsub.http.HTTPPubSubClient',
         'Kafka': 'pygeoapi.pubsub.kafka.KafkaPubSubClient',
         'MQTT': 'pygeoapi.pubsub.mqtt.MQTTPubSubClient'
+    },
+    'validator': {
+        'GeoJSON': 'pygeoapi.validator.geojson.GeoJSONValidator'
     }
 }
 
