@@ -506,8 +506,8 @@ def test_get_job_result(api_):
     assert code == HTTPStatus.NOT_FOUND
 
     job_id = _execute_a_job(api_)
-    rsp_headers, code, response = get_job_result(api_,
-        mock_api_request({'f': 'html'}), job_id)
+    rsp_headers, code, response = get_job_result(
+        api_, mock_api_request({'f': 'html'}), job_id)
 
     assert code == HTTPStatus.OK
     assert rsp_headers['Content-Type'] == 'text/html'
