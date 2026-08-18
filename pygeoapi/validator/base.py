@@ -47,7 +47,7 @@ class BaseValidator:
         :returns: pygeoapi.validator.base.BaseValidator
         """
 
-    def validate(self, data: bytes, partial: bool = False) -> list:
+    def validate(self, data: bytes, partial: bool = False) -> None:
         """
         Validate a data structure
 
@@ -55,7 +55,7 @@ class BaseValidator:
         :param partial: `bool` of whether data to be validated is a
                         partial resource (default `False`)
 
-        :returns: `list` of validation errors
+        :returns: None
         """
 
         raise NotImplementedError()

@@ -526,7 +526,7 @@ The below template provides a minimal example (let's call the file ``mycooldatav
                msg = 'Partial validation not supported'
                raise ValidatorValidationError(msg)
 
-           # data is a dict of incoming data, validate accordingly
+           # data is bytes of incoming data, validate accordingly
            if 'some_property' not in data:
                msg = 'Invalid data payload!'  # to add more detailed messaging, pass user_msg="string of text" to ValidatorValidationError
                raise ValidatorValidationError(msg)
@@ -537,6 +537,25 @@ The below template provides a minimal example (let's call the file ``mycooldatav
 .. note::
 
    Additional validator plugins can be found in ``pygeoapi/validator``.
+
+Error messages
+--------------
+
+Exceptions raised by plugins are captured by pygeoapi core (``pygeoapi.api``), with generic error messages being returned to the client.  As plugins may raise exceptions with unsanitized or sensitive information, default plugin exception text is always logged for further inspection and corrective action:
+
+.. code:: python
+
+   raise ValidatorValidationError('some error message')  # logged to file or stdout (per logging configuration directive)
+
+
+To provide more fulsome error descriptions, plugins can raise exceptions and use the ``user_msg`` argument:
+
+.. code:: python
+
+   raise ValidatorValidationError(user_msg='custom error message')
+
+The ``user_msg`` will overwrite the generic error message usually provide and be returned as part of the exception report to the client.
+
 
 Featured plugins
 ----------------
