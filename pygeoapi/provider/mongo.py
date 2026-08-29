@@ -66,7 +66,7 @@ class MongoProvider(BaseProvider):
         dbclient = MongoClient(self.data)
         self.featuredb = dbclient.get_default_database()
         self.collection = provider_def['collection']
-        self.featuredb[self.collection].create_index([("geometry", GEOSPHERE)])
+        self.featuredb[self.collection].create_index([("feature.geometry", GEOSPHERE)])
         self.get_fields()
 
     def get_fields(self):
@@ -98,45 +98,142 @@ class MongoProvider(BaseProvider):
     def _get_feature_list(self, filterObj, sortList=[], skip=0, maxitems=1,
                           skip_geometry=False):
         featurecursor = self.featuredb[self.collection].find(filterObj)
-
         if sortList:
             featurecursor = featurecursor.sort(sortList)
 
         featurecursor.skip(skip)
-        featurecursor.limit(maxitems)
+        if maxitems > -1:
+            featurecursor.limit(maxitems)
         featurelist = list(featurecursor)
-        for item in featurelist:
-            item['id'] = str(item.pop('_id'))
-            if skip_geometry:
-                item['geometry'] = None
 
-        return featurelist
+        features = []
+
+        for item in featurelist:
+            feature_id = str(item.pop('_id'))
+            geometry = item['feature']['geometry']
+            props = item['feature']['properties']
+            
+            if skip_geometry:
+                geometry = None
+
+            feature = {
+                'type': 'Feature',
+                'id': feature_id,
+                'geometry': geometry,
+                'properties': props
+            }
+
+            features.append(feature)
+
+        return features
 
     @crs_transform
     def query(self, offset=0, limit=10, resulttype='results',
               bbox=[], datetime_=None, properties=[], sortby=[],
-              select_properties=[], skip_geometry=False, q=None, **kwargs):
+              select_properties=[], skip_geometry=False, q=None, filterq=None, **kwargs):
         """
         query the provider
 
         :returns: dict of 0..n GeoJSON features
         """
-        and_filter = []
 
+        def cql2_to_mongo(node):
+            if node is None:
+                return
+            
+            # GeoJson operator
+            if node.__class__.__name__ == "GeometryWithin":
+                field = node.lhs.name
+                geom = node.rhs.geometry
+
+                query_body = {
+                    field: {
+                        '$geoWithin': {
+                            '$geometry': geom
+                        }
+                    }
+                }
+                return query_body
+            
+            if node.__class__.__name__ == "GeometryIntersects":
+                field = node.lhs.name
+                geom = node.rhs.geometry
+
+                return {
+                    field: {
+                        '$geoIntersects': {
+                            '$geometry': geom
+                        }
+                    }
+                }
+
+            if node.__class__.__name__ == "DistanceWithin":
+                field = node.lhs.name
+                geom = node.rhs.geometry
+                distance = node.distance
+                units = node.units # mongo's default units are meters
+                # but with CQL we can pass different units
+                # and here we can recalculate them
+                return {
+                    field: {
+                        '$near': {
+                            '$geometry': geom,
+                            '$maxDistance': distance,
+                            '$minDistance': 0
+                        }
+                    }
+                }
+
+            # Logical operators
+            if node.__class__.__name__ == "And":
+                return {
+                    "$and": [
+                        cql2_to_mongo(node.lhs),
+                        cql2_to_mongo(node.rhs)
+                    ]
+                }
+
+            if node.__class__.__name__ == "Or":
+                return {
+                    "$or": [
+                        cql2_to_mongo(node.lhs),
+                        cql2_to_mongo(node.rhs)
+                    ]
+                }
+
+            # Comparison operators
+            if node.__class__.__name__ == "Equal":
+                field = node.lhs.name
+                value = node.rhs
+                return {f"{field}": value}
+
+            if node.__class__.__name__ == "GreaterEqual":
+                field = node.lhs.name
+                value = node.rhs
+                return {f"{field}": {"$gte": value}}
+
+            if node.__class__.__name__ == "LessEqual":
+                field = node.lhs.name
+                value = node.rhs
+                return {f"{field}": {"$lte": value}}
+
+            return
+
+        and_filter = []
+        cql_filters_parsed = cql2_to_mongo(filterq)
+        if cql_filters_parsed is not None:
+            and_filter.append(cql_filters_parsed)
+            limit = -1 # if there is CQL query return all elements
+        
         if len(bbox) == 4:
             x, y, w, h = map(float, bbox)
             and_filter.append(
                 {'geometry': {'$geoWithin': {'$box': [[x, y], [w, h]]}}})
 
-        # This parameter is not working yet!
-        # gte is not sufficient to check date range
-        if datetime_ is not None:
-            assert isinstance(datetime_, datetime)
-            and_filter.append({'properties.datetime': {'$gte': datetime_}})
-
+        
         for prop in properties:
             and_filter.append({"properties."+prop[0]: {'$eq': prop[1]}})
-
+        
         filterobj = {'$and': and_filter} if and_filter else {}
 
         sort_list = [("properties." + sort['property'],
@@ -147,12 +244,6 @@ class MongoProvider(BaseProvider):
             'type': 'FeatureCollection',
             'features': []
         }
-
-        if self.count or resulttype == 'hits':
-            matched = self.featuredb[self.collection].count_documents(
-                filterobj)
-            LOGGER.debug(f'Found {matched} result(s)')
-            feature_collection['numberMatched'] = matched
 
         if resulttype == 'hits':
             return feature_collection
