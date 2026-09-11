@@ -98,19 +98,8 @@
                 {% endif %}
               {% endfor %}
                 <tr>
-                  <td>{% trans %}Links{% endtrans %}</td>
-                  <td>
-                    <ul>
-                      {% for l in data['links'] %}
-                      {% if l['href'] %}
-                        <li><a href="{{ l['href'] }}" title="{{ l['title'] or l['href'].split('/') }}">{{ l['title'] or (l['href'].split('/') | last) | truncate( 25 ) }}</a>
-                        {% if l['type'] %}
-                          ({{ l['type'] }})
-                        {% endif %}
-                        </li>
-                      {% endif %}
-                      {% endfor %}
-                    </ul>
+                  <td colspane="2">
+                    {% include "partials/link.html" %}
                   </td>
                 </tr>
             </tbody>

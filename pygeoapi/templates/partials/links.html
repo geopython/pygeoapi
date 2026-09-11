@@ -1,0 +1,15 @@
+<h3>{% trans %}Links{% endtrans %}</h3>
+{% set ns = namespace(cat_title=None) %}
+<ul>
+{% for link in (links or data['links'])|sort(attribute='rel') %}
+    {% if link['rel'] != ns.cat_title %}
+    {% set ns.cat_title = link['rel'] %}
+    <li class="list-unstyled text-capitalize" style="margin-left:-2rem">
+    <b>{{ns.cat_title.split('/').pop()}}</b></li>
+    {% endif %}
+    <li>
+        <a title="{{ link['title'] }}" href="{{ link['href'] }}">
+        {{ link['title'] or link['href'] }}<a>
+    </li>
+{% endfor %}
+</ul>

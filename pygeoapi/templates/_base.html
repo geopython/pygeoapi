@@ -37,7 +37,7 @@
     <meta property="og:description"  content="{{ config['metadata']['identification']['description'] }}" />
 
     <meta property="og:type" content="website" />
-    {% for link in data['links'] %}
+    {% for link in (links or data['links']) %}
       {% if (link['rel']=="self" and link['type']=="text/html") %}
       <link rel="canonical" href="{{ link['href'].split('?')[0] }}?f=html" />
       {% elif (link['rel']!="canonical") %}
@@ -80,25 +80,11 @@
         <a href="{{ config['server']['url'] }}">{% trans %}Home{% endtrans %}</a>
         {% endblock %}
         <span style="float: inline-end">
-          {% set links_found = namespace(json='', jsonld='') %}
-
-          {% for link in data['links'] %}
-          {% if link['rel'] == 'alternate' and link['type'] and link['type'] in ['application/json', 'application/geo+json', 'application/prs.coverage+json'] %}
-          {% set links_found.json = link.href | string | safe %}
-          <a href="{{ link['href'] }}">{% trans %}json{% endtrans %}</a>
-          {% elif link['rel'] == 'alternate' and link['type'] and link['type'] == 'application/ld+json' %}
-          {% set links_found.jsonld = link.href | string | safe %}
-          <a href="{{ link['href'] }}">{% trans %}jsonld{% endtrans %}</a>
-          {% endif %}
-          {% endfor %}
-
-          {% if links_found.json == '' %}
-          <a href="?f=json">{% trans %}json{% endtrans %}</a>
-          {% endif %}
-          {% if links_found.jsonld == '' %}
-          <a href="?f=jsonld">{% trans %}jsonld{% endtrans %}</a>
-          {% endif %}
-
+            {% for link in (links or data['links']) %}
+              {%- if link.get('rel') == 'alternate'  -%}
+              <a href="{{link.get('href')}}">{{  link.get('type').split('/')[-1]  }}</a>
+              {%- endif-%}
+            {% endfor %}
         </span>
         </div>
       </div>
@@ -124,26 +110,31 @@
     </footer> 
     {% block extrafoot %}
     {% endblock %}
-    <script>
+
+    {% for link in (links or data['links']) %}
+      {%- if (link['rel']=="alternate" and link['type']=="application/ld+json") -%}
+      <script>
       // Requests and embeds JSON-LD representation of current page
-      var xhr = new XMLHttpRequest();
-      {% if links_found.jsonld == '' -%}
-      var path = window.location.protocol + "//" + window.location.host + window.location.pathname + "?f=jsonld";
-      {%- else -%}
-      var path = "{{ links_found.jsonld }}";
+     fetch("{{ link.get('href') }}")
+        .then(response => {
+          if (!response.ok) {
+            console.log(`HTTP ${response.status}`);
+          } else {
+            return response.text();  
+          }
+        })
+        .then(data => {
+            var head = document.getElementsByTagName('head')[0];
+            var jsonld_datablock = document.createElement('script');
+            jsonld_datablock.type = "application/ld+json";
+            jsonld_datablock.textContent = data.replace('docs/jsonldcontext.jsonld','');
+            head.appendChild(jsonld_datablock);
+        })
+        .catch(error => {
+          console.error("Failed to fetch:", error);
+        });
+      </script>
       {%- endif %}
-      xhr.open('GET', path);
-      xhr.onload = function() {
-        if (xhr.status === 200) {
-          var head = document.getElementsByTagName('head')[0];
-          var jsonld_datablock = document.createElement('script');
-          jsonld_datablock.type = "application/ld+json";
-          //remove full context path, because search engines don't expect it here, pyld requires it.
-          jsonld_datablock.textContent = xhr.responseText.replace('docs/jsonldcontext.jsonld','');
-          head.appendChild(jsonld_datablock);
-        }
-      };
-      xhr.send();
-    </script>
+    {% endfor %}
   </body>
 </html>
