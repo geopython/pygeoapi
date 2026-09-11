@@ -130,6 +130,7 @@ jobs:
         pip3 install -r requirements-pubsub.txt
         pip3 install .
         pip3 install GDAL==`gdal-config --version`
+        pip3 install "pyproj<3.8"
     - name: setup test data ⚙️
       run: |
         pybabel compile -d locale -l es
