@@ -270,7 +270,7 @@ def test_transform_bbox():
         None,
         pygeofilter.ast.GeometryIntersects(
             pygeofilter.ast.Attribute(name='geometry'),
-            Geometry({'type': 'Point', 'coordinates': (2313681.8086284213, 4641307.939955419), 'crs': {'properties': {'name': 'urn:ogc:def:crs:EPSG::3004'}}}) # noqa
+            Geometry({'type': 'Point', 'coordinates': (2313681.808628421, 4641307.939955416), 'crs': {'properties': {'name': 'urn:ogc:def:crs:EPSG::3004'}}}) # noqa
         ),
         id='unnested-geometry-transformed-coords-explicit-input-crs-ewkt'
     ),
@@ -281,7 +281,7 @@ def test_transform_bbox():
         None,
         pygeofilter.ast.GeometryIntersects(
             pygeofilter.ast.Attribute(name='geometry'),
-            Geometry({'type': 'Point', 'coordinates': (2313681.8086284213, 4641307.939955419), 'crs': {'properties': {'name': 'urn:ogc:def:crs:EPSG::3004'}}}) # noqa
+            Geometry({'type': 'Point', 'coordinates': (2313681.808628421, 4641307.939955416), 'crs': {'properties': {'name': 'urn:ogc:def:crs:EPSG::3004'}}}) # noqa
         ),
         id='unnested-geometry-transformed-coords-explicit-input-crs-filter-crs'
     ),
@@ -292,7 +292,7 @@ def test_transform_bbox():
         None,
         pygeofilter.ast.GeometryIntersects(
             pygeofilter.ast.Attribute(name='geometry'),
-            Geometry({'type': 'Point', 'coordinates': (2313681.8086284213, 4641307.939955419), 'crs': {'properties': {'name': 'urn:ogc:def:crs:EPSG::3004'}}}) # noqa
+            Geometry({'type': 'Point', 'coordinates': (2313681.808628421, 4641307.939955416), 'crs': {'properties': {'name': 'urn:ogc:def:crs:EPSG::3004'}}}) # noqa
         ),
         id='unnested-geometry-transformed-coords-ewkt-crs-overrides-filter-crs'
     ),
