@@ -89,6 +89,34 @@ class BaseProcessor:
 
         raise NotImplementedError()
 
+    def remove_resources(self, job_id: str) -> None:
+        """
+        Remove resorces (if any) created by the Processor for the specific
+        job_id.
+        E.g. resources created by the Processor for the job_id to be accessed
+        by reference.
+        Note: only the Processor is aware of the allocated resources and how to
+        handle (add/remove) them.
+
+        :param job_id: the job_id associated to the resources to be removed.
+
+        The function should be called by the Manager upon receiving a request
+        to delete_job().
+
+        The function should be implemented only by the Processors creating
+        job_id specific resources as result of a call to execute(),
+        where the resources are expected to become unavailable when the job
+        were deleted.
+
+        For the implementing Processors, the Processor needs to have an
+        internal way to map job_id to the resources specific to that job_id.
+
+        No exception is expected to be raised where the remove operation will
+        fail for any reason.
+        """
+
+        pass
+
     def __repr__(self):
         return f'<BaseProcessor> {self.name}'
 

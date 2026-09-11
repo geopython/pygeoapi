@@ -161,6 +161,11 @@ class TinyDBManager(BaseManager):
         with self._db() as db:
             removed = bool(db.remove(tinydb.where('identifier') == job_id))
 
+        # remove resources if present
+        process_id = job_result.get('process_id')
+        processor = self.get_processor(process_id)
+        processor.remove_resources(job_id)
+
         return removed
 
     def get_job(self, job_id: str) -> dict:
