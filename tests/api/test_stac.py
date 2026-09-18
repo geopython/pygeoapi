@@ -31,7 +31,7 @@ import json
 
 import pytest
 
-from pygeoapi.api.stac import search, landing_page
+from pygeoapi.api.stac import get_stac_path, landing_page, search
 from pygeoapi.formats import FORMAT_TYPES, F_JSON
 from pygeoapi.util import yaml_load
 
@@ -64,6 +64,38 @@ def test_landing_page(config, api_):
     assert response['title'] == 'pygeoapi default instance'
     assert 'description' in response
     assert response['description'] == 'pygeoapi provides an API to geospatial data'  # noqa
+
+
+def test_get_stac_item_html(config, api_, monkeypatch):
+    item = {
+        'id': 'test-item',
+        'type': 'Feature',
+        'bbox': [-10, -5, 10, 5],
+        'geometry': None,
+        'properties': {},
+        'links': [],
+        'assets': {
+            'default': {
+                'href': 'test-item.tif',
+                'created': '2026-09-18T00:00:00Z',
+                'file:size': 1024
+            }
+        }
+    }
+
+    class ItemProvider:
+        def get_data_path(self, base_url, path, relative_path):
+            return item
+
+    monkeypatch.setattr('pygeoapi.api.stac.load_plugin',
+                        lambda *args: ItemProvider())
+
+    request = mock_api_request({'f': 'html'})
+    _, code, response = get_stac_path(api_, request,
+                                      'test-data/test-item.tif')
+
+    assert code == 200
+    assert 'var bbox = gen_safe_bbox([-10, -5, 10, 5]);' in response
 
 
 @pytest.mark.parametrize('params,matched,returned', [
