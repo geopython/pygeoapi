@@ -99,7 +99,7 @@
         }
     ));
 
-    var bbox = gen_safe_bbox({{ data['extent']['spatial']['bbox'][0] }});
+    var bbox = gen_safe_bbox({{ data['bbox'] }});
 
     var bbox_layer = L.polygon([
       [bbox[1], bbox[0]],
