@@ -166,6 +166,20 @@ def test_json_serial():
     d = uuid.UUID('12345678-1234-5678-1234-567812345678')
     assert util.json_serial(d) == '12345678-1234-5678-1234-567812345678'
 
+    # Valid UTF-8 bytes round-trip as a plain string
+    assert util.json_serial(b'hello') == 'hello'
+
+    # Non-UTF-8 bytes must produce a base64 *str* (not bytes), so that the
+    # result can be serialised to JSON without a TypeError.
+    raw = b'\x80\x81\x82'
+    result = util.json_serial(raw)
+    assert isinstance(result, str), "json_serial must return str, not bytes"
+    import base64 as _b64
+    assert result == _b64.b64encode(raw).decode('ascii')
+    import json as _json
+    # Must be embeddable in a JSON document without raising
+    _json.dumps({'data': result})
+
     with pytest.raises(TypeError):
         util.json_serial('foo')
 
