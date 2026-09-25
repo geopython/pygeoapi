@@ -1322,7 +1322,8 @@ def evaluate_limit(requested: Union[None, int], server_limits: dict,
     else:
         requested2 = get_typed_value(requested)
 
-    if not isinstance(requested2, int):
+    # bool is a subclass of int, but limit=true is not a valid limit
+    if isinstance(requested2, bool) or not isinstance(requested2, int):
         raise ValueError('limit value should be an integer')
 
     if requested2 <= 0:
