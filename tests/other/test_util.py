@@ -228,6 +228,25 @@ def test_read_data():
     assert isinstance(data, bytes)
 
 
+@pytest.mark.parametrize('dirname', ['httpdata', 's3cache'])
+def test_read_data_local_path_with_url_like_prefix(tmp_path, monkeypatch,
+                                                   dirname):
+    (tmp_path / dirname).mkdir()
+    (tmp_path / dirname / 'data.txt').write_bytes(b'local')
+    monkeypatch.chdir(tmp_path)
+
+    assert util.read_data(f'{dirname}/data.txt') == b'local'
+
+
+def test_read_data_url():
+    response = mock.MagicMock()
+    response.__enter__.return_value.read.return_value = b'remote'
+    with mock.patch('pygeoapi.util.urlopen',
+                    return_value=response) as urlopen:
+        assert util.read_data('https://example.org/data.txt') == b'remote'
+    urlopen.assert_called_once_with('https://example.org/data.txt')
+
+
 def test_url_join():
     f = util.url_join
     assert f('http://localhost:5000') == 'http://localhost:5000'

@@ -619,7 +619,8 @@ def read_data(path: Union[Path, str]) -> Union[bytes, str]:
 
     LOGGER.debug(f'Attempting to read {path}')
 
-    if isinstance(path, Path) or not path.startswith(('http', 's3')):
+    if isinstance(path, Path) or \
+            urlparse(path).scheme.lower() not in ('http', 'https', 's3'):
         LOGGER.debug('local file on disk')
         with Path(path).open('rb') as fh:
             return fh.read()
