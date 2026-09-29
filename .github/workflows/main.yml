@@ -131,6 +131,9 @@ jobs:
         pip3 install .
         pip3 install GDAL==`gdal-config --version`
         pip3 install "pyproj<3.8"
+
+    - run: pip3 list | grep -i -E "sqlalchemy|psycopg"
+
     - name: setup test data ⚙️
       run: |
         pybabel compile -d locale -l es
