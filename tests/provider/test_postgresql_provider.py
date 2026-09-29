@@ -1011,6 +1011,7 @@ def test_provider_count_false_with_resulttype_hits(config):
     # Assert
     assert results['numberMatched'] == 14776
 
+
 def test_get_engine_use_provider_driver():
     engine = postgresql_provider_module.get_engine(
         'postgresql+psycopg2', 'host', '5432', 'db', 'user', 'password',
