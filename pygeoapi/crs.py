@@ -532,6 +532,25 @@ def _inplace_replace_geometry_filter_name(
                     sub_node, geometry_column_name)
 
 
+def normalize_crs_uri(crs: str) -> str:
+    """Normalize a CRS identifier to the canonical URL form.
+
+    Accepts the shorthand "EPSG:xxxx" and returns the corresponding
+    http://www.opengis.net/def/crs/EPSG/0/xxxx URI, so that a query
+    parameter can be matched against the supported-CRS list which uses
+    URL form.  Non-EPSG inputs are returned unchanged.
+
+    :param crs: CRS identifier (URL, URN, or "AUTHORITY:CODE").
+    :returns: Canonical URL-form URI when the input is an EPSG shorthand,
+        else the input unchanged.
+    """
+    if ':' in crs and '/' not in crs:
+        authority, _, code = crs.partition(':')
+        if authority.upper() == 'EPSG' and code.isdigit():
+            return f'http://www.opengis.net/def/crs/EPSG/0/{code}'
+    return crs
+
+
 def create_crs_transform_spec(
     provider_def: dict, query_crs_uri: Optional[str] = None
 ) -> Union[None, CrsTransformSpec]:
@@ -565,6 +584,10 @@ def create_crs_transform_spec(
         else:
             query_crs_uri = DEFAULT_CRS
         LOGGER.debug(f'no crs parameter, using default: {query_crs_uri}')
+    else:
+        # Allow the common shorthand "EPSG:xxxx" in addition to the full
+        # URI form; both denote the same CRS.
+        query_crs_uri = normalize_crs_uri(query_crs_uri)
 
     supported_crs_list = get_supported_crs_list(provider_def)
     # Check that the crs specified by the query parameter is supported.

@@ -44,7 +44,7 @@ from datetime import datetime
 from decimal import Decimal
 import functools
 import logging
-from typing import Optional, Any
+from typing import Optional, Any, Union
 
 from geoalchemy2 import Geometry  # noqa - this isn't used explicitly but is needed to process Geometry columns
 from geoalchemy2.functions import ST_MakeEnvelope, ST_Intersects
@@ -60,7 +60,7 @@ from sqlalchemy import (
     desc,
     delete
 )
-from sqlalchemy.engine import URL, Engine
+from sqlalchemy.engine import URL, Engine, make_url
 from sqlalchemy.exc import (
     ConstraintColumnNotFoundError,
     InvalidRequestError,
@@ -649,7 +649,7 @@ def get_engine(
     database: str,
     user: str,
     password: str,
-    conn_str: Optional[str] = None,
+    conn_str: Optional[Union[str, URL]] = None,
     **connect_args
 ) -> Engine:
     """
@@ -679,6 +679,18 @@ def get_engine(
             port=int(port),
             database=database
         )
+    else:
+        # A caller-provided URL with a bare driver name (e.g. "postgresql://")
+        # resolves to SQLAlchemy's default DBAPI for that backend (psycopg v3
+        # for PostgreSQL), which may not be installed. Honour the provider's
+        # driver_name when the URL does not already pin one.
+        parsed = make_url(conn_str)
+        if '+' not in parsed.drivername and '+' in driver_name:
+            backend = driver_name.split('+', 1)[0]
+            if parsed.drivername == backend:
+                conn_str = parsed.set(
+                    drivername=driver_name
+                )
 
     # Separate connection-pool tuning from DBAPI connect args. Pool keys are
     # applied to create_engine() directly; everything left in connect_args is
