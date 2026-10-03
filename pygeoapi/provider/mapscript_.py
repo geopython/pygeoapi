@@ -93,10 +93,16 @@ class MapScriptProvider(BaseProvider):
 
             self._layer.type = getattr(mapscript, self.options['type'])
 
+            # The documented configuration surface is storage_crs (a URI
+            # such as "http://www.opengis.net/def/crs/EPSG/0/2169").
+            # options.projection is the legacy integer override kept for
+            # backward compatibility: when it is present it still wins,
+            # so existing deployments that rely on it keep working.
             try:
                 self.crs = int(self.options['projection'])
-            except KeyError:
-                self.crs = 4326
+            except (KeyError, ValueError):
+                crs_epsg = self.storage_crs.to_epsg()
+                self.crs = crs_epsg if crs_epsg is not None else 4326
 
             self._layer.setProjection(self._epsg2projstring(self.crs))
 
