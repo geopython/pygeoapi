@@ -79,9 +79,15 @@ class MongoDBManager(BaseManager):
             database = self.db.job_manager_pygeoapi
             collection = database.jobs
             if status is not None:
-                jobs = list(collection.find({}, {"status": status}))
+                query = {"status": status}
             else:
-                jobs = list(collection.find({}))
+                query = {}
+            cursor = collection.find(query)
+            if offset:
+                cursor = cursor.skip(offset)
+            if limit:
+                cursor = cursor.limit(limit)
+            jobs = list(cursor)
             LOGGER.info("JOBMANAGER - MongoDB jobs queried")
             return {
                 'jobs': jobs,
