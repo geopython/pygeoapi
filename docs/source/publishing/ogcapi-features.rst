@@ -104,7 +104,7 @@ To publish an Elasticsearch index, the following are required in your index:
 
 .. note::
 
-   For Elasticseach indexes that are password protect, a RFC1738 URL can be used as follows:
+   For Elasticsearch indexes that are password protected, a RFC1738 URL can be used as follows:
 
    ``data: http://username:password@localhost:9200/ne_110m_populated_places_simple``
 
@@ -421,7 +421,7 @@ To publish an OpenSearch index, the following are required in your index:
 
 .. note::
 
-   For OpenSearch indexes that are password protect, a RFC1738 URL can be used as follows:
+   For OpenSearch indexes that are password protected, a RFC1738 URL can be used as follows:
 
    ``data: http://username:password@localhost:9200/ne_110m_populated_places_simple``
 
