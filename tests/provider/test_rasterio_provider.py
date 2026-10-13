@@ -27,7 +27,12 @@
 #
 # =================================================================
 
+from zipfile import ZipFile
+
+import numpy as np
 import pytest
+from rasterio.io import MemoryFile
+from rasterio.transform import from_origin
 
 from pygeoapi.provider.rasterio_ import RasterioProvider
 
@@ -93,3 +98,46 @@ def test_query_bbox_reprojection(config):
     assert data['domain']['axes']['x']['stop'] == -75.0
     assert data['domain']['axes']['y']['start'] == 49.0
     assert data['domain']['axes']['y']['stop'] == 45.0
+
+
+@pytest.mark.parametrize('storage', ['local', 'vsimem', 'vsizip'])
+def test_query_native_without_subset(tmp_path, storage):
+    pixels = np.arange(24, dtype='int16').reshape(2, 3, 4)
+    transform = from_origin(-80, 50, 0.5, 0.5)
+    with MemoryFile() as source:
+        with source.open(driver='GTiff', width=4, height=3, count=2,
+                         dtype='int16', crs='EPSG:4326',
+                         transform=transform, nodata=-9999) as dataset:
+            dataset.write(pixels)
+
+        original = source.read()
+        if storage == 'local':
+            data_path = tmp_path / 'coverage.tif'
+            data_path.write_bytes(original)
+        elif storage == 'vsizip':
+            archive = tmp_path / 'coverage.zip'
+            with ZipFile(archive, 'w') as zipped:
+                zipped.writestr('coverage.tif', original)
+            data_path = f'/vsizip/{archive.as_posix()}/coverage.tif'
+        else:
+            data_path = source.name
+
+        provider = RasterioProvider({
+            'name': 'rasterio',
+            'type': 'coverage',
+            'data': str(data_path),
+            'format': {'name': 'GTiff', 'mimetype': 'image/tiff'}
+        })
+        try:
+            result = provider.query(format_='GTiff')
+        finally:
+            provider._data.close()
+
+        if storage == 'local':
+            assert result == original
+        with MemoryFile(result) as output:
+            with output.open() as dataset:
+                np.testing.assert_array_equal(dataset.read(), pixels)
+                assert dataset.crs.to_epsg() == 4326
+                assert dataset.transform == transform
+                assert dataset.nodata == -9999
