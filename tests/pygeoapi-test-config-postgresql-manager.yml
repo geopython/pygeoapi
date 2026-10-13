@@ -67,8 +67,8 @@ logging:
 metadata:
     identification:
         title:
-            en: pygeoapi instance to test Process Manager backed by PostgreSql
-            fr: test instance de pygeoapi
+            en: pygeoapi instance to test Process Manager backed by PostgreSQL
+            fr: test instance de pygeoapi pour evaluer Process Manager avec PostgreSQL
         description:
             en: pygeoapi provides an API to geospatial data
             fr: pygeoapi fournit une API aux données géospatiales
@@ -107,7 +107,6 @@ metadata:
         role: pointOfContact
 
 resources:
-
     hello-world:
         type: process
         processor:
