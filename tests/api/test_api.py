@@ -701,6 +701,8 @@ def test_describe_collections(config, api_):
     rsp_headers, code, response = describe_collections(api_, req, 'obs')
     assert rsp_headers['Content-Type'] == FORMAT_TYPES[F_HTML]
     assert rsp_headers['Content-Language'] == 'en-US'
+    assert '_(not specified)' not in response
+    assert 'not specified' in response
 
     # hiearchical collections
     req = mock_api_request()
