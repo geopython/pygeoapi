@@ -31,10 +31,12 @@ from datetime import datetime, date, time
 from decimal import Decimal
 from copy import deepcopy
 from io import StringIO
+import json
 from unittest import mock
 import uuid
 from xml.sax.saxutils import unescape
 
+import numpy as np
 import pytest
 
 from pygeoapi import util
@@ -367,3 +369,24 @@ def test_format_datetime(value, format_, result):
 ])
 def test_format_duration(start, end, result):
     assert util.format_duration(start, end) == result
+
+
+@pytest.mark.parametrize('value,expected', [
+    (np.int8(-3), -3),
+    (np.int16(7), 7),
+    (np.int32(7), 7),
+    (np.int64(7), 7),
+    (np.uint8(255), 255),
+    (np.uint64(2**64 - 1), 2**64 - 1),
+    (np.float16(0.5), 0.5),
+    (np.float32(0.5), 0.5),
+    (np.float64(0.5), 0.5),
+    (np.bool_(True), True),
+])
+def test_json_serial_numpy_scalars(value, expected):
+    result = util.json_serial(value)
+    assert result == expected
+    assert type(result) is type(expected)
+    assert json.loads(json.dumps({'value': value},
+                                 default=util.json_serial)) == {
+        'value': expected}
