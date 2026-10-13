@@ -206,3 +206,38 @@ def test_get_malformed(malformatted_config, caplog):
     assert results['numberReturned'] == 5
     assert results['features'][3]['geometry']['coordinates'] is None
     assert results['features'][4]['geometry']['coordinates'] is None
+
+
+def test_intersects_coordinate_boundaries(config):
+    p = CSVProvider(config)
+    bbox = [-75.0, 45.0, -64.0, 55.0]
+
+    # Test point strictly inside
+    assert p._intersects({'long': '-70.0', 'lat': '50.0'}, bbox) is True
+
+    # Test points on exact boundaries
+    assert p._intersects({'long': '-75.0', 'lat': '45.0'}, bbox) is True
+    assert p._intersects({'long': '-64.0', 'lat': '55.0'}, bbox) is True
+
+    # Test points strictly outside
+    assert p._intersects({'long': '-76.0', 'lat': '50.0'}, bbox) is False
+    assert p._intersects({'long': '-70.0', 'lat': '44.0'}, bbox) is False
+    assert p._intersects({'long': '-63.0', 'lat': '50.0'}, bbox) is False
+    assert p._intersects({'long': '-70.0', 'lat': '56.0'}, bbox) is False
+
+    # Test bbox provided as strings
+    str_bbox = ['-75.0', '45.0', '-64.0', '55.0']
+    assert p._intersects({'long': '-70.0', 'lat': '50.0'}, str_bbox) is True
+
+
+def test_intersects_malformed_and_missing(config):
+    p = CSVProvider(config)
+    bbox = [-75.0, 45.0, -64.0, 55.0]
+
+    # Missing coordinate fields should return True (preserve data)
+    assert p._intersects({'long': None, 'lat': '50.0'}, bbox) is True
+    assert p._intersects({}, bbox) is True
+
+    # Non-numeric or invalid coordinates should safely evaluate to False
+    assert p._intersects({'long': 'invalid', 'lat': '50.0'}, bbox) is False
+    assert p._intersects({'long': '-70.0', 'lat': 'invalid'}, bbox) is False

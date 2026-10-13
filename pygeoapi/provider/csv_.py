@@ -34,8 +34,6 @@ import csv
 import itertools
 import logging
 
-from shapely.geometry import box, Point
-
 from pygeoapi.crs import crs_transform
 from pygeoapi.provider.base import (BaseProvider, ProviderInvalidQueryError,
                                     ProviderItemNotFoundError,
@@ -119,10 +117,6 @@ class CSVProvider(BaseProvider):
             'type': 'FeatureCollection',
             'features': []
         }
-        if identifier is not None:
-            # Loop through all rows when searching for a single feature
-            limit = self._load(resulttype='hits').get('numberMatched')
-
         with open(self.data) as ff:
             LOGGER.debug('Serializing DictReader')
             data_ = csv.DictReader(ff)
@@ -191,6 +185,7 @@ class CSVProvider(BaseProvider):
                 if identifier is not None and feature['id'] == identifier:
                     found = True
                     result = feature
+                    break
 
                 feature_collection['features'].append(feature)
 
@@ -215,19 +210,27 @@ class CSVProvider(BaseProvider):
         """
         Helper function to evaluate point geometry intersection with a bbox
 
-        :param geometry: `dict` of CSV row
+        :param data: `dict` of CSV row
         :param bbox: `list` of bbox
 
         :returns: `bool` of whether point geometry intersects with bbox
         """
 
-        if None in [data.get(self.geometry_x), data.get(self.geometry_y)]:
+        val_x = data.get(self.geometry_x)
+        val_y = data.get(self.geometry_y)
+        if None in [val_x, val_y]:
             return True
 
-        point = Point(data[self.geometry_x], data[self.geometry_y])
-        bbox2 = box(*bbox)
-
-        return bbox2.intersects(point)
+        try:
+            x = float(val_x)
+            y = float(val_y)
+            minx = float(bbox[0])
+            miny = float(bbox[1])
+            maxx = float(bbox[2])
+            maxy = float(bbox[3])
+            return (minx <= x <= maxx) and (miny <= y <= maxy)
+        except (ValueError, TypeError, IndexError):
+            return False
 
     @crs_transform
     def query(self, offset=0, limit=10, resulttype='results',
