@@ -71,6 +71,7 @@ from sqlalchemy.ext.automap import automap_base
 from sqlalchemy.orm import Session, load_only
 from sqlalchemy.sql.expression import and_
 from sqlalchemy.schema import Table
+from sqlalchemy.engine import make_url
 
 from pygeoapi.crs import get_transform_from_spec, get_srid
 from pygeoapi.provider.base import (
@@ -679,6 +680,11 @@ def get_engine(
             port=int(port),
             database=database
         )
+    else:
+        url = make_url(conn_str)
+        if url.drivername == url.get_backend_name():
+            url = url.set(drivername=driver_name)
+        conn_str = url
 
     # Separate connection-pool tuning from DBAPI connect args. Pool keys are
     # applied to create_engine() directly; everything left in connect_args is
