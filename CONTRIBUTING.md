@@ -12,6 +12,22 @@ pygeoapi has the following modes of contribution:
 - GitHub Commit Access
 - GitHub Pull Requests
 
+## By Humans, For Humans (BHFH)
+
+Software continues to improve (and be improved by) automation, including assistance made by artificial intelligence (AI).
+
+While AI is a valuable tool, it does not replace humans, craftsmanship and community.
+
+This project is made [by humans, for humans](https://geoamish.org/by-humans-for-humans.html).
+
+Contributions assisted by AI must be put forth with a human in the driver's seat, who cares about and understands this project.
+
+If this is not the case, we recommend not submitting contributions of this nature (Pull Requests, Merge Requests, etc.), as they will not be accepted.
+
+For more information about our views on AI, please see the [Responsible AI Guide](https://responsibleai.guide).
+
+Thank you for your support, belief and faith in humanity and community.
+
 ## Code of Conduct
 
 Contributors to this project are expected to act respectfully toward others in accordance with the [OSGeo Code of Conduct](https://www.osgeo.org/code_of_conduct).
