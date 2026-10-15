@@ -34,6 +34,7 @@
 
 from http import HTTPStatus
 
+from pygeoapi.api import maps
 from pygeoapi.api.maps import get_collection_map
 
 from tests.util import mock_api_request
@@ -62,6 +63,40 @@ def test_get_collection_map(config, api_):
         api_, req, 'mapserver_world_map')
 
     assert code == HTTPStatus.NOT_IMPLEMENTED
+
+
+def test_get_collection_map_bbox_crs_follows_transformed_bbox(
+        api_, monkeypatch):
+    seen = {}
+
+    class Provider:
+        def query(self, **kwargs):
+            seen.update(kwargs)
+            return b'image'
+
+    monkeypatch.setattr(maps, 'load_plugin', lambda *args: Provider())
+
+    crs_3857 = 'http://www.opengis.net/def/crs/EPSG/0/3857'
+    crs_84 = 'http://www.opengis.net/def/crs/OGC/1.3/CRS84'
+
+    # bbox in the default CRS84, map requested in EPSG:3857:
+    # the bbox is transformed, so its CRS is now EPSG:3857
+    req = mock_api_request({'bbox': '-10,-10,10,10', 'crs': crs_3857})
+    _, code, _ = get_collection_map(api_, req, 'mapserver_world_map')
+
+    assert code == HTTPStatus.OK
+    assert seen['crs'].lower() == crs_3857.lower()
+    assert seen['bbox-crs'] == seen['crs']
+    assert abs(seen['bbox'][0]) > 1000
+
+    # nothing to transform when both are the same
+    seen.clear()
+    req = mock_api_request({'bbox': '-10,-10,10,10'})
+    _, code, _ = get_collection_map(api_, req, 'mapserver_world_map')
+
+    assert code == HTTPStatus.OK
+    assert seen['bbox-crs'] == crs_84
+    assert seen['bbox'] == [-10, -10, 10, 10]
 
 
 def test_map_crs_transform(config, api_):

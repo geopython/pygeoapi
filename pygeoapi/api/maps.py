@@ -180,6 +180,8 @@ def get_collection_map(api: API, request: APIRequest,
         bbox = transform_bbox(bbox, query_args['bbox-crs'],
                               query_args['crs'], always_xy=True)
         LOGGER.debug(f'Transformed bbox: {bbox}')
+        # the provider gets the bbox in crs now
+        query_args['bbox-crs'] = query_args['crs']
     query_args['bbox'] = bbox
 
     LOGGER.debug('Processing datetime parameter')
