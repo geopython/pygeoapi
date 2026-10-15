@@ -34,6 +34,9 @@
 
 from http import HTTPStatus
 
+import pytest
+
+from pygeoapi.api import maps
 from pygeoapi.api.maps import get_collection_map
 
 from tests.util import mock_api_request
@@ -62,6 +65,31 @@ def test_get_collection_map(config, api_):
         api_, req, 'mapserver_world_map')
 
     assert code == HTTPStatus.NOT_IMPLEMENTED
+
+
+@pytest.mark.parametrize('value, expected', [
+    (None, True),
+    ('true', True),
+    ('True', True),
+    ('false', False),
+    ('False', False),
+])
+def test_get_collection_map_transparent(api_, monkeypatch, value, expected):
+    seen = {}
+
+    class Provider:
+        def query(self, **kwargs):
+            seen.update(kwargs)
+            return b'image'
+
+    monkeypatch.setattr(maps, 'load_plugin', lambda *args: Provider())
+
+    params = {} if value is None else {'transparent': value}
+    req = mock_api_request(params)
+    _, code, _ = get_collection_map(api_, req, 'mapserver_world_map')
+
+    assert code == HTTPStatus.OK
+    assert seen['transparent'] is expected
 
 
 def test_map_crs_transform(config, api_):
