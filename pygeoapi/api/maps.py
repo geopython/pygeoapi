@@ -52,7 +52,7 @@ from pygeoapi.provider import filter_providers_by_type, get_provider_by_type
 from pygeoapi.provider.base import (
     ProviderGenericError, ProviderInvalidDataError
 )
-from pygeoapi.util import to_json, filter_dict_by_key_value
+from pygeoapi.util import str2bool, to_json, filter_dict_by_key_value
 
 from . import APIRequest, API, validate_datetime, validate_subset
 
@@ -132,7 +132,8 @@ def get_collection_map(api: API, request: APIRequest,
 
     LOGGER.debug(f'Using bbox-crs: {query_args['bbox-crs']}')
 
-    query_args['transparent'] = request.params.get('transparent', True)
+    query_args['transparent'] = str2bool(
+        request.params.get('transparent', True))
 
     try:
         query_args['width'] = int(request.params.get('width', 500))
