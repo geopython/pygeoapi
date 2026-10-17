@@ -133,8 +133,16 @@ class PostgreSQLManager(BaseManager):
             if status is not None:
                 results = results.filter(self.c.status == status.value)
 
+            number_matched = results.count()
+
+            if offset:
+                results = results.offset(offset)
+
+            if limit:
+                results = results.limit(limit)
+
             jobs = [r._asdict() for r in results.all()]
-            return {'jobs': jobs, 'numberMatched': len(jobs)}
+            return {'jobs': jobs, 'numberMatched': number_matched}
 
     def add_job(self, job_metadata: dict) -> str:
         """

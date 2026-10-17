@@ -78,14 +78,20 @@ class MongoDBManager(BaseManager):
             self._connect()
             database = self.db.job_manager_pygeoapi
             collection = database.jobs
+            query = {}
             if status is not None:
-                jobs = list(collection.find({}, {"status": status}))
-            else:
-                jobs = list(collection.find({}))
+                query = {'status': getattr(status, 'value', status)}
+            cursor = collection.find(query)
+            number_matched = collection.count_documents(query)
+            if offset:
+                cursor = cursor.skip(offset)
+            if limit:
+                cursor = cursor.limit(limit)
+            jobs = list(cursor)
             LOGGER.info("JOBMANAGER - MongoDB jobs queried")
             return {
                 'jobs': jobs,
-                'numberMatched': len(jobs)
+                'numberMatched': number_matched
             }
         except Exception:
             LOGGER.error("JOBMANAGER - get_jobs error",

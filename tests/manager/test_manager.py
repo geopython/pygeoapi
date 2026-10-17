@@ -29,12 +29,26 @@
 #
 # =================================================================
 
+from datetime import datetime
 from typing import Dict
 
 import pytest
+from sqlalchemy import (
+    Column,
+    DateTime,
+    Integer,
+    LargeBinary,
+    MetaData,
+    String,
+    Table,
+    create_engine
+)
 
 from pygeoapi.process.base import UnknownProcessError, JobNotFoundError
 from pygeoapi.process.manager.base import get_manager
+from pygeoapi.process.manager.mongodb_ import MongoDBManager
+from pygeoapi.process.manager.postgresql import PostgreSQLManager
+from pygeoapi.util import JobStatus
 
 from ..util import get_test_file_path
 
@@ -104,3 +118,138 @@ def test_get_job_result_binary(config):
     mimetype, result = manager.get_job_result(job_id)
     assert mimetype == "application/x-netcdf"
     assert isinstance(result, bytes)
+
+
+def _job_metadata(identifier, status='successful'):
+    return {
+        'identifier': identifier,
+        'type': 'process',
+        'process_id': 'hello-world',
+        'created': datetime(2024, 8, 22, 12, 0, 0),
+        'started': datetime(2024, 8, 22, 12, 0, 0),
+        'finished': datetime(2024, 8, 22, 12, 0, 1),
+        'updated': datetime(2024, 8, 22, 12, 0, 1),
+        'status': status,
+        'location': None,
+        'mimetype': 'application/json',
+        'message': 'Job complete',
+        'progress': 100
+    }
+
+
+def test_get_jobs_pagination_postgresql():
+    # exercise PostgreSQLManager.get_jobs against an in-memory
+    # SQLite database with the same jobs table layout, so the
+    # test does not need a live PostgreSQL server
+    engine = create_engine('sqlite://')
+    metadata = MetaData()
+    jobs_table = Table(
+        'jobs', metadata,
+        Column('identifier', String, primary_key=True, nullable=False),
+        Column('type', String, nullable=False),
+        Column('process_id', String, nullable=False),
+        Column('created', DateTime),
+        Column('started', DateTime),
+        Column('finished', DateTime),
+        Column('updated', DateTime),
+        Column('status', String, nullable=False),
+        Column('location', String),
+        Column('mimetype', String),
+        Column('message', String),
+        Column('progress', Integer, nullable=False),
+        Column('output', LargeBinary)
+    )
+    metadata.create_all(engine)
+
+    manager = object.__new__(PostgreSQLManager)
+    manager._engine = engine
+    manager.table_model = jobs_table
+    manager.c = jobs_table.c
+
+    manager.add_job(_job_metadata('job-1'))
+    manager.add_job(_job_metadata('job-2'))
+    manager.add_job(_job_metadata('job-3', status='failed'))
+
+    results = manager.get_jobs()
+    assert results['numberMatched'] == 3
+    assert len(results['jobs']) == 3
+
+    results = manager.get_jobs(limit=2)
+    assert results['numberMatched'] == 3
+    assert len(results['jobs']) == 2
+
+    results = manager.get_jobs(limit=1, offset=1)
+    assert results['numberMatched'] == 3
+    assert len(results['jobs']) == 1
+
+    results = manager.get_jobs(status=JobStatus.successful, limit=1)
+    assert results['numberMatched'] == 2
+    assert len(results['jobs']) == 1
+
+
+class _FakeCursor:
+    def __init__(self, docs):
+        self._docs = docs
+
+    def skip(self, n):
+        self._docs = self._docs[n:]
+        return self
+
+    def limit(self, n):
+        self._docs = self._docs[:n]
+        return self
+
+    def __iter__(self):
+        return iter(self._docs)
+
+
+class _FakeCollection:
+    def __init__(self, docs):
+        self._docs = docs
+
+    def _matching(self, query):
+        return [doc for doc in self._docs
+                if all(doc.get(key) == value
+                       for key, value in query.items())]
+
+    def find(self, query=None):
+        return _FakeCursor(self._matching(query or {}))
+
+    def count_documents(self, query):
+        return len(self._matching(query))
+
+
+class _FakeDatabase:
+    def __init__(self, jobs):
+        self.jobs = jobs
+        self.job_manager_pygeoapi = self
+
+
+def test_get_jobs_pagination_mongodb():
+    # exercise MongoDBManager.get_jobs against a fake in-memory
+    # collection, so the test does not need a live MongoDB server
+    docs = [
+        {'identifier': 'job-1', 'status': 'successful'},
+        {'identifier': 'job-2', 'status': 'successful'},
+        {'identifier': 'job-3', 'status': 'failed'}
+    ]
+    database = _FakeDatabase(_FakeCollection(docs))
+
+    manager = object.__new__(MongoDBManager)
+    manager._connect = lambda: setattr(manager, 'db', database)
+
+    results = manager.get_jobs()
+    assert results['numberMatched'] == 3
+    assert len(results['jobs']) == 3
+
+    results = manager.get_jobs(limit=2)
+    assert results['numberMatched'] == 3
+    assert len(results['jobs']) == 2
+
+    results = manager.get_jobs(limit=1, offset=1)
+    assert results['numberMatched'] == 3
+    assert len(results['jobs']) == 1
+
+    results = manager.get_jobs(status=JobStatus.successful, limit=1)
+    assert results['numberMatched'] == 2
+    assert len(results['jobs']) == 1
