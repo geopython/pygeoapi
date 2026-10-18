@@ -129,9 +129,17 @@ class HateoasProvider(BaseProvider):
                     jsondata = _get_json_data(f'{data_path}/{filename}.json')
                     resource_type = 'Assets'
                 except Exception:
-                    msg = f'Resource does not exist: {data_path}'
-                    LOGGER.error(msg)
-                    raise ProviderNotFoundError(msg)
+                    try:
+                        # the item may be a flat file sitting next to
+                        # other items (e.g. items/<id>.json) instead of
+                        # living in its own directory (<id>/<id>.json)
+                        jsondata = _get_json_data(
+                            _get_sibling_item_path(data_path))
+                        resource_type = 'Assets'
+                    except Exception:
+                        msg = f'Resource does not exist: {data_path}'
+                        LOGGER.error(msg)
+                        raise ProviderNotFoundError(msg)
 
         if resource_type == 'Catalog' or resource_type == 'Collection':
             content['type'] = resource_type
@@ -144,7 +152,15 @@ class HateoasProvider(BaseProvider):
             link_href_list.sort()
 
             for link in link_href_list:
-                unused, path_ending, entry_type = link.split('/')
+                parts = link.split('/')
+                entry_type = parts[-1]
+                if entry_type in ['catalog.json', 'collection.json']:
+                    path_ending = parts[-2] if len(parts) > 1 else ''
+                else:
+                    # items may share a parent directory (e.g.
+                    # items/<id>.json), so derive the identifier from
+                    # the file name instead of a fixed path segment
+                    path_ending = os.path.splitext(entry_type)[0]
                 newpath = os.path.join(baseurl, urlpath, path_ending).replace('\\', '/') # noqa
 
                 if entry_type == 'catalog.json':
@@ -190,6 +206,38 @@ class HateoasProvider(BaseProvider):
 
     def __repr__(self):
         return f'<HateoasProvider> {self.data}'
+
+
+def _get_sibling_item_path(data_path):
+    """
+    Helper function used to locate an item file that sits in a shared
+    directory next to other items (e.g. items/<id>.json), based on the
+    links of the parent catalog or collection
+
+    :param data_path: path of the requested entry, ending with the
+                      item identifier
+
+    :returns: `str` of the path of the item file
+
+    :raises: `FileNotFoundError` if no matching link is found
+    """
+
+    parent_dir = os.path.dirname(data_path)
+    filename = os.path.basename(data_path)
+
+    for manifest in ['collection.json', 'catalog.json']:
+        try:
+            jsondata = _get_json_data(f'{parent_dir}/{manifest}')
+        except Exception:
+            continue
+        for link in jsondata.get('links', []):
+            href = link.get('href', '').replace('\\', '/')
+            if os.path.splitext(os.path.basename(href))[0] == filename:
+                return os.path.join(parent_dir, href)
+
+    msg = f'No item file found for: {data_path}'
+    LOGGER.error(msg)
+    raise FileNotFoundError(msg)
 
 
 def _modify_content_for_display(
