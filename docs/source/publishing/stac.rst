@@ -144,7 +144,7 @@ So, the following rules must be respected:
 
 6. Items must be named <*id*>.json.
 
-7. Items must be stored in subdirectories (1 level deeper) of their parent Catalog or Collection. The subdirectory must have the same name (<*id*>) as the Item without the *.json* extension. This means that each Item are contained in a unique subdirectory.
+7. Items must be stored in subdirectories (1 level deeper) of their parent Catalog or Collection. The subdirectory must have the same name (<*id*>) as the Item without the *.json* extension. This means that each Item are contained in a unique subdirectory. Alternatively, Items may share a single subdirectory (for example ``items/<id>.json``), which is the layout the STAC catalog layout best practices recommend when Items have no sidecar files.
 
 8. The links to the actual assets must be an absolute URL.
 
