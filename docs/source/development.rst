@@ -16,7 +16,7 @@ A given GitHub Pull Request is evaluated against the following GitHub Actions:
 - ``main``: mainline testing harness (as defined in ``tests``)
 - ``flake8``: code linting
 - ``docs``: documentation updates (for files updated in ``docs/**.rst``)
-- ``vulnerabilities``: Trivy vulnerability scanning
+- ``trivy``: Trivy vulnerability scanning
 
 Testing
 -------
