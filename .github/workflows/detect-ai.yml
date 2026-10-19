@@ -52,7 +52,7 @@ jobs:
           echo "Classifier label: $LABEL"
           case "$LABEL" in
             Low)
-              gh pr edit "$PR_NUMBER" --repo "${{ github.repository }}" --add-label "human generated" ;;
+              gh pr edit "$PR_NUMBER" --repo "${{ github.repository }}" --add-label "Human generated" ;;
             High|Very\ High)
               gh pr edit "$PR_NUMBER" --repo "${{ github.repository }}" --add-label "AI generated" ;;
             *)
