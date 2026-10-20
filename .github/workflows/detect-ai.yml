@@ -1,0 +1,62 @@
+# Runs script to detect the likelihood of a PR have being create
+# by an agent, or with a human with heavy use of AI. 
+
+name: Detect AI
+
+on:
+  pull_request:
+    branches:
+      - master
+      - uncover-agent # We can remove this later
+
+permissions:
+  contents: read
+  pull-requests: write
+  issues: write
+
+jobs:
+  analyse:
+    name: Classify PR (AI vs human)
+    runs-on: ubuntu-latest
+    env:
+      GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      CODEBERG_TOKEN: ${{ secrets.CODEBERG_TOKEN }}
+    steps:
+      - name: Check out repository
+        # The Codeberg repo is private, so we have to clone it with a Codeberg token
+        run: |
+          set -euo pipefail
+          [ -n "$CODEBERG_TOKEN" ] || { echo "::error::CODEBERG_TOKEN secret is required"; exit 1; }
+          clone_url="https://user:${CODEBERG_TOKEN}@codeberg.org/geoamish/uncover-agent.git"
+          git clone --quiet "$clone_url" "$RUNNER_TEMP/uncover-agent"
+          shopt -s dotglob
+          mv "$RUNNER_TEMP/uncover-agent"/* .
+          rmdir "$RUNNER_TEMP/uncover-agent"
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12" # we can change this later
+
+      - name: Run uncover_agents.py
+        run: |
+          set -euo pipefail
+          PR_URL="https://github.com/${{ github.repository }}/pull/${{ github.event.pull_request.number }}"
+          python uncover_agents.py "$PR_URL" | tee result.json
+
+      # These labels must exist in the repository
+      - name: Apply AI / human label
+        run: |
+          set -euo pipefail
+          LABEL=$(python3 -c "import json;print(json.load(open('result.json')).get('label',''))")
+          echo "Classifier label: $LABEL"
+          case "$LABEL" in
+            Low)
+              gh pr edit "$PR_NUMBER" --repo "${{ github.repository }}" --add-label "Human generated" ;;
+            High|Very\ High)
+              gh pr edit "$PR_NUMBER" --repo "${{ github.repository }}" --add-label "AI generated" ;;
+            *)
+              echo "Label '$LABEL' maps to no auto-label; nothing to do." ;;
+          esac
+        env:
+          PR_NUMBER: ${{ github.event.pull_request.number }}
