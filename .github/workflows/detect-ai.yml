@@ -1,54 +1,64 @@
-# Runs script to detect the likelihood of a PR have being create
-# by an agent, or with a human with heavy use of AI. 
+# Runs script to detect the likelihood of a PR having been created
+# by an agent, or by a human with heavy use of AI. 
 
 name: Detect AI
 
 on:
-  pull_request:
+  pull_request_target:
     branches:
       - master
-      - uncover-agent # We can remove this later
+      - fix-workflow # remove later
+    types: [opened, synchronize, reopened]
 
-permissions:
-  contents: read
-  pull-requests: write
-  issues: write
+permissions: {}
+
+concurrency:
+  group: detect-ai-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
 
 jobs:
   analyse:
     name: Classify PR (AI vs human)
     runs-on: ubuntu-latest
-    env:
-      GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      CODEBERG_TOKEN: ${{ secrets.CODEBERG_TOKEN }}
+    # Strict permissions
+    permissions:
+      contents: read
+      pull-requests: write
+      issues: write
+
     steps:
-      - name: Check out repository
-        # The Codeberg repo is private, so we have to clone it with a Codeberg token
+      # The Codeberg repo is private, so we have to clone it with a Codeberg token
+      - name: Checkout script
         run: |
           set -euo pipefail
           [ -n "$CODEBERG_TOKEN" ] || { echo "::error::CODEBERG_TOKEN secret is required"; exit 1; }
-          clone_url="https://user:${CODEBERG_TOKEN}@codeberg.org/geoamish/uncover-agent.git"
-          git clone --quiet "$clone_url" "$RUNNER_TEMP/uncover-agent"
-          shopt -s dotglob
-          mv "$RUNNER_TEMP/uncover-agent"/* .
-          rmdir "$RUNNER_TEMP/uncover-agent"
-
-      - name: Set up Python
-        uses: actions/setup-python@v5
+          auth=$(printf 'geoamish:%s' "$CODEBERG_TOKEN" | base64 -w0)
+          echo "::add-mask::$auth"
+          git -c http.extraheader="Authorization: Basic $auth" \
+            clone --quiet --depth 1 \
+            https://codeberg.org/geoamish/uncover-agent.git "$RUNNER_TEMP/uncover-agent"
+          rm -rf "$RUNNER_TEMP/uncover-agent/.git"
+        env:
+          CODEBERG_TOKEN: ${{ secrets.CODEBERG_TOKEN }}
+      - uses: actions/setup-python@v5
         with:
-          python-version: "3.12" # we can change this later
+          python-version: "3.12" # we can upgrade this later
 
       - name: Run uncover_agents.py
+        working-directory: ${{ runner.temp }}/uncover-agent
         run: |
           set -euo pipefail
-          PR_URL="https://github.com/${{ github.repository }}/pull/${{ github.event.pull_request.number }}"
-          python uncover_agents.py "$PR_URL" | tee result.json
+          python uncover_agents.py "$PR_URL" > "$RUNNER_TEMP/result.json"
+          cat "$RUNNER_TEMP/result.json"
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          PR_URL: ${{ github.event.pull_request.html_url }}
 
       # These labels must exist in the repository
       - name: Apply AI / human label
         run: |
           set -euo pipefail
-          LABEL=$(python3 -c "import json;print(json.load(open('result.json')).get('label',''))")
+          LABEL=$(python3 -c "import json,os;print(json.load(open(os.environ['RUNNER_TEMP']+'/result.json')).get('label',''))")
           echo "Classifier label: $LABEL"
           case "$LABEL" in
             Low)
@@ -59,4 +69,5 @@ jobs:
               echo "Label '$LABEL' maps to no auto-label; nothing to do." ;;
           esac
         env:
+          GH_TOKEN: ${{ github.token }}
           PR_NUMBER: ${{ github.event.pull_request.number }}
