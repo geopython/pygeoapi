@@ -996,6 +996,10 @@ def test_evaluate_limit():
     with pytest.raises(ValueError):
         assert evaluate_limit('-12', server, collection) == 10
 
+    for value in ['true', 'false', True]:
+        with pytest.raises(ValueError, match='should be an integer'):
+            evaluate_limit(value, server, collection)
+
     assert evaluate_limit('1', server, collection) == 1
 
     collection = {}
