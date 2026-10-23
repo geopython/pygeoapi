@@ -40,7 +40,7 @@ from filelock import FileLock
 from pygeoapi.formats import FORMAT_TYPES, F_JSON, F_JSONLD
 from pygeoapi.process.base import (
     JobNotFoundError,
-    JobResultNotFoundError,
+    JobResultNotFoundError
 )
 from pygeoapi.process.manager.base import BaseManager
 from pygeoapi.util import JobStatus
@@ -57,7 +57,7 @@ class TinyDBManager(BaseManager):
 
         :param manager_def: manager definition
 
-        :returns: `pygeoapi.process.manager.base.BaseManager`
+        :returns: `pygeoapi.process.manager.tinydb_.TinyDBManager`
         """
 
         super().__init__(manager_def)

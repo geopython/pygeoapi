@@ -96,6 +96,34 @@ manages job execution.  The manager concept is implemented as part of the pygeoa
 based on `TinyDB`_ for simplicity.  Custom manager plugins can be developed for more
 advanced job management capabilities (e.g. Kubernetes, databases, etc.).
 
+Elasticsearch
+^^^^^^^^^^^^^
+
+To publish an Elasticsearch index, the following are required:
+
+* indexes must be documents of jobs
+
+.. code-block:: yaml
+
+   server:
+       manager:
+           name: Elasticsearch
+           connection: http://localhost:9200/test-manager
+
+.. note::
+
+   Job results are expected to be stored in an ES job's ``location`` property.
+   A job document may set the ``location`` attribute to a string (instead of the default filepath),
+   in which case the plugin will render accordingly
+
+
+.. note::
+
+   For Elasticsearch indexes that are password protected, a RFC1738 URL can be used as follows:
+
+   ``data: http://username:password@localhost:9200/test-manager``
+
+
 TinyDB
 ^^^^^^
 
