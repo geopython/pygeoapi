@@ -791,8 +791,9 @@ def remove_url_auth(url: str) -> str:
     """
 
     u = urlparse(url)
-    auth = f'{u.username}:{u.password}@'
-    return url.replace(auth, '')
+    if '@' not in u.netloc:
+        return url
+    return u._replace(netloc=u.netloc.rpartition('@')[2]).geturl()
 
 
 def is_request_allowed(url: str, allow_internal: bool = False) -> bool:
