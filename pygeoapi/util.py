@@ -35,7 +35,6 @@ from dataclasses import dataclass
 from datetime import date, datetime, time, timezone
 from decimal import Decimal
 from enum import Enum
-from heapq import heappush
 import ipaddress
 import json
 import logging
@@ -743,14 +742,20 @@ def get_choice_from_headers(headers: dict,
         match = re.match(r'^([^;]+)(?:;q=([\d.]+))?$', part.strip())
         if match:
             value, q_value = match.groups()
-            q_value = float(q_value) if q_value else 1.0
+            try:
+                q_value = float(q_value) if q_value else 1.0
+            except ValueError:
+                continue
 
-            # Sort choices by q value and index
-            if 0 <= q_value <= 1:
-                heappush(choices, (1 / q_value, i, value))
+            # q=0 means "not acceptable" (RFC 9110, section 12.4.2)
+            if 0 < q_value <= 1:
+                choices.append((-q_value, i, value))
 
-    # Drop q value
-    sorted_choices = [choice[-1] for choice in choices]
+    if not choices:
+        return
+
+    # Highest q value first; ties keep header order
+    sorted_choices = [choice[-1] for choice in sorted(choices)]
 
     # Return one or all choices
     return sorted_choices if all else sorted_choices[0]
