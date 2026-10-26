@@ -32,9 +32,11 @@
 #
 # =================================================================
 
-
-import json
 from http import HTTPStatus
+import json
+from pathlib import Path
+from unittest import mock
+
 import pytest
 
 from pygeoapi.api.tiles import (
@@ -45,7 +47,7 @@ from pygeoapi.api.tiles import (
 from pygeoapi.formats import FORMAT_TYPES, F_HTML
 from pygeoapi.models.provider.base import TileMatrixSetEnum
 
-from tests.util import mock_api_request
+from tests.util import mock_api_request, mock_flask, mock_starlette
 
 
 def test_get_collection_tiles(config, api_):
@@ -83,6 +85,58 @@ def test_get_collection_tiles_data(config, api_):
         api_, req, 'naturalearth/lakes',
         matrix_id='WebMercatorQuad', z_idx=0, x_idx=1, y_idx=1)
     assert code == HTTPStatus.NOT_FOUND
+
+    # indices arrive as strings from the URL path
+    rsp_headers, code, response = get_collection_tiles_data(
+        api_, req, 'naturalearth/lakes',
+        matrix_id='WebMercatorQuad', z_idx='0', x_idx='0', y_idx='0')
+    assert code == HTTPStatus.OK
+
+
+@pytest.mark.parametrize('z_idx,y_idx,x_idx', [
+    ('..', 'SECRET', '.'),
+    ('..', '..', '..'),
+    ('0', '0', '0?x='),
+    ('-1', '0', '0'),
+    ('0', '0', 'abc'),
+    ('0', '0', '٣'),
+    # ('0', '0', '1' * 11)
+])
+def test_get_collection_tiles_data_invalid_indices(config, api_,
+                                                   z_idx, y_idx, x_idx):
+    req = mock_api_request({'f': 'mvt'})
+
+    with mock.patch('pygeoapi.provider.mvt_tippecanoe.MVTTippecanoeProvider.get_tiles') as get_tiles:  # noqa
+        rsp_headers, code, response = get_collection_tiles_data(
+            api_, req, 'naturalearth/lakes', matrix_id='WebMercatorQuad',
+            z_idx=z_idx, y_idx=y_idx, x_idx=x_idx)
+
+    assert code == HTTPStatus.BAD_REQUEST
+    get_tiles.assert_not_called()
+
+
+@pytest.mark.parametrize('web_framework_mock', [
+    (mock_flask),
+    (mock_starlette),
+])
+def test_get_collection_tiles_data_traversal(web_framework_mock):
+    # a file outside the tile directory with the tile format's extension
+    secret = Path('tests/data/tiles/SECRET.pbf')
+    secret.write_text('TOPSECRET')
+    try:
+        with web_framework_mock('pygeoapi-test-config.yml') as client:
+            response = client.get(
+                '/collections/naturalearth/lakes/tiles/WorldCRS84Quad/'
+                '%2e%2e/SECRET/%2e?f=mvt')
+        assert response.status_code == HTTPStatus.BAD_REQUEST
+        try:
+            content_ = response.data
+        except AttributeError:
+            content_ = response.content
+
+        assert b'TOPSECRET' not in content_
+    finally:
+        secret.unlink()
 
 
 def test_tilematrixsets(config, api_):
