@@ -47,7 +47,7 @@ from pygeoapi.api.tiles import (
 from pygeoapi.formats import FORMAT_TYPES, F_HTML
 from pygeoapi.models.provider.base import TileMatrixSetEnum
 
-from tests.util import mock_api_request, mock_flask
+from tests.util import mock_api_request, mock_flask, mock_starlette
 
 
 def test_get_collection_tiles(config, api_):
@@ -115,17 +115,26 @@ def test_get_collection_tiles_data_invalid_indices(config, api_,
     get_tiles.assert_not_called()
 
 
-def test_get_collection_tiles_data_traversal_flask():
+@pytest.mark.parametrize('web_framework_mock', [
+    (mock_flask),
+    (mock_starlette),
+])
+def test_get_collection_tiles_data_traversal(web_framework_mock):
     # a file outside the tile directory with the tile format's extension
     secret = Path('tests/data/tiles/SECRET.pbf')
     secret.write_text('TOPSECRET')
     try:
-        with mock_flask('pygeoapi-test-config.yml') as flask_client:
-            response = flask_client.get(
+        with web_framework_mock('pygeoapi-test-config.yml') as client:
+            response = client.get(
                 '/collections/naturalearth/lakes/tiles/WorldCRS84Quad/'
                 '%2e%2e/SECRET/%2e?f=mvt')
         assert response.status_code == HTTPStatus.BAD_REQUEST
-        assert b'TOPSECRET' not in response.data
+        try:
+            content_ = response.data
+        except AttributeError:
+            content_ = response.content
+
+        assert b'TOPSECRET' not in content_
     finally:
         secret.unlink()
 
