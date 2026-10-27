@@ -157,6 +157,8 @@ jobs:
       env:
         POSTGRESQL_PASSWORD: ${{ secrets.DatabasePassword || 'postgres' }}
       run: pytest tests/manager
+    - name: run web tests ⚙️
+      run: pytest tests/web --ignore-glob='*_live.py'
     - name: run other tests ⚙️
       run: pytest tests/other --ignore-glob='*_live.py'
     - name: failed tests 🚩

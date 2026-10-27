@@ -34,22 +34,20 @@
 # =================================================================
 
 import json
-import gzip
 from http import HTTPStatus
 
 from pyld import jsonld
 import pytest
 
 from pygeoapi.api import (
-    API, APIRequest, CONFORMANCE_CLASSES, __version__, validate_bbox,
+    API, APIRequest, CONFORMANCE_CLASSES, validate_bbox,
     validate_datetime, evaluate_limit, validate_subset, landing_page, openapi_,
     conformance, describe_collections, get_collection_schema)
 
-from pygeoapi.formats import FORMAT_TYPES, F_GZIP, F_JSON, F_JSONLD, F_HTML
-from pygeoapi.util import yaml_load, get_api_rules, get_base_url
+from pygeoapi.formats import FORMAT_TYPES, F_JSON, F_JSONLD, F_HTML
+from pygeoapi.util import yaml_load
 
-from tests.util import (get_test_file_path, mock_api_request, mock_flask,
-                        mock_starlette, mock_request)
+from tests.util import get_test_file_path, mock_api_request, mock_request
 
 
 @pytest.fixture()
@@ -265,129 +263,10 @@ def test_apirequest(api_):
 
 def test_apirules_active(config_with_rules, rules_api):
     assert rules_api.config == config_with_rules
-    rules = get_api_rules(config_with_rules)
-    base_url = get_base_url(config_with_rules)
-
-    # Test Flask
-    flask_prefix = rules.get_url_prefix('flask')
-    with mock_flask('pygeoapi-test-config-apirules.yml') as flask_client:
-        # Test happy path
-        response = flask_client.get(f'{flask_prefix}/conformance')
-        assert response.status_code == 200
-        assert response.headers['X-API-Version'] == __version__
-        assert response.request.url == \
-               flask_client.application.url_for('pygeoapi.conformance')
-        response = flask_client.get(f'{flask_prefix}/static/img/pygeoapi.png')
-        assert response.status_code == 200
-        # Test that static resources also work without URL prefix
-        response = flask_client.get('/static/img/pygeoapi.png')
-        assert response.status_code == 200
-
-        # Test strict slashes
-        response = flask_client.get(f'{flask_prefix}/conformance/')
-        assert response.status_code == 404
-        # For the landing page ONLY, trailing slashes are actually preferred.
-        # See https://docs.opengeospatial.org/is/17-069r4/17-069r4.html#_api_landing_page  # noqa
-        # Omitting the trailing slash should lead to a redirect.
-        response = flask_client.get(f'{flask_prefix}/')
-        assert response.status_code == 200
-        response = flask_client.get(flask_prefix)
-        assert response.status_code in (307, 308)
-        # Ensure that the expose-headers are set regardless of
-        # whether apirules are active or not
-        assert response.headers['Access-Control-Expose-Headers'] == '*'
-
-        # Test links on landing page for correct URLs
-        response = flask_client.get(flask_prefix, follow_redirects=True)
-        assert response.status_code == 200
-        assert response.is_json
-        links = response.json['links']
-        assert links[0]['rel'] == 'about'
-        assert all(
-            href.startswith(base_url) for href in (rel['href'] for rel in links[1:])  # noqa
-        )
-
-    # Test Starlette
-    starlette_prefix = rules.get_url_prefix('starlette')
-    with mock_starlette('pygeoapi-test-config-apirules.yml') as starlette_client:  # noqa
-        # Test happy path
-        response = starlette_client.get(f'{starlette_prefix}/conformance')
-        assert response.status_code == 200
-        assert response.headers['X-API-Version'] == __version__
-        response = starlette_client.get(f'{starlette_prefix}/static/img/pygeoapi.png')  # noqa
-        assert response.status_code == 200
-        # Test that static resources also work without URL prefix
-        response = starlette_client.get('/static/img/pygeoapi.png')
-        assert response.status_code == 200
-
-        # Test strict slashes
-        response = starlette_client.get(f'{starlette_prefix}/conformance/')
-        assert response.status_code == 404
-        # For the landing page ONLY, trailing slashes are actually preferred.
-        # See https://docs.opengeospatial.org/is/17-069r4/17-069r4.html#_api_landing_page  # noqa
-        # Omitting the trailing slash should lead to a redirect.
-        response = starlette_client.get(f'{starlette_prefix}/')
-        assert response.status_code == 200
-        response = starlette_client.get(starlette_prefix)
-        assert response.status_code in (307, 308)
-
-        # Test links on landing page for correct URLs
-        response = starlette_client.get(starlette_prefix, follow_redirects=True)  # noqa
-        assert response.status_code == 200
-        links = response.json()['links']
-        assert links[0]['rel'] == 'about'
-        assert all(
-            href.startswith(base_url) for href in (rel['href'] for rel in links[1:])  # noqa
-        )
 
 
 def test_apirules_inactive(config, api_):
     assert api_.config == config
-    rules = get_api_rules(config)
-
-    # Test Flask
-    flask_prefix = rules.get_url_prefix('flask')
-    assert flask_prefix == ''
-    with mock_flask('pygeoapi-test-config.yml') as flask_client:
-        response = flask_client.get('')
-        assert response.status_code == 200
-        response = flask_client.get('/conformance')
-        assert response.status_code == 200
-        assert 'X-API-Version' not in response.headers
-        assert response.request.url == \
-               flask_client.application.url_for('pygeoapi.conformance')
-        response = flask_client.get('/static/img/pygeoapi.png')
-        assert response.status_code == 200
-        # Ensure that the expose-headers are set regardless of
-        # whether apirules are active or not
-        assert response.headers['Access-Control-Expose-Headers'] == '*'
-
-        # Test trailing slashes
-        response = flask_client.get('/')
-        assert response.status_code == 200
-        response = flask_client.get('/conformance/')
-        assert response.status_code == 200
-        assert 'X-API-Version' not in response.headers
-
-    # Test Starlette
-    starlette_prefix = rules.get_url_prefix('starlette')
-    assert starlette_prefix == ''
-    with mock_starlette('pygeoapi-test-config.yml') as starlette_client:
-        response = starlette_client.get('')
-        assert response.status_code == 200
-        response = starlette_client.get('/conformance')
-        assert response.status_code == 200
-        assert 'X-API-Version' not in response.headers
-        assert str(response.url) == f"{starlette_client.base_url}/conformance"
-        response = starlette_client.get('/static/img/pygeoapi.png')
-        assert response.status_code == 200
-
-        # Test trailing slashes
-        response = starlette_client.get('/')
-        assert response.status_code == 200
-        response = starlette_client.get('/conformance/', follow_redirects=True)
-        assert response.status_code == 200
-        assert 'X-API-Version' not in response.headers
 
 
 def test_openapi(config, api_, openapi):
@@ -419,102 +298,6 @@ def test_openapi(config, api_, openapi):
     assert 'ReDoc' in response
 
     assert api_.get_collections_url() == 'http://localhost:5000/collections'
-
-
-def test_api_exception(config, api_):
-
-    with mock_flask('pygeoapi-test-config.yml') as flask_client:
-        response = flask_client.get('?f=foo')
-        assert response.status_code == HTTPStatus.BAD_REQUEST
-        assert response.headers['Content-Language'] == 'en-US'
-
-        # When a language is set, the exception should still be English
-        response = flask_client.get('?f=foo&lang=fr')
-        assert response.status_code == HTTPStatus.BAD_REQUEST
-        assert response.headers['Content-Language'] == 'en-US'
-
-    with mock_starlette('pygeoapi-test-config.yml') as starlette_client:
-        response = starlette_client.get('?f=foo')
-        assert response.status_code == HTTPStatus.BAD_REQUEST
-        assert response.headers['Content-Language'] == 'en-US'
-
-        # When a language is set, the exception should still be English
-        response = starlette_client.get('?f=foo&lang=fr')
-        assert response.status_code == HTTPStatus.BAD_REQUEST
-        assert response.headers['Content-Language'] == 'en-US'
-
-
-def test_gzip(config, openapi):
-
-    common = {'Accept_Encoding': F_GZIP}
-    headers_gzip_json = {**common, 'Accept': FORMAT_TYPES[F_JSON]}
-    headers_gzip_jsonld = {**common, 'Accept': FORMAT_TYPES[F_JSONLD]}
-    headers_gzip_html = {**common, 'Accept': FORMAT_TYPES[F_HTML]}
-    headers_gzip_gzip = {**common, 'Accept': 'application/gzip'}
-
-    with mock_flask('pygeoapi-test-config.yml') as flask_client:
-        response_json = flask_client.get("", headers=headers_gzip_json)
-        assert response_json.headers['Content-Type'] == FORMAT_TYPES[F_JSON]
-
-        response_jsonld = flask_client.get("", headers=headers_gzip_jsonld)
-        assert response_jsonld.headers['Content-Type'] == \
-            FORMAT_TYPES[F_JSONLD]
-
-        response_html = flask_client.get("", headers=headers_gzip_html)
-        assert response_html.headers['Content-Type'] == FORMAT_TYPES[F_HTML]
-
-        response_gzip = flask_client.get("", headers=headers_gzip_gzip)
-        assert response_gzip.headers['Content-Type'] == FORMAT_TYPES[F_JSON]
-
-    with mock_flask('pygeoapi-test-config.yml') as flask_client:
-        from pygeoapi import flask_app
-
-        # Add gzip to server and use utf-16 encoding
-        config['server']['gzip'] = True
-        enc_16 = 'utf-16'
-        config['server']['encoding'] = enc_16
-        flask_app.api_ = API(config, openapi)
-
-        response = flask_client.get("", headers=headers_gzip_json)
-        # Validate compressed json response
-        assert response.headers['Content-Type'] == \
-            f'{FORMAT_TYPES[F_JSON]}; charset={enc_16}'
-        assert response.headers['Content-Encoding'] == F_GZIP
-        parsed_gzip_json = gzip.decompress(response.data).decode(enc_16)
-        assert isinstance(parsed_gzip_json, str)
-        parsed_gzip_json = json.loads(parsed_gzip_json)
-        assert isinstance(parsed_gzip_json, dict)
-        assert parsed_gzip_json == response_json.json
-
-        # Validate compressed jsonld response
-        response = flask_client.get("", headers=headers_gzip_jsonld)
-        assert response.headers['Content-Type'] == \
-            f'{FORMAT_TYPES[F_JSONLD]}; charset={enc_16}'
-        assert response.headers['Content-Encoding'] == F_GZIP
-        parsed_gzip_jsonld = gzip.decompress(response.data).decode(enc_16)
-        assert isinstance(parsed_gzip_jsonld, str)
-        parsed_gzip_jsonld = json.loads(parsed_gzip_jsonld)
-        assert isinstance(parsed_gzip_jsonld, dict)
-        assert parsed_gzip_jsonld == response_jsonld.json
-
-        # Validate compressed html response
-        response = flask_client.get("", headers=headers_gzip_html)
-        assert response.headers['Content-Type'] == \
-            f'{FORMAT_TYPES[F_HTML]}; charset={enc_16}'
-        assert response.headers['Content-Encoding'] == F_GZIP
-        parsed_gzip_html = gzip.decompress(response.data).decode(enc_16)
-        assert isinstance(parsed_gzip_html, str)
-        assert parsed_gzip_html == response_html.text
-
-        # Validate compressed gzip response
-        response = flask_client.get("", headers=headers_gzip_gzip)
-        assert response.headers['Content-Type'] == \
-            f'{FORMAT_TYPES[F_GZIP]}; charset={enc_16}'
-        assert response.headers['Content-Encoding'] == F_GZIP
-        parsed_gzip_gzip = gzip.decompress(response.data).decode(enc_16)
-        assert isinstance(parsed_gzip_gzip, str)
-        parsed_gzip_gzip = json.loads(parsed_gzip_gzip)
-        assert isinstance(parsed_gzip_gzip, dict)
 
 
 def test_root(config, api_):
