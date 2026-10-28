@@ -131,6 +131,7 @@ jobs:
         pip3 install .
         pip3 install GDAL==`gdal-config --version`
         pip3 install "pyproj<3.8"
+        pip3 install "SQLAlchemy==2.0.54"
     - name: setup test data ⚙️
       run: |
         pybabel compile -d locale -l es

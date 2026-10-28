@@ -52,6 +52,11 @@ def config():
         'format': {
              'name': 'zarr',
              'mimetype': 'application/zip'
+        },
+        'options': {
+            'zarr': {
+                'zarr_format': 2
+            }
         }
     }
 
@@ -61,12 +66,17 @@ def config_no_time(tmp_path):
     ds = xr.open_zarr(path)
     ds = ds.sel(time=ds.time[0])
     ds = ds.drop_vars('time')
-    ds.to_zarr(tmp_path / 'no_time.zarr')
+    ds.to_zarr(tmp_path / 'no_time.zarr', zarr_format=2)
     return {
         'name': 'zarr',
         'type': 'coverage',
         'data': str(tmp_path / 'no_time.zarr'),
         'format': {'name': 'zarr', 'mimetype': 'application/zip'},
+        'options': {
+            'zarr': {
+                'zarr_format': 2
+            }
+        }
     }
 
 
