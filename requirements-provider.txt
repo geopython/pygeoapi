@@ -18,7 +18,7 @@ pyarrow
 pygeofilter[backend-sqlalchemy]
 pygeoif
 pygeometa
-pymongo==4.18.2
+pymongo==4.18.3
 pymysql
 scipy
 sodapy
