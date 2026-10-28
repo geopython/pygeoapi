@@ -28,6 +28,7 @@ overall API.
 - API specific tests can be found in ``/tests/api``
 - Provider specific tests can be found in ``/tests/provider``
 - Manager specific tests can be found in ``/tests/manager``
+- Web framework specific tests can be found in ``/tests/web``
 - Additional/other tests can be found in ``/tests/other``
 
 Tests can be run locally as part of development workflow.  They are also run on pygeoapi’s
