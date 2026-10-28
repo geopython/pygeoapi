@@ -137,6 +137,7 @@ jobs:
         pybabel compile -d locale -l fr
         python3 tests/load_oracle_data.py
         python3 tests/load_es_data.py tests/data/ne_110m_populated_places_simple.geojson geonameid
+        python3 tests/load_es_manager_data.py tests/data/test-manager.json
         python3 tests/load_opensearch_data.py tests/data/ne_110m_populated_places_simple.geojson geonameid
         python3 tests/load_mongo_data.py tests/data/ne_110m_populated_places_simple.geojson
         gunzip < tests/data/hotosm_bdi_waterways.sql.gz | psql postgresql://postgres:${{ secrets.DatabasePassword || 'postgres' }}@localhost:5432/test
