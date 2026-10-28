@@ -64,12 +64,12 @@ class XarrayProvider(BaseProvider):
 
         open_options = {}
         squeeze = provider_def.get('options', {}).get('squeeze', False)
-        zarr_options = provider_def.get('options', {}).get('zarr', {})
+        self.zarr_options = provider_def.get('options', {}).get('zarr', {})
 
         try:
             if provider_def['data'].endswith('.zarr'):
                 open_func = xarray.open_zarr
-                open_options = zarr_options
+                open_options = self.zarr_options
             else:
                 if '*' in self.data:
                     LOGGER.debug('Detected multi file dataset')
@@ -158,7 +158,8 @@ class XarrayProvider(BaseProvider):
         if not properties and not subsets and format_ != 'json':
             LOGGER.debug('No parameters specified, returning native data')
             if format_ == 'zarr':
-                return _get_zarr_data(self._data)
+                zarr_format = self.zarr_options.get('zarr_format')
+                return _get_zarr_data(self._data, zarr_format)
             else:
                 return read_data(self.data)
 
@@ -658,7 +659,7 @@ def _zip_dir(path, ziph, cwd):
             os.chdir(cwd)
 
 
-def _get_zarr_data(data):
+def _get_zarr_data(data, zarr_format=None):
     """
        Returns bytes to read from Zarr directory zip
        :param data: Xarray dataset of coverage data
@@ -671,7 +672,7 @@ def _get_zarr_data(data):
     zarr_data_filename = f'{tmp_dir}zarr.zarr'
     zarr_zip_filename = f'{tmp_dir}zarr.zarr.zip'
 
-    data.to_zarr(zarr_data_filename, mode='w')
+    data.to_zarr(zarr_data_filename, mode='w', zarr_format=zarr_format)
 
     with zipfile.ZipFile(zarr_zip_filename, 'w', zipfile.ZIP_DEFLATED) as zipf:  # noqa
         _zip_dir(zarr_data_filename, zipf, os.getcwd())
