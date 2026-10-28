@@ -22,6 +22,6 @@ pymongo==4.18.3
 pymysql
 scipy
 sodapy
-xarray<2026.9.0
-zarr<3
+xarray
+zarr
 s3fs<=2023.6.0
