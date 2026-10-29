@@ -34,6 +34,9 @@
 
 from http import HTTPStatus
 
+import pytest
+
+from pygeoapi.api import API
 from pygeoapi.api.maps import get_collection_map
 
 from tests.util import mock_api_request
@@ -104,3 +107,24 @@ def test_map_crs_transform(config, api_):
 
     assert code == HTTPStatus.OK
     assert floridaIn4326 == floridaProjectedIn3857
+
+
+def test_map_default_bbox_from_collection_extent(config, openapi):
+    # Florida in EPSG:3857
+    config['resources']['mapserver_world_map']['extents']['spatial'] = {
+        'bbox': [-9837751.2884, 2854464.3843, -8695476.3377, 3634733.5690],
+        'crs': 'http://www.opengis.net/def/crs/EPSG/0/3857'
+    }
+    api_ = API(config, openapi)
+
+    # request does not provide bbox, so collection spatial extent is used
+    req = mock_api_request()
+    rsp_headers, code, _ = get_collection_map(
+        api_, req, 'mapserver_world_map')
+
+    assert code == HTTPStatus.OK
+
+    # response extent comes in the collection's storage crs (CRS84)
+    content_bbox = [float(c) for c in rsp_headers['Content-Bbox'].split(',')]
+    assert content_bbox == pytest.approx(
+        [-88.374023, 24.826625, -78.112793, 31.015279], abs=1e-5)
