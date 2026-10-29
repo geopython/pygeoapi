@@ -396,7 +396,8 @@ def tilematrixsets(api: API,
     }]
 
     if request.format == F_HTML:  # render
-        content = render_j2_template(api.tpl_config, api.tpl_config,
+        content = render_j2_template(api.tpl_config,
+                                     api.config['server']['templates'],
                                      'tilematrixsets/index.html',
                                      tms, request.locale)
         return headers, HTTPStatus.OK, content
@@ -443,7 +444,8 @@ def tilematrixset(api: API,
     }
 
     if request.format == F_HTML:  # render
-        content = render_j2_template(api.tpl_config, api.tpl_config,
+        content = render_j2_template(api.tpl_config,
+                                     api.config['server']['templates'],
                                      'tilematrixsets/tilematrixset.html',
                                      tms, request.locale)
         return headers, HTTPStatus.OK, content
