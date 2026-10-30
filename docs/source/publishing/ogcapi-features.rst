@@ -22,7 +22,7 @@ parameters.
    `CSV`_,✅/✅,✅/✅,✅,❌,❌,✅,❌,❌,❌,✅
    `Elasticsearch`_,✅/✅,✅/❌,✅,✅,✅,✅,✅,✅,✅,✅
    `ERDDAP Tabledap Service`_,❌/❌,❌/❌,✅,✅,❌,❌,❌,❌,❌,✅
-   `ESRI Feature Service`_,✅/✅,✅/✅,✅,✅,✅,✅,❌,❌,❌,✅
+   `ESRI Feature Service`_,✅/✅,✅/✅,✅,✅,✅,✅,❌,✅,❌,✅
    `GeoJSON`_,✅/✅,✅/✅,✅,❌,❌,✅,❌,❌,❌,✅
    `MongoDB`_,✅/❌,✅/✅,✅,✅,✅,✅,❌,❌,❌,✅
    `MySQL`_,✅/✅,✅/✅,✅,✅,✅,✅,❌,✅,✅,✅
@@ -184,6 +184,38 @@ To publish from a self-hosted service that is not publicly accessible, the ``tok
          password: password # Optional ArcGIS password
          token_service: https://your.server.com/arcgis/sharing/rest/generateToken # Optional url to your generateToken service
          referer: https://your.server.com # Optional referer, defaults to https://www.arcgis.com if not set
+
+The ESRI provider supports Common Query Language (CQL2) filtering. Filter
+expressions are translated into native ESRI query parameters:
+
+* Attribute and temporal predicates are translated into the ESRI ``where``
+  clause: logical operators (``AND``, ``OR``, ``NOT``), comparisons
+  (``=``, ``<>``, ``<``, ``<=``, ``>``, ``>=``), ``LIKE``, ``IN``, ``BETWEEN``,
+  ``IS NULL``, the temporal predicates ``T_BEFORE``, ``T_AFTER``, ``T_EQUALS``
+  and ``T_DURING``, as well as comparisons against ``DATE``/``TIMESTAMP``
+  literals.
+* A single spatial predicate (``S_INTERSECTS``, ``S_WITHIN``, ``S_CONTAINS``,
+  ``S_CROSSES``, ``S_TOUCHES``, ``S_OVERLAPS`` and ``BBOX``) is translated into
+  the ESRI ``geometry``, ``geometryType`` and ``spatialRel`` parameters. The
+  spatial predicate may be combined with attribute/temporal filters using a
+  top-level ``AND``.
+
+.. note::
+   The following CQL2 constructs are not supported by the ESRI provider and
+   return an HTTP 400 error:
+
+   * ``S_DISJOINT`` (not expressible as an ESRI spatial relationship)
+   * more than one spatial predicate in a single filter
+   * a spatial predicate nested under ``OR``/``NOT``
+   * combining the ``bbox`` query parameter with a CQL2 spatial predicate
+
+.. note::
+   ESRI evaluates ``S_WITHIN`` using the native ``esriSpatialRelWithin``
+   relationship, which does not return point features contained within a
+   polygon. For point layers, use ``S_INTERSECTS`` instead.
+
+.. seealso::
+  :ref:`cql2` for more details on how to use Common Query Language (CQL) to filter the collection with specific queries.
 
 GeoJSON
 ^^^^^^^
