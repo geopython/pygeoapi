@@ -62,8 +62,6 @@ CONFORMANCE_CLASSES = [
     'http://www.opengis.net/spec/ogcapi-maps-1/1.0/conf/core'
 ]
 
-DEFAULT_BBOX = [-180, -90, 180, 90]  # CRS84
-
 
 def get_collection_map(api: API, request: APIRequest,
                        dataset: str, style: str | None = None
@@ -86,10 +84,9 @@ def get_collection_map(api: API, request: APIRequest,
 
     LOGGER.debug('Loading provider')
     try:
-        collection_def = get_provider_by_type(
-            api.config['resources'][dataset]['providers'], 'map')
-
-        p = load_plugin('provider', collection_def)
+        collection_def = api.config['resources'][dataset]
+        provider_def = get_provider_by_type(collection_def['providers'], 'map')
+        p = load_plugin('provider', provider_def)
     except KeyError:
         exception = {
             'code': 'InvalidParameterValue',
@@ -111,8 +108,7 @@ def get_collection_map(api: API, request: APIRequest,
     # if it does not exist or is not supported, use CRS84.
     try:
         if 'crs' not in request.params:
-            query_args['crs'] = collection_def.get('storage_crs',
-                                                   DEFAULT_CRS)
+            query_args['crs'] = provider_def.get('storage_crs', DEFAULT_CRS)
         else:
             query_args['crs'] = get_uri(request.params['crs'])
 
@@ -149,20 +145,23 @@ def get_collection_map(api: API, request: APIRequest,
 
     LOGGER.debug('Processing bbox parameter')
     try:
-        bbox = request.params.get(
-            'bbox').split(',')
-        if len(bbox) != 4:
-            exception = {
-                'code': 'InvalidParameterValue',
-                'description': 'bbox values should be minx,miny,maxx,maxy'
-            }
-            headers['Content-type'] = 'application/json'
-            LOGGER.error(exception)
-            return headers, HTTPStatus.BAD_REQUEST, to_json(
-                exception, api.pretty_print)
-
+        bbox = request.params.get('bbox').split(',')
     except AttributeError:
-        bbox = DEFAULT_BBOX
+        # in the absence of user-supplied bbox, use collection spatial extent
+        bbox = collection_def['extents']['spatial']['bbox']
+        query_args['bbox-crs'] = collection_def['extents']['spatial'].get(
+            'crs', DEFAULT_CRS)
+
+    if len(bbox) != 4:
+        exception = {
+            'code': 'InvalidParameterValue',
+            'description': 'bbox values should be minx,miny,maxx,maxy'
+        }
+        headers['Content-type'] = 'application/json'
+        LOGGER.error(exception)
+        return headers, HTTPStatus.BAD_REQUEST, to_json(
+            exception, api.pretty_print)
+
     try:
         bbox = [float(c) for c in bbox]
     except ValueError:
@@ -249,16 +248,16 @@ def get_collection_map(api: API, request: APIRequest,
             err.http_status_code, headers, request.format,
             err.ogc_exception_code, err.message)
 
-    mt = collection_def['format']['name']
+    mt = provider_def['format']['name']
 
     headers['Content-Crs'] = query_args['crs']
     headers['Content-Bbox'] = ','.join(map(str, query_args['bbox']))
 
     if format_ == mt:
-        headers['Content-Type'] = collection_def['format']['mimetype']
+        headers['Content-Type'] = provider_def['format']['mimetype']
         return headers, HTTPStatus.OK, data
     elif format_ in [None, 'html']:
-        headers['Content-Type'] = collection_def['format']['mimetype']
+        headers['Content-Type'] = provider_def['format']['mimetype']
         return headers, HTTPStatus.OK, data
     else:
         exception = {
@@ -289,10 +288,9 @@ def get_collection_map_legend(api: API, request: APIRequest,
 
     LOGGER.debug('Loading provider')
     try:
-        collection_def = get_provider_by_type(
-            api.config['resources'][dataset]['providers'], 'map')
-
-        p = load_plugin('provider', collection_def)
+        collection_def = api.config['resources'][dataset]
+        provider_def = get_provider_by_type(collection_def['providers'], 'map')
+        p = load_plugin('provider', provider_def)
     except KeyError:
         exception = {
             'code': 'InvalidParameterValue',
@@ -314,10 +312,10 @@ def get_collection_map_legend(api: API, request: APIRequest,
             err.http_status_code, headers, request.format,
             err.ogc_exception_code, err.message)
 
-    mt = collection_def['format']['name']
+    mt = provider_def['format']['name']
 
     if format_ == mt:
-        headers['Content-Type'] = collection_def['format']['mimetype']
+        headers['Content-Type'] = provider_def['format']['mimetype']
         return headers, HTTPStatus.OK, data
     else:
         exception = {
