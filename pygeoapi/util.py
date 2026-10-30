@@ -426,10 +426,12 @@ def json_serial(obj: Any) -> str:
             return base64.b64encode(obj)
     elif isinstance(obj, Decimal):
         return float(obj)
-    elif type(obj).__name__ in ['int32', 'int64']:
+    elif _is_numpy_scalar(obj, 'integer'):
         return int(obj)
-    elif type(obj).__name__ in ['float32', 'float64']:
+    elif _is_numpy_scalar(obj, 'floating'):
         return float(obj)
+    elif _is_numpy_scalar(obj, 'bool', 'bool_'):
+        return bool(obj)
     elif isinstance(obj, l10n.Locale):
         return l10n.locale2str(obj)
     elif isinstance(obj, (pathlib.PurePath, Path)):
@@ -440,6 +442,22 @@ def json_serial(obj: Any) -> str:
         msg = f'{obj} type {type(obj)} not serializable'
         LOGGER.error(msg)
         raise TypeError(msg)
+
+
+def _is_numpy_scalar(obj: Any, *type_names: str) -> bool:
+    """
+    helper function to check whether an object is a NumPy scalar of
+    a given abstract type (e.g. `integer` covers `int8` to `uint64`),
+    without requiring NumPy to be installed
+
+    :param obj: `object` to be evaluated
+    :param type_names: NumPy type names to match
+
+    :returns: `bool` of whether the object is a matching NumPy scalar
+    """
+
+    return any(cls.__module__ == 'numpy' and cls.__name__ in type_names
+               for cls in type(obj).__mro__)
 
 
 def is_url(urlstring: str) -> bool:
