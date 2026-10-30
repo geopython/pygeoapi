@@ -123,8 +123,8 @@ def test_map_default_bbox_from_collection_extent(config, openapi):
         api_, req, 'mapserver_world_map')
 
     assert code == HTTPStatus.OK
-
-    # response extent comes in the collection's storage crs (CRS84)
+    assert rsp_headers.get(
+        'Content-Crs', 'http://www.opengis.net/def/crs/OGC/1.3/CRS84')
     content_bbox = [float(c) for c in rsp_headers['Content-Bbox'].split(',')]
     assert content_bbox == pytest.approx(
         [-88.374023, 24.826625, -78.112793, 31.015279], abs=1e-5)
