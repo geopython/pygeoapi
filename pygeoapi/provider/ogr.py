@@ -33,6 +33,7 @@
 from copy import deepcopy
 import functools
 import importlib
+import json
 import logging
 import os
 from typing import Any
@@ -498,7 +499,7 @@ class OGRProvider(BaseProvider):
         # EPSG:4258 in ExportToJson where it shouldn't. See #1174.
         # Suppress swapping by unassigning SpatialReference
         geom.AssignSpatialReference(None)
-        json_feature = ogr_feature.ExportToJson(as_object=True)
+        json_feature = _feature_to_dict(ogr_feature)
 
         if skip_geometry:
             json_feature['geometry'] = None
@@ -874,6 +875,56 @@ class GdalErrorHandler:
                         raise ProviderConnectionError(last_error)
             else:
                 raise ProviderGenericError(last_error)
+
+
+# AI generated code: Junie claude-opus-5-5
+def _feature_to_dict(ogr_feature) -> dict:
+    """
+    Convert an OGR feature to a GeoJSON-like dict.
+
+    Replaces ``ogr.Feature.ExportToJson``, which looks up every field by
+    name and scales quadratically with the number of fields. Reading the
+    fields by index is an order of magnitude faster for wide layers.
+
+    The output is identical to ``ExportToJson(as_object=True)``: the
+    geometry is taken from the default geometry field, ``id`` is omitted
+    for features without a FID, boolean subtype fields are converted with
+    ``bool()`` (so NULL becomes ``False``) and for duplicate field names
+    the first field wins.
+
+    :param ogr_feature: OGR feature
+
+    :returns: dict with type, geometry, properties and optionally id
+    """
+
+    geom = ogr_feature.GetGeometryRef()
+    geometry = None
+    if geom is not None:
+        geometry = json.loads(geom.ExportToJson(options=[]))
+
+    output = {
+        'type': 'Feature',
+        'geometry': geometry,
+        'properties': {}
+    }
+
+    fid = ogr_feature.GetFID()
+    if fid != osgeo_ogr.NullFID:
+        output['id'] = fid
+
+    properties = output['properties']
+    for i in range(ogr_feature.GetFieldCount()):
+        fld_defn = ogr_feature.GetFieldDefnRef(i)
+        name = fld_defn.GetName()
+        if name in properties:
+            continue
+        value = ogr_feature.GetField(i)
+        if (fld_defn.GetType() == osgeo_ogr.OFTInteger and
+                fld_defn.GetSubType() == osgeo_ogr.OFSTBoolean):
+            value = bool(value)
+        properties[name] = value
+
+    return output
 
 
 def _silent_gdal_error(f):
