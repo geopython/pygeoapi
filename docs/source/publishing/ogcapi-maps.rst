@@ -128,7 +128,8 @@ required.  An optional style name can be defined via `options.style`.
   - `OGC:CRS84` (unsafe)
 
   If `crs` is not provided, the server will default to the `storage_crs`; in case it does not exist, the default is `CRS84`.
-  If `crs-bbox` is not provided, it will default to `CRS84`. If the `bbox` is not provided, it will default to `-180, -90, 180, 90`.
+  If `crs-bbox` is not provided, it will default to `CRS84`. If the `bbox` is not provided, it will default to
+  the bbox that is configured as the collection's spatial extent.
   
   The response headers will always contain the `Content-Crs` and `Content-Bbox`. Examples:
 
