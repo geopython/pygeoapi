@@ -232,7 +232,7 @@ def get_collection_coverage(
         return headers, HTTPStatus.OK, content
 
     elif format_ == F_JSON:
-        headers['Content-Type'] = 'application/prs.coverage+json'
+        headers['Content-Type'] = 'application/vnd.cov+json'
         return headers, HTTPStatus.OK, to_json(data, api.pretty_print)
     else:
         return api.get_format_exception(request)
