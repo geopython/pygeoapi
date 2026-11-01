@@ -111,14 +111,23 @@ def get_collection_edr_instances(api: API, request: APIRequest,
             err.http_status_code, headers, request.format,
             err.ogc_exception_code, err.message)
 
+    if 'instances' not in p.get_query_types():
+        msg = 'Instances not supported by this collection'
+        return api.get_exception(
+            HTTPStatus.NOT_FOUND, headers, request.format, 'NotFound', msg)
+
     if instance_id is not None:
         try:
-            if p.instance(instance_id):
-                instances = [instance_id]
+            valid_instance = p.instance(instance_id)
         except ProviderItemNotFoundError:
+            valid_instance = False
+
+        if not valid_instance:
             msg = 'Instance not found'
             return api.get_exception(
                 HTTPStatus.NOT_FOUND, headers, request.format, 'NotFound', msg)
+
+        instances = [instance_id]
     else:
         instances = p.instances()
 
@@ -283,7 +292,9 @@ def get_collection_edr_query(api: API, request: APIRequest,
             err.http_status_code, headers, request.format,
             err.ogc_exception_code, err.message)
 
-    if instance is not None and not p.instance(instance):
+    if instance is not None and (
+            'instances' not in p.get_query_types() or
+            not p.instance(instance)):
         msg = 'Invalid instance identifier'
         return api.get_exception(
             HTTPStatus.BAD_REQUEST, headers,
