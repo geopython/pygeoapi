@@ -113,13 +113,15 @@ class DummyManager(BaseManager):
                 LOGGER.debug('Dummy manager does not support asynchronous')
                 LOGGER.debug('Forcing synchronous execution')
 
-        self._send_in_progress_notification(subscriber)
         processor = self.get_processor(process_id)
+        self._send_in_progress_notification(
+            subscriber, processor.allow_internal_requests)
         try:
             jfmt, outputs = processor.execute(
                 data_dict, outputs=requested_outputs)
             current_status = JobStatus.successful
-            self._send_success_notification(subscriber, outputs)
+            self._send_success_notification(
+                subscriber, processor.allow_internal_requests, outputs)
         except Exception as err:
             outputs = {
                 'code': 'InvalidParameterValue',
@@ -127,7 +129,8 @@ class DummyManager(BaseManager):
             }
             current_status = JobStatus.failed
             LOGGER.exception(err)
-            self._send_failed_notification(subscriber)
+            self._send_failed_notification(
+                subscriber, processor.allow_internal_requests)
 
         if requested_response == RequestedResponse.document.value:
             outputs = {
