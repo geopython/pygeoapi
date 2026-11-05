@@ -32,9 +32,10 @@
 #
 # =================================================================
 
-
-import json
 from http import HTTPStatus
+import json
+from unittest import mock
+
 import pytest
 
 from pygeoapi.api.tiles import (
@@ -83,6 +84,34 @@ def test_get_collection_tiles_data(config, api_):
         api_, req, 'naturalearth/lakes',
         matrix_id='WebMercatorQuad', z_idx=0, x_idx=1, y_idx=1)
     assert code == HTTPStatus.NOT_FOUND
+
+    # indices arrive as strings from the URL path
+    rsp_headers, code, response = get_collection_tiles_data(
+        api_, req, 'naturalearth/lakes',
+        matrix_id='WebMercatorQuad', z_idx='0', x_idx='0', y_idx='0')
+    assert code == HTTPStatus.OK
+
+
+@pytest.mark.parametrize('z_idx,y_idx,x_idx', [
+    ('..', 'SECRET', '.'),
+    ('..', '..', '..'),
+    ('0', '0', '0?x='),
+    ('-1', '0', '0'),
+    ('0', '0', 'abc'),
+    ('0', '0', '٣'),
+    # ('0', '0', '1' * 11)
+])
+def test_get_collection_tiles_data_invalid_indices(config, api_,
+                                                   z_idx, y_idx, x_idx):
+    req = mock_api_request({'f': 'mvt'})
+
+    with mock.patch('pygeoapi.provider.mvt_tippecanoe.MVTTippecanoeProvider.get_tiles') as get_tiles:  # noqa
+        rsp_headers, code, response = get_collection_tiles_data(
+            api_, req, 'naturalearth/lakes', matrix_id='WebMercatorQuad',
+            z_idx=z_idx, y_idx=y_idx, x_idx=x_idx)
+
+    assert code == HTTPStatus.BAD_REQUEST
+    get_tiles.assert_not_called()
 
 
 def test_tilematrixsets(config, api_):

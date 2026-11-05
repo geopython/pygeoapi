@@ -82,6 +82,7 @@ PLUGINS = {
     },
     'process_manager': {
         'Dummy': 'pygeoapi.process.manager.dummy.DummyManager',
+        'Elasticsearch': 'pygeoapi.process.manager.elasticsearch_.ElasticsearchManager',  # noqa
         'MongoDB': 'pygeoapi.process.manager.mongodb_.MongoDBManager',
         'TinyDB': 'pygeoapi.process.manager.tinydb_.TinyDBManager',
         'PostgreSQL': 'pygeoapi.process.manager.postgresql.PostgreSQLManager'
