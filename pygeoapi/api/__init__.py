@@ -206,11 +206,11 @@ class APIRequest:
         self._raw_locale, self._locale = self._get_locale(request.headers,
                                                           supported_locales)
 
-        # Determine format
-        self._format = self._get_format(request.headers)
-
         # Get received headers
         self._headers = self.get_request_headers(request.headers)
+
+        # Determine format
+        self._format = self._get_format()
 
     @classmethod
     def from_flask(cls, request, supported_locales) -> 'APIRequest':
@@ -298,12 +298,10 @@ class APIRequest:
 
         return raw, default_locale
 
-    def _get_format(self, headers: dict,
-                    extra_formats: dict = {}) -> Union[str, None]:
+    def _get_format(self, extra_formats: dict = {}) -> Union[str, None]:
         """
         Get `Request` format type from query parameters or headers.
 
-        :param headers: Dict of Request headers
         :param extra_formats: Dict of extra dataset specific formats
 
         :returns: format value or None if not found/specified
@@ -317,19 +315,25 @@ class APIRequest:
 
         # Format not specified: get from Accept headers (MIME types)
         # e.g. Accept: 'text/html;q=0.5,application/ld+json'
-        types_ = get_choice_from_headers(headers, 'accept', all=True)
+        types_ = get_choice_from_headers(self.headers, 'accept', all=True)
         if types_ is None:
             return
 
-        merged_format_types = FORMAT_TYPES | extra_formats
+        # Add formatters to accepted format types
+        extra_formats_mimes = {
+            k: v.mimetype for k, v in extra_formats.items()
+            if hasattr(v, 'mimetype')
+        }
+        merged_format_types = FORMAT_TYPES | extra_formats_mimes
 
-        (fmts, mimes) = zip(*merged_format_types.items())
-        mimes2 = [m.split(';')[0] for m in mimes]
-
+        # Lookup formatter by mimetype
+        mimes = {
+            merged_format_types[k].split(';')[0]: k
+            for k in merged_format_types
+        }
         for type_ in types_:
-            if type_ in mimes2:
-                idx_ = mimes2.index(type_)
-                return fmts[idx_]
+            if type_ in mimes:
+                return mimes[type_]
 
     @property
     def data(self) -> bytes:

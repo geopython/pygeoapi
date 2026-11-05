@@ -265,8 +265,8 @@ def gen_collection(api, request, dataset: str,
             data['links'].append({
                 'type': value.mimetype,
                 'rel': 'items',
-                'title': l10n.translate(f'Items as {key}', locale_),  # noqa
-                'href': f'{api.get_collections_url()}/{dataset}/items?f={value.f}'  # noqa
+                'title': l10n.translate(f'Items as {value.name}', locale_),  # noqa
+                'href': f'{api.get_collections_url()}/{dataset}/items?f={key}'  # noqa
             })
 
     # OAPIF Part 2 - list supported CRSs and StorageCRS
