@@ -131,12 +131,14 @@ jobs:
         pip3 install .
         pip3 install GDAL==`gdal-config --version`
         pip3 install "pyproj<3.8"
+        pip3 install "SQLAlchemy==2.0.54"
     - name: setup test data ⚙️
       run: |
         pybabel compile -d locale -l es
         pybabel compile -d locale -l fr
         python3 tests/load_oracle_data.py
         python3 tests/load_es_data.py tests/data/ne_110m_populated_places_simple.geojson geonameid
+        python3 tests/load_es_manager_data.py tests/data/test-manager.json
         python3 tests/load_opensearch_data.py tests/data/ne_110m_populated_places_simple.geojson geonameid
         python3 tests/load_mongo_data.py tests/data/ne_110m_populated_places_simple.geojson
         gunzip < tests/data/hotosm_bdi_waterways.sql.gz | psql postgresql://postgres:${{ secrets.DatabasePassword || 'postgres' }}@localhost:5432/test
@@ -156,6 +158,8 @@ jobs:
       env:
         POSTGRESQL_PASSWORD: ${{ secrets.DatabasePassword || 'postgres' }}
       run: pytest tests/manager
+    - name: run web tests ⚙️
+      run: pytest tests/web --ignore-glob='*_live.py'
     - name: run other tests ⚙️
       run: pytest tests/other --ignore-glob='*_live.py'
     - name: failed tests 🚩

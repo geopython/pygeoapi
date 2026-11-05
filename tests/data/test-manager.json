@@ -1,0 +1,46 @@
+{
+    "jobs": [
+        {
+            "type": "process",
+            "identifier": "cb23ae5b-c335-11f1-bb5c-d9d1498a46ce",
+            "process_id": "pywmdr-wmdr2-migrate",
+            "created": "2026-10-08T16:32:03.399740Z",
+            "started": "2026-10-08T16:32:03.399760Z",
+            "updated": "2026-10-08T16:32:03.404995Z",
+            "finished": "2026-10-08T16:32:03.404979Z",
+            "status": "failed",
+            "location": null,
+            "mimetype": "application/octet-stream",
+            "message": "InvalidParameterValue: Error executing process",
+            "progress": 5
+        },
+        {
+            "type": "process",
+            "identifier": "335fdbaf-c64c-11f1-ac1e-85ca8be9387b",
+            "process_id": "pywcmp-wis2-wcmp2-ets",
+            "created": "2026-10-12T14:50:00.693224Z",
+            "started": "2026-10-12T14:50:00.693242Z",
+            "updated": "2026-10-12T14:50:00.725403Z",
+            "finished": "2026-10-12T14:50:00.725386Z",
+            "status": "successful",
+            "location": "{\"foo\": \"bar\"}",
+            "mimetype": "application/json",
+            "message": "Job complete",
+            "progress": 100
+        },
+        {
+            "type": "process",
+            "identifier": "55555",
+            "process_id": "pywcmp-wis2-wcmp2-ets",
+            "created": "2026-10-12T14:50:00.693224Z",
+            "started": "2026-10-12T14:50:00.693242Z",
+            "updated": "2026-10-12T14:50:00.725403Z",
+            "finished": "2026-10-12T14:50:00.725386Z",
+            "status": "successful",
+            "location": null,
+            "mimetype": "application/json",
+            "message": "Job complete",
+            "progress": 100
+        }
+    ]
+}

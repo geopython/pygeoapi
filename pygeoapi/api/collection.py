@@ -279,7 +279,7 @@ def gen_collection(api, request, dataset: str,
     elif collection_data_type == 'coverage':
         LOGGER.debug('Adding coverage based links')
         data['links'].extend([{
-            'type': 'application/prs.coverage+json',
+            'type': 'application/vnd.cov+json',
             'rel': f'{OGC_RELTYPES_BASE}/coverage',
             'title': l10n.translate('Coverage data', locale_),
             'href': f'{api.get_collections_url()}/{dataset}/coverage?f={F_JSON}'  # noqa

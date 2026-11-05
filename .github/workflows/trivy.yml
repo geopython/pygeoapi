@@ -12,6 +12,8 @@ on:
   release:
     types:
       - released
+  schedule:
+    - cron: '0 8 * * *'  # runs daily at 8h UTC
 
 jobs:
 
@@ -24,7 +26,7 @@ jobs:
     - name: Checkout pygeoapi
       uses: actions/checkout@master
     - name: Scan vulnerabilities with trivy
-      uses: aquasecurity/trivy-action@v0.35.0
+      uses: aquasecurity/trivy-action@v0.36.0
       with:
         scan-type: fs
         exit-code: 1
@@ -32,18 +34,21 @@ jobs:
         severity: CRITICAL,HIGH
         scanners: vuln,misconfig,secret
         scan-ref: .
+    - name: Set lowercase image name
+      run: |
+        echo "IMAGE_NAME=${GITHUB_REPOSITORY,,}" >> "$GITHUB_ENV"
     - name: Build locally the image from Dockerfile
       run: |
-        docker buildx build -t ${{ github.repository }}:${{ github.sha }} --platform linux/amd64 --no-cache -f Dockerfile .
+        docker buildx build -t ${{ env.IMAGE_NAME }}:${{ github.sha }} --platform linux/amd64 --no-cache -f Dockerfile .
     - name: Scan locally built Docker image for vulnerabilities with trivy
-      uses: aquasecurity/trivy-action@v0.35.0
+      uses: aquasecurity/trivy-action@v0.36.0
       env:
-        TRIVY_DB_REPOSITORY: public.ecr.aws/aquasecurity/trivy-db:2
-        TRIVY_JAVA_DB_REPOSITORY: public.ecr.aws/aquasecurity/trivy-java-db:1
+        TRIVY_DB_REPOSITORY: ghcr.io/aquasecurity/trivy-db:2
+        TRIVY_JAVA_DB_REPOSITORY: ghcr.io/aquasecurity/trivy-java-db:1
       with:
         scan-type: image
         exit-code: 1
         ignore-unfixed: true
         severity: CRITICAL,HIGH
         vuln-type: os,library
-        image-ref: '${{ github.repository }}:${{ github.sha }}'
+        image-ref: '${{ env.IMAGE_NAME }}:${{ github.sha }}'

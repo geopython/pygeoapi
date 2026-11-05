@@ -240,6 +240,13 @@ def get_collection_tiles_data(
         format_ = p.format_type
         headers['Content-Type'] = t['format']['mimetype']
 
+        bool_map = map(is_index_value_valid, (x_idx, y_idx, z_idx))
+        if False in bool_map:
+            msg = 'Invalid path requested'
+            LOGGER.error(f'{msg}: x: {x_idx}, y: {y_idx}, z: {z_idx}')
+            return api.get_exception(HTTPStatus.BAD_REQUEST, headers, format_,
+                                     'InvalidParameterValue', msg)
+
         LOGGER.debug(f'Fetching tileset id {matrix_id} and tile {z_idx}/{y_idx}/{x_idx}')  # noqa
         content = p.get_tiles(layer=p.get_layer(), tileset=matrix_id,
                               z=z_idx, y=y_idx, x=x_idx, format_=format_)
@@ -389,7 +396,8 @@ def tilematrixsets(api: API,
     }]
 
     if request.format == F_HTML:  # render
-        content = render_j2_template(api.tpl_config, api.tpl_config,
+        content = render_j2_template(api.tpl_config,
+                                     api.config['server']['templates'],
                                      'tilematrixsets/index.html',
                                      tms, request.locale)
         return headers, HTTPStatus.OK, content
@@ -436,12 +444,35 @@ def tilematrixset(api: API,
     }
 
     if request.format == F_HTML:  # render
-        content = render_j2_template(api.tpl_config, api.tpl_config,
+        content = render_j2_template(api.tpl_config,
+                                     api.config['server']['templates'],
                                      'tilematrixsets/tilematrixset.html',
                                      tms, request.locale)
         return headers, HTTPStatus.OK, content
 
     return headers, HTTPStatus.OK, to_json(tms, api.pretty_print)
+
+
+def is_index_value_valid(index_value: int | str) -> bool:
+    """
+    Helper function to validate x/y/z values
+
+    :param index_value: index_value value
+
+    :returns: `bool` of whether index value is valid
+    """
+
+    is_valid = False
+
+    if isinstance(index_value, int):
+        if index_value >= 0:
+            is_valid = True
+    elif isinstance(index_value, str):
+        if index_value.isascii() and index_value.isdecimal():
+            is_valid = True
+
+    return is_valid
+
 
 def get_oas_30(cfg: dict, locale: str) -> tuple[list[dict[str, str]], dict[str, dict]]:  # noqa
     """
