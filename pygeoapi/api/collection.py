@@ -437,7 +437,7 @@ def gen_collection(api, request, dataset: str,
                 'type': FORMAT_TYPES[F_HTML],
                 'rel': 'data',
                 'title': title2,
-                'href': f'{api.get_collections_url()}/{dataset}/{qt}?f={F_HTML}'  # noqa 
+                'href': f'{api.get_collections_url()}/{dataset}/{qt}?f={F_HTML}'  # noqa
             }])
 
             for key, value in get_dataset_formatters(config).items():
