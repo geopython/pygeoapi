@@ -29,7 +29,10 @@
 
 import os
 import pytest
+from pygeofilter.parsers.cql2_text import parse
+
 from pygeoapi.provider.base import (
+    ProviderInvalidQueryError,
     ProviderItemNotFoundError,
 )
 from pygeoapi.provider.sql import MySQLProvider
@@ -191,6 +194,25 @@ def test_get_with_injection(config):
 
     with pytest.raises(ProviderItemNotFoundError):
         p.get('1<script>alert("We love pygeoapi")</script>')
+
+
+@pytest.mark.parametrize('cql', [
+    "'locationName' LIKE 'a%'",
+    "'locationName' IN ('a')",
+    "'locationName' IS NULL"
+])
+def test_query_cql_quoted_column_name(config, cql):
+    """Test CQL where a column name is quoted, so is not a column"""
+    provider = MySQLProvider(config)
+    with pytest.raises(ProviderInvalidQueryError):
+        provider.query(filterq=parse(cql))
+
+
+def test_query_property_filter_invalid_value_matches_nothing(config):
+    """Test that MySQL keeps comparing mismatched types without an error"""
+    provider = MySQLProvider(config)
+    results = provider.query(properties=[('locationID', 'not-an-integer')])
+    assert results['numberMatched'] == 0
 
 
 def test_get_not_existing_item_raise_exception(config):
