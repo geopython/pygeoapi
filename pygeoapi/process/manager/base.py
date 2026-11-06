@@ -46,8 +46,8 @@ from pygeoapi.process.base import (
     BaseProcessor,
     JobNotFoundError,
     JobResultNotFoundError,
-    ProcessorExecuteError,
-    UnknownProcessError,
+    ProcessorInvalidSubscriberURLError,
+    UnknownProcessError
 )
 from pygeoapi.util import (
     get_current_datetime,
@@ -271,7 +271,8 @@ class BaseManager:
         if p.supports_outputs:
             extra_execute_parameters['outputs'] = requested_outputs
 
-        self._send_in_progress_notification(subscriber)
+        self._send_in_progress_notification(
+            subscriber, p.allow_internal_requests)
 
         try:
             if self.output_dir is not None:
@@ -329,7 +330,9 @@ class BaseManager:
             }
 
             self.update_job(job_id, job_update_metadata)
-            self._send_success_notification(subscriber, outputs=outputs)
+            self._send_success_notification(subscriber,
+                                            p.allow_internal_requests,
+                                            outputs=outputs)
 
         except Exception as err:
             # TODO assess correct exception type and description to help users
@@ -361,7 +364,8 @@ class BaseManager:
             jfmt = 'application/json'
 
             self.update_job(job_id, job_metadata)
-            self._send_failed_notification(subscriber)
+            self._send_failed_notification(subscriber,
+                                           p.allow_internal_requests)
 
         return jfmt, outputs, current_status
 
@@ -401,13 +405,13 @@ class BaseManager:
         """
 
         job_id = str(uuid.uuid1())
-        self.processor = self.get_processor(process_id)
-        self.processor.set_job_id(job_id)
+        processor = self.get_processor(process_id)
+        processor.set_job_id(job_id)
         extra_execute_handler_parameters = {
             'requested_response': requested_response
         }
 
-        job_control_options = self.processor.metadata.get(
+        job_control_options = processor.metadata.get(
             'jobControlOptions', [])
 
         if execution_mode == RequestedProcessExecutionMode.respond_async:
@@ -480,7 +484,7 @@ class BaseManager:
         # TODO: handler's response could also be allowed to include more HTTP
         # headers
         mime_type, outputs, status = handler(
-            self.processor,
+            processor,
             job_id,
             data_dict,
             requested_outputs,
@@ -488,34 +492,44 @@ class BaseManager:
 
         return job_id, mime_type, outputs, status, response_headers
 
-    def _send_in_progress_notification(self, subscriber: Optional[Subscriber]):
+    def _send_in_progress_notification(self, subscriber: Optional[Subscriber],
+                                       allow_internal_requests: bool = False):
         if subscriber and subscriber.in_progress_uri:
-            self.__do_subscriber_request(subscriber.in_progress_uri)
+            self.__do_subscriber_request(subscriber.in_progress_uri,
+                                         allow_internal_requests)
 
     def _send_success_notification(
-            self, subscriber: Optional[Subscriber], outputs: Any
+            self, subscriber: Optional[Subscriber],
+            allow_internal_requests: bool = False, outputs: Any = None
     ):
         if subscriber and subscriber.success_uri:
-            self.__do_subscriber_request(subscriber.success_uri, outputs)
+            self.__do_subscriber_request(subscriber.success_uri,
+                                         allow_internal_requests, outputs)
 
-    def _send_failed_notification(self, subscriber: Optional[Subscriber]):
+    def _send_failed_notification(self, subscriber: Optional[Subscriber],
+                                  allow_internal_requests: bool = False):
         if subscriber and subscriber.failed_uri:
-            self.__do_subscriber_request(subscriber.failed_uri)
+            self.__do_subscriber_request(subscriber.failed_uri,
+                                         allow_internal_requests)
 
-    def __do_subscriber_request(self, url: str, data: dict = {}) -> None:
+    def __do_subscriber_request(self, url: str,
+                                allow_internal_requests: bool = False,
+                                data: dict = {}) -> None:
         """
         Helper function to execute a subscriber URL via HTTP POST
 
         :param url: `str` of URL
+        :param allow_internal_requests: `bool` of whether to allow internal
+                                        requests (default `False`)
         :param data: `dict` of request payload
 
         :returns: `None`
         """
 
-        if not is_request_allowed(url, self.processor.allow_internal_requests):
+        if not is_request_allowed(url, allow_internal_requests):
             msg = 'URL not allowed'
             LOGGER.error(f'{msg}: {url}')
-            raise ProcessorExecuteError(msg)
+            raise ProcessorInvalidSubscriberURLError(msg)
 
         response = requests.post(url, json=data, allow_redirects=False)
         LOGGER.debug(

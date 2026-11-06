@@ -131,6 +131,12 @@ class ProcessorExecuteError(ProcessorGenericError):
     default_msg = "generic error (check logs)"
 
 
+class ProcessorInvalidSubscriberURLError(ProcessorGenericError):
+    """subscriber URL error"""
+
+    default_msg = "generic error (check logs)"
+
+
 class JobError(Exception):
     pass
 
