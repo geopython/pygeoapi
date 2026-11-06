@@ -448,6 +448,12 @@ resources:
         processor:
             name: HelloWorld
 
+    hello-world2:
+        type: process
+        processor:
+            name: HelloWorld
+        allow_internal_requests: true
+
     pygeometa-metadata-validate:
         type: process
         processor:

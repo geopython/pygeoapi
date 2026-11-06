@@ -46,8 +46,8 @@ from pygeoapi.process.base import (
     BaseProcessor,
     JobNotFoundError,
     JobResultNotFoundError,
-    ProcessorExecuteError,
-    UnknownProcessError,
+    ProcessorInvalidSubscriberURLError,
+    UnknownProcessError
 )
 from pygeoapi.util import (
     get_current_datetime,
@@ -529,7 +529,7 @@ class BaseManager:
         if not is_request_allowed(url, allow_internal_requests):
             msg = 'URL not allowed'
             LOGGER.error(f'{msg}: {url}')
-            raise ProcessorExecuteError(msg)
+            raise ProcessorInvalidSubscriberURLError(msg)
 
         response = requests.post(url, json=data, allow_redirects=False)
         LOGGER.debug(

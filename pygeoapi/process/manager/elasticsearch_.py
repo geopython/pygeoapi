@@ -239,8 +239,6 @@ class ElasticsearchManager(BaseManager):
                 else:
                     if mimetype in (None, FORMAT_TYPES[F_JSON],
                                     FORMAT_TYPES[F_JSONLD]):
-                        print("QQQQ", location)
-                        print("QQQQ", type(location))
                         result = json.loads(location)
             except (TypeError, FileNotFoundError, json.JSONDecodeError):
                 raise JobResultNotFoundError()

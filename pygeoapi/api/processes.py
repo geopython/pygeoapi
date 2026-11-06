@@ -56,6 +56,7 @@ from pygeoapi.process.base import (
     JobNotFoundError,
     JobResultNotFoundError,
     ProcessorExecuteError,
+    ProcessorInvalidSubscriberURLError
 )
 from pygeoapi.process.manager.base import get_manager, Subscriber
 from pygeoapi.util import (
@@ -488,6 +489,11 @@ def execute_process(api: API, request: APIRequest,
         return api.get_exception(
             err.http_status_code, headers,
             request.format, err.ogc_exception_code, err.message)
+
+    except ProcessorInvalidSubscriberURLError as err:
+        return api.get_exception(
+            HTTPStatus.BAD_REQUEST, headers,
+            request.format, 'InvalidParameterValue', err.message)
 
     response = {}
     if status == JobStatus.failed:

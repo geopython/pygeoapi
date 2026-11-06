@@ -82,7 +82,7 @@ def test_describe_processes(config, api_):
     rsp_headers, code, response = describe_processes(api_, req)
     data = json.loads(response)
     assert code == HTTPStatus.OK
-    assert len(data['processes']) == 2
+    assert len(data['processes']) == 3
     assert len(data['links']) == 3
 
     # Test for particular, defined process
@@ -165,7 +165,7 @@ def test_describe_processes(config, api_):
     processor.metadata['example'] = example
     data = json.loads(response)
     assert code == HTTPStatus.OK
-    assert len(data['processes']) == 2
+    assert len(data['processes']) == 3
 
 
 def test_describe_processes_metadata(config_process_metadata,
@@ -228,27 +228,37 @@ def test_execute_process(config, api_):
         'subscriber': {
             'successUri': 'https://example.com/success',
             'inProgressUri': 'https://example.com/inProgress',
-            'failedUri': 'https://example.com/failed',
+            'failedUri': 'https://example.com/failed'
         }
     }
     req_body_8 = {
+        'inputs': {
+            'name': 'Test'
+        },
+        'subscriber': {
+            'successUri': 'http://127.0.0.1/success',
+            'inProgressUri': 'http://127.0.0.1/inProgress',
+            'failedUri': 'http://127.0.0.1/failed'
+        }
+    }
+    req_body_9 = {
         'inputs': {
             'name': 'Test document'
         },
         'response': 'document'
     }
-    req_body_9 = {
+    req_body_10 = {
         'inputs': {
             'name': 'Test document'
         }
     }
-    req_body_10 = {
+    req_body_11 = {
         'inputs': {
             'name': 'Test document as bytes response',
             'as_bytes': True
         }
     }
-    req_body_11 = {
+    req_body_12 = {
         'inputs': {
             'name': 'Test document as text/plain media type',
             'media_type': 'text/plain'
@@ -410,6 +420,31 @@ def test_execute_process(config, api_):
                             rsp_headers['Location'].split('/')[-1]]))
 
     req = mock_api_request(data=req_body_8)
+    with mock.patch(
+        'pygeoapi.process.manager.base.requests.post'
+    ) as post_mocker:
+        rsp_headers, code, response = execute_process(api_, req,
+                                                      'hello-world2')
+    assert code == HTTPStatus.OK
+    post_mocker.assert_any_call(
+        req_body_8['subscriber']['inProgressUri'], json={},
+        allow_redirects=False
+    )
+    post_mocker.assert_any_call(
+        req_body_8['subscriber']['successUri'],
+        json={'id': 'echo', 'value': 'Hello Test!'}, allow_redirects=False
+    )
+    assert post_mocker.call_count == 2
+
+    cleanup_jobs.add(tuple(['hello-world2',
+                            rsp_headers['Location'].split('/')[-1]]))
+
+    req = mock_api_request(data=req_body_8)
+    rsp_headers, code, response = execute_process(api_, req, 'hello-world')
+    response = json.loads(response)
+    assert code == HTTPStatus.BAD_REQUEST
+
+    req = mock_api_request(data=req_body_9)
     rsp_headers, code, response = execute_process(api_, req, 'hello-world')
 
     response = json.loads(response)
@@ -417,19 +452,19 @@ def test_execute_process(config, api_):
     assert 'outputs' in response
     assert isinstance(response['outputs'], list)
 
-    req = mock_api_request(data=req_body_9)
+    req = mock_api_request(data=req_body_10)
     rsp_headers, code, response = execute_process(api_, req, 'hello-world')
 
     response2 = '{"id":"echo","value":"Hello Test document!"}'
     assert response == response2
 
-    req = mock_api_request(data=req_body_10)
+    req = mock_api_request(data=req_body_11)
     rsp_headers, code, response = execute_process(api_, req, 'hello-world')
 
     response2 = '{"id":"echo","value":"Hello Test document as bytes response!"}'  # noqa
     assert response == response2
 
-    req = mock_api_request(data=req_body_11)
+    req = mock_api_request(data=req_body_12)
     rsp_headers, code, response = execute_process(api_, req, 'hello-world')
 
     assert rsp_headers['Content-Type'] == 'text/plain'
