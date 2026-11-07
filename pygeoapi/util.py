@@ -342,7 +342,7 @@ def human_size(nbytes: int) -> str:
         i += 1
 
     if suffixes[i] == 'K':
-        f = str(int(nbytes)).rstrip('0').rstrip('.')
+        f = str(int(nbytes))
     elif suffixes[i] == 'B':
         return nbytes
     else:
