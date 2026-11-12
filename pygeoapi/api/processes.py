@@ -265,7 +265,7 @@ def get_jobs(api: API, request: APIRequest,
                 HTTPStatus.BAD_REQUEST, headers, request.format,
                 'InvalidParameterValue', msg)
     except TypeError as err:
-        LOGGER.warning(err)
+        LOGGER.debug(f'{err}; setting offset to 0')
         offset = 0
     except ValueError:
         msg = 'offset value should be an integer'

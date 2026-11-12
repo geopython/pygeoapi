@@ -281,7 +281,7 @@ def get_collection_items(
             HTTPStatus.BAD_REQUEST, headers, request.format,
             'InvalidParameterValue', msg)
     except TypeError as err:
-        LOGGER.warning(err)
+        LOGGER.debug(f'{err}; setting offset to 0')
         offset = 0
 
     LOGGER.debug('Processing limit parameter')
