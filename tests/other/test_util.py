@@ -330,6 +330,22 @@ def test_get_choice_from_headers():
     assert util.get_choice_from_headers(
         {'accept-language': 'en_US', 'accept': '*/*'}, 'accept') == '*/*'
 
+    # all=True returns every choice ordered by q value, ties in header order
+    assert util.get_choice_from_headers(
+        {'accept-language': 'a;q=0.1,b;q=0.2,c;q=0.3,d;q=0.4,e;q=0.9,f'},
+        'accept-language', all=True) == ['f', 'e', 'd', 'c', 'b', 'a']
+    assert util.get_choice_from_headers(
+        {'accept': 'text/html,application/json'},
+        'accept', all=True) == ['text/html', 'application/json']
+
+    # q=0 means "not acceptable" and must not raise ZeroDivisionError
+    assert util.get_choice_from_headers(
+        {'accept-language': 'fr;q=0,en'}, 'accept-language') == 'en'
+    assert util.get_choice_from_headers(
+        {'accept-language': 'fr;q=0'}, 'accept-language') is None
+    assert util.get_choice_from_headers(
+        {'accept-language': 'fr;q=0'}, 'accept-language', all=True) is None
+
 
 @pytest.mark.parametrize('url,allow_internal,result', [
     ['http://127.0.0.1/test', False, False],
