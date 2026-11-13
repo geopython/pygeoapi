@@ -63,8 +63,10 @@ from sqlalchemy import (
 from sqlalchemy.engine import URL, Engine
 from sqlalchemy.exc import (
     ConstraintColumnNotFoundError,
+    DataError,
     InvalidRequestError,
     OperationalError,
+    ProgrammingError,
     SQLAlchemyError
 )
 from sqlalchemy.ext.automap import automap_base
@@ -77,11 +79,15 @@ from pygeoapi.provider.base import (
     BaseProvider,
     ProviderConnectionError,
     ProviderInvalidDataError,
+    ProviderInvalidQueryError,
     ProviderQueryError,
     ProviderItemNotFoundError
 )
 
 LOGGER = logging.getLogger(__name__)
+
+# PostgreSQL error code: no operator for these types, e.g. LIKE on an integer
+PG_UNDEFINED_FUNCTION = '42883'
 
 
 class GenericSQLProvider(BaseProvider):
@@ -189,46 +195,63 @@ class GenericSQLProvider(BaseProvider):
             select_properties, skip_geometry
         )
 
+        filtered = properties or filterq
+
         LOGGER.debug('Querying Database')
         # Execute query within self-closing database Session context
-        with Session(self._engine) as session:
-            results = (
-                session.query(self.table_model)
-                .filter(property_filters)
-                .filter(cql_filters)
-                .filter(bbox_filter)
-                .filter(time_filter)
-                .options(selected_properties)
-            )
-
-            LOGGER.debug('Preparing response')
-            response = {
-                'type': 'FeatureCollection',
-                'features': [],
-                'numberReturned': 0
-            }
-
-            if self.count or resulttype == 'hits':
-                matched = results.count()
-                response['numberMatched'] = matched
-                LOGGER.debug(f'Found {matched} result(s)')
-            else:
-                LOGGER.debug('Count disabled')
-
-            if resulttype == 'hits' or not results:
-                return response
-
-            crs_transform_out = get_transform_from_spec(crs_transform_spec)
-
-            response['numberReturned'] = 0
-            for item in (
-                results.order_by(*order_by_clauses).offset(offset).limit(limit)
-            ):
-                response['numberReturned'] += 1
-                response['features'].append(
-                    self._sqlalchemy_to_feature(item, crs_transform_out,
-                                                select_properties)
+        try:
+            with Session(self._engine) as session:
+                results = (
+                    session.query(self.table_model)
+                    .filter(property_filters)
+                    .filter(cql_filters)
+                    .filter(bbox_filter)
+                    .filter(time_filter)
+                    .options(selected_properties)
                 )
+
+                LOGGER.debug('Preparing response')
+                response = {
+                    'type': 'FeatureCollection',
+                    'features': [],
+                    'numberReturned': 0
+                }
+
+                if self.count or resulttype == 'hits':
+                    matched = results.count()
+                    response['numberMatched'] = matched
+                    LOGGER.debug(f'Found {matched} result(s)')
+                else:
+                    LOGGER.debug('Count disabled')
+
+                if resulttype == 'hits' or not results:
+                    return response
+
+                crs_transform_out = get_transform_from_spec(crs_transform_spec)
+
+                response['numberReturned'] = 0
+                for item in (
+                    results.order_by(*order_by_clauses)
+                    .offset(offset).limit(limit)
+                ):
+                    response['numberReturned'] += 1
+                    response['features'].append(
+                        self._sqlalchemy_to_feature(item, crs_transform_out,
+                                                    select_properties)
+                    )
+        except DataError as err:
+            # A value the column type cannot hold.  Without a filter, the
+            # request is not at fault (e.g. a bad cast in a view).
+            if not filtered:
+                raise
+            msg = 'Filter value is not valid for the column type'
+            raise ProviderInvalidQueryError(user_msg=msg) from err
+        except ProgrammingError as err:
+            code = getattr(err.orig, 'pgcode', None)
+            if not filtered or code != PG_UNDEFINED_FUNCTION:
+                raise
+            msg = 'Filter operator is not valid for the column type'
+            raise ProviderInvalidQueryError(user_msg=msg) from err
 
         return response
 
@@ -501,7 +524,12 @@ class GenericSQLProvider(BaseProvider):
             column_name: getattr(self.table_model, column_name)
             for column_name in self.table_model.__table__.columns.keys()
         }
-        cql_filters = to_filter(filterq, field_mapping)
+        try:
+            cql_filters = to_filter(filterq, field_mapping)
+        except AttributeError as err:
+            # e.g. 'name' LIKE 'a%': quoted, so a text value and not a column
+            msg = 'Filter must compare a column (names are not quoted)'
+            raise ProviderInvalidQueryError(user_msg=msg) from err
 
         return cql_filters
 
