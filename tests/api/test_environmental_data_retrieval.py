@@ -36,7 +36,9 @@ import json
 from http import HTTPStatus
 
 from pygeoapi.api import describe_collections
-from pygeoapi.api.environmental_data_retrieval import get_collection_edr_query
+from pygeoapi.api.environmental_data_retrieval import (
+    get_collection_edr_instances, get_collection_edr_query)
+from pygeoapi.provider.base_edr import BaseEDRProvider
 
 from tests.util import mock_api_request
 
@@ -289,3 +291,53 @@ def test_get_collection_edr_query_crs(config, api_):
     assert 'Content-Crs' in rsp_headers
     expected_crs = '<http://www.opengis.net/def/crs/OGC/1.3/CRS84>'
     assert rsp_headers['Content-Crs'] == expected_crs
+
+
+def test_get_collection_edr_instances_unsupported(config, api_):
+    # xarray-edr does not implement instances
+    req = mock_api_request()
+    rsp_headers, code, response = get_collection_edr_instances(
+        api_, req, 'icoads-sst')
+    assert code == HTTPStatus.NOT_FOUND
+
+    rsp_headers, code, response = get_collection_edr_instances(
+        api_, req, 'icoads-sst', instance_id='nonsense')
+    assert code == HTTPStatus.NOT_FOUND
+
+    req = mock_api_request({'coords': 'POINT(11 11)'})
+    rsp_headers, code, response = get_collection_edr_query(
+        api_, req, 'icoads-sst', 'nonsense', 'position')
+    assert code == HTTPStatus.BAD_REQUEST
+
+
+def test_get_collection_edr_instances_contract(config, api_, monkeypatch):
+    class InstancesProvider(BaseEDRProvider):
+        def instances(self):
+            return ['run-a', 'run-b']
+
+        def instance(self, instance):
+            return instance in self.instances()
+
+        def position(self, **kwargs):
+            return {}
+
+    provider = object.__new__(InstancesProvider)
+    monkeypatch.setattr(
+        'pygeoapi.api.environmental_data_retrieval.load_plugin',
+        lambda *args, **kwargs: provider)
+
+    req = mock_api_request()
+    rsp_headers, code, response = get_collection_edr_instances(
+        api_, req, 'icoads-sst')
+    assert code == HTTPStatus.OK
+    data = json.loads(response)
+    assert [i['id'] for i in data['instances']] == ['run-a', 'run-b']
+
+    rsp_headers, code, response = get_collection_edr_instances(
+        api_, req, 'icoads-sst', instance_id='run-b')
+    assert code == HTTPStatus.OK
+    assert json.loads(response)['id'] == 'run-b'
+
+    rsp_headers, code, response = get_collection_edr_instances(
+        api_, req, 'icoads-sst', instance_id='nonsense')
+    assert code == HTTPStatus.NOT_FOUND
