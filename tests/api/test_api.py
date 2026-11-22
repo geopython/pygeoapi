@@ -186,6 +186,13 @@ def test_apirequest(api_):
     assert apireq.get_linkrel(F_JSONLD) == 'self'
     assert apireq.get_linkrel(F_HTML) == 'alternate'
 
+    # A format with q=0 is not acceptable (RFC 9110, section 12.4.2)
+    hh = 'text/html;q=0,application/json;q=0.5'
+    req = mock_request(HTTP_ACCEPT=hh)
+    apireq = APIRequest(req, api_.locales)
+    assert apireq.is_valid()
+    assert apireq.format == F_JSON
+
     # Overrule HTTP content negotiation
     req = mock_request({'f': 'html'}, HTTP_ACCEPT='application/json')  # noqa
     apireq = APIRequest(req, api_.locales)
