@@ -10,7 +10,7 @@
 #
 # Copyright (c) 2026 Joana Simoes
 # Copyright (c) 2026 Tom Kralidis
-# Copyright (c) 2025 Francesco Bartoli
+# Copyright (c) 2026 Francesco Bartoli
 # Copyright (c) 2022 John A Stevenson and Colin Blackburn
 # Copyright (c) 2023 Ricardo Garcia Silva
 # Copyright (c) 2024 Bernhard Mallinger
@@ -43,6 +43,8 @@ from copy import deepcopy
 from http import HTTPStatus
 import logging
 from typing import Tuple
+
+from pyproj.exceptions import CRSError
 
 from pygeoapi.crs import transform_bbox, DEFAULT_CRS, get_uri
 from pygeoapi.formats import F_JSON, FORMAT_TYPES
@@ -114,6 +116,10 @@ def get_collection_map(api: API, request: APIRequest,
 
     except KeyError:
         query_args['crs'] = DEFAULT_CRS
+    except CRSError as err:
+        return api.get_exception(
+            HTTPStatus.BAD_REQUEST, headers, request.format,
+            'InvalidParameterValue', f'Invalid crs: {err}')
 
     LOGGER.debug(f'Using crs: {query_args['crs']}')
 
@@ -125,6 +131,10 @@ def get_collection_map(api: API, request: APIRequest,
             query_args['bbox-crs'] = get_uri(request.params['bbox-crs'])
     except KeyError:
         query_args['bbox-crs'] = DEFAULT_CRS
+    except CRSError as err:
+        return api.get_exception(
+            HTTPStatus.BAD_REQUEST, headers, request.format,
+            'InvalidParameterValue', f'Invalid bbox-crs: {err}')
 
     LOGGER.debug(f'Using bbox-crs: {query_args['bbox-crs']}')
 
@@ -204,14 +214,14 @@ def get_collection_map(api: API, request: APIRequest,
         except (AttributeError, ValueError) as err:
             msg = f'Invalid subset: {err}'
             return api.get_exception(
-                HTTPStatus.BAD_REQUEST, headers, format_,
+                HTTPStatus.BAD_REQUEST, headers, request.format,
                 'InvalidParameterValue', msg)
 
         for sk in query_args['subsets'].keys():
             if sk not in subsets.keys():
                 msg = f'Subset not found; valid values are {subsets}'
                 return api.get_exception(
-                    HTTPStatus.BAD_REQUEST, headers, format_,
+                    HTTPStatus.BAD_REQUEST, headers, request.format,
                     'InvalidParameterValue', msg)
 
     if request.params.get('properties'):

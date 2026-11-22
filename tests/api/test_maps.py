@@ -4,9 +4,11 @@
 #          John A Stevenson <jostev@bgs.ac.uk>
 #          Colin Blackburn <colb@bgs.ac.uk>
 #          Bernhard Mallinger <bernhard.mallinger@eox.at>
+#          Francesco Bartoli <xbartolone@gmail.com>
 #
 # Copyright (c) 2026 Tom Kralidis
 # Copyright (c) 2022 John A Stevenson and Colin Blackburn
+# Copyright (c) 2026 Francesco Bartoli
 #
 # Permission is hereby granted, free of charge, to any person
 # obtaining a copy of this software and associated documentation
@@ -65,6 +67,17 @@ def test_get_collection_map(config, api_):
         api_, req, 'mapserver_world_map')
 
     assert code == HTTPStatus.NOT_IMPLEMENTED
+
+
+@pytest.mark.parametrize('name, value', [
+    ('crs', '[OGC:CRS84h]'),
+    ('bbox-crs', 'foo'),
+])
+def test_map_unsupported_crs(config, api_, name, value):
+    req = mock_api_request({name: value})
+    _, code, _ = get_collection_map(api_, req, 'mapserver_world_map')
+
+    assert code == HTTPStatus.BAD_REQUEST
 
 
 def test_map_crs_transform(config, api_):
