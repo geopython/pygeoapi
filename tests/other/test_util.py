@@ -1,8 +1,10 @@
 # =================================================================
 #
 # Authors: Tom Kralidis <tomkralidis@gmail.com>
+#          Francesco Bartoli <xbartolone@gmail.com>
 #
 # Copyright (c) 2026 Tom Kralidis
+# Copyright (c) 2026 Francesco Bartoli
 #
 # Permission is hereby granted, free of charge, to any person
 # obtaining a copy of this software and associated documentation
@@ -329,6 +331,18 @@ def test_get_choice_from_headers():
                                         'accept') == 'application/ld+json'
     assert util.get_choice_from_headers(
         {'accept-language': 'en_US', 'accept': '*/*'}, 'accept') == '*/*'
+
+
+def test_get_choice_from_headers_drops_q_zero():
+    # RFC 9110, section 12.4.2: q=0 means "not acceptable"
+    _headers = {'accept': 'image/png;q=0,application/json;q=0.5'}
+
+    assert util.get_choice_from_headers(
+        _headers, 'accept', all=True) == ['application/json']
+    assert util.get_choice_from_headers(
+        {'accept': 'image/png;q=0'}, 'accept') is None
+    assert util.get_choice_from_headers(
+        {'accept': 'image/png;q=0'}, 'accept', all=True) == []
 
 
 @pytest.mark.parametrize('url,allow_internal,result', [

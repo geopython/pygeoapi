@@ -1,8 +1,10 @@
 # =================================================================
 #
 # Authors: Tom Kralidis <tomkralidis@gmail.com>
+#          Francesco Bartoli <xbartolone@gmail.com>
 #
 # Copyright (c) 2026 Tom Kralidis
+# Copyright (c) 2026 Francesco Bartoli
 #
 # Permission is hereby granted, free of charge, to any person
 # obtaining a copy of this software and associated documentation
@@ -745,15 +747,17 @@ def get_choice_from_headers(headers: dict,
             value, q_value = match.groups()
             q_value = float(q_value) if q_value else 1.0
 
-            # Sort choices by q value and index
-            if 0 <= q_value <= 1:
+            # Sort choices by q value and index; q=0 means not acceptable
+            if 0 < q_value <= 1:
                 heappush(choices, (1 / q_value, i, value))
 
     # Drop q value
     sorted_choices = [choice[-1] for choice in choices]
 
     # Return one or all choices
-    return sorted_choices if all else sorted_choices[0]
+    if all:
+        return sorted_choices
+    return sorted_choices[0] if sorted_choices else None
 
 
 def get_dataset_formatters(dataset: dict) -> dict:
