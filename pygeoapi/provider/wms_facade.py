@@ -93,8 +93,10 @@ class WMSFacadeProvider(BaseProvider):
 
         try:
             wms_crs = get_curie(crs)
-        except CRSError:
-            wms_crs = DEFAULT_WMS_CRS
+        except CRSError as err:
+            msg = f'Unsupported CRS {crs}: {err}'
+            LOGGER.error(msg)
+            raise ProviderQueryError(msg)
 
         if version == '1.3.0' and wms_crs == 'EPSG:4326':
             bbox = [bbox[1], bbox[0], bbox[3], bbox[2]]
