@@ -2,10 +2,13 @@
 #
 # Authors: Tom Kralidis <tomkralidis@gmail.com>
 #          Just van den Broecke <justb4@gmail.com>
+#          Francesco Bartoli <xbartolone@gmail.com>
+#
 #
 # Copyright (c) 2026 Joana Simoes
 # Copyright (c) 2025 Tom Kralidis
 # Copyright (c) 2025 Just van den Broecke
+# Copyright (c) 2026 Francesco Bartoli
 #
 # Permission is hereby granted, free of charge, to any person
 # obtaining a copy of this software and associated documentation
@@ -160,23 +163,19 @@ def get_uri(crs: str) -> str:
         return crs
 
     except CRSError:
-        try:
-            # Parse safe CURIE
-            curie = crs.strip('[]')
-            LOGGER.debug(f'Attempt to parse a curie: {curie}')
+        # Parse safe CURIE
+        curie = crs.strip('[]')
+        LOGGER.debug(f'Attempt to parse a curie: {curie}')
 
-            # We support all EPSG codes and CRS84
-            if curie not in ['crs:84', 'ogc:crs84']:
-                [curie_auth, curie_code] = curie.split(':')
-                if len(curie.split(':')) != 2 or (curie_auth != 'epsg'):
-                    raise CRSError('Unsupported CRS')
+        # We support all EPSG codes and CRS84
+        if curie in ['crs:84', 'ogc:crs84']:
+            return 'http://www.opengis.net/def/crs/OGC/1.3/CRS84'
 
-                return f'http://www.opengis.net/def/crs/EPSG/0/{curie_code}'
-            else:
-                return 'http://www.opengis.net/def/crs/OGC/1.3/CRS84'
+        parts = curie.split(':')
+        if len(parts) != 2 or parts[0] != 'epsg':
+            raise CRSError('Unsupported CRS')
 
-        except CRSError as e:
-            return e
+        return f'http://www.opengis.net/def/crs/EPSG/0/{parts[1]}'
 
 
 def get_curie(crs: str) -> str:
@@ -193,23 +192,21 @@ def get_curie(crs: str) -> str:
     :returns: `WMS CURIE` matching the input uri.
     """
 
-    try:
-        if not crs.startswith(("http://", "https://")):
-            raise CRSError('Not an uri')
+    if not crs.startswith(("http://", "https://")):
+        raise CRSError('Not an uri')
 
-        crs = crs.lower()
-        path_el = [p for p in crs.split('/') if p]
+    crs = crs.lower()
+    path_el = [p for p in crs.split('/') if p]
+    if len(path_el) != 7:
+        raise CRSError('Invalid uri fragments')
 
-        # We support all EPSG codes and CRS84
-        if path_el[4] == 'epsg':
-            return f'EPSG:{path_el[6]}'
-        elif path_el[6] != 'crs84':
-            raise CRSError('Unsupported CRS')
+    # We support all EPSG codes and CRS84
+    if path_el[4] == 'epsg':
+        return f'EPSG:{path_el[6]}'
+    elif path_el[6] != 'crs84':
+        raise CRSError('Unsupported CRS')
 
-        return 'CRS:84'
-
-    except CRSError as e:
-        return e
+    return 'CRS:84'
 
 
 def get_crs(crs: Union[str, pyproj.CRS]) -> pyproj.CRS:

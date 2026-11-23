@@ -1,8 +1,10 @@
 # =================================================================
 #
 # Authors: Tom Kralidis <tomkralidis@gmail.com>
+#          Francesco Bartoli <xbartolone@gmail.com>
 #
 # Copyright (c) 2026 Tom Kralidis
+# Copyright (c) 2026 Francesco Bartoli
 #
 # Permission is hereby granted, free of charge, to any person
 # obtaining a copy of this software and associated documentation
@@ -146,6 +148,30 @@ def test_get_srid(uri, expected_raise, expected):
     with expected_raise:
         srid_ = crs.get_srid(uri)
         assert srid_ == expected
+
+
+@pytest.mark.parametrize('value, expected_raise, expected', [
+    pytest.param('http://www.opengis.net/def/crs/EPSG/0/4326', does_not_raise(), 'http://www.opengis.net/def/crs/epsg/0/4326'),  # noqa
+    pytest.param('[EPSG:3857]', does_not_raise(), 'http://www.opengis.net/def/crs/EPSG/0/3857'),  # noqa
+    pytest.param('[OGC:CRS84]', does_not_raise(), 'http://www.opengis.net/def/crs/OGC/1.3/CRS84'),  # noqa
+    pytest.param('[OGC:CRS84h]', pytest.raises(CRSError), None),
+    pytest.param('[EPSG:0:0]', pytest.raises(CRSError), None),
+    pytest.param('foo', pytest.raises(CRSError), None),
+])
+def test_get_uri(value, expected_raise, expected):
+    with expected_raise:
+        assert crs.get_uri(value) == expected
+
+
+@pytest.mark.parametrize('uri, expected_raise, expected', [
+    pytest.param('http://www.opengis.net/def/crs/EPSG/0/4326', does_not_raise(), 'EPSG:4326'),  # noqa
+    pytest.param('http://www.opengis.net/def/crs/OGC/1.3/CRS84', does_not_raise(), 'CRS:84'),  # noqa
+    pytest.param('http://www.opengis.net/def/crs/OGC/0/CRS84h', pytest.raises(CRSError), None),  # noqa
+    pytest.param('EPSG:4326', pytest.raises(CRSError), None),
+])
+def test_get_curie(uri, expected_raise, expected):
+    with expected_raise:
+        assert crs.get_curie(uri) == expected
 
 
 @pytest.mark.parametrize('uri, expected_axis_order', [
