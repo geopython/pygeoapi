@@ -656,8 +656,7 @@ def delete_job(api: API, request: APIRequest,
                 request.format, 'InternalError', job_id
             )
     LOGGER.info(response)
-    # TODO: this response does not have any headers
-    return {}, http_status, to_json(response, api.pretty_print)
+    return response_headers, http_status, to_json(response, api.pretty_print)
 
 
 def get_oas_30(cfg: dict, locale: str
