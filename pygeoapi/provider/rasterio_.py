@@ -120,7 +120,9 @@ class RasterioProvider(BaseProvider):
         if not bbox:
             bbox = []
 
-        if all([not bands, not subsets, not bbox, format_ != 'json']):
+        # GDAL virtual files must be read through rasterio, not pathlib.
+        if all([not bands, not subsets, not bbox, format_ != 'json',
+                not str(self.data).startswith('/vsi')]):
             LOGGER.debug('No parameters specified, returning native data')
             return read_data(self.data)
 
