@@ -56,6 +56,7 @@ import json
 import pytest
 import pyproj
 from shapely.geometry import shape as geojson_to_geom
+from sqlalchemy.exc import DataError, ProgrammingError
 
 from pygeofilter.parsers.cql2_text import parse
 
@@ -66,6 +67,7 @@ from pygeoapi.api.itemtypes import (
 from pygeoapi.crs import DEFAULT_CRS, get_transform_from_crs, get_crs
 from pygeoapi.provider.base import (
     ProviderConnectionError,
+    ProviderInvalidQueryError,
     ProviderItemNotFoundError,
     ProviderQueryError
 )
@@ -675,6 +677,120 @@ def test_get_collection_items_postgresql_cql_bad_cql(pg_api_, bad_cql):
     error_response = json.loads(response)
     assert error_response['code'] == 'InvalidParameterValue'
     assert error_response['description'] == 'Bad CQL text'
+
+
+@pytest.mark.parametrize('properties', [
+    [('osm_id', 'not-an-integer')],
+    [('osm_id', '9' * 30)],
+    [('name', 'Muha'), ('osm_id', 'not-an-integer')]
+])
+def test_query_property_filter_invalid_value(config, properties):
+    """Test a property filter value that the column type cannot hold"""
+    provider = PostgreSQLProvider(config)
+    with pytest.raises(ProviderInvalidQueryError):
+        provider.query(properties=properties)
+
+
+@pytest.mark.parametrize('cql', [
+    "osm_id = 'not-an-integer'",
+    "osm_id IN ('a', 'b')",
+    "osm_id BETWEEN 'a' AND 'b'",
+    "osm_id LIKE 'a%'",
+    "'name' LIKE 'a%'",
+    "'name' IN ('a')",
+    "'name' IS NULL"
+])
+def test_query_cql_invalid_for_column(config, cql):
+    """Test CQL that parses, but that the database cannot apply"""
+    provider = PostgreSQLProvider(config)
+    with pytest.raises(ProviderInvalidQueryError):
+        provider.query(filterq=parse(cql))
+
+
+@pytest.mark.parametrize('params', [
+    {'osm_id': 'not-an-integer'},
+    {'filter': "osm_id = 'not-an-integer'"},
+    {'filter': "osm_id LIKE 'a%'"},
+    {'filter': "'name' LIKE 'a%'"}
+])
+def test_get_collection_items_postgresql_invalid_filter(pg_api_, params):
+    """Test that a filter the database cannot apply is a client error"""
+    req = mock_api_request(params)
+    _, code, response = get_collection_items(
+        pg_api_, req, 'hot_osm_waterways')
+
+    assert code == HTTPStatus.BAD_REQUEST
+    error_response = json.loads(response)
+    assert error_response['code'] == 'InvalidParameterValue'
+    assert 'psycopg2' not in error_response['description']
+    assert 'SELECT' not in error_response['description']
+
+
+def test_get_collection_items_postgresql_cql_json_invalid_filter(pg_api_):
+    """Test CQL-JSON that the database cannot apply"""
+    cql = {'op': '=', 'args': [{'property': 'osm_id'}, 'not-an-integer']}
+    headers = {'CONTENT_TYPE': 'application/query-cql-json'}
+
+    req = mock_api_request({'filter-lang': 'cql-json'}, data=cql, **headers)
+    _, code, response = get_collection_items(
+        pg_api_, req, 'hot_osm_waterways')
+
+    assert code == HTTPStatus.BAD_REQUEST
+    assert json.loads(response)['code'] == 'InvalidParameterValue'
+
+
+def test_query_data_error_without_filter_stays_a_server_error(config,
+                                                              monkeypatch):
+    """Test that a failure a request did not cause is not blamed on it"""
+    def failing_session(*args, **kwargs):
+        raise DataError('SELECT 1', {}, Exception('bad cast in a view'))
+
+    provider = PostgreSQLProvider(config)
+    monkeypatch.setattr(postgresql_provider_module, 'Session', failing_session)
+
+    with pytest.raises(DataError):
+        provider.query()
+
+
+def test_query_undefined_function_without_filter_stays_a_server_error(
+        config, monkeypatch):
+    """Test that an operator error without a filter is not a bad filter"""
+    orig = Exception('function does not exist')
+    orig.pgcode = '42883'
+
+    def failing_session(*args, **kwargs):
+        raise ProgrammingError('SELECT 1', {}, orig)
+
+    provider = PostgreSQLProvider(config)
+    monkeypatch.setattr(postgresql_provider_module, 'Session', failing_session)
+
+    with pytest.raises(ProgrammingError):
+        provider.query()
+
+
+def test_query_datetime_on_non_date_time_field_stays_a_server_error(config):
+    """Test that a misconfigured time_field is not blamed on the request"""
+    config['time_field'] = 'osm_id'
+    provider = PostgreSQLProvider(config)
+
+    with pytest.raises(DataError):
+        provider.query(datetime_='2020-01-01')
+
+
+def test_query_undefined_table_with_filter_stays_a_server_error(config,
+                                                                monkeypatch):
+    """Test that only operator errors are treated as a bad filter"""
+    orig = Exception('relation does not exist')
+    orig.pgcode = '42P01'
+
+    def failing_session(*args, **kwargs):
+        raise ProgrammingError('SELECT 1', {}, orig)
+
+    provider = PostgreSQLProvider(config)
+    monkeypatch.setattr(postgresql_provider_module, 'Session', failing_session)
+
+    with pytest.raises(ProgrammingError):
+        provider.query(properties=[('name', 'Muha')])
 
 
 def test_get_collection_items_postgresql_cql_json(pg_api_):
