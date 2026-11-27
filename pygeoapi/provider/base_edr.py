@@ -85,7 +85,7 @@ class BaseEDRProvider(BaseProvider):
         :returns: `list` of instance identifiers
         """
 
-        return NotImplementedError()
+        raise NotImplementedError()
 
     def instance(self, instance):
         """
@@ -94,7 +94,7 @@ class BaseEDRProvider(BaseProvider):
         :returns: `bool` of whether instance is valid
         """
 
-        return NotImplementedError()
+        raise NotImplementedError()
 
     def get_query_types(self):
         """
